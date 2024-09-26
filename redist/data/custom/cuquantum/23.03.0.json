@@ -1,0 +1,65 @@
+{
+  "cuquantum": {
+    "packages": {
+      "linux-ppc64le": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "11",
+              "12"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-fQU4o13IxoYKiyM/zrQg+wkFNSytmHMoRWFzAtFDgUM="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "11",
+              "12"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-FopuYIeEymtw9b7WFvMjseLkv+K2alPTUghFGFPuaZc="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "11",
+              "12"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-JcEwxVEjKJd+83kk1+eswwhudBNkK1nOhglvWGx8E0E="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cuQuantum",
+      "name": "NVIDIA cuQuantum",
+      "version": "23.03.0.20"
+    }
+  }
+}

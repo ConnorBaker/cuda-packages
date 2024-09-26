@@ -1,0 +1,98 @@
+{
+  "cudnn": {
+    "packages": {
+      "linux-aarch64": {
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-7yoACczsQ+CQ2NTTEO3FaSeV4bEtPhOlfjrOItTj0eU="
+        }
+      },
+      "linux-sbsa": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-IahQXwlKxC0EBCR8dqmKzdgtPZ9zXBiQwe8Pbc9wBSI="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-t002Bz1435FW1jSoNz9hEbnRk4UUMw/8WVsKFJBbgt0="
+        }
+      },
+      "linux-x86_64": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-RG3ZWGOheCLqHAtwPJdIRFxRiFlkFaCs1rvZvgV1lQ0="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-BxGqpMdk0MpONT0J4WcmhACcIWNLqx1PN3JTQ3XW6K8="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cudnn",
+      "licensePath": "cudnn/LICENSE.txt",
+      "name": "NVIDIA CUDA Deep Neural Network library",
+      "version": "9.2.1.18"
+    }
+  },
+  "cudnn_samples": {
+    "packages": {
+      "source": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-5wsvp6nLiSO2lj5jiZjJYOynh2wE1Av5ehBy3rPmsoY="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cudnn",
+      "licensePath": "cudnn_samples/LICENSE.txt",
+      "name": "NVIDIA cuDNN samples",
+      "version": "9.2.1.18"
+    }
+  }
+}

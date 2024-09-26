@@ -1,0 +1,154 @@
+{
+  "cudnn": {
+    "packages": {
+      "linux-ppc64le": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-f2tJBx28MK6MXxl0YqWHA4lrogK4t04sB60a5rwoFDw="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-ugMKaTU+b4AnosFezrE/dTiJwDKZ15ORL0CW9RSP8oA="
+        }
+      },
+      "linux-sbsa": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-vdpE/04M8SgKOJf8nnd2iokgw/k8GJjeQWH2R+5iU+M="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-8gi08Tw7Y12DgcB/JJmVaKEx0b1P8UJS7xG2suIqbWU="
+        }
+      },
+      "linux-x86_64": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-KTnG2zC8RR8qt6ALbboLAYmdC5W1yvCBrUQgNjXMxS4="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-/R7nPqI+eKqukqDAA3tmZbyUtAKYldR5XY1QaveBEfM="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cudnn",
+      "licensePath": "cudnn/LICENSE.txt",
+      "name": "NVIDIA CUDA Deep Neural Network library",
+      "version": "8.8.0.121"
+    }
+  },
+  "cudnn_samples": {
+    "packages": {
+      "linux-ppc64le": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-zLpypmYcYYQ6w/A3v3ivAFKtsenSe7PujCBR3eFZJ0s="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-zLpypmYcYYQ6w/A3v3ivAFKtsenSe7PujCBR3eFZJ0s="
+        }
+      },
+      "linux-sbsa": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-zLpypmYcYYQ6w/A3v3ivAFKtsenSe7PujCBR3eFZJ0s="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-zLpypmYcYYQ6w/A3v3ivAFKtsenSe7PujCBR3eFZJ0s="
+        }
+      },
+      "linux-x86_64": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-zLpypmYcYYQ6w/A3v3ivAFKtsenSe7PujCBR3eFZJ0s="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-zLpypmYcYYQ6w/A3v3ivAFKtsenSe7PujCBR3eFZJ0s="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cudnn",
+      "licensePath": "cudnn_samples/LICENSE.txt",
+      "name": "NVIDIA cuDNN samples",
+      "version": "8.8.0.121"
+    }
+  }
+}

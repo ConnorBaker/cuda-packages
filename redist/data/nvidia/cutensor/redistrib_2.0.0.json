@@ -1,0 +1,35 @@
+{
+    "release_date": "2023-11-20",
+    "release_label": "2.0.0",
+    "release_product": "cutensor",
+    "libcutensor": {
+        "name": "NVIDIA cuTENSOR",
+        "license": "cuTensor",
+        "license_path": "libcutensor/LICENSE.txt",
+        "version": "2.0.0.7",
+        "linux-x86_64": {
+            "relative_path": "libcutensor/linux-x86_64/libcutensor-linux-x86_64-2.0.0.7-archive.tar.xz",
+            "sha256": "df6338aed18e5b6ae0c49521053d1606d2a41e187d7f5eccf9180af6bbc4ef68",
+            "md5": "53395c92701d42d18d594bc387397c7b",
+            "size": "524438184"
+        },
+        "linux-ppc64le": {
+            "relative_path": "libcutensor/linux-ppc64le/libcutensor-linux-ppc64le-2.0.0.7-archive.tar.xz",
+            "sha256": "46108587bb1e88632457f18f26b17d0dddb6923d161285d42307aca7ada471ca",
+            "md5": "eb6d67bb8a77de644dde2d38facec24a",
+            "size": "521922120"
+        },
+        "linux-sbsa": {
+            "relative_path": "libcutensor/linux-sbsa/libcutensor-linux-sbsa-2.0.0.7-archive.tar.xz",
+            "sha256": "071f2d6d94a37ca59835b16340038d48e1c1438ea6ca7c0bfd4730473fdb4473",
+            "md5": "61c7b5016bf407c5ba31737c37933e2c",
+            "size": "519242636"
+        },
+        "windows-x86_64": {
+            "relative_path": "libcutensor/windows-x86_64/libcutensor-windows-x86_64-2.0.0.7-archive.zip",
+            "sha256": "925a7306fa72f8f59ca9fe765987f0943bbae4ac030f3e8217d53789e0870a35",
+            "md5": "cd27ea858831569fa356a35dfcc9dd5e",
+            "size": "873651228"
+        }
+    }
+}

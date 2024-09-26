@@ -1,0 +1,57 @@
+{
+    "release_date": "2023-07-25",
+    "release_label": "23.06.1",
+    "release_product": "cuquantum",
+    "cuquantum": {
+        "name": "NVIDIA cuQuantum",
+        "license": "cuQuantum",
+        "license_path": "cuquantum/LICENSE.txt",
+        "version": "23.06.1.8",
+        "linux-x86_64": {
+            "cuda11": {
+                "relative_path": "cuquantum/linux-x86_64/cuquantum-linux-x86_64-23.06.1.8_cuda11-archive.tar.xz",
+                "sha256": "7794952a6dc8593881b0aef5798a6a2bf5087bc64748ec951971235d2357aae3",
+                "md5": "c8a21d8d024375808fb0d2aa8d3e6009",
+                "size": "40011680"
+            },
+            "cuda12": {
+                "relative_path": "cuquantum/linux-x86_64/cuquantum-linux-x86_64-23.06.1.8_cuda12-archive.tar.xz",
+                "sha256": "6f53da19c6f052ed1eb83a3c594862a161c92517c7fa2e0c054466d7783d4920",
+                "md5": "da8ed2338fe40605e5a6c87572deb8a9",
+                "size": "39769156"
+            }
+        },
+        "cuda_variant": [
+            "11",
+            "12"
+        ],
+        "linux-ppc64le": {
+            "cuda11": {
+                "relative_path": "cuquantum/linux-ppc64le/cuquantum-linux-ppc64le-23.06.1.8_cuda11-archive.tar.xz",
+                "sha256": "5265dc591d7c4352eaf1d3b5cbb7780af5d1255714c36f0436b8297f62a9f6bb",
+                "md5": "f6b6d04692e3e70582edc6b04304f568",
+                "size": "40172864"
+            },
+            "cuda12": {
+                "relative_path": "cuquantum/linux-ppc64le/cuquantum-linux-ppc64le-23.06.1.8_cuda12-archive.tar.xz",
+                "sha256": "d8a52117c2adc874363d4f128344e80ee9fb1b45e1c572377cf6f3392a95362c",
+                "md5": "a40766e0c5e259713fa7a8b45e0ec239",
+                "size": "39686076"
+            }
+        },
+        "linux-sbsa": {
+            "cuda11": {
+                "relative_path": "cuquantum/linux-sbsa/cuquantum-linux-sbsa-23.06.1.8_cuda11-archive.tar.xz",
+                "sha256": "9cbd6f44705133a8743048276bc81823f0778a0d107cce641600e1a3dfc1ae75",
+                "md5": "d7ba52c92a07b76c0a8517493b40ec3d",
+                "size": "39857616"
+            },
+            "cuda12": {
+                "relative_path": "cuquantum/linux-sbsa/cuquantum-linux-sbsa-23.06.1.8_cuda12-archive.tar.xz",
+                "sha256": "c0b6c54b790907b30a57e4e0c8dd9620e2bd4d0cd67134ccf063af1d4c36b160",
+                "md5": "2d822ed929c64ac5d0c6e4d8e06f4e20",
+                "size": "39605072"
+            }
+        }
+    }
+}

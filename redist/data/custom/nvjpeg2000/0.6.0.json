@@ -1,0 +1,25 @@
+{
+  "libnvjpeg_2k": {
+    "packages": {
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-RVzWmNz6d/8PmmCSdJ5ln5y98872aiPg5mX04ysvBWY="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "nvJPEG 2K",
+      "name": "NVIDIA nvJPEG 2000",
+      "version": "0.6.0.28"
+    }
+  }
+}

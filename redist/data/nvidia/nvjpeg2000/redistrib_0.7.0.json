@@ -1,0 +1,20 @@
+{
+    "release_date": "2023-03-20",
+    "libnvjpeg_2k": {
+        "name": "NVIDIA nvJPEG 2000",
+        "license": "nvJPEG 2K",
+        "version": "0.7.0.31",
+        "linux-x86_64": {
+            "relative_path": "libnvjpeg_2k/linux-x86_64/libnvjpeg_2k-linux-x86_64-0.7.0.31-archive.tar.xz",
+            "sha256": "2cad6621884e4fdf175304b45ed766bb65936a0c28769fba9f8cf75c30f60d75",
+            "md5": "6a54c8d88ecbb536e521e79f32517766",
+            "size": "1743028"
+        },
+        "windows-x86_64": {
+            "relative_path": "libnvjpeg_2k/windows-x86_64/libnvjpeg_2k-windows-x86_64-0.7.0.31-archive.zip",
+            "sha256": "711bca6b96e485bc8676c8601fb92d7a556a7a13f12a8abeeccec5c22b6d308f",
+            "md5": "98e2d87b7241d8cd0929305787c1c002",
+            "size": "1841226"
+        }
+    }
+}

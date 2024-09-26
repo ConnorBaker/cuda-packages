@@ -1,0 +1,114 @@
+{
+  "cudnn": {
+    "packages": {
+      "linux-ppc64le": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-FoQs70AInvy+08Knli3WrfuOPq6hDg7Y2jDQ+kRtYZk="
+        }
+      },
+      "linux-sbsa": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-SlV7RMGayzMJDCWX+45yEL95anYN9JTuajBJOkGestE="
+        }
+      },
+      "linux-x86_64": {
+        "cuda10": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-0grolIqTX4Z4/ogyLYrWhZV/bQ1ad8yT2d05Gp/8DXM="
+        },
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-KdM6RJoX2QH5abfuKgkX6yb4so4AFa3tiUcg1fHQcVI="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cudnn",
+      "licensePath": "cudnn/LICENSE.txt",
+      "name": "NVIDIA CUDA Deep Neural Network library",
+      "version": "8.7.0.84"
+    }
+  },
+  "cudnn_samples": {
+    "packages": {
+      "linux-ppc64le": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-DATDFe2f5DTKP23JyFBmaOSqTksqvRWILI27MMTrY9A="
+        }
+      },
+      "linux-sbsa": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-DATDFe2f5DTKP23JyFBmaOSqTksqvRWILI27MMTrY9A="
+        }
+      },
+      "linux-x86_64": {
+        "cuda10": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-DATDFe2f5DTKP23JyFBmaOSqTksqvRWILI27MMTrY9A="
+        },
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-DATDFe2f5DTKP23JyFBmaOSqTksqvRWILI27MMTrY9A="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cudnn",
+      "licensePath": "cudnn_samples/LICENSE.txt",
+      "name": "NVIDIA cuDNN samples",
+      "version": "8.7.0.84"
+    }
+  }
+}

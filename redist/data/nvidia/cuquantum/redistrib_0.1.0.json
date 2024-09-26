@@ -1,0 +1,26 @@
+{
+    "release_date": "2021-12-20",
+    "cuquantum": {
+        "name": "NVIDIA cuQuantum",
+        "license": "cuQuantum",
+        "version": "0.1.0.30",
+        "linux-x86_64": {
+            "relative_path": "cuquantum/linux-x86_64/cuquantum-linux-x86_64-0.1.0.30-archive.tar.xz",
+            "sha256": "8ad8e98f14275ffe0de02574be5c86224af1c657c41baf02c16440301ffe0aae",
+            "md5": "a3b888585891cbb205657668de0d53d8",
+            "size": "4838440"
+        },
+        "linux-ppc64le": {
+            "relative_path": "cuquantum/linux-ppc64le/cuquantum-linux-ppc64le-0.1.0.30-archive.tar.xz",
+            "sha256": "0eb84eef619a1cfab5870fb585200a9869a197866685252e4ca8187322809554",
+            "md5": "b91c21dd9929f97332a675cf95d89835",
+            "size": "4922616"
+        },
+        "linux-sbsa": {
+            "relative_path": "cuquantum/linux-sbsa/cuquantum-linux-sbsa-0.1.0.30-archive.tar.xz",
+            "sha256": "3dd04cf08f1323318e0e63a7e28bc904c426ced3367aca809fba7e7beef94063",
+            "md5": "e87988274262f20b3074e901a792078d",
+            "size": "4747776"
+        }
+    }
+}

@@ -1,0 +1,90 @@
+{
+  "cuquantum": {
+    "packages": {
+      "linux-ppc64le": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-viGv5Z9Fd8ADU9tmakssE6+xBzCuGxu3kGevZbHGuJw="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-7MczGD4QjUDuLhzYeoaKy6Idw/fmMeSZtEzWM5ot6Zs="
+        }
+      },
+      "linux-sbsa": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-gJiMzXSmB64INA0NdUDiymbXGtyIrFadSfq0fexqgnc="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-WmKT45jNUBvX9yvmhXzNa2cAdPO4zOFk4zqttL0eLKA="
+        }
+      },
+      "linux-x86_64": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-nGez0YWIUYjXViaPvOjTT/rLAgpQqTDL3RGzgab/FKA="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-3bD9fAyAhxN/8bAYViTww1qYezzIvZHsrcdDB1YF6Ng="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cuQuantum",
+      "licensePath": "cuquantum/LICENSE.txt",
+      "name": "NVIDIA cuQuantum",
+      "version": "23.06.0.7"
+    }
+  }
+}

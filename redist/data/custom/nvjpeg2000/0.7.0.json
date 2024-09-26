@@ -1,0 +1,29 @@
+{
+  "libnvjpeg_2k": {
+    "packages": {
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "11",
+              "12"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-PxRzyG96Mtg0T4ypryB5OreF8gq2d53zVTjCqdJ2exY="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "nvJPEG 2K",
+      "name": "NVIDIA nvJPEG 2000",
+      "version": "0.7.0.31"
+    }
+  }
+}

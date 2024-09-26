@@ -1,0 +1,43 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "cuda_redist"
+version = "0.1.0"
+authors = [{ name = "Connor Baker", email = "connorbaker@tweag.io" }]
+requires-python = ">=3.11"
+license = { text = "BSD-3-Clause" }
+description = "Library of functions for NVIDIA's redistributable manifests"
+dependencies = ["annotated-types", "pydantic", "rich"]
+
+[project.optional-dependencies]
+dev = ["ruff"]
+
+[project.scripts]
+get-nvidia-versions = "cuda_redist.cmd:get_nvidia_versions.main"
+update-nvidia-index = "cuda_redist.cmd:update_nvidia_index.main"
+update-custom-index = "cuda_redist.cmd:update_custom_index.main"
+
+[project.urls]
+Homepage = "https://github.com/ConnorBaker/cuda-packages/tree/main/redist/scripts/cuda-redist"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+preview = true
+
+[tool.ruff.lint]
+preview = true
+select = ["F", "E", "W", "I", "PL", "FURB", "LOG", "RUF", "G", "TID"]
+ignore = [
+  # Ignore functions with many arguments (I like currying)
+  "PLR0913",
+]
+
+[tool.pyright]
+include = ["./cuda_redist"]
+pythonVersion = "3.11"
+pythonPlatform = "Linux"
+typeCheckingMode = "strict"

@@ -1,0 +1,67 @@
+{
+  "libcutensor": {
+    "packages": {
+      "linux-ppc64le": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "10.2",
+              "11",
+              "11.0"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-f9EDSttsXze4iVtnDAXLkHdC5XW6Z2vxpJgCxq0PFbg="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "11",
+              "11.0"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-3KKLekP9rOmeg+A+LJhZ8wO/0KsFDplPm1JuV+KZz2g="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "10.2",
+              "11",
+              "11.0"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-mQ5Ri+YMrycANk8LXHK8Bi+9IntdzpVb/K8BbO94xdk="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cuTensor",
+      "name": "NVIDIA cuTENSOR",
+      "version": "1.6.0.3"
+    }
+  }
+}

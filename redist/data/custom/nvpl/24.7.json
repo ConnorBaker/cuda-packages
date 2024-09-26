@@ -1,0 +1,184 @@
+{
+  "nvpl_blas": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-+HB8SmK3Pcq8RL74ZpC748jn/6QgqlJWgxxgnei1Cyw="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVPL",
+      "licensePath": "nvpl_blas/LICENSE.txt",
+      "name": "NVPL BLAS",
+      "version": "0.3.0"
+    }
+  },
+  "nvpl_common": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev"
+            ]
+          },
+          "recursiveHash": "sha256-cIMZ931bBariQLV+duR91+qJDd3Z+0zuJbPNY3TIEoc="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVPL",
+      "licensePath": "nvpl_common/LICENSE.txt",
+      "name": "NVPL Common",
+      "version": "0.3.0"
+    }
+  },
+  "nvpl_fft": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-MpGvjd6dPfjpyk0ayBgR1pSkAn/PpFwcVC0C/NpF+4w="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVPL",
+      "licensePath": "nvpl_fft/LICENSE.txt",
+      "name": "NVPL FFT",
+      "version": "0.3.0"
+    }
+  },
+  "nvpl_lapack": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-zvCHIgcoP0Clj7Z94u0zGRto0SBRHEMPC3GMEbrt4HY="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVPL",
+      "licensePath": "nvpl_lapack/LICENSE.txt",
+      "name": "NVPL LAPACK",
+      "version": "0.2.3.1"
+    }
+  },
+  "nvpl_rand": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-yJj8oEI5sQgM3R9IRgslLFdwJY3yjgAYBnUc0N9ebdA="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVPL",
+      "licensePath": "nvpl_rand/LICENSE.txt",
+      "name": "NVPL RAND",
+      "version": "0.5.0"
+    }
+  },
+  "nvpl_scalapack": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-ZG//67RLcjgmAwpZYaD90SFYI7Kq/s5Nz9/a5mdE78U="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVPL",
+      "licensePath": "nvpl_scalapack/LICENSE.txt",
+      "name": "NVPL SCALAPACK",
+      "version": "0.2.0"
+    }
+  },
+  "nvpl_sparse": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-bJuF+5BFZzhn7ly5LkcTGlq+ITBDYToLBUghsvcafDE="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVPL",
+      "licensePath": "nvpl_sparse/LICENSE.txt",
+      "name": "NVPL SPARSE",
+      "version": "0.3.0"
+    }
+  },
+  "nvpl_tensor": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-HZCn9fAaX7YNYVR2ly16JAHAOgVmFIh3e6nEFF6+RX8="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVPL",
+      "licensePath": "nvpl_tensor/LICENSE.txt",
+      "name": "NVPL TENSOR",
+      "version": "0.2.0"
+    }
+  }
+}

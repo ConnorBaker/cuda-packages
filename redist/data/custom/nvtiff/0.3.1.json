@@ -1,0 +1,38 @@
+{
+  "libnvtiff": {
+    "packages": {
+      "linux-x86_64": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-GPkIlqw+ymx9MDunlDl6pQL+tpFpK6hjVsDnueoUdBk="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-nQJs+bL1hYX5Zp3nj1+r2DL6tIUZqvxm3AxJK50Kphs="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "nvTIFF",
+      "licensePath": "libnvtiff/LICENSE.txt",
+      "name": "NVIDIA nvTIFF",
+      "version": "0.3.1.56"
+    }
+  }
+}

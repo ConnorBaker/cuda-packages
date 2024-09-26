@@ -1,0 +1,40 @@
+{
+  "libcudss": {
+    "packages": {
+      "linux-sbsa": {
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-GsqPcQnX8EoO/kv8PCx5F04fc1UW5znH69DZ+qfDoWk="
+        }
+      },
+      "linux-x86_64": {
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-O22lJkOtlpgfkjZOb7CepggbsSPK9rx7z2siVvYqVZM="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cuDSS library",
+      "licensePath": "libcudss/LICENSE.txt",
+      "name": "NVIDIA cuDSS library",
+      "version": "0.2.0.12"
+    }
+  }
+}

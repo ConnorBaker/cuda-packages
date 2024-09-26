@@ -1,0 +1,35 @@
+{
+    "release_date": "2024-04-22",
+    "release_label": "0.8.0",
+    "release_product": "nvjpeg2000",
+    "libnvjpeg_2k": {
+        "name": "NVIDIA nvJPEG 2000",
+        "license": "nvJPEG 2K",
+        "license_path": "libnvjpeg_2k/LICENSE.txt",
+        "version": "0.8.0.38",
+        "linux-x86_64": {
+            "relative_path": "libnvjpeg_2k/linux-x86_64/libnvjpeg_2k-linux-x86_64-0.8.0.38-archive.tar.xz",
+            "sha256": "f0b4f0ab9e19579c547e96ce189c6a93731f662898751a88d62e3caa59472367",
+            "md5": "b2b84dd2cc915c8a41b5e8e760966555",
+            "size": "3727284"
+        },
+        "linux-sbsa": {
+            "relative_path": "libnvjpeg_2k/linux-sbsa/libnvjpeg_2k-linux-sbsa-0.8.0.38-archive.tar.xz",
+            "sha256": "03a568305989b25be6def7d860b2519577ebef1538c703de0ad086fa2314a1e0",
+            "md5": "949d2a3eff96b2b7fbb59002cbfb1cb9",
+            "size": "3577460"
+        },
+        "windows-x86_64": {
+            "relative_path": "libnvjpeg_2k/windows-x86_64/libnvjpeg_2k-windows-x86_64-0.8.0.38-archive.zip",
+            "sha256": "feabb2f4108805b251f44b0561b194a24041d01207b272a3aa42a664e938e5d4",
+            "md5": "00df193eb8119cf07de81654ae979900",
+            "size": "6752506"
+        },
+        "linux-aarch64": {
+            "relative_path": "libnvjpeg_2k/linux-aarch64/libnvjpeg_2k-linux-aarch64-0.8.0.38-archive.tar.xz",
+            "sha256": "dac4f1d0c088c22155067b781142dc27ec1d3ced68b99d2180fcd1fcf02fe19e",
+            "md5": "a83de8f77c2f231035494840d6c8ed97",
+            "size": "2081372"
+        }
+    }
+}

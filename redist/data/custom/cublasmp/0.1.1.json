@@ -1,0 +1,118 @@
+{
+  "libcal": {
+    "packages": {
+      "linux-sbsa": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-PmfKgvPU4vYexMlAE/vUS4iCpjd+ieKsmNuYTRMaWXU="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-z5kGnVrkkvvqknB8zUxBUOND0JSZp8U25qOlzS0g4jo="
+        }
+      },
+      "linux-x86_64": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-vd/Z1Nd16x9i39O6GgYtKTGT8Ymq4EpJyFYZfk7/p0M="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-scWp5M7YLZq/4zTdkEf8HSkyT8G16iYL0WaptZ1mt3w="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "libcal library",
+      "licensePath": "libcal/LICENSE.txt",
+      "name": "NVIDIA libcal library",
+      "version": "0.4.2.25"
+    }
+  },
+  "libcublasmp": {
+    "packages": {
+      "linux-sbsa": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-IwakojOqYU++4vU7R6f+i2Xm2U9ImyfyX+HKwCFbioI="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-6lsLeN268bZPYNRmmtBovTYSlGg3gKv/T+Nde/bl558="
+        }
+      },
+      "linux-x86_64": {
+        "cuda11": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-TeoztyLq5ynIchLDEBIZZr6FtTfCFrd9HsDb6s7l8rE="
+        },
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-520muQdfAX6WA5l0oqCsMz+ijDecyVsLTJvqqJRZWkw="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cuBLASMp library",
+      "licensePath": "libcublasmp/LICENSE.txt",
+      "name": "NVIDIA cuBLASMp library",
+      "version": "0.1.1.245"
+    }
+  }
+}

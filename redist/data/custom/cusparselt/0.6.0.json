@@ -1,0 +1,40 @@
+{
+  "libcusparse_lt": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-Uo7ZYCIDb1uJmNKkIQ7j0PYTygtQnV3NeD7P7eBz4n8="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-atuvHdtFvFDazwllagOf3RyD4WwwlyJAXZCUXNmAmTA="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cuSPARSELt",
+      "licensePath": "libcusparse_lt/LICENSE.txt",
+      "name": "NVIDIA cuSPARSELt",
+      "version": "0.6.0.6"
+    }
+  }
+}

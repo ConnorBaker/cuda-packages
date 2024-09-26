@@ -1,0 +1,43 @@
+{
+    "release_date": "2023-11-20",
+    "release_label": "0.3.1",
+    "release_product": "nvtiff",
+    "libnvtiff": {
+        "name": "NVIDIA nvTIFF",
+        "license": "nvTIFF",
+        "license_path": "libnvtiff/LICENSE.txt",
+        "version": "0.3.1.56",
+        "linux-x86_64": {
+            "cuda11": {
+                "relative_path": "libnvtiff/linux-x86_64/libnvtiff-linux-x86_64-0.3.1.56_cuda11-archive.tar.xz",
+                "sha256": "bddd8070689db453d75e653327938ab36491a45cdf0d87b0616b38d6f98d413a",
+                "md5": "6377f3c3ac7138e0f97334cb8593c063",
+                "size": "1013972"
+            },
+            "cuda12": {
+                "relative_path": "libnvtiff/linux-x86_64/libnvtiff-linux-x86_64-0.3.1.56_cuda12-archive.tar.xz",
+                "sha256": "78fce185bf918830a4b31e8f55d76e1bc69766b7ab3be199b4340ed9ad6ccdce",
+                "md5": "d8db290ed04c09c855d370c024ddaa9d",
+                "size": "1027996"
+            }
+        },
+        "cuda_variant": [
+            "11",
+            "12"
+        ],
+        "windows-x86_64": {
+            "cuda11": {
+                "relative_path": "libnvtiff/windows-x86_64/libnvtiff-windows-x86_64-0.3.1.56_cuda11-archive.zip",
+                "sha256": "392342266b557a3549d813694e6691a50753da4bec0c2164c36b2d9a10448ae2",
+                "md5": "0f2175ec3bb29c78bf47127df843b594",
+                "size": "1464406"
+            },
+            "cuda12": {
+                "relative_path": "libnvtiff/windows-x86_64/libnvtiff-windows-x86_64-0.3.1.56_cuda12-archive.zip",
+                "sha256": "d85458af3872180c4c54ce2040421b137b9f5363bd2513f90c139fa7482fec88",
+                "md5": "0bb544c33ed93d42e4bd34f8389896ae",
+                "size": "1474242"
+            }
+        }
+    }
+}

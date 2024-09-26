@@ -1,0 +1,48 @@
+{
+  "libnvjpeg_2k": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "11",
+              "12"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-dZVr1x5/PuZU+xbNFdUoGGVlhfhf0nkGxrEE/kj5d2o="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "11",
+              "12"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-iysePdHY2oUoXja2Wck8In46D0PwyM9xNlGdacCdGKg="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "nvJPEG 2K",
+      "licensePath": "libnvjpeg_2k/LICENSE.txt",
+      "name": "NVIDIA nvJPEG 2000",
+      "version": "0.7.5.32"
+    }
+  }
+}
