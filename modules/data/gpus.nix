@@ -1,9 +1,7 @@
-{ config, lib, ... }:
+{ cuda-lib, lib, ... }:
 let
-  inherit (config) cuda-lib;
-  inherit (lib.attrsets) mapAttrs;
+  inherit (cuda-lib.utils) mkOptions;
   inherit (lib.options) mkOption;
-  inherit (lib.trivial) const;
   inherit (lib.types)
     bool
     nonEmptyListOf
@@ -11,8 +9,6 @@ let
     nullOr
     submodule
     ;
-
-  mkOptions = mapAttrs (const mkOption);
 in
 {
   options.data.gpus = mkOption {

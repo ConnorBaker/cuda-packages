@@ -5,7 +5,7 @@
   cuda_cudart,
   lib,
   setupCudaHook,
-  utils,
+  cuda-lib,
 }:
 let
   inherit (lib.lists) optionals;

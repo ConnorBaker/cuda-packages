@@ -1,20 +1,8 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ lib, ... }:
 let
   inherit (builtins) readDir;
-  inherit (lib.attrsets)
-    attrNames
-    filterAttrs
-    mapAttrs'
-    removeAttrs
-    ;
-  inherit (lib.options) mkOption;
-  inherit (lib.strings) hasSuffix replaceStrings;
-  inherit (lib.types) lazyAttrsOf raw;
+  inherit (lib.attrsets) attrNames filterAttrs;
+  inherit (lib.strings) hasSuffix;
   inherit (lib.trivial) pipe;
 
   # NOTE: Not recursive.
@@ -22,15 +10,23 @@ let
     dir:
     pipe dir [
       readDir
-      (filterAttrs (filename: type: hasSuffix ".nix" filename && type == "regular"))
+      (filterAttrs (name: type: hasSuffix ".nix" name && type == "regular"))
       attrNames
       (map (filename: dir + "/${filename}"))
     ];
 
-  cudaLibModules = getNixFilePathsInDir ./cuda-lib;
+  getDirsInDir =
+    dir:
+    pipe dir [
+      readDir
+      (filterAttrs (filename: type: type == "directory"))
+      attrNames
+      (map (dirname: dir + "/${dirname}"))
+    ];
+
   dataModules = getNixFilePathsInDir ./data;
-  redistModules = [ ./redist/cuda ];
+  redistModules = getDirsInDir ./redist;
 in
 {
-  imports = cudaLibModules ++ dataModules ++ redistModules ++ [ ./package-sets.nix ];
+  imports = dataModules ++ redistModules ++ [ ./package-sets.nix ];
 }

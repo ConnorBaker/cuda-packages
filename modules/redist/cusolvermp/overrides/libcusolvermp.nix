@@ -1,15 +1,15 @@
 {
   cuda_cudart ? null,
+  cuda-lib,
   lib,
   libcal ? null,
   libcublas ? null,
   libcusolver ? null,
-  utils,
 }:
 prevAttrs: {
   badPlatformsConditions =
     prevAttrs.badPlatformsConditions
-    // utils.mkMissingPackagesBadPlatformsConditions {
+    // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions {
       inherit
         cuda_cudart
         libcal

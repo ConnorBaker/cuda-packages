@@ -1,15 +1,16 @@
 {
   config,
+  cuda-lib,
   lib,
   pkgs,
   ...
 }:
 let
-  inherit (config) data;
-  inherit (config.cuda-lib) utils;
   inherit (lib.attrsets)
     attrNames
+    attrValues
     dontRecurseIntoAttrs
+    genAttrs
     mapAttrs
     recurseIntoAttrs
     ;
@@ -19,12 +20,13 @@ let
     concatMap
     elem
     foldl'
+    groupBy'
     map
     unique
     ;
   inherit (lib.options) mkOption;
-  inherit (lib.strings) versionAtLeast versionOlder;
-  inherit (lib.trivial) const pipe;
+  inherit (lib.strings) replaceStrings versionAtLeast versionOlder;
+  inherit (lib.trivial) const flip pipe;
   inherit (lib.types) lazyAttrsOf raw;
   inherit (lib.versions) major majorMinor;
   inherit (pkgs) newScope stdenv;
@@ -34,20 +36,40 @@ let
   # - Overrides for cutensor, etc.
   # - Rename the platform type to redistPlatform to distinguish it from the Nix platform.
 
-  redistArch = utils.getRedistArch stdenv.hostPlatform.system;
+  redistArch = cuda-lib.utils.getRedistArch (
+    config.data.jetsonTargets != [ ]
+  ) stdenv.hostPlatform.system;
+  mkCudaPackagesPackageSetName = flip pipe [
+    (cuda-lib.utils.versionPolicyToVersionFunction config.redist.cuda.versionPolicy)
+    (replaceStrings [ "." ] [ "_" ])
+    (version: "cudaPackages_${version}")
+  ];
 
-  index = mapAttrs (redistName: redistConfig: redistConfig.data) config.redist;
+  newestForComponent =
+    versionPolicy: versionedManifests:
+    let
+      versionFunction = cuda-lib.utils.versionPolicyToVersionFunction versionPolicy;
+      newestForEachVersionByPolicy = groupBy' (
+        a: b: if versionAtLeast a b then a else b
+      ) "0.0.0.0" versionFunction (attrNames versionedManifests);
+      newestForEachVersion = genAttrs (attrValues newestForEachVersionByPolicy) (
+        version: versionedManifests.${version}
+      );
+    in
+    newestForEachVersion;
+
+  index = mapAttrs (
+    redistName: redistConfig: newestForComponent redistConfig.versionPolicy redistConfig.data
+  ) config.redist;
 
   packageSetBuilder = cudaMajorMinorPatchVersion: {
-    name = utils.mkVersionedPackageName {
-      packageName = "cudaPackages";
-      redistName = "cudaPackages";
-      version = cudaMajorMinorPatchVersion;
-    };
+    name = mkCudaPackagesPackageSetName cudaMajorMinorPatchVersion;
     value = makeScope newScope (
       final:
       let
-        corePackageSets = {
+        coreAttrs = {
+          cuda-lib = dontRecurseIntoAttrs cuda-lib;
+
           cudaPackages = dontRecurseIntoAttrs final // {
             __attrsFailEvaluation = true;
           };
@@ -73,7 +95,9 @@ let
         };
 
         dataAttrs = {
-          data = dontRecurseIntoAttrs data;
+          config = dontRecurseIntoAttrs config // {
+            __attrsFailEvaluation = true;
+          };
           # CUDA versions
           inherit cudaMajorMinorPatchVersion;
           cudaMajorMinorVersion = majorMinor final.cudaMajorMinorPatchVersion;
@@ -82,7 +106,6 @@ let
         };
 
         utilityAttrs = {
-          utils = dontRecurseIntoAttrs utils;
           # CUDA version comparison utilities
           cudaAtLeast = versionAtLeast final.cudaVersion;
           cudaOlder = versionOlder final.cudaVersion;
@@ -98,12 +121,12 @@ let
             # trimmedFilteredIndex still has a tree-like structure. We will use it as a way to get the supported
             # redistributable architectures for each package.
             trimmedFilteredIndex = pipe index [
-              (utils.mkTrimmedIndex cudaMajorMinorPatchVersion)
-              (utils.mkFilteredIndex cudaMajorMinorPatchVersion)
+              (cuda-lib.utils.mkTrimmedIndex cudaMajorMinorPatchVersion)
+              (cuda-lib.utils.mkFilteredIndex cudaMajorMinorPatchVersion)
             ];
 
             # Make a flattened index for the particular CUDA version.
-            trimmedFilteredFlattenedIndex = utils.mkFlattenedIndex trimmedFilteredIndex;
+            trimmedFilteredFlattenedIndex = cuda-lib.utils.mkFlattenedIndex trimmedFilteredIndex;
 
             # Fold function for the flattened index.
             flattenedIndexFoldFn =
@@ -126,7 +149,7 @@ let
                 ];
                 supportedNixPlatforms = pipe supportedRedistArchs [
                   # Get the Nix platforms for each redistributable architecture.
-                  (concatMap utils.getNixPlatforms)
+                  (concatMap cuda-lib.utils.getNixPlatforms)
                   # Take only the unique platforms.
                   unique
                 ];
@@ -137,21 +160,23 @@ let
                 isSupportedPlatform = platform == "source" || elem redistArch supportedRedistArchs;
 
                 # Fully versioned attribute name for the package.
-                fullVersionedPackageName = utils.mkVersionedPackageName {
+                fullVersionedPackageName = cuda-lib.utils.mkVersionedPackageName {
                   inherit redistName packageName;
                   inherit (releaseInfo) version;
+                  versionPolicy = "build";
                 };
 
                 # Included to allow us easy access to the most recent major version of the package.
-                majorVersionedPackageName = utils.mkVersionedPackageName {
+                majorVersionedPackageName = cuda-lib.utils.mkVersionedPackageName {
                   inherit redistName packageName;
-                  version = major releaseInfo.version;
+                  inherit (releaseInfo) version;
+                  versionPolicy = "major";
                 };
 
                 # Package which is constructed from the current flattenedIndexElem.
                 currentPackage = pipe flattenedIndexElem [
                   # Use the package builder
-                  (utils.buildRedistPackage final)
+                  (cuda-lib.utils.buildRedistPackage final)
                   # Update meta with the list of supported platforms
                   (
                     pkg:
@@ -233,7 +258,7 @@ let
           foldl' flattenedIndexFoldFn { } trimmedFilteredFlattenedIndex;
       in
       recurseIntoAttrs (
-        corePackageSets // dataAttrs // utilityAttrs // loosePackages // redistributablePackages
+        coreAttrs // dataAttrs // utilityAttrs // loosePackages // redistributablePackages
       )
     );
   };
@@ -246,7 +271,8 @@ in
       # NOTE: We must use lazyAttrsOf, else the package set is evaluated immediately for every CUDA version, instead
       # of lazily.
       type = lazyAttrsOf raw;
-      default = pipe data.cudaMajorMinorPatchVersions [
+      default = pipe index.cuda [
+        attrNames
         (map packageSetBuilder)
         builtins.listToAttrs
       ];

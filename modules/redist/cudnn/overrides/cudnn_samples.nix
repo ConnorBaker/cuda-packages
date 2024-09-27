@@ -1,21 +1,21 @@
 {
   cmake,
-  cudaPackages,
-  lib,
   cuda_cudart ? null,
   cuda_nvcc ? null,
-  utils,
+  cuda-lib,
+  cudaPackages,
+  lib,
 }:
 let
-  inherit (cudaPackages.utils) mkVersionedPackageName;
   inherit (lib.versions) major;
 in
 prevAttrs:
 let
-  desiredCudnnName = mkVersionedPackageName {
+  desiredCudnnName = cuda-lib.utils.mkVersionedPackageName {
     packageName = "cudnn";
     redistName = "cudnn";
     inherit (prevAttrs) version;
+    versionPolicy = "minor";
   };
   desiredCudnn = cudaPackages.${desiredCudnnName} or null;
   cudnnSamplesMajorVersion = major prevAttrs.version;
@@ -33,7 +33,7 @@ in
 
   badPlatformsConditions =
     prevAttrs.badPlatformsConditions
-    // utils.mkMissingPackagesBadPlatformsConditions {
+    // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions {
       inherit cuda_cudart cuda_nvcc;
       ${desiredCudnnName} = desiredCudnn;
     };

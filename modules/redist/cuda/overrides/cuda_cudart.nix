@@ -3,7 +3,7 @@
   cuda_cccl ? null,
   cuda_nvcc,
   lib,
-  utils,
+  cuda-lib,
 }:
 let
   inherit (lib.attrsets) getOutput;

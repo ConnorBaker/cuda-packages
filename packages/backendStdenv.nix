@@ -1,6 +1,6 @@
 {
+  config,
   cudaVersion,
-  data,
   lib,
   pkgs,
   stdenv,
@@ -15,7 +15,7 @@
 # E.g. for cudaPackages_11_8 we use gcc11 with gcc12's libstdc++
 # Cf. https://github.com/NixOS/nixpkgs/pull/218265 for context
 let
-  gccMajorVersion = data.nvccCompatibilities.${cudaVersion}.gccMaxMajorVersion;
+  gccMajorVersion = config.data.nvccCompatibilities.${cudaVersion}.gccMaxMajorVersion;
   # TODO(@connorbaker): Get numbers for why we should use stdenvAdapters.useMoldLinker.
   cudaStdenv = stdenvAdapters.useLibsFrom stdenv pkgs."gcc${gccMajorVersion}Stdenv";
   passthruExtra.withMoldLinker = stdenvAdapters.useMoldLinker cudaStdenv;

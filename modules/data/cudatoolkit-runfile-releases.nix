@@ -1,12 +1,8 @@
-{ config, lib, ... }:
+{ cuda-lib, lib, ... }:
 let
-  inherit (config) cuda-lib;
-  inherit (lib.attrsets) mapAttrs;
+  inherit (cuda-lib.utils) mkOptions;
   inherit (lib.options) mkOption;
-  inherit (lib.trivial) const;
   inherit (lib.types) nonEmptyStr submodule;
-
-  mkOptions = mapAttrs (const mkOption);
 in
 {
   options.data.cudatoolkitRunfileReleases = mkOption {

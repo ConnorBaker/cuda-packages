@@ -1,6 +1,7 @@
 {
   boost178,
   cuda_cudart,
+  cuda-lib,
   cudaOlder,
   e2fsprogs,
   gst_all_1,
@@ -14,7 +15,6 @@
   qt6Packages ? null,
   rdma-core,
   ucx,
-  utils,
   wayland,
   xorg,
 }:
@@ -97,7 +97,7 @@ in
     # 1. Move dependencies of nsys, nsys-ui binaries to bin output
     # 2. Fix paths in wrapper scripts
     let
-      versionString = utils.majorMinorPatch prevAttrs.version;
+      versionString = cuda-lib.utils.majorMinorPatch prevAttrs.version;
     in
     prevAttrs.postInstall or ""
     + ''
@@ -130,7 +130,7 @@ in
 
   badPlatformsConditions =
     prevAttrs.badPlatformsConditions
-    // utils.mkMissingPackagesBadPlatformsConditions (
+    // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions (
       optionalAttrs (versionOlder version "2022.4.2.1") { inherit qt5; }
       // optionalAttrs (versionAtLeast version "2022.4.2.1") { inherit qt6; }
     );

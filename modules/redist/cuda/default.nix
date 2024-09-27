@@ -1,6 +1,5 @@
-{ config, lib, ... }:
+{ cuda-lib, lib, ... }:
 let
-  inherit (config) cuda-lib;
   inherit (lib.attrsets) mapAttrs';
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.options) mkOption;
@@ -14,7 +13,7 @@ in
   };
 
   config.redist.cuda = {
-    versionPolicy = "minor";
+    versionPolicy = "patch";
     overrides = packagesFromDirectoryRecursive {
       # Function which loads the file as a Nix expression and ignores the second argument.
       # NOTE: We don't actually want to callPackage these functions at this point, so we use builtins.import

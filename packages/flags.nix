@@ -1,17 +1,14 @@
-# Type aliases
-# Gpu :: AttrSet
-#   - See the documentation in ../data/gpus.nix.
 {
   config,
-  cudaCapabilities ? (config.cudaCapabilities or [ ]),
-  cudaForwardCompat ? (config.cudaForwardCompat or true),
-  lib,
+  cudaCapabilities ? (pkgs.config.cudaCapabilities or [ ]),
+  cudaForwardCompat ? (pkgs.config.cudaForwardCompat or true),
   cudaVersion,
+  lib,
+  pkgs,
   stdenv,
-  data,
 }:
 let
-  inherit (data) gpus;
+  inherit (config.data) gpus;
   inherit (lib)
     asserts
     attrsets

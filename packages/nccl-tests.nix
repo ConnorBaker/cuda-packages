@@ -2,10 +2,9 @@
 # the names of dependencies from that package set directly to avoid evaluation errors
 # in the case redistributable packages are not available.
 {
-  config,
   cudaAtLeast,
-  cudaOlder,
   cudaMajorMinorVersion,
+  cudaOlder,
   cudaPackages,
   fetchFromGitHub,
   gitUpdater,
@@ -13,6 +12,7 @@
   mpi,
   mpiSupport ? false,
   nccl,
+  pkgs,
   which,
 }:
 let
@@ -76,7 +76,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     homepage = "https://github.com/NVIDIA/nccl-tests";
     platforms = platforms.linux;
     license = licenses.bsd3;
-    broken = !config.cudaSupport || (mpiSupport && mpi == null);
+    broken = !pkgs.config.cudaSupport || (mpiSupport && mpi == null);
     maintainers = with maintainers; [ jmillerpdt ] ++ teams.cuda.members;
   };
 })

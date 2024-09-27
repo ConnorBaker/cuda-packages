@@ -1,8 +1,8 @@
 {
+  cuda-lib,
   cudaAtLeast,
   lib,
   libnvjitlink ? null,
-  utils,
 }:
 let
   inherit (lib.attrsets) optionalAttrs;
@@ -10,7 +10,7 @@ in
 prevAttrs: {
   badPlatformsConditions =
     prevAttrs.badPlatformsConditions
-    // utils.mkMissingPackagesBadPlatformsConditions (
+    // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions (
       optionalAttrs (cudaAtLeast "12.0") { inherit libnvjitlink; }
     );
 

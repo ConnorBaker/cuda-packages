@@ -1,5 +1,5 @@
 {
-  data, # Evaluated data attribute from the cuda-modules config
+  config, # Evaluated module attribute from cuda-modules
   cudaMajorMinorVersion,
   cudaMajorVersion,
   cudaOlder,
@@ -54,7 +54,7 @@
 
 let
   # Version info for the classic cudatoolkit packages that contain everything that is in redist.
-  release = data.cudatoolkitRunfileReleases.${cudaMajorMinorVersion};
+  release = config.data.cudatoolkitRunfileReleases.${cudaMajorMinorVersion};
 in
 
 backendStdenv.mkDerivation (finalAttrs: {

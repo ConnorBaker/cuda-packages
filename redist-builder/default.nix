@@ -16,12 +16,12 @@
   autoAddDriverRunpath,
   autoPatchelfHook,
   backendStdenv,
-  config,
   cudaMajorMinorVersion,
   flags,
   lib,
   markForCudatoolkitRootHook,
   path, # Path to Nixpkgs root, needed for setup-cuda-stubs-hook.sh
+  pkgs,
   stdenv,
 }:
 let
@@ -154,7 +154,7 @@ backendStdenv.mkDerivation (
     # a required package missing.
     # NOTE: Use this when a broken condition means evaluation can fail!
     badPlatformsConditions = {
-      "CUDA support is not enabled" = !config.cudaSupport;
+      "CUDA support is not enabled" = !pkgs.config.cudaSupport;
       "Platform is not supported" = finalAttrs.src == null;
     };
 

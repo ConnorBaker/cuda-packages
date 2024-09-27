@@ -13,7 +13,7 @@ addCudaCompatRunpath() {
   elif [[ $# -gt 1 ]]; then
     echo "addCudaCompatRunpath: too many arguments" >&2
     exit 1
-  elif [[ "$1" == "" ]]; then
+  elif [[ $1 == "" ]]; then
     echo "addCudaCompatRunpath: empty library path" >&2
     exit 1
   else

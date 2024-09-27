@@ -23,7 +23,12 @@ let
     cuda_nvcc
     cudatoolkit
     ;
-  inherit (lib.attrsets) attrValues getBin getLib getOutput;
+  inherit (lib.attrsets)
+    attrValues
+    getBin
+    getLib
+    getOutput
+    ;
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id;
 in

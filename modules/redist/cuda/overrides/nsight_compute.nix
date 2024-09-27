@@ -1,4 +1,5 @@
 {
+  cuda-lib,
   e2fsprogs,
   fetchpatch,
   fetchzip,
@@ -10,7 +11,6 @@
   qt6 ? null,
   rdma-core,
   ucx,
-  utils,
 }:
 let
   inherit (lib.attrsets) optionalAttrs;
@@ -122,7 +122,7 @@ in
     ++ optionals (versionAtLeast version "2023.1") [ gst_all_1.gst-plugins-base ];
   badPlatformsConditions =
     prevAttrs.badPlatformsConditions
-    // utils.mkMissingPackagesBadPlatformsConditions (
+    // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions (
       optionalAttrs (versionOlder version "2022.2.0") { inherit qt5; }
       // optionalAttrs (versionAtLeast version "2022.2.0") { inherit qt6; }
     );

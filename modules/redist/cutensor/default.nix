@@ -1,6 +1,5 @@
-{ config, lib, ... }:
+{ cuda-lib, lib, ... }:
 let
-  inherit (config) cuda-lib;
   inherit (lib.attrsets) mapAttrs';
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.options) mkOption;

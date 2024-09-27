@@ -55,6 +55,7 @@
           legacyPackages = lib.evalModules {
             specialArgs = {
               inherit pkgs;
+              cuda-lib = import ./cuda-lib { inherit lib pkgs; };
             };
             modules = [ ./modules ];
           };
@@ -109,10 +110,7 @@
                   "*.md"
                   "*.yaml"
                 ];
-                excludes = [
-                  "modules/redist/*/data/*.json"
-                  "nvidia-redist-json/*/*.json"
-                ];
+                excludes = [ "**.json" ];
                 settings = {
                   embeddedLanguageFormatting = "auto";
                   printWidth = 120;

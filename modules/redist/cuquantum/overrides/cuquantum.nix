@@ -1,14 +1,14 @@
 {
+  cuda-lib,
   cudaOlder,
   cudaPackages,
   lib,
   libcublas ? null,
   libcusolver ? null,
-  utils,
 }:
 let
   inherit (lib.attrsets) optionalAttrs;
-  inherit (lib.lists) map optionals;
+  inherit (lib.lists) optionals;
   inherit (lib.strings) versionAtLeast;
   inherit (lib.versions) majorMinor;
 in
@@ -33,7 +33,7 @@ in
 {
   badPlatformsConditions =
     prevAttrs.badPlatformsConditions
-    // utils.mkMissingPackagesBadPlatformsConditions (
+    // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions (
       {
         inherit libcublas libcusolver;
         ${desiredLibCuTensorName} = libcutensor;

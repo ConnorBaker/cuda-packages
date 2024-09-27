@@ -1,24 +1,22 @@
 {
   config,
+  cuda-lib,
   lib,
   pkgs,
   ...
 }:
 let
-  inherit (config) cuda-lib;
-  inherit (lib.attrsets) attrNames attrValues mapAttrs;
+  inherit (cuda-lib.utils) mkOptions;
+  inherit (lib.attrsets) attrNames attrValues;
   inherit (lib.lists)
     concatMap
     filter
     intersectLists
     optionals
     ;
-  inherit (lib.options) mkOption;
   inherit (lib.strings) versionOlder;
-  inherit (lib.trivial) const flip pipe;
-  inherit (lib.types) listOf nonEmptyListOf nonEmptyStr;
-
-  mkOptions = mapAttrs (const mkOption);
+  inherit (lib.trivial) flip pipe;
+  inherit (lib.types) listOf nonEmptyListOf;
 in
 {
   options.data = mkOptions {
@@ -68,43 +66,6 @@ in
           ) config.data.gpus;
         in
         intersectLists allJetsonComputeCapabilities (pkgs.config.cudaCapabilities or [ ]);
-    };
-
-    # TODO: Alphabetize
-    platforms = {
-      description = "List of platforms to use in creation of the platform type.";
-      type = nonEmptyListOf nonEmptyStr;
-      default = [
-        "linux-aarch64"
-        "linux-ppc64le"
-        "linux-sbsa"
-        "linux-x86_64"
-        "source" # Source-agnostic platform
-      ];
-    };
-    redistNames = {
-      description = "List of redistributable names to use in creation of the redistName type.";
-      type = nonEmptyListOf nonEmptyStr;
-      default = [
-        "cublasmp"
-        "cuda"
-        "cudnn"
-        "cudss"
-        "cuquantum"
-        "cusolvermp"
-        "cusparselt"
-        "cutensor"
-        # "nvidia-driver",  # NOTE: Some of the earlier manifests don't follow our scheme.
-        "nvjpeg2000"
-        "nvpl"
-        "nvtiff"
-        "tensorrt" # NOTE: not truly a redist; uses different naming convention
-      ];
-    };
-    redistUrlPrefix = {
-      description = "The prefix of the URL for redistributable files";
-      default = "https://developer.download.nvidia.com/compute";
-      type = nonEmptyStr;
     };
   };
 }
