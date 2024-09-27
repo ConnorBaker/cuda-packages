@@ -27,7 +27,7 @@ in
         Notable: CUDA versions from 11.4.4 are available as redist packages.
       '';
       type = nonEmptyListOf cuda-lib.types.majorMinorPatchVersion;
-      default = attrNames config.redist.cuda.data;
+      default = attrNames config.redists.cuda.versionedManifests;
     };
     cudatoolkitMajorMinorPatchVersions = {
       description = ''
@@ -43,6 +43,7 @@ in
       ];
     };
     # These versions typically have at least three components.
+    # TODO(@connorbaker): this assumption is no longer correct.
     # NOTE: Because the python script which produces the index takes only the latest minor version for each major
     # release, there's no way for us to get collisions in creating the package sets (which are versioned by major and
     # minor releases).

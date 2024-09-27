@@ -1,22 +1,8 @@
-{ cuda-lib, lib, ... }:
-let
-  inherit (lib.attrsets) mapAttrs';
-  inherit (lib.options) mkOption;
-  inherit (lib.strings) removeSuffix;
-  inherit (lib.trivial) importJSON;
-in
+{ cuda-lib, ... }:
 {
-  options.redist.nvtiff = mkOption {
-    description = "Redist configuration for nvtiff";
-    type = cuda-lib.types.redistConfig;
-  };
-
-  config.redist.nvtiff = {
+  config.redists.nvtiff = cuda-lib.utils.mkRedistConfig {
+    hasOverrides = false;
+    path = ./.;
     versionPolicy = "minor";
-    overrides = { };
-    data = mapAttrs' (filename: _: {
-      name = removeSuffix ".json" filename;
-      value = importJSON (./data + "/${filename}");
-    }) (builtins.readDir ./data);
   };
 }

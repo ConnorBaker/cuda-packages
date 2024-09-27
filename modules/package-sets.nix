@@ -12,6 +12,7 @@ let
     dontRecurseIntoAttrs
     genAttrs
     mapAttrs
+    optionalAttrs
     recurseIntoAttrs
     ;
   inherit (lib.customisation) makeScope;
@@ -39,8 +40,9 @@ let
   redistArch = cuda-lib.utils.getRedistArch (
     config.data.jetsonTargets != [ ]
   ) stdenv.hostPlatform.system;
+
   mkCudaPackagesPackageSetName = flip pipe [
-    (cuda-lib.utils.versionPolicyToVersionFunction config.redist.cuda.versionPolicy)
+    (cuda-lib.utils.versionPolicyToVersionFunction config.redists.cuda.versionPolicy)
     (replaceStrings [ "." ] [ "_" ])
     (version: "cudaPackages_${version}")
   ];
@@ -57,10 +59,6 @@ let
       );
     in
     newestForEachVersion;
-
-  index = mapAttrs (
-    redistName: redistConfig: newestForComponent redistConfig.versionPolicy redistConfig.data
-  ) config.redist;
 
   packageSetBuilder = cudaMajorMinorPatchVersion: {
     name = mkCudaPackagesPackageSetName cudaMajorMinorPatchVersion;
@@ -118,20 +116,20 @@ let
 
         redistributablePackages =
           let
-            # trimmedFilteredIndex still has a tree-like structure. We will use it as a way to get the supported
+            # trimmedFilteredRedists still has a tree-like structure. We will use it as a way to get the supported
             # redistributable architectures for each package.
-            trimmedFilteredIndex = pipe index [
-              (cuda-lib.utils.mkTrimmedIndex cudaMajorMinorPatchVersion)
-              (cuda-lib.utils.mkFilteredIndex cudaMajorMinorPatchVersion)
+            trimmedFilteredRedists = pipe config.redists [
+              (cuda-lib.utils.mkTrimmedRedists cudaMajorMinorPatchVersion)
+              (cuda-lib.utils.mkFilteredRedists cudaMajorMinorPatchVersion)
             ];
 
-            # Make a flattened index for the particular CUDA version.
-            trimmedFilteredFlattenedIndex = cuda-lib.utils.mkFlattenedIndex trimmedFilteredIndex;
+            # Make a flattened redists value for the particular CUDA version.
+            trimmedFilteredFlattenedRedists = cuda-lib.utils.mkFlattenedRedists trimmedFilteredRedists;
 
-            # Fold function for the flattened index.
-            flattenedIndexFoldFn =
+            # Fold function for the flattened redists value.
+            flattenedRedistsFoldFn =
               packages:
-              flattenedIndexElem@{
+              flattenedRedistsElem@{
                 packageName,
                 platform,
                 redistName,
@@ -141,9 +139,9 @@ let
                 ...
               }:
               let
-                supportedRedistArchs = pipe trimmedFilteredIndex [
+                supportedRedistArchs = pipe trimmedFilteredRedists [
                   # Get the packages entry for this package (mapping of platform to cudaVariant).
-                  (index: index.${redistName}.${version}.${packageName}.packages)
+                  (redists: redists.${redistName}.versionedManifests.${version}.${packageName}.packages)
                   # Get the list of redistributable architectures for this package.
                   attrNames
                 ];
@@ -159,11 +157,24 @@ let
                 #       without Jetson support (`linux-aarch64` and `linux-sbsa`, respectively).
                 isSupportedPlatform = platform == "source" || elem redistArch supportedRedistArchs;
 
-                # Fully versioned attribute name for the package.
-                fullVersionedPackageName = cuda-lib.utils.mkVersionedPackageName {
+                inherit (config.redists.${redistName}) versionPolicy;
+
+                buildVersionedPackageName = cuda-lib.utils.mkVersionedPackageName {
                   inherit redistName packageName;
                   inherit (releaseInfo) version;
                   versionPolicy = "build";
+                };
+
+                patchVersionedPackageName = cuda-lib.utils.mkVersionedPackageName {
+                  inherit redistName packageName;
+                  inherit (releaseInfo) version;
+                  versionPolicy = "patch";
+                };
+
+                minorVersionedPackageName = cuda-lib.utils.mkVersionedPackageName {
+                  inherit redistName packageName;
+                  inherit (releaseInfo) version;
+                  versionPolicy = "minor";
                 };
 
                 # Included to allow us easy access to the most recent major version of the package.
@@ -173,8 +184,8 @@ let
                   versionPolicy = "major";
                 };
 
-                # Package which is constructed from the current flattenedIndexElem.
-                currentPackage = pipe flattenedIndexElem [
+                # Package which is constructed from the current flattenedRedistsElem.
+                currentPackage = pipe flattenedRedistsElem [
                   # Use the package builder
                   (cuda-lib.utils.buildRedistPackage final)
                   # Update meta with the list of supported platforms
@@ -241,11 +252,19 @@ let
               packages
               # NOTE: In the case we're processing a CUDA redistributable, the attribute name and the package name are
               #       the same, so we're effectively replacing the package twice.
-              // {
-                # Fully versioned package name case -- where we add a versioned package to the package set.
-                ${fullVersionedPackageName} = packageForName fullVersionedPackageName;
+              // optionalAttrs (versionPolicy == "build") {
+                # Build versioned package name case -- where we add a build versioned package to the package set.
+                ${buildVersionedPackageName} = packageForName buildVersionedPackageName;
               }
-              // {
+              // optionalAttrs (versionPolicy == "patch") {
+                # Patch versioned package name case -- where we add a patch versioned package to the package set.
+                ${patchVersionedPackageName} = packageForName patchVersionedPackageName;
+              }
+              // optionalAttrs (versionPolicy == "minor") {
+                # Minor versioned package name case -- where we add a minor versioned package to the package set.
+                ${minorVersionedPackageName} = packageForName minorVersionedPackageName;
+              }
+              // optionalAttrs (versionPolicy == "major") {
                 # Major versioned package name case -- where we add a major versioned package to the package set.
                 ${majorVersionedPackageName} = packageForName majorVersionedPackageName;
               }
@@ -254,8 +273,8 @@ let
                 ${packageName} = packageForName packageName;
               };
           in
-          # Fold our builder function over the flattened index.
-          foldl' flattenedIndexFoldFn { } trimmedFilteredFlattenedIndex;
+          # Fold our builder function over the flattened redists.
+          foldl' flattenedRedistsFoldFn { } trimmedFilteredFlattenedRedists;
       in
       recurseIntoAttrs (
         coreAttrs // dataAttrs // utilityAttrs // loosePackages // redistributablePackages
@@ -271,7 +290,7 @@ in
       # NOTE: We must use lazyAttrsOf, else the package set is evaluated immediately for every CUDA version, instead
       # of lazily.
       type = lazyAttrsOf raw;
-      default = pipe index.cuda [
+      default = pipe config.redists.cuda.versionedManifests [
         attrNames
         (map packageSetBuilder)
         builtins.listToAttrs

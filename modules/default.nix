@@ -1,7 +1,8 @@
-{ lib, ... }:
+{ cuda-lib, lib, ... }:
 let
   inherit (builtins) readDir;
   inherit (lib.attrsets) attrNames filterAttrs;
+  inherit (lib.options) mkOption;
   inherit (lib.strings) hasSuffix;
   inherit (lib.trivial) pipe;
 
@@ -29,4 +30,10 @@ let
 in
 {
   imports = dataModules ++ redistModules ++ [ ./package-sets.nix ];
+
+  options.redists = mkOption {
+    description = "A mapping from redist name to redistConfig";
+    type = cuda-lib.types.redists;
+    default = { };
+  };
 }

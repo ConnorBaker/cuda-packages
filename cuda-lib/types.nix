@@ -23,7 +23,7 @@ in
     # Type
 
     ```
-    add :: OptionType -> OptionType -> OptionType
+    attrs :: OptionType -> OptionType -> OptionType
     ```
 
     # Arguments
@@ -60,25 +60,6 @@ in
     ```
   */
   cudaVariant = strMatching "^(None|cuda[[:digit:]]+)$";
-
-  /**
-    The option type of an attribute set mapping redistributable names to versioned manifests, where the versioned
-    manifests have leaves of type `leafType`.
-
-    # Type
-
-    ```
-    versionedManifestsOf :: OptionType -> OptionType
-    ```
-
-    # Arguments
-
-    leafType
-    : The option type of the leaves of the versioned manifests
-  */
-  indexOf =
-    leafType:
-    cuda-lib.types.attrs cuda-lib.types.redistName (cuda-lib.types.versionedManifestsOf leafType);
 
   /**
     The option type of a features attribute set.
@@ -152,21 +133,15 @@ in
   };
 
   /**
-    The option type of a manifest attribute set parameterized by a leaf type.
+    The option type of a manifest attribute set.
 
     # Type
 
     ```
-    manifest :: OptionType -> OptionType
+    manifest :: OptionType
     ```
-
-    # Arguments
-
-    leafType
-    : The option type of the leaves of the manifests
   */
-  manifestsOf =
-    leafType: cuda-lib.types.attrs cuda-lib.types.packageName (cuda-lib.types.releasesOf leafType);
+  manifest = cuda-lib.types.attrs cuda-lib.types.packageName cuda-lib.types.release;
 
   /**
     The option type of a package info attribute set.
@@ -196,21 +171,15 @@ in
   };
 
   /**
-    The option type of a `packageInfo` attribute set, mapping platform to `packageVariantsOf` `leafType`.
+    The option type of a `packages` attribute set.
 
     # Type
 
     ```
-    packagesOf :: OptionType -> OptionType
+    packages :: OptionType
     ```
-
-    # Arguments
-
-    leafType
-    : The option type of the leaves of the package info attribute set
   */
-  packagesOf =
-    leafType: cuda-lib.types.attrs cuda-lib.types.platform (cuda-lib.types.packageVariantsOf leafType);
+  packages = cuda-lib.types.attrs cuda-lib.types.platform cuda-lib.types.packageVariants;
 
   /**
     The option type of a package name in a CUDA package set.
@@ -224,20 +193,15 @@ in
   packageName = strMatching "^[[:alnum:]_-]+$";
 
   /**
-    The option type of a package variant attribute set, mapping CUDA variant to `leafType`.
+    The option type of a package variant attribute set.
 
     # Type
 
     ```
-    packageVariantsOf :: OptionType -> OptionType
+    packageVariants :: OptionType
     ```
-
-    # Arguments
-
-    leafType
-    : The option type of the leaves of the package variant attribute set
   */
-  packageVariantsOf = leafType: cuda-lib.types.attrs cuda-lib.types.cudaVariant leafType;
+  packageVariants = cuda-lib.types.attrs cuda-lib.types.cudaVariant cuda-lib.types.packageInfo;
 
   /**
     The option type of a platform.
@@ -261,12 +225,6 @@ in
   */
   redistConfig = submodule {
     options = mkOptions {
-      data = {
-        description = ''
-          Data required to produce packages for (potentially multiple) versions of CUDA.
-        '';
-        type = cuda-lib.types.versionedManifestsOf cuda-lib.types.packageInfo;
-      };
       overrides = {
         description = ''
           Overrides for packages provided by the redistributable.
@@ -276,6 +234,12 @@ in
           set.
         '';
         type = cuda-lib.types.attrs cuda-lib.types.packageName raw;
+      };
+      versionedManifests = {
+        description = ''
+          Data required to produce packages for (potentially multiple) versions of CUDA.
+        '';
+        type = cuda-lib.types.versionedManifests;
       };
       versionPolicy = {
         description = ''
@@ -323,27 +287,31 @@ in
     strMatching redistUrlPattern;
 
   /**
-    The option type of a release attribute set of `leafType`.
+    The option type of an attribute set mapping redistributable names to redistributable configurations.
 
     # Type
 
     ```
-    releasesOf :: OptionType -> OptionType
+    redists :: OptionType
     ```
-
-    # Arguments
-
-    leafType
-    : The option type of the leaves of the release attribute set
   */
-  releasesOf =
-    leafType:
-    submodule {
-      options = mkOptions {
-        releaseInfo.type = cuda-lib.types.releaseInfo;
-        packages.type = cuda-lib.types.packagesOf leafType;
-      };
+  redists = cuda-lib.types.attrs cuda-lib.types.redistName cuda-lib.types.redistConfig;
+
+  /**
+    The option type of a release attribute set.
+
+    # Type
+
+    ```
+    release :: OptionType
+    ```
+  */
+  release = submodule {
+    options = mkOptions {
+      releaseInfo.type = cuda-lib.types.releaseInfo;
+      packages.type = cuda-lib.types.packages;
     };
+  };
 
   /**
     The option type of a release info attribute set.
@@ -412,21 +380,15 @@ in
   version = strMatching "^[[:digit:]]+(\.[[:digit:]]+)*$";
 
   /**
-    The option type of a versioned manifest attribute set, mapping version strings to manifestsOf `leafType`.
+    The option type of a versioned manifest attribute set.
 
     # Type
 
     ```
-    versionedManifestsOf :: OptionType -> OptionType
+    versionedManifests :: OptionType
     ```
-
-    # Arguments
-
-    leafType
-    : The option type of the leaves of the versioned manifest attribute set
   */
-  versionedManifestsOf =
-    leafType: cuda-lib.types.attrs cuda-lib.types.version (cuda-lib.types.manifestsOf leafType);
+  versionedManifests = cuda-lib.types.attrs cuda-lib.types.version cuda-lib.types.manifest;
 
   # TODO: Better organize/alphabetize.
 
@@ -479,15 +441,15 @@ in
   cudaCapability = strMatching "^[[:digit:]]+\\.[[:digit:]]+[a-z]?$";
 
   /**
-    The option type of an element of a flattened index.
+    The option type of an element of a flattened `Redists`.
 
     # Type
 
     ```
-    flattenedIndexElem :: OptionType
+    flattenedRedistsElem :: OptionType
     ```
   */
-  flattenedIndexElem = submodule {
+  flattenedRedistsElem = submodule {
     options = mkOptions {
       cudaVariant.type = cuda-lib.types.cudaVariant;
       packageInfo.type = cuda-lib.types.packageInfo;

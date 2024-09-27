@@ -3,7 +3,7 @@
   cuda-lib,
   cudaOlder,
   cudaPackages,
-  cudaVersion,
+  cudaMajorMinorVersion,
   lib,
   patchelf,
   stdenv,
@@ -14,10 +14,8 @@ let
   inherit (lib.lists) optionals;
   inherit (lib.meta) getExe';
   inherit (lib.strings) concatStringsSep optionalString;
-  inherit (lib.versions) majorMinor;
   # targetArch :: String
   targetArch = getRedistArch (config.data.jetsonTargets != [ ]) stdenv.hostPlatform.system;
-  majorMinorVersionsEqual = a: b: majorMinor a == majorMinor b;
 in
 finalAttrs:
 let
@@ -30,16 +28,17 @@ let
       desiredName = mkVersionedPackageName {
         packageName = "cudnn";
         redistName = "cudnn";
-        version = constraints.cudnnVersion;
-        versionPolicy = "minor";
+        version = constraints.cudnnMajorMinorPatchVersion;
+        versionPolicy = "patch";
       };
     in
     cudaPackages.${desiredName} or cudaPackages.cudnn;
 
   cudaMismatch =
-    constraints ? cudaVersion && !(majorMinorVersionsEqual cudaVersion constraints.cudaVersion);
+    constraints ? cudaMajorMinorVersion && cudaMajorMinorVersion != constraints.cudaMajorMinorVersion;
   cudnnMismatch =
-    constraints ? cudnnVersion && !(majorMinorVersionsEqual cudnn.version constraints.cudnnVersion);
+    constraints ? cudnnMajorMinorPatchVersion
+    && (majorMinorPatch cudnn.version) != constraints.cudnnMajorMinorPatchVersion;
 in
 prevAttrs: {
   allowFHSReferences = true;

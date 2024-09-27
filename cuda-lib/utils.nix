@@ -14,6 +14,7 @@ let
     removeAttrs
     ;
   inherit (lib.customisation) makeOverridable;
+  inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.licenses) nvidiaCudaRedist;
   inherit (lib.lists)
     findFirst
@@ -25,6 +26,7 @@ let
   inherit (lib.strings)
     concatStringsSep
     hasPrefix
+    removeSuffix
     replaceStrings
     versionAtLeast
     versionOlder
@@ -33,6 +35,8 @@ let
     const
     flip
     functionArgs
+    id
+    importJSON
     mapNullable
     pipe
     setFunctionArgs
@@ -58,12 +62,12 @@ in
   mkOptions = mapAttrs (const mkOption);
 
   /**
-    Function to map over the leaves of an index, replacing them with the result of the function.
+    Function to map over the `packageInfo` elements of a `Redists`, returning a list of the results.
 
     The function must accept an attribute set with the following attributes:
 
     - cudaVariant: The CUDA variant of the package
-    - leaf: The leaf of the index
+    - packageInfo: The package information
     - packageName: The name of the package
     - platform: The platform of the package
     - redistName: The name of the redistributable
@@ -73,16 +77,16 @@ in
     # Type
 
     ```
-    mapIndexLeaves :: ({ cudaVariant :: String
-                       , leaf :: A
-                       , packageName :: String
-                       , platform :: String
-                       , redistName :: String
-                       , releaseInfo :: AttrSet
-                       , version :: String
-                       } -> B)
-                   -> IndexOf A
-                   -> IndexOf B
+    mapPackageInfoRedistsToList :: ({ cudaVariant :: CudaVariant
+                                    , packageInfo :: PackageInfo
+                                    , packageName :: PackageName
+                                    , platform :: Platform
+                                    , redistName :: RedistName
+                                    , releaseInfo :: ReleaseInfo
+                                    , version :: Version
+                                    } -> B)
+                                -> Redists
+                                -> List B
     ```
 
     # Arguments
@@ -90,83 +94,14 @@ in
     f
     : Function to apply
 
-    index
-    : Index to map over
+    redists
+    : The `Redists` value to map over
   */
-  mapIndexLeaves =
-    f: index:
-    mapAttrs (
-      redistName:
-      mapAttrs (
-        version:
-        mapAttrs (
-          packageName:
-          { releaseInfo, packages }:
-          {
-            inherit releaseInfo;
-            packages = mapAttrs (
-              platform:
-              mapAttrs (
-                cudaVariant: leaf:
-                f {
-                  inherit
-                    cudaVariant
-                    leaf
-                    packageName
-                    platform
-                    redistName
-                    releaseInfo
-                    version
-                    ;
-                }
-              )
-            ) packages;
-          }
-        )
-      )
-    ) index;
-
-  /**
-    Function to map over the leaves of an index, returning a list of the results.
-
-    The function must accept an attribute set with the following attributes:
-
-    - cudaVariant: The CUDA variant of the package
-    - leaf: The leaf of the index
-    - packageName: The name of the package
-    - platform: The platform of the package
-    - redistName: The name of the redistributable
-    - releaseInfo: The release information of the package
-    - version: The version of the manifest
-
-    # Type
-
-    ```
-    mapIndexLeavesToList :: ({ cudaVariant :: String
-                             , leaf :: A
-                             , packageName :: String
-                             , platform :: String
-                             , redistName :: String
-                             , releaseInfo :: AttrSet
-                             , version :: String
-                             } -> B)
-                         -> IndexOf A
-                         -> List B
-    ```
-
-    # Arguments
-
-    f
-    : Function to apply
-
-    index
-    : Index to map over
-  */
-  mapIndexLeavesToList =
-    f: index:
+  mapPackageInfoRedistsToList =
+    f: redists:
     flatten (
       mapAttrsToList (
-        redistName:
+        redistName: redistConfig:
         mapAttrsToList (
           version:
           mapAttrsToList (
@@ -175,11 +110,11 @@ in
             mapAttrsToList (
               platform:
               mapAttrsToList (
-                cudaVariant: leaf:
+                cudaVariant: packageInfo:
                 f {
                   inherit
                     cudaVariant
-                    leaf
+                    packageInfo
                     packageName
                     platform
                     redistName
@@ -190,9 +125,58 @@ in
               )
             ) packages
           )
-        )
-      ) index
+        ) redistConfig.versionedManifests
+      ) redists
     );
+
+  /**
+    Helper function to build a `redistConfig`.
+
+    # Type
+
+    ```
+    mkRedistConfig :: { hasOverrides :: Bool
+                      , path :: Path
+                      , versionPolicy :: VersionPolicy
+                      }
+                   -> RedistConfig
+    ```
+
+    # Arguments
+
+    hasOverrides
+    : Whether the redistributable has overrides
+
+    path
+    : The path to the redistributable directory
+
+    versionPolicy
+    : The version policy to use
+  */
+  mkRedistConfig =
+    {
+      hasOverrides,
+      path,
+      versionPolicy,
+    }:
+    {
+      inherit versionPolicy;
+      overrides =
+        if hasOverrides then
+          packagesFromDirectoryRecursive {
+            # Function which loads the file as a Nix expression and ignores the second argument.
+            # NOTE: We don't actually want to callPackage these functions at this point, so we use builtins.import
+            # instead. We do, however, have to match the callPackage signature.
+            callPackage = path: _: builtins.import path;
+            directory = path + "/overrides";
+          }
+        else
+          { };
+      versionedManifests = mapAttrs' (filename: _: {
+        name = removeSuffix ".json" filename;
+        value = importJSON (path + "/versioned-manifests/${filename}");
+      }) (builtins.readDir (path + "/versioned-manifests"));
+    };
 
   /**
     Function to generate a URL for something in the redistributable tree.
@@ -200,7 +184,7 @@ in
     # Type
 
     ```
-    mkRedistURL :: String -> String -> String
+    mkRedistUrl :: RedistName -> NonEmptyStr -> RedistUrl
     ```
 
     # Arguments
@@ -211,11 +195,11 @@ in
     relativePath
     : The relative path to a file in the redistributable tree
   */
-  mkRedistURL =
+  mkRedistUrl =
     redistName:
     assert assertMsg (
       redistName != "tensorrt"
-    ) "mkRedistURL: tensorrt does not use standard naming conventions for URLs; use mkTensorRTURL";
+    ) "mkRedistUrl: tensorrt does not use standard naming conventions for URLs; use mkTensorRTUrl";
     relativePath:
     concatStringsSep "/" [
       cuda-lib.data.redistUrlPrefix
@@ -227,15 +211,17 @@ in
   /**
     Function to recreate a relative path for a redistributable.
 
+    NOTE: `redistName` cannot be `"tensorrt"` as it does not use standard naming conventions for relative paths.
+
     # Type
 
     ```
-    mkRelativePath :: { packageName :: String
-                      , platform :: String
-                      , redistName :: String
-                      , releaseInfo :: AttrSet
-                      , cudaVariant :: String
-                      , relativePath ? String
+    mkRelativePath :: { packageName :: PackageName
+                      , platform :: Platform
+                      , redistName :: RedistName
+                      , releaseInfo :: ReleaseInfo
+                      , cudaVariant :: CudaVariant
+                      , relativePath :: NullOr NonEmptyStr
                       }
                    -> String
     ```
@@ -271,7 +257,7 @@ in
       ...
     }:
     assert assertMsg (redistName != "tensorrt")
-      "mkRelativePath: tensorrt does not use standard naming conventions for relative paths; use mkTensorRTURL";
+      "mkRelativePath: tensorrt does not use standard naming conventions for relative paths; use mkTensorRTUrl";
     if relativePath != null then
       relativePath
     else
@@ -292,7 +278,7 @@ in
     # Type
 
     ```
-    mkTensorRTURL :: String -> String
+    mkTensorRTUrl :: String -> String
     ```
 
     # Arguments
@@ -300,7 +286,7 @@ in
     relativePath
     : The relative path to a file in the redistributable tree
   */
-  mkTensorRTURL =
+  mkTensorRTUrl =
     relativePath:
     concatStringsSep "/" [
       cuda-lib.data.redistUrlPrefix
@@ -316,7 +302,7 @@ in
     # Type
 
     ```
-    buildRedistPackage :: AttrSet -> FlattenedIndexElem -> Package
+    buildRedistPackage :: AttrSet -> FlattenedRedistsElem -> Package
     ```
 
     # Arguments
@@ -324,8 +310,8 @@ in
     final
     : The fixed-point of the package set
 
-    flattenedIndexElem
-    : The flattened index element to build
+    flattenedRedistsElem
+    : The flattened `Redists` element to build
   */
   buildRedistPackage =
     let
@@ -333,7 +319,7 @@ in
       redistBuilderFnArgs = functionArgs redistBuilderFn;
     in
     final:
-    flattenedIndexElem@{
+    flattenedRedistsElem@{
       packageName,
       redistName,
       releaseInfo,
@@ -347,20 +333,20 @@ in
 
       # These overrides contain the package-specific logic required to build or fixup a package constructed with the
       # redistributable builder.
-      overrideAttrsFnFn = final.config.redist.${redistName}.overrides.${packageName} or null;
+      overrideAttrsFnFn = final.config.redists.${redistName}.overrides.${packageName} or null;
       overrideAttrsFnFnArgs = if overrideAttrsFnFn != null then functionArgs overrideAttrsFnFn else { };
 
       redistBuilderArgs = {
-        inherit (flattenedIndexElem) packageInfo packageName releaseInfo;
+        inherit (flattenedRedistsElem) packageInfo packageName releaseInfo;
         libPath = cuda-lib.utils.getLibPath final.cudaMajorMinorPatchVersion packageInfo.features.cudaVersionsInLib;
         # The source is given by the tarball, which we unpack and use as a FOD.
         src = fetchzip {
           url =
             if redistName == "tensorrt" then
-              cuda-lib.utils.mkTensorRTURL packageInfo.relativePath
+              cuda-lib.utils.mkTensorRTUrl packageInfo.relativePath
             else
-              cuda-lib.utils.mkRedistURL redistName (
-                cuda-lib.utils.mkRelativePath (flattenedIndexElem // { inherit (packageInfo) relativePath; })
+              cuda-lib.utils.mkRedistUrl redistName (
+                cuda-lib.utils.mkRelativePath (flattenedRedistsElem // { inherit (packageInfo) relativePath; })
               );
           hash = packageInfo.recursiveHash;
         };
@@ -656,12 +642,12 @@ in
   mkCudaVariant = version: "cuda${major version}";
 
   /**
-    Generates a filtered indexOf packageInfo given a cudaMajorMinorPatchVersion.
+    Generates a filtered `Redists` given a `MajorMinorPatchVersion` for CUDA.
 
     # Type
 
     ```
-    mkFilteredIndex :: String -> IndexOf PackageInfo -> IndexOf PackageInfo
+    mkFilteredRedists :: MajorMinorPatchVersion -> Redists -> Redists
     ```
 
     # Arguments
@@ -669,78 +655,73 @@ in
     cudaMajorMinorPatchVersion
     : The CUDA version to filter by
 
-    packageInfoIndex
-    : The index to filter
+    redists
+    : The `Redists` value to filter
   */
-  mkFilteredIndex =
-    cudaMajorMinorPatchVersion: packageInfoIndex:
+  mkFilteredRedists =
+    cudaMajorMinorPatchVersion: redists:
     # NOTE: Here's what's happening with this particular mess of code:
     #       Working from the inside out, at each level we're filter the attribute set, removing packages which
     #       won't work with the current CUDA version.
     #       One level up, we're using mapAttrs to set the values of the attribute set equal to the newly filtered
     #       attribute set. We then pass this newly mapAttrs-ed attribute set to filterAttrs again, removing any
     #       empty attribute sets.
-    filterAttrs (redistName: redistNameMapping: { } != redistNameMapping) (
+    filterAttrs (redistName: redistConfig: { } != redistConfig.versionedManifests) (
       mapAttrs (
-        redistName: redistNameMapping:
-        filterAttrs (version: versionMapping: { } != versionMapping) (
-          mapAttrs (
-            version: versionMapping:
-            filterAttrs (packageName: packageNameMapping: { } != packageNameMapping.packages) (
-              mapAttrs (packageName: packageNameMapping: {
-                inherit (packageNameMapping) releaseInfo;
-                packages = filterAttrs (platform: cudaVariantMapping: { } != cudaVariantMapping) (
-                  mapAttrs (
-                    platform: cudaVariantMapping:
-                    filterAttrs (
-                      cudaVariant: packageInfo:
-                      cuda-lib.utils.packageSatisfiesRedistRequirements cudaMajorMinorPatchVersion {
-                        inherit
-                          cudaVariant
-                          packageInfo
-                          packageName
-                          platform
-                          redistName
-                          version
-                          ;
-                        inherit (packageNameMapping) releaseInfo;
-                      }
-                    ) cudaVariantMapping
-                  ) packageNameMapping.packages
-                );
-              }) versionMapping
-            )
-          ) redistNameMapping
-        )
-      ) packageInfoIndex
+        redistName: redistConfig:
+        redistConfig
+        // {
+          versionedManifests = filterAttrs (version: manifest: { } != manifest) (
+            mapAttrs (
+              version: manifest:
+              filterAttrs (packageName: release: { } != release.packages) (
+                mapAttrs (
+                  packageName: release:
+                  release
+                  // {
+                    packages = filterAttrs (platform: packageVariants: { } != packageVariants) (
+                      mapAttrs (
+                        platform: packageVariants:
+                        filterAttrs (
+                          cudaVariant: packageInfo:
+                          cuda-lib.utils.packageSatisfiesRedistRequirements cudaMajorMinorPatchVersion {
+                            inherit
+                              cudaVariant
+                              packageInfo
+                              packageName
+                              platform
+                              redistName
+                              version
+                              ;
+                            inherit (release) releaseInfo;
+                          }
+                        ) packageVariants
+                      ) release.packages
+                    );
+                  }
+                ) manifest
+              )
+            ) redistConfig.versionedManifests
+          );
+        }
+      ) redists
     );
 
   /**
-    Function to flatten an index of packageInfo into a list of attribute sets.
+    Function to flatten a `Redists` value into a list of `FlattenedRedistsElem`.
 
     # Type
 
     ```
-    mkFlattenedIndex :: IndexOf PackageInfo -> List FlattenedIndexElem
+    mkFlattenedRedists :: Redists -> List FlattenedRedistsElem
     ```
 
     # Arguments
 
-    packageInfoIndex
-    : The index to flatten
+    redists
+    : The `Redists` to flatten
   */
-  mkFlattenedIndex = cuda-lib.utils.mapIndexLeavesToList (
-    args@{
-      cudaVariant,
-      leaf,
-      packageName,
-      platform,
-      redistName,
-      releaseInfo,
-      version,
-    }:
-    (builtins.removeAttrs args [ "leaf" ]) // { packageInfo = leaf; }
-  );
+  mkFlattenedRedists = cuda-lib.utils.mapPackageInfoRedistsToList id;
 
   /**
     Utility function to generate a set of badPlatformsConditions for missing packages.
@@ -799,15 +780,14 @@ in
 
   /**
     Helper function to reduce the number of attribute sets we need to traverse to create all the package sets.
-    Since the CUDA redistributables make up the largest number of packages in the index, we can save time by
-    flattening the portion of the index which does not contain CUDA redistributables, and reusing it for each
-    version of CUDA.
+    Since the CUDA redistributables make up the largest number of packages in a `Redists` value, we can save time by
+    flattening the `Redists` which does not contain CUDA redistributables, and reusing it for each version of CUDA.
     Additionally, we flatten only the CUDA redistributables for the version of CUDA we're currently processing.
 
     # Type
 
     ```
-    mkTrimmedIndex :: String -> IndexOf PackageInfo -> IndexOf PackageInfo
+    mkTrimmedRedists :: MajorMinorPatchVersion -> Redists -> Redists
     ```
 
     # Arguments
@@ -815,25 +795,26 @@ in
     cudaMajorMinorPatchVersion
     : The CUDA version to filter by
 
-    packageInfoIndex
-    : The index to filter
+    redists
+    : The `Redists` to filter
   */
-  mkTrimmedIndex =
-    cudaMajorMinorPatchVersion: packageInfoIndex:
-    let
-      allButCudaIndex = removeAttrs packageInfoIndex [ "cuda" ];
-      maybeCudaIndex = optionalAttrs (packageInfoIndex.cuda ? ${cudaMajorMinorPatchVersion}) {
-        cuda.${cudaMajorMinorPatchVersion} = packageInfoIndex.cuda.${cudaMajorMinorPatchVersion};
+  mkTrimmedRedists =
+    cudaMajorMinorPatchVersion: redists:
+    redists
+    // optionalAttrs (redists ? cuda) {
+      cuda = redists.cuda // {
+        versionedManifests =
+          optionalAttrs (redists.cuda.versionedManifests ? ${cudaMajorMinorPatchVersion})
+            { ${cudaMajorMinorPatchVersion} = redists.cuda.versionedManifests.${cudaMajorMinorPatchVersion}; };
       };
-    in
-    allButCudaIndex // maybeCudaIndex;
+    };
 
   /**
     Function to generate a versioned package name.
 
     Expects a redistName, packageName, and version.
 
-    NOTE: version should come from releaseInfo when taking arguments from a flattenedIndexElem, as the top-level
+    NOTE: version should come from releaseInfo when taking arguments from a flattenedRedistsElem, as the top-level
     version attribute is the version of the manifest.
 
     # Type
@@ -883,14 +864,14 @@ in
 
   /**
     Function to determine if a package satisfies the redistributable requirements for a given redistributable.
-    Expects a cudaMajorMinorPatchVersion and a flattenedIndexElem.
+    Expects a cudaMajorMinorPatchVersion and a flattenedRedistsElem.
     Returns an attribute set of conditions, which when any are true, indicate the package does not satisfy a particular
     condition.
 
     # Type
 
     ```
-    packageSatisfiesRedistRequirements :: String -> FlattenedIndexElem -> Bool
+    packageSatisfiesRedistRequirements :: String -> FlattenedRedistsElem -> Bool
     ```
 
     # Arguments
@@ -898,8 +879,8 @@ in
     cudaMajorMinorPatchVersion
     : The CUDA version to filter by
 
-    flattenedIndexElem
-    : The flattened index element to check
+    flattenedRedistsElem
+    : The element to check
   */
   packageSatisfiesRedistRequirements =
     cudaMajorMinorPatchVersion:

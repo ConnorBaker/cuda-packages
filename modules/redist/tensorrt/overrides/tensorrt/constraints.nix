@@ -8,53 +8,53 @@
   # https://docs.nvidia.com/deeplearning/tensorrt/support-matrix/index.html
   "10.0.1.6" = {
     linux-aarch64 = {
-      cudaVersion = "12.4";
-      cudnnVersion = "8.9.6";
+      cudaMajorMinorVersion = "12.4";
+      cudnnMajorMinorPatchVersion = "8.9.6";
     };
     linux-sbsa = {
-      cudaVersion = "12.4";
-      cudnnVersion = "8.9.7";
+      cudaMajorMinorVersion = "12.4";
+      cudnnMajorMinorPatchVersion = "8.9.7";
     };
-    linux-x86_64.cudnnVersion = "8.9.7";
+    linux-x86_64.cudnnMajorMinorPatchVersion = "8.9.7";
   };
   "10.1.0.27" = {
     linux-aarch64 = {
-      cudaVersion = "12.4";
-      cudnnVersion = "8.9.6";
+      cudaMajorMinorVersion = "12.4";
+      cudnnMajorMinorPatchVersion = "8.9.6";
     };
     linux-sbsa = {
-      cudaVersion = "12.4";
-      cudnnVersion = "8.9.7";
+      cudaMajorMinorVersion = "12.4";
+      cudnnMajorMinorPatchVersion = "8.9.7";
     };
-    linux-x86_64.cudnnVersion = "8.9.7";
+    linux-x86_64.cudnnMajorMinorPatchVersion = "8.9.7";
   };
   "10.2.0.19" = {
     linux-sbsa = {
-      cudaVersion = "12.5";
-      cudnnVersion = "8.9.7";
+      cudaMajorMinorVersion = "12.5";
+      cudnnMajorMinorPatchVersion = "8.9.7";
     };
-    linux-x86_64.cudnnVersion = "8.9.7";
+    linux-x86_64.cudnnMajorMinorPatchVersion = "8.9.7";
   };
   "10.3.0.26" = {
     linux-aarch64 = {
-      cudaVersion = "12.6";
-      cudnnVersion = "8.9.6";
+      cudaMajorMinorVersion = "12.6";
+      cudnnMajorMinorPatchVersion = "8.9.6";
     };
     linux-sbsa = {
-      cudaVersion = "12.5";
-      cudnnVersion = "8.9.7";
+      cudaMajorMinorVersion = "12.5";
+      cudnnMajorMinorPatchVersion = "8.9.7";
     };
-    linux-x86_64.cudnnVersion = "8.9.7";
+    linux-x86_64.cudnnMajorMinorPatchVersion = "8.9.7";
   };
   "10.4.0.26" = {
     linux-aarch64 = {
-      cudaVersion = "12.6";
-      cudnnVersion = "8.9.6";
+      cudaMajorMinorVersion = "12.6";
+      cudnnMajorMinorPatchVersion = "8.9.6";
     };
     linux-sbsa = {
-      cudaVersion = "12.6";
-      cudnnVersion = "8.9.7";
+      cudaMajorMinorVersion = "12.6";
+      cudnnMajorMinorPatchVersion = "8.9.7";
     };
-    linux-x86_64.cudnnVersion = "8.9.7";
+    linux-x86_64.cudnnMajorMinorPatchVersion = "8.9.7";
   };
 }
