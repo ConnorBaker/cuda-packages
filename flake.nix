@@ -33,21 +33,35 @@
         "aarch64-linux"
         "x86_64-linux"
       ];
+
       imports = [
         inputs.treefmt-nix.flakeModule
         inputs.git-hooks-nix.flakeModule
       ];
+
       perSystem =
-        { config, pkgs, ... }:
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
         {
           devShells = {
             default = config.devShells.cuda-redist;
             cuda-redist = config.packages.cuda-redist;
           };
 
+          legacyPackages = lib.evalModules {
+            specialArgs = {
+              inherit pkgs;
+            };
+            modules = [ ./modules ];
+          };
+
           packages = {
             default = config.packages.cuda-redist;
-            cuda-redist = pkgs.python311Packages.callPackage ./redist/scripts/cuda-redist { };
+            cuda-redist = pkgs.python311Packages.callPackage ./scripts/cuda-redist { };
           };
 
           pre-commit.settings.hooks = {
@@ -95,7 +109,10 @@
                   "*.md"
                   "*.yaml"
                 ];
-                excludes = [ "redist/data/*/**.json" ];
+                excludes = [
+                  "modules/redist/*/data/*.json"
+                  "nvidia-redist-json/*/*.json"
+                ];
                 settings = {
                   embeddedLanguageFormatting = "auto";
                   printWidth = 120;

@@ -1,3 +1,0 @@
-# nvidia
-
-NVIDIA manifests.
