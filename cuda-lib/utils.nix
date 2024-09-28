@@ -69,7 +69,7 @@ in
     - cudaVariant: The CUDA variant of the package
     - packageInfo: The package information
     - packageName: The name of the package
-    - platform: The platform of the package
+    - redistArch: The redist architecture of the package
     - redistName: The name of the redistributable
     - releaseInfo: The release information of the package
     - version: The version of the manifest
@@ -80,7 +80,7 @@ in
     mapPackageInfoRedistsToList :: ({ cudaVariant :: CudaVariant
                                     , packageInfo :: PackageInfo
                                     , packageName :: PackageName
-                                    , platform :: Platform
+                                    , redistArch :: RedistArch
                                     , redistName :: RedistName
                                     , releaseInfo :: ReleaseInfo
                                     , version :: Version
@@ -108,7 +108,7 @@ in
             packageName:
             { releaseInfo, packages }:
             mapAttrsToList (
-              platform:
+              redistArch:
               mapAttrsToList (
                 cudaVariant: packageInfo:
                 f {
@@ -116,7 +116,7 @@ in
                     cudaVariant
                     packageInfo
                     packageName
-                    platform
+                    redistArch
                     redistName
                     releaseInfo
                     version
@@ -217,7 +217,7 @@ in
 
     ```
     mkRelativePath :: { packageName :: PackageName
-                      , platform :: Platform
+                      , redistArch :: RedistArch
                       , redistName :: RedistName
                       , releaseInfo :: ReleaseInfo
                       , cudaVariant :: CudaVariant
@@ -231,8 +231,8 @@ in
     packageName
     : The name of the package
 
-    platform
-    : The platform of the package
+    redistArch
+    : The redist architecture of the package
 
     redistName
     : The name of the redistributable
@@ -249,7 +249,7 @@ in
   mkRelativePath =
     {
       packageName,
-      platform,
+      redistArch,
       redistName,
       releaseInfo,
       cudaVariant,
@@ -263,10 +263,10 @@ in
     else
       concatStringsSep "/" [
         packageName
-        platform
+        redistArch
         (concatStringsSep "-" [
           packageName
-          platform
+          redistArch
           (releaseInfo.version + (if cudaVariant != "None" then "_${cudaVariant}" else ""))
           "archive.tar.xz"
         ])
@@ -472,7 +472,7 @@ in
     # Type
 
     ```
-    getNixPlatforms :: String -> List String
+    getNixPlatforms :: RedistArch -> List String
     ```
 
     # Arguments
@@ -679,9 +679,9 @@ in
                   packageName: release:
                   release
                   // {
-                    packages = filterAttrs (platform: packageVariants: { } != packageVariants) (
+                    packages = filterAttrs (redistArch: packageVariants: { } != packageVariants) (
                       mapAttrs (
-                        platform: packageVariants:
+                        redistArch: packageVariants:
                         filterAttrs (
                           cudaVariant: packageInfo:
                           cuda-lib.utils.packageSatisfiesRedistRequirements cudaMajorMinorPatchVersion {
@@ -689,7 +689,7 @@ in
                               cudaVariant
                               packageInfo
                               packageName
-                              platform
+                              redistArch
                               redistName
                               version
                               ;
@@ -820,12 +820,12 @@ in
     # Type
 
     ```
-    mkVersionedPackageName :: { packageName :: String
-                              , redistName :: String
-                              , version :: String
-                              , versionPolicy :: String
+    mkVersionedPackageName :: { packageName :: PackageName
+                              , redistName :: RedistName
+                              , version :: Version
+                              , versionPolicy :: VersionPolicy
                               }
-                            -> String
+                           -> PackageName
     ```
 
     # Arguments
@@ -887,7 +887,7 @@ in
     {
       cudaVariant,
       packageInfo,
-      platform,
+      redistArch,
       redistName,
       version,
       ...
@@ -914,7 +914,7 @@ in
     # Source packages are built on all platforms.
     # NOTE: Source packages are responsible for ensuring they depend on the correct version of their dependencies
     #       -- they may not be the default version available in the package set!
-    if platform == "source" then
+    if redistArch == "source" then
       true
 
     # CUBLASMP: Only packaged to support redistributables for CUDA 11.4 and later.
@@ -997,6 +997,56 @@ in
       builtins.throw "Unsupported NVIDIA redistributable: ${redistName}";
 
   /**
+    Returns true if a version policy is at least as specific (has at least as many components) as another version
+    policy.
+
+    # Type
+
+    ```
+    versionPolicyAtLeast :: VersionPolicy -> VersionPolicy -> Bool
+    ```
+
+    # Arguments
+
+    versionPolicy1
+    : The first version policy
+
+    versionPolicy2
+    : The second version policy
+  */
+  versionPolicyAtLeast =
+    versionPolicy1: versionPolicy2:
+    cuda-lib.utils.versionPolicyToNumComponents versionPolicy1
+    >= cuda-lib.utils.versionPolicyToNumComponents versionPolicy2;
+
+  /**
+    Maps a `VersionPolicy` to the number of components in the version.
+
+    # Type
+
+    ```
+    versionPolicyToNumComponents :: VersionPolicy -> Natural
+    ```
+
+    # Arguments
+
+    versionPolicy
+    : The version policy
+  */
+  versionPolicyToNumComponents =
+    versionPolicy:
+    if versionPolicy == "major" then
+      1
+    else if versionPolicy == "minor" then
+      2
+    else if versionPolicy == "patch" then
+      3
+    else if versionPolicy == "build" then
+      4
+    else
+      builtins.throw "Unsupported version policy: ${versionPolicy}";
+
+  /**
     Function to generate a version function from a version policy.
 
     Expects a version policy and returns a version function.
@@ -1004,24 +1054,24 @@ in
     # Type
 
     ```
-    versionPolicyToVersionFunction :: String -> String -> Version
+    versionPolicyToVersionFunction :: VersionPolicy -> String -> Version
     ```
 
     # Arguments
 
-    policy
+    versionPolicy
     : The version policy
   */
   versionPolicyToVersionFunction =
-    policy:
-    if policy == "major" then
+    versionPolicy:
+    if versionPolicy == "major" then
       major
-    else if policy == "minor" then
+    else if versionPolicy == "minor" then
       majorMinor
-    else if policy == "patch" then
+    else if versionPolicy == "patch" then
       cuda-lib.utils.majorMinorPatch
-    else if policy == "build" then
+    else if versionPolicy == "build" then
       cuda-lib.utils.majorMinorPatchBuild
     else
-      builtins.throw "Unsupported version policy: ${policy}";
+      builtins.throw "Unsupported version policy: ${versionPolicy}";
 }

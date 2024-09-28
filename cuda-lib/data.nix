@@ -1,14 +1,14 @@
 {
   /**
-    A list of platforms to use in creation of the platform type.
+    A list of redistributable architectures to use in creation of the redistArch type.
 
     # Type
 
     ```
-    platforms :: List String
+    redistArches :: List String
     ```
   */
-  platforms = [
+  redistArches = [
     "linux-aarch64"
     "linux-ppc64le"
     "linux-sbsa"

@@ -179,7 +179,7 @@ in
     packages :: OptionType
     ```
   */
-  packages = cuda-lib.types.attrs cuda-lib.types.platform cuda-lib.types.packageVariants;
+  packages = cuda-lib.types.attrs cuda-lib.types.redistArch cuda-lib.types.packageVariants;
 
   /**
     The option type of a package name in a CUDA package set.
@@ -204,15 +204,15 @@ in
   packageVariants = cuda-lib.types.attrs cuda-lib.types.cudaVariant cuda-lib.types.packageInfo;
 
   /**
-    The option type of a platform.
+    The option type of a redistributable architecture name.
 
     # Type
 
     ```
-    platform :: OptionType
+    redistArch :: OptionType
     ```
   */
-  platform = enum cuda-lib.data.platforms;
+  redistArch = enum cuda-lib.data.redistArches;
 
   /**
     The option type of an attribute set configuring the way in which a redistributable suite is made into packages.
@@ -454,7 +454,7 @@ in
       cudaVariant.type = cuda-lib.types.cudaVariant;
       packageInfo.type = cuda-lib.types.packageInfo;
       packageName.type = cuda-lib.types.packageName;
-      platform.type = cuda-lib.types.platform;
+      redistArch.type = cuda-lib.types.redistArch;
       redistName.type = cuda-lib.types.redistName;
       releaseInfo.type = cuda-lib.types.releaseInfo;
       # NOTE: This is the version of the manifest, not the version of an individual redist package (that is

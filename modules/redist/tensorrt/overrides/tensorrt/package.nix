@@ -14,14 +14,13 @@ let
   inherit (lib.lists) optionals;
   inherit (lib.meta) getExe';
   inherit (lib.strings) concatStringsSep optionalString;
-  # targetArch :: String
-  targetArch = getRedistArch (config.data.jetsonTargets != [ ]) stdenv.hostPlatform.system;
+  hostRedistArch = getRedistArch (config.data.jetsonTargets != [ ]) stdenv.hostPlatform.system;
 in
 finalAttrs:
 let
   constraints = attrByPath [
     finalAttrs.version
-    targetArch
+    hostRedistArch
   ] { } (builtins.import ./constraints.nix);
   cudnn =
     let
@@ -50,7 +49,7 @@ prevAttrs: {
   };
 
   badPlatformsConditions = prevAttrs.badPlatformsConditions // {
-    "Unsupported platform" = targetArch == "unsupported";
+    "Unsupported platform" = hostRedistArch == "unsupported";
   };
 
   buildInputs =
@@ -70,7 +69,7 @@ prevAttrs: {
       ];
     in
     (prevAttrs.preInstall or "")
-    + optionalString (targetArch != "unsupported") ''
+    + optionalString (hostRedistArch != "unsupported") ''
       # Replace symlinks to bin and lib with the actual directories from targets.
       for dir in bin lib; do
         # Only replace if the symlink exists.

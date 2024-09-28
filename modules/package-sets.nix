@@ -35,9 +35,8 @@ let
   # TODO:
   # - Version constraint handling (like for cutensor)
   # - Overrides for cutensor, etc.
-  # - Rename the platform type to redistPlatform to distinguish it from the Nix platform.
 
-  redistArch = cuda-lib.utils.getRedistArch (
+  hostRedistArch = cuda-lib.utils.getRedistArch (
     config.data.jetsonTargets != [ ]
   ) stdenv.hostPlatform.system;
 
@@ -131,7 +130,7 @@ let
               packages:
               flattenedRedistsElem@{
                 packageName,
-                platform,
+                redistArch,
                 redistName,
                 releaseInfo,
                 packageInfo,
@@ -140,7 +139,7 @@ let
               }:
               let
                 supportedRedistArchs = pipe trimmedFilteredRedists [
-                  # Get the packages entry for this package (mapping of platform to cudaVariant).
+                  # Get the packages entry for this package (mapping of redistArch to cudaVariant).
                   (redists: redists.${redistName}.versionedManifests.${version}.${packageName}.packages)
                   # Get the list of redistributable architectures for this package.
                   attrNames
@@ -155,7 +154,7 @@ let
                 # NOTE: We must check for compatibility with the redistributable architecture, not the Nix platform,
                 #       because the redistributable architecture is able to disambiguate between aarch64-linux with and
                 #       without Jetson support (`linux-aarch64` and `linux-sbsa`, respectively).
-                isSupportedPlatform = platform == "source" || elem redistArch supportedRedistArchs;
+                isSupportedPlatform = redistArch == "source" || elem hostRedistArch supportedRedistArchs;
 
                 inherit (config.redists.${redistName}) versionPolicy;
 
@@ -207,7 +206,7 @@ let
                   #       unsupported platform.
                   (
                     pkg:
-                    if isSupportedPlatform && redistArch == platform then
+                    if isSupportedPlatform && hostRedistArch == redistArch then
                       pkg
                     else
                       pkg.overrideAttrs {
@@ -252,19 +251,19 @@ let
               packages
               # NOTE: In the case we're processing a CUDA redistributable, the attribute name and the package name are
               #       the same, so we're effectively replacing the package twice.
-              // optionalAttrs (versionPolicy == "build") {
+              // optionalAttrs (cuda-lib.utils.versionPolicyAtLeast versionPolicy "build") {
                 # Build versioned package name case -- where we add a build versioned package to the package set.
                 ${buildVersionedPackageName} = packageForName buildVersionedPackageName;
               }
-              // optionalAttrs (versionPolicy == "patch") {
+              // optionalAttrs (cuda-lib.utils.versionPolicyAtLeast versionPolicy "patch") {
                 # Patch versioned package name case -- where we add a patch versioned package to the package set.
                 ${patchVersionedPackageName} = packageForName patchVersionedPackageName;
               }
-              // optionalAttrs (versionPolicy == "minor") {
+              // optionalAttrs (cuda-lib.utils.versionPolicyAtLeast versionPolicy "minor") {
                 # Minor versioned package name case -- where we add a minor versioned package to the package set.
                 ${minorVersionedPackageName} = packageForName minorVersionedPackageName;
               }
-              // optionalAttrs (versionPolicy == "major") {
+              // optionalAttrs (cuda-lib.utils.versionPolicyAtLeast versionPolicy "major") {
                 # Major versioned package name case -- where we add a major versioned package to the package set.
                 ${majorVersionedPackageName} = packageForName majorVersionedPackageName;
               }
