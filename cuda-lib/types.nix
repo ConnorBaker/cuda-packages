@@ -34,10 +34,6 @@ in
     valueType
     : The option type of the values of the attribute set
   */
-  # TODO: Look into how `pkgs` makes an option type by overriding another option type:
-  # https://github.com/NixOS/nixpkgs/blob/a6cc776496975eaef2de3218505c85bb5059fccb/lib/types.nix#L524-L530
-  # We should do that for `attrs` and `function` to make docs more readable.
-  # TODO: Not able to look at the keys in aggregate -- each typing decision is made per-key.
   attrs =
     keyType: valueType:
     addCheck (lib.types.attrsOf valueType) (
