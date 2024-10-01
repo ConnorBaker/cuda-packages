@@ -1,9 +1,11 @@
 {
   annotated-types,
   buildPythonPackage,
+  cudaPackages,
   flit-core,
   lib,
   makeWrapper,
+  nixVersions,
   pydantic,
   pyright,
   pythonAtLeast,
@@ -32,6 +34,10 @@ let
       annotated-types
       pydantic
       rich
+    ];
+    propagatedBuildInputs = [
+      cudaPackages.cuda_cuobjdump
+      nixVersions.latest
     ];
     pythonImportsCheck = [ finalAttrs.pname ];
     nativeCheckInputs = [

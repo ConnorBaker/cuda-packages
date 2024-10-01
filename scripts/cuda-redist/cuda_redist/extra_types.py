@@ -118,9 +118,9 @@ MajorVersionTA: Final[TypeAdapter[MajorVersion]] = PydanticTypeAdapter(MajorVers
 Version = Annotated[
     str,
     Field(
-        description="A version number with two-to-four components.",
+        description="A version number with one-to-four components.",
         examples=["11.0.3", "450.00.1", "22.01.03"],
-        pattern=r"\d+(?:\.\d+){1,3}",
+        pattern=r"\d+(?:\.\d+){0,3}",
     ),
 ]
 VersionTA: Final[TypeAdapter[Version]] = PydanticTypeAdapter(Version)
@@ -135,12 +135,12 @@ LibSoName = Annotated[
 ]
 LibSoNameTA: TypeAdapter[LibSoName] = PydanticTypeAdapter(LibSoName)
 
-CudaArch = Annotated[
+CudaRealArch = Annotated[
     str,
     Field(
-        description="A CUDA architecture name.",
+        description="""A "real" CUDA architecture.""",
         examples=["sm_35", "sm_50", "sm_60", "sm_70", "sm_75", "sm_80", "sm_86", "sm_90a"],
         pattern=r"^sm_\d+[a-z]?$",
     ),
 ]
-CudaArchTA: TypeAdapter[CudaArch] = PydanticTypeAdapter(CudaArch)
+CudaRealArchTA: TypeAdapter[CudaRealArch] = PydanticTypeAdapter(CudaRealArch)

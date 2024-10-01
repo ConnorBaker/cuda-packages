@@ -9,7 +9,7 @@ from typing import Final
 
 from typing_extensions import override
 
-from cuda_redist.extra_types import CudaArch, CudaArchTA
+from cuda_redist.extra_types import CudaRealArch, CudaRealArchTA
 from cuda_redist.logger import get_logger
 
 from .groupable_feature_detector import GroupableFeatureDetector
@@ -18,7 +18,7 @@ logger: Final[Logger] = get_logger(__name__)
 
 
 @dataclass
-class CudaArchitecturesDetector(GroupableFeatureDetector[CudaArch]):
+class CudaArchitecturesDetector(GroupableFeatureDetector[CudaRealArch]):
     """
     Either:
 
@@ -31,7 +31,7 @@ class CudaArchitecturesDetector(GroupableFeatureDetector[CudaArch]):
 
     @staticmethod
     @override
-    def path_feature_detector(path: Path) -> Set[CudaArch]:
+    def path_feature_detector(path: Path) -> Set[CudaRealArch]:
         """
         Equivalent to the following bash snippet, sans ordering:
 
@@ -64,7 +64,8 @@ class CudaArchitecturesDetector(GroupableFeatureDetector[CudaArch]):
 
         output = result.stdout.decode("utf-8")
         architecture_strs: set[str] = set(re.findall(r"^arch = (.+)$", output, re.MULTILINE))
-        architectures: set[CudaArch] = set(map(CudaArchTA.validate_python, architecture_strs))
+        # TODO: This will fail if there's a non-real GPU architecture (e.g., `compute_86`).
+        architectures: set[CudaRealArch] = set(map(CudaRealArchTA.validate_python, architecture_strs))
         logger.debug("Found architectures: %s", architectures)
         return architectures
 
@@ -74,7 +75,7 @@ class CudaArchitecturesDetector(GroupableFeatureDetector[CudaArch]):
         return path.suffix == ".so"
 
     @override
-    def find(self, store_path: Path) -> None | Sequence[CudaArch] | Mapping[str, Sequence[CudaArch]]:
+    def find(self, store_path: Path) -> None | Sequence[CudaRealArch] | Mapping[str, Sequence[CudaRealArch]]:
         logger.debug("Getting supported CUDA architectures for %s...", store_path)
         start_time = time.time()
         ret = super().find(store_path)

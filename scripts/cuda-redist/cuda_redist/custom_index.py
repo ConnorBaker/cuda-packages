@@ -1,6 +1,7 @@
 # NOTE: Open bugs in Pydantic like https://github.com/pydantic/pydantic/issues/8984 prevent the full switch to the type
 # keyword introduced in Python 3.12.
 import json
+import time
 from collections.abc import Mapping
 from logging import Logger
 from pathlib import Path
@@ -20,6 +21,7 @@ from cuda_redist.extra_types import (
     SriHash,
     Version,
 )
+from cuda_redist.feature_detector.cuda_architectures import FeatureCudaArchitectures, mkFeatureCudaArchitectures
 from cuda_redist.feature_detector.cuda_versions_in_lib import FeatureCudaVersionsInLib
 from cuda_redist.feature_detector.outputs import FeatureOutputs
 from cuda_redist.logger import get_logger
@@ -35,16 +37,27 @@ class CustomPackageFeatures(PydanticObject):
     Features of a package in the manifest.
     """
 
-    outputs: FeatureOutputs
+    cuda_architectures: None | FeatureCudaArchitectures
     cuda_versions_in_lib: None | FeatureCudaVersionsInLib
+    outputs: FeatureOutputs
 
     @classmethod
     def mk(cls: type[Self], store_path: Path) -> Self:
-        outputs = FeatureOutputs.of(store_path)
+        LOGGER.info("Finding features for %s...", store_path)
+        start_time = time.time()
+
+        cuda_architectures = mkFeatureCudaArchitectures(store_path)
         cuda_versions_in_lib = FeatureCudaVersionsInLib.of(store_path)
+        outputs = FeatureOutputs.of(store_path)
+
+        end_time = time.time()
+        LOGGER.info("Found features for %s in %d seconds.", store_path, end_time - start_time)
+
+        # Replace empty sequences with None.
         return cls.model_validate({
-            "outputs": outputs,
+            "cudaArchitectures": cuda_architectures or None,
             "cudaVersionsInLib": cuda_versions_in_lib or None,
+            "outputs": outputs,
         })
 
 
@@ -70,7 +83,6 @@ class CustomPackageInfo(PydanticObject):
         expected_relative_path: Path,
     ) -> Self:
         url: str = mk_redist_url(redist_name, actual_relative_path)
-        # unpacked_store_entry = NixStoreEntry.from_url(url, sha256).unpack_archive()
         unpacked_store_entry = NixStoreEntry.unpacked_from_url(url, sha256)
         recursive_hash = unpacked_store_entry.hash
 

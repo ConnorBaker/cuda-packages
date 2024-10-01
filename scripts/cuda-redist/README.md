@@ -16,9 +16,9 @@ To update every supported redist:
 
 ```bash
 nix build .
+./result/bin/update-nvidia-index --redist-name all --version all
 for redist_name in $(ls ./nvidia-redist-json); do
   [[ "$redist_name" == "README.md" ]] && continue
-  ./result/bin/update-nvidia-index --redist-name "$redist_name" --version all
   ./result/bin/get-nvidia-versions --redist-name "$redist_name" | xargs -P8 -I{} bash -c "./result/bin/update-custom-index --redist-name '$redist_name' --version {}"
 done
 ```
