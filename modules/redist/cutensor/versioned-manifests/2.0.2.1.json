@@ -4,6 +4,32 @@
       "linux-ppc64le": {
         "None": {
           "features": {
+            "cudaArchitectures": {
+              "11": [
+                "sm_60",
+                "sm_61",
+                "sm_70",
+                "sm_75",
+                "sm_80",
+                "sm_90"
+              ],
+              "11.0": [
+                "sm_60",
+                "sm_61",
+                "sm_70",
+                "sm_75",
+                "sm_80"
+              ],
+              "12": [
+                "sm_60",
+                "sm_61",
+                "sm_70",
+                "sm_75",
+                "sm_80",
+                "sm_90",
+                "sm_90a"
+              ]
+            },
             "cudaVersionsInLib": [
               "11",
               "11.0",
@@ -23,6 +49,32 @@
       "linux-sbsa": {
         "None": {
           "features": {
+            "cudaArchitectures": {
+              "11": [
+                "sm_60",
+                "sm_61",
+                "sm_70",
+                "sm_75",
+                "sm_80",
+                "sm_90"
+              ],
+              "11.0": [
+                "sm_60",
+                "sm_61",
+                "sm_70",
+                "sm_75",
+                "sm_80"
+              ],
+              "12": [
+                "sm_60",
+                "sm_61",
+                "sm_70",
+                "sm_75",
+                "sm_80",
+                "sm_90",
+                "sm_90a"
+              ]
+            },
             "cudaVersionsInLib": [
               "11",
               "11.0",
@@ -42,6 +94,32 @@
       "linux-x86_64": {
         "None": {
           "features": {
+            "cudaArchitectures": {
+              "11": [
+                "sm_60",
+                "sm_61",
+                "sm_70",
+                "sm_75",
+                "sm_80",
+                "sm_90"
+              ],
+              "11.0": [
+                "sm_60",
+                "sm_61",
+                "sm_70",
+                "sm_75",
+                "sm_80"
+              ],
+              "12": [
+                "sm_60",
+                "sm_61",
+                "sm_70",
+                "sm_75",
+                "sm_80",
+                "sm_90",
+                "sm_90a"
+              ]
+            },
             "cudaVersionsInLib": [
               "11",
               "11.0",

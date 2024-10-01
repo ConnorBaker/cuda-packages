@@ -4,6 +4,10 @@
       "linux-x86_64": {
         "cuda12": {
           "features": {
+            "cudaArchitectures": [
+              "sm_70",
+              "sm_80"
+            ],
             "outputs": [
               "out",
               "dev",

@@ -4,6 +4,17 @@
       "linux-ppc64le": {
         "cuda11": {
           "features": {
+            "cudaArchitectures": [
+              "sm_50",
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "dev",
@@ -16,6 +27,17 @@
         },
         "cuda12": {
           "features": {
+            "cudaArchitectures": [
+              "sm_50",
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "dev",
@@ -30,6 +52,17 @@
       "linux-sbsa": {
         "cuda11": {
           "features": {
+            "cudaArchitectures": [
+              "sm_50",
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "dev",
@@ -42,6 +75,17 @@
         },
         "cuda12": {
           "features": {
+            "cudaArchitectures": [
+              "sm_50",
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "dev",
@@ -56,6 +100,17 @@
       "linux-x86_64": {
         "cuda11": {
           "features": {
+            "cudaArchitectures": [
+              "sm_50",
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "dev",
@@ -68,6 +123,17 @@
         },
         "cuda12": {
           "features": {
+            "cudaArchitectures": [
+              "sm_50",
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "dev",

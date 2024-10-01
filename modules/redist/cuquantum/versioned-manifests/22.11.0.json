@@ -4,6 +4,13 @@
       "linux-ppc64le": {
         "None": {
           "features": {
+            "cudaArchitectures": [
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "dev",
@@ -18,6 +25,13 @@
       "linux-sbsa": {
         "None": {
           "features": {
+            "cudaArchitectures": [
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "dev",
@@ -32,6 +46,13 @@
       "linux-x86_64": {
         "None": {
           "features": {
+            "cudaArchitectures": [
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "dev",

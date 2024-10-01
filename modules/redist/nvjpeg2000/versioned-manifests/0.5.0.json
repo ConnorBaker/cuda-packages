@@ -4,6 +4,14 @@
       "linux-x86_64": {
         "None": {
           "features": {
+            "cudaArchitectures": [
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80"
+            ],
             "outputs": [
               "out",
               "dev",

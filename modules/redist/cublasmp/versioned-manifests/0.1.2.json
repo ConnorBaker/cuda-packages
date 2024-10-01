@@ -62,6 +62,9 @@
       "linux-sbsa": {
         "cuda11": {
           "features": {
+            "cudaArchitectures": [
+              "sm_52"
+            ],
             "outputs": [
               "out",
               "dev",
@@ -73,6 +76,9 @@
         },
         "cuda12": {
           "features": {
+            "cudaArchitectures": [
+              "sm_52"
+            ],
             "outputs": [
               "out",
               "dev",
@@ -86,6 +92,9 @@
       "linux-x86_64": {
         "cuda11": {
           "features": {
+            "cudaArchitectures": [
+              "sm_52"
+            ],
             "outputs": [
               "out",
               "dev",
@@ -97,6 +106,9 @@
         },
         "cuda12": {
           "features": {
+            "cudaArchitectures": [
+              "sm_52"
+            ],
             "outputs": [
               "out",
               "dev",

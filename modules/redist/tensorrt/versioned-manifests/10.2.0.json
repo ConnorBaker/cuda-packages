@@ -4,6 +4,14 @@
       "linux-sbsa": {
         "cuda12": {
           "features": {
+            "cudaArchitectures": [
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_89",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "bin",
@@ -23,6 +31,14 @@
       "linux-x86_64": {
         "cuda11": {
           "features": {
+            "cudaArchitectures": [
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_89",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "bin",
@@ -40,6 +56,14 @@
         },
         "cuda12": {
           "features": {
+            "cudaArchitectures": [
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_89",
+              "sm_90"
+            ],
             "outputs": [
               "out",
               "bin",
