@@ -6,6 +6,11 @@
   # https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-1010/support-matrix/index.html
   # NOTE: The newest release typically does not have an archive page, and is available at:
   # https://docs.nvidia.com/deeplearning/tensorrt/support-matrix/index.html
+  # NOTE: NVIDIA's support matrix in their docs is not always correct. For example, the 10.0.1.6 release does not
+  # include support for SM_52. However, 10.5.0.18 release does!
+  # To populate computeCapabilities for each architecture, use the following command in the lib directory:
+  #   ls -1 *.so | xargs -I{} sh -c 'cuobjdump {} || true' | grep "arch =" | sort -u
+  # Then populate the field accordingly.
   "10.0.1.6" = {
     linux-aarch64 = {
       cudaMajorMinorVersion = "12.4";
