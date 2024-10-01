@@ -52,13 +52,17 @@
             cuda-redist = config.packages.cuda-redist;
           };
 
-          legacyPackages = lib.evalModules {
-            specialArgs = {
-              inherit pkgs;
-              cuda-lib = import ./cuda-lib { inherit lib pkgs; };
-            };
-            modules = [ ./modules ];
-          };
+          legacyPackages =
+            let
+              evaluatedModules = lib.evalModules {
+                specialArgs = {
+                  inherit pkgs;
+                  cuda-lib = import ./cuda-lib { inherit lib pkgs; };
+                };
+                modules = [ ./modules ];
+              };
+            in
+            evaluatedModules.config.packageSets;
 
           packages = {
             default = config.packages.cuda-redist;
