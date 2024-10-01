@@ -8,9 +8,7 @@
 let
   inherit (lib.attrsets)
     attrNames
-    attrValues
     dontRecurseIntoAttrs
-    genAttrs
     mapAttrs
     optionalAttrs
     recurseIntoAttrs
@@ -21,7 +19,6 @@ let
     concatMap
     elem
     foldl'
-    groupBy'
     map
     unique
     ;
@@ -45,19 +42,6 @@ let
     (replaceStrings [ "." ] [ "_" ])
     (version: "cudaPackages_${version}")
   ];
-
-  newestForComponent =
-    versionPolicy: versionedManifests:
-    let
-      versionFunction = cuda-lib.utils.versionPolicyToVersionFunction versionPolicy;
-      newestForEachVersionByPolicy = groupBy' (
-        a: b: if versionAtLeast a b then a else b
-      ) "0.0.0.0" versionFunction (attrNames versionedManifests);
-      newestForEachVersion = genAttrs (attrValues newestForEachVersionByPolicy) (
-        version: versionedManifests.${version}
-      );
-    in
-    newestForEachVersion;
 
   packageSetBuilder = cudaMajorMinorPatchVersion: {
     name = mkCudaPackagesPackageSetName cudaMajorMinorPatchVersion;
@@ -290,6 +274,7 @@ in
       # of lazily.
       type = lazyAttrsOf raw;
       default = pipe config.redists.cuda.versionedManifests [
+        (cuda-lib.utils.newestVersionedManifestsByVersionPolicy config.redists.cuda.versionPolicy)
         attrNames
         (map packageSetBuilder)
         builtins.listToAttrs

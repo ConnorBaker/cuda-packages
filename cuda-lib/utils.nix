@@ -6,7 +6,10 @@
 let
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets)
+    attrNames
+    attrValues
     filterAttrs
+    genAttrs
     mapAttrs
     mapAttrs'
     mapAttrsToList
@@ -19,6 +22,7 @@ let
   inherit (lib.lists)
     findFirst
     flatten
+    groupBy'
     reverseList
     take
     ;
@@ -861,6 +865,40 @@ in
         # Append the version to the package name.
         (version: "${packageName}_${version}")
       ];
+
+  /**
+    Filters a `VersionedManifests` attribute set by a version policy, keeping only the latest version of each manifest,
+    as determined by the version policy.
+
+    # Type
+
+    ```
+    newestVersionedManifestsByVersionPolicy :: VersionPolicy -> VersionedManifests -> VersionedManifests
+    ```
+
+    # Arguments
+
+    versionPolicy
+    : The version policy to use
+
+    versionedManifests
+    : The `VersionedManifests` to filter
+  */
+  newestVersionedManifestsByVersionPolicy =
+    versionPolicy:
+    let
+      versionFunction = cuda-lib.utils.versionPolicyToVersionFunction versionPolicy;
+    in
+    versionedManifests:
+    let
+      newestVersionsByVersionPolicy = groupBy' (
+        a: b: if versionOlder a b then b else a
+      ) "0.0.0.0" versionFunction (attrNames versionedManifests);
+    in
+    if versionedManifests == { } then
+      { }
+    else
+      genAttrs (attrValues newestVersionsByVersionPolicy) (version: versionedManifests.${version});
 
   /**
     Function to determine if a package satisfies the redistributable requirements for a given redistributable.
