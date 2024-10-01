@@ -48,7 +48,7 @@ def get_output_map(
 ) -> Mapping[tuple[RedistName, Version], Path]:
     base_path: Path = Path(".") / "modules" / "redist"
     output_map: Mapping[tuple[RedistName, Version], Path] = {
-        (redist_name, version): base_path / redist_name / "data" / f"{version}.json"
+        (redist_name, version): base_path / redist_name / "versioned-manifests" / f"{version}.json"
         for redist_name, versions in version_map.items()
         for version in versions
     }
