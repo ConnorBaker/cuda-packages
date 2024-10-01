@@ -58,6 +58,17 @@ in
   cudaVariant = strMatching "^(None|cuda[[:digit:]]+)$";
 
   /**
+    The option type of a real CUDA architecture.
+
+    # Type
+
+    ```
+    cudaRealArch :: OptionType
+    ```
+  */
+  cudaRealArch = strMatching "^sm_[[:digit:]]+[a-z]?$";
+
+  /**
     The option type of a features attribute set.
 
     # Type
@@ -68,6 +79,18 @@ in
   */
   features = submodule {
     options = mkOptions {
+      cudaArchitectures = {
+        description = ''
+          Real CUDA architectures supported by the package
+          
+          A value of `null` indicates that the package is not specific to any architecture.
+        '';
+        type = nullOr (oneOf [
+          (nonEmptyListOf cuda-lib.types.cudaRealArch) # Flat lib directory
+          (cuda-lib.types.attrs nonEmptyStr cuda-lib.types.cudaRealArch) # CUDA versioned lib directory
+        ]);
+        default = null;
+      };
       cudaVersionsInLib = {
         description = "Subdirectories of the `lib` directory which are named after CUDA versions";
         type = nullOr (nonEmptyListOf (strMatching "^[[:digit:]]+(\.[[:digit:]]+)?$"));
