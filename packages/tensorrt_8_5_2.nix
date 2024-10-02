@@ -17,20 +17,24 @@ in
 callPackage ../deb-builder {
   # Args for deb-builder
   manifestMajorMinorVersion = "35.6";
-  sourceName = "cudnn";
+  sourceName = "tensorrt";
   postDebUnpack = ''
     for dir in include lib; do
       mv "$sourceRoot/usr/$dir/aarch64-linux-gnu" "$sourceRoot/$dir"
     done
+
+    mv "$sourceRoot/usr/src/tensorrt" "$sourceRoot/samples"
     rm -rf "$sourceRoot/usr"
   '';
   srcIsNull = hostRedistArchIsUnsupported || cudaVersionIsUnsupported;
   overrideAttrsFn = prevAttrs: {
+    # Samples, lib, and static all reference a FHS
+    allowFHSReferences = true;
     brokenConditions = prevAttrs.brokenConditions // {
       "CUDA version mismatch" = cudaVersionIsUnsupported;
     };
     badPlatformsConditions = prevAttrs.badPlatformsConditions // {
-      "CUDNN 8.6.0.166 is only available for Jetson devices" = hostRedistArchIsUnsupported;
+      "TensorRT 8.5.2.2 is only available for Jetson devices" = hostRedistArchIsUnsupported;
     };
     meta = prevAttrs.meta // {
       platforms = prevAttrs.meta.platforms or [ ] ++ [ "aarch64-linux" ];
@@ -46,13 +50,10 @@ callPackage ../deb-builder {
       # and populating the list.
       cudaArchitectures = [
         "sm_53"
-        "sm_61"
         "sm_62"
         "sm_70"
         "sm_72"
-        "sm_75"
         "sm_80"
-        "sm_86"
         "sm_87"
       ];
       outputs = [
@@ -61,15 +62,16 @@ callPackage ../deb-builder {
         "include"
         "lib"
         "static"
+        "sample"
       ];
     };
     recursiveHash = builtins.throw "`recursiveHash` should never be required by redist-builder";
   };
-  packageName = "cudnn";
+  packageName = "tensorrt";
   releaseInfo = {
-    license = "cudnn";
+    license = "TensorRT";
     licensePath = null;
-    name = "NVIDIA CUDA Deep Neural Network library";
-    version = "8.6.0.166";
+    name = "NVIDIA TensorRT";
+    version = "8.5.2.2";
   };
 }
