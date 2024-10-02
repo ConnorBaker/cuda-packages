@@ -46,7 +46,12 @@ let
     setFunctionArgs
     ;
   inherit (lib.versions) major majorMinor splitVersion;
-  inherit (pkgs) fetchzip;
+  inherit (pkgs)
+    dpkg
+    fetchurl
+    fetchzip
+    srcOnly
+    ;
 in
 {
   /**
