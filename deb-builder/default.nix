@@ -13,9 +13,17 @@ in
   srcOnly,
   # Use a particular manifest
   manifestMajorMinorVersion,
-  # Aggregate all the debs from the selected manifest with a `source` attribute matching this name
+  # Use a particular package set from the manifest
+  manifestPackageSet ? "common",
+  # Aggregate all the debs from the selected manifest with a `source` attribute matching this name.
+  # Ignored if `null`.
+  # Exclusive with `debName`.
   # NOTE: Not called `pname` since NVIDIA debians use a different naming scheme than their redist cousins.
-  sourceName,
+  sourceName ? null,
+  # Select exactly one debian archive with a matching name.
+  # Ignored if `null`.
+  # Exclusive with `sourceName`.
+  debName ? null,
   # Additional fixup to apply immediately after unpacking debian archives to `sourceRoot`
   postDebUnpack ? "",
   # The redistributable builder expects src to be null when building on an unsupported platform or unavailable.
@@ -29,19 +37,23 @@ in
   packageName,
   releaseInfo,
 }:
+assert sourceName == null -> debName != null;
+assert debName == null -> sourceName != null;
+assert manifestPackageSet == "common" || manifestPackageSet == "t234";
 let
   inherit (lib.attrsets) attrValues filterAttrs mapAttrs;
   inherit (lib.lists) length map unique;
 
   filteredManifest = filterAttrs (
-    packageName: attrs: sourceName == attrs.source or ""
-  ) manifests.${manifestMajorMinorVersion};
+    debName': attrs:
+    if sourceName != null then sourceName == attrs.source or "" else debName == debName'
+  ) manifests.${manifestMajorMinorVersion}.${manifestPackageSet};
 
   debs = mapAttrs (
     name: attrs:
     fetchurl {
       inherit (attrs) sha256;
-      url = "https://repo.download.nvidia.com/jetson/common/${attrs.filename}";
+      url = "https://repo.download.nvidia.com/jetson/${manifestPackageSet}/${attrs.filename}";
     }
   ) filteredManifest;
 
@@ -57,7 +69,7 @@ let
     __structuredAttrs = true;
     strictDeps = true;
 
-    pname = sourceName;
+    pname = if sourceName != null then sourceName else debName;
     inherit version;
 
     srcs = attrValues debs;

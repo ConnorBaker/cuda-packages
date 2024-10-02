@@ -6,8 +6,13 @@
   config,
   cuda-lib,
   cudaMajorMinorVersion,
+  lib,
+  libcublas,
+  patchelf,
+  zlib,
 }:
 let
+  inherit (lib.meta) getExe;
   hostRedistArch = cuda-lib.utils.getRedistArch (
     config.data.jetsonTargets != [ ]
   ) backendStdenv.hostPlatform.system;
@@ -32,6 +37,18 @@ callPackage ../deb-builder {
     badPlatformsConditions = prevAttrs.badPlatformsConditions // {
       "CUDNN 8.6.0.166 is only available for Jetson devices" = hostRedistArchIsUnsupported;
     };
+    buildInputs = prevAttrs.buildInputs or [ ] ++ [
+      libcublas
+      zlib
+    ];
+    # Tell autoPatchelf about runtime dependencies. *_infer* libraries only
+    # exist in CuDNN 8.
+    postFixup =
+      prevAttrs.postFixup or ""
+      + ''
+        ${getExe patchelf} $lib/lib/libcudnn.so --add-needed libcudnn_cnn_infer.so
+        ${getExe patchelf} $lib/lib/libcudnn_ops_infer.so --add-needed libcublas.so --add-needed libcublasLt.so
+      '';
     meta = prevAttrs.meta // {
       platforms = prevAttrs.meta.platforms or [ ] ++ [ "aarch64-linux" ];
     };

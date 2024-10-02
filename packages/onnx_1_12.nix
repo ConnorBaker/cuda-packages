@@ -5,7 +5,7 @@
   fetchFromGitHub,
   gtest,
   lib,
-  protobuf,
+  protobuf_21,
   python3,
 }:
 let
@@ -15,34 +15,51 @@ backendStdenv.mkDerivation (finalAttrs: {
   strictDeps = true;
 
   pname = "onnx";
-  version = "1.16.2";
+  # The version checked in for onnx-tensorrt version 8.5: https://github.com/onnx/onnx-tensorrt/tree/8.5-GA/third_party
+  version = "1.12.0";
 
   src = fetchFromGitHub {
     owner = finalAttrs.pname;
     repo = finalAttrs.pname;
     rev = "refs/tags/v${finalAttrs.version}";
-    hash = "sha256-JmxnsHRrzj2QzPz3Yndw0MmgZJ8MDYxHjuQ7PQkQsDg=";
+    hash = "sha256-3awGaKbzvZraGFJWoKIfHDh7qm6gWWfiO3bpGTcMLr0=";
   };
+
+  postPatch = ''
+    substituteInPlace CMakeLists.txt \
+      --replace-fail \
+        "include(googletest)" \
+        "find_package(GTest REQUIRED)"
+    substituteInPlace cmake/unittest.cmake \
+      --replace-fail \
+        "googletest_STATIC_LIBRARIES" \
+        "GTEST_LIBRARIES" \
+      --replace-fail \
+        "googletest_INCLUDE_DIRS" \
+        "GTEST_INCLUDE_DIRS" \
+      --replace-fail \
+        "googletest" \
+        "GTest::gtest"
+  '';
 
   nativeBuildInputs = [
     cmake
-    protobuf
+    protobuf_21
     python3
   ];
 
   buildInputs = [
     abseil-cpp
-    gtest
-    protobuf
+    protobuf_21
   ];
 
   cmakeFlags = [
     (cmakeBool "BUILD_ONNX_PYTHON" false)
     (cmakeBool "BUILD_SHARED_LIBS" true)
     (cmakeBool "ONNX_BUILD_BENCHMARKS" false)
-    (cmakeBool "ONNX_BUILD_SHARED_LIBS" true)
+    # (cmakeBool "ONNX_BUILD_SHARED_LIBS" true) # TODO: Not recognized
     (cmakeBool "ONNX_BUILD_TESTS" finalAttrs.doCheck)
-    (cmakeBool "ONNX_GEN_PB_TYPE_STUBS" false)
+    # (cmakeBool "ONNX_GEN_PB_TYPE_STUBS" false) # TODO: Not recognized
     (cmakeBool "ONNX_ML" false)
     (cmakeBool "ONNX_USE_PROTOBUF_SHARED_LIBS" true)
     (cmakeBool "ONNX_VERIFY_PROTO3" true)
@@ -50,6 +67,10 @@ backendStdenv.mkDerivation (finalAttrs: {
   ];
 
   doCheck = true;
+
+  checkInputs = [
+    gtest
+  ];
 
   meta = with lib; {
     description = "Open Neural Network Exchange";
