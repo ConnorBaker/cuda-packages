@@ -19,6 +19,11 @@ let
   inherit (lib.types) listOf nonEmptyListOf;
 in
 {
+  imports = [
+    ./cudatoolkit-runfile-releases.nix
+    ./gpus.nix
+    ./nvcc-compatibilities.nix
+  ];
   options.data = mkOptions {
     cudaRedistMajorMinorPatchVersions = {
       description = ''

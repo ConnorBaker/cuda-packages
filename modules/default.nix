@@ -1,39 +1,44 @@
-{ cuda-lib, lib, ... }:
+{ config, nixpkgs, ... }:
 let
-  inherit (builtins) readDir;
-  inherit (lib.attrsets) attrNames filterAttrs;
-  inherit (lib.options) mkOption;
-  inherit (lib.strings) hasSuffix;
-  inherit (lib.trivial) pipe;
+  # Create pkgs
+  pkgs = import nixpkgs {
+    config = {
+      allowUnfree = true;
+      cudaSupport = true;
+      inherit (config) cudaCapabilities cudaForwardCompat;
+    };
+  };
 
-  # NOTE: Not recursive.
-  getNixFilePathsInDir =
-    dir:
-    pipe dir [
-      readDir
-      (filterAttrs (name: type: hasSuffix ".nix" name && type == "regular"))
-      attrNames
-      (map (filename: dir + "/${filename}"))
-    ];
+  # Create our lib
+  inherit (pkgs) lib;
 
-  getDirsInDir =
-    dir:
-    pipe dir [
-      readDir
-      (filterAttrs (filename: type: type == "directory"))
-      attrNames
-      (map (dirname: dir + "/${dirname}"))
-    ];
+  # Create our cuda-lib
+  cuda-lib = import ../cuda-lib { inherit lib pkgs; };
 
-  dataModules = getNixFilePathsInDir ./data;
-  redistModules = getDirsInDir ./redist;
+  inherit (lib.types) bool;
+  inherit (cuda-lib.utils) mkOptions;
 in
 {
-  imports = dataModules ++ redistModules ++ [ ./package-sets.nix ];
+  imports = [
+    ./data
+    ./redists
+    ./package-sets.nix
+  ];
 
-  options.redists = mkOption {
-    description = "A mapping from redist name to redistConfig";
-    type = cuda-lib.types.redists;
-    default = { };
+  config._module.args = {
+    inherit cuda-lib lib pkgs;
+  };
+
+  options = mkOptions {
+    cudaCapabilities = {
+      description = "List of hardware generations to build.";
+      type = lib.types.listOf cuda-lib.types.cudaCapability;
+      default = [ ];
+    };
+    cudaForwardCompat = {
+      description = "Whether to include the forward compatibility gencode (+PTX) to support future GPU generations.";
+      type = bool;
+      default = false;
+    };
   };
 }
