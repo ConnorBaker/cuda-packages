@@ -1,15 +1,26 @@
-{
-  cuda-lib,
-  lib,
-  pkgs,
-}:
+{ cuda-lib, lib }:
 let
+  inherit (cuda-lib.data) redistUrlPrefix;
+  inherit (cuda-lib.utils)
+    getLibPath
+    majorMinorPatch
+    majorMinorPatchBuild
+    mapPackageInfoRedistsToList
+    mkCudaVariant
+    mkRedistUrl
+    mkRelativePath
+    mkTensorRTUrl
+    packageSatisfiesRedistRequirements
+    versionPolicyToNumComponents
+    versionPolicyToVersionFunction
+    ;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets)
     attrNames
     attrValues
     filterAttrs
     genAttrs
+    intersectAttrs
     mapAttrs
     mapAttrs'
     mapAttrsToList
@@ -46,12 +57,6 @@ let
     setFunctionArgs
     ;
   inherit (lib.versions) major majorMinor splitVersion;
-  inherit (pkgs)
-    dpkg
-    fetchurl
-    fetchzip
-    srcOnly
-    ;
 in
 {
   /**
@@ -211,7 +216,7 @@ in
     ) "mkRedistUrl: tensorrt does not use standard naming conventions for URLs; use mkTensorRTUrl";
     relativePath:
     concatStringsSep "/" [
-      cuda-lib.data.redistUrlPrefix
+      redistUrlPrefix
       redistName
       "redist"
       relativePath
@@ -298,7 +303,7 @@ in
   mkTensorRTUrl =
     relativePath:
     concatStringsSep "/" [
-      cuda-lib.data.redistUrlPrefix
+      redistUrlPrefix
       "machine-learning"
       relativePath
     ];
@@ -347,29 +352,18 @@ in
 
       redistBuilderArgs = {
         inherit (flattenedRedistsElem) packageInfo packageName releaseInfo;
-        libPath = cuda-lib.utils.getLibPath final.cudaMajorMinorPatchVersion packageInfo.features.cudaVersionsInLib;
+        libPath = getLibPath final.cudaMajorMinorPatchVersion packageInfo.features.cudaVersionsInLib;
         # The source is given by the tarball, which we unpack and use as a FOD.
-        src = fetchzip {
+        src = final.pkgs.fetchzip {
           url =
             if redistName == "tensorrt" then
-              cuda-lib.utils.mkTensorRTUrl packageInfo.relativePath
+              mkTensorRTUrl packageInfo.relativePath
             else
-              cuda-lib.utils.mkRedistUrl redistName (
-                cuda-lib.utils.mkRelativePath (flattenedRedistsElem // { inherit (packageInfo) relativePath; })
+              mkRedistUrl redistName (
+                mkRelativePath (flattenedRedistsElem // { inherit (packageInfo) relativePath; })
               );
           hash = packageInfo.recursiveHash;
         };
-        # let
-        #   unpacked = srcOnly {
-        #     __structuredAttrs = true;
-        #     strictDeps = true;
-        #     name = tarball.name + "-unpacked";
-        #     src = tarball;
-        #     outputHashMode = "recursive";
-        #     outputHash = packageInfo.recursiveHash;
-        #   };
-        # in
-        # unpacked;
       };
 
       # Union of all arguments provided to the redistributable builder function and the function which produces arguments
@@ -392,8 +386,8 @@ in
           providedArgs:
           let
             # Get the arguments we'll need to provide to our mainfest builder and overrideAttrs-producing function.
-            providedManifestBuilderFnArgs = builtins.intersectAttrs redistBuilderFnArgs providedArgs;
-            providedOverrideAttrsFnFnArgs = builtins.intersectAttrs overrideAttrsFnFnArgs providedArgs;
+            providedManifestBuilderFnArgs = intersectAttrs redistBuilderFnArgs providedArgs;
+            providedOverrideAttrsFnFnArgs = intersectAttrs overrideAttrsFnFnArgs providedArgs;
             # Update the package license before applying the overrideAttrs function.
             pkg = (redistBuilderFn providedManifestBuilderFnArgs).overrideAttrs (prevAttrs: {
               meta = prevAttrs.meta // {
@@ -693,7 +687,7 @@ in
                         redistArch: packageVariants:
                         filterAttrs (
                           cudaVariant: packageInfo:
-                          cuda-lib.utils.packageSatisfiesRedistRequirements cudaMajorMinorPatchVersion {
+                          packageSatisfiesRedistRequirements cudaMajorMinorPatchVersion {
                             inherit
                               cudaVariant
                               packageInfo
@@ -730,7 +724,7 @@ in
     redists
     : The `Redists` to flatten
   */
-  mkFlattenedRedists = cuda-lib.utils.mapPackageInfoRedistsToList id;
+  mkFlattenedRedists = mapPackageInfoRedistsToList id;
 
   /**
     Utility function to generate a set of badPlatformsConditions for missing packages.
@@ -864,7 +858,7 @@ in
     else
       # Everything else does.
       pipe version [
-        (cuda-lib.utils.versionPolicyToVersionFunction versionPolicy)
+        (versionPolicyToVersionFunction versionPolicy)
         # Drop dots and replace them with underscores in the version.
         (replaceStrings [ "." ] [ "_" ])
         # Append the version to the package name.
@@ -892,7 +886,7 @@ in
   newestVersionedManifestsByVersionPolicy =
     versionPolicy:
     let
-      versionFunction = cuda-lib.utils.versionPolicyToVersionFunction versionPolicy;
+      versionFunction = versionPolicyToVersionFunction versionPolicy;
     in
     versionedManifests:
     let
@@ -941,11 +935,10 @@ in
       # One of the subdirectories of the lib directory contains a supported version for our version of CUDA.
       # This is typically found with older versions of redistributables which don't use separate tarballs for each
       # supported CUDA version.
-      hasSupportedCudaVersionInLib =
-        (cuda-lib.utils.getLibPath cudaMajorMinorPatchVersion cudaVersionsInLib) != null;
+      hasSupportedCudaVersionInLib = (getLibPath cudaMajorMinorPatchVersion cudaVersionsInLib) != null;
 
       # There is a variant for the desired CUDA version.
-      isDesiredCudaVariant = cudaVariant == (cuda-lib.utils.mkCudaVariant cudaMajorMinorPatchVersion);
+      isDesiredCudaVariant = cudaVariant == (mkCudaVariant cudaMajorMinorPatchVersion);
 
       # Helpers
       cudaOlder = versionOlder cudaMajorMinorPatchVersion;
@@ -1059,8 +1052,7 @@ in
   */
   versionPolicyAtLeast =
     versionPolicy1: versionPolicy2:
-    cuda-lib.utils.versionPolicyToNumComponents versionPolicy1
-    >= cuda-lib.utils.versionPolicyToNumComponents versionPolicy2;
+    versionPolicyToNumComponents versionPolicy1 >= versionPolicyToNumComponents versionPolicy2;
 
   /**
     Maps a `VersionPolicy` to the number of components in the version.
@@ -1112,9 +1104,9 @@ in
     else if versionPolicy == "minor" then
       majorMinor
     else if versionPolicy == "patch" then
-      cuda-lib.utils.majorMinorPatch
+      majorMinorPatch
     else if versionPolicy == "build" then
-      cuda-lib.utils.majorMinorPatchBuild
+      majorMinorPatchBuild
     else
       builtins.throw "Unsupported version policy: ${versionPolicy}";
 }
