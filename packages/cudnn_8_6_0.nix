@@ -23,12 +23,22 @@ callPackage ../deb-builder {
   # Args for deb-builder
   manifestMajorMinorVersion = "35.6";
   sourceName = "cudnn";
-  postDebUnpack = ''
-    for dir in include lib; do
-      mv "$sourceRoot/usr/$dir/aarch64-linux-gnu" "$sourceRoot/$dir"
-    done
-    rm -rf "$sourceRoot/usr"
-  '';
+  postDebUnpack =
+    # Standard unpacking
+    ''
+      for dir in include lib; do
+        mv "$sourceRoot/usr/$dir/aarch64-linux-gnu" "$sourceRoot/$dir"
+      done
+      rm -rf "$sourceRoot/usr"
+    ''
+    # Create symlinks for each header file in `include` without the `_v8` suffix before the file extension.
+    + ''
+      pushd "$sourceRoot/include"
+      for file in *.h; do
+        ln -s "$file" "$(basename "$file" "_v8.h").h"
+      done
+      popd
+    '';
   srcIsNull = hostRedistArchIsUnsupported || cudaVersionIsUnsupported;
   overrideAttrsFn = prevAttrs: {
     brokenConditions = prevAttrs.brokenConditions // {
