@@ -8,6 +8,7 @@
 let
   inherit (cudaPackages) cudatoolkit libcublas;
   inherit (lib) maintainers;
+  inherit (lib.attrsets) getLib;
   inherit (lib.lists) optionals;
   inherit (lib.meta) getExe;
   inherit (lib.strings) optionalString versionAtLeast versionOlder;
@@ -24,7 +25,7 @@ in
     # NOTE: Verions of CUDNN after 9.0 no longer depend on libcublas:
     # https://docs.nvidia.com/deeplearning/cudnn/latest/release-notes.html?highlight=cublas#cudnn-9-0-0
     # However, NVIDIA only provides libcublasLT via the libcublas package.
-    ++ optionals (!useCudatoolkitRunfile) [ libcublas ];
+    ++ optionals (!useCudatoolkitRunfile) [ (getLib libcublas) ];
 
   # Tell autoPatchelf about runtime dependencies. *_infer* libraries only
   # exist in CuDNN 8.

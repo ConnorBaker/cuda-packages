@@ -49,6 +49,9 @@ callPackage ../deb-builder {
     autoPatchelfIgnoreMissingDeps = prevAttrs.autoPatchelfIgnoreMissingDeps ++ [
       "libnvdla_compiler.so"
     ];
+    passthru = prevAttrs.passthru // {
+      cudnn = cudnn_8_6_0;
+    };
     meta = prevAttrs.meta // {
       platforms = prevAttrs.meta.platforms or [ ] ++ [ "aarch64-linux" ];
     };

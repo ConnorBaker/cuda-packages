@@ -11,7 +11,7 @@
   cudnn,
   cutlass,
   fetchFromGitHub,
-  fetchpatch2,
+
   flags,
   gtest,
   lib,
@@ -33,13 +33,13 @@ in
 backendStdenv.mkDerivation (finalAttrs: {
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "cutlass";
-  version = "3.5.0";
+  version = "3.5.1";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "cutlass";
     rev = "refs/tags/v${finalAttrs.version}";
-    hash = "sha256-D/s7eYsa5l/mfx73tE4mnFcTQdYqGmXa9d9TCryw4e4=";
+    hash = "sha256-sTGYN+bjtEqQ7Ootr/wvx3P9f8MCDSSj3qyCWjfdLEA=";
   };
 
   strictDeps = true;
@@ -55,22 +55,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     ninja
     python3
   ];
-
-  patches =
-    # Enable use of the system googletest.
-    # NOTE: Revisit these when 3.5.1 releases, as it may be included.
-    [
-      (fetchpatch2 {
-        name = "support-system-googletest.patch";
-        url = "https://github.com/NVIDIA/cutlass/pull/1469/commits/60923063b39c22982e56c304e132e59b358f4814.patch";
-        hash = "sha256-q44SVpC7i91onsBDYKKBob5YqTPmXHRFgImnKpeVKpQ=";
-      })
-      (fetchpatch2 {
-        name = "create-working-directory-for-tests-explicitly.patch";
-        url = "https://github.com/NVIDIA/cutlass/pull/1469/commits/1093c4f90df6083146681e3c39b0c53611978c5f.patch";
-        hash = "sha256-AYJsr+y5ntSWuV7+b/NRRY+fXE5SFN28BdZZqWXoElc=";
-      })
-    ];
 
   postPatch =
     # Prepend some commands to the CUDA.cmake file so it can find the CUDA libraries using CMake's FindCUDAToolkit
@@ -148,29 +132,14 @@ backendStdenv.mkDerivation (finalAttrs: {
     "cuda"
   ];
 
-  passthru =
-    let
-      cutlassShowLinkTimes = cutlass.overrideAttrs (prevAttrs: {
-        # Set RULE_LAUNCH_LINK so CMake adds a message to the linker command to show the link times.
-        postPatch =
-          prevAttrs.postPatch
-          + ''
-            sed -i '1i set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "''${CMAKE_COMMAND} -E time")' ./CUDA.cmake
-          '';
-      });
-    in
-    {
-      updateScript = gitUpdater {
-        inherit (finalAttrs) pname version;
-        rev-prefix = "v";
-      };
-      # TODO: These can be removed.
-      tests.withGpu = cutlass.overrideAttrs { doCheck = true; };
-      showLinkTimesWithDefaultLinker = cutlassShowLinkTimes;
-      showLinkTimesWithMoldLinker = cutlassShowLinkTimes.override {
-        backendStdenv = backendStdenv.withMoldLinker;
-      };
+  passthru = {
+    updateScript = gitUpdater {
+      inherit (finalAttrs) pname version;
+      rev-prefix = "v";
     };
+    # TODO: These can be removed.
+    tests.withGpu = cutlass.overrideAttrs { doCheck = true; };
+  };
 
   meta = with lib; {
     description = "CUDA Templates for Linear Algebra Subroutines";

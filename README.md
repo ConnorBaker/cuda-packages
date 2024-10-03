@@ -2,6 +2,8 @@
 
 Out of tree (Nixpkgs) experiments with packaging CUDA in an extensible way.
 
+Most code lives in Nixpkgs and is copied/modified here for ease of development.
+
 ## Notes
 
 - CUDA 12.3 is missing `cuda_compat` and so will not work on the Jetsons
