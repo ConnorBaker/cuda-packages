@@ -365,7 +365,9 @@ backendStdenv.mkDerivation (finalAttrs: {
   postPatch =
     ''
       substituteInPlace cmake/libonnxruntime.pc.cmake.in \
-        --replace-fail '$'{prefix}/@CMAKE_INSTALL_ @CMAKE_INSTALL_
+        --replace-fail \
+          '$'{prefix}/@CMAKE_INSTALL_ \
+          "@CMAKE_INSTALL_"
     ''
     # We don't need clog aliases because we use a slightly newer version for 1.16.3 which includes CMake changes to
     # create these aliases for us.
@@ -476,6 +478,26 @@ backendStdenv.mkDerivation (finalAttrs: {
 
       # The inclusion of CMake files sets targets that onnxruntime needs defined for CMake configuration to succeed.
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_PYTORCH_CPUINFO" cpuinfo.outPath)
+    ]
+    # NOTE: Setting CMAKE_SKIP_BUILD_RPATH fixes the following error during installation:
+    # cuda11.8-onnxruntime> Install the project...
+    # cuda11.8-onnxruntime> -- Install configuration: "Release"
+    # cuda11.8-onnxruntime> -- Installing: /nix/store/b31kiw5a4vcf0sz5qr2zmv3skyqsk8d1-cuda11.8-onnxruntime-1.16.3-dev/include/onnxruntime/cpu_provider_factory.h
+    # cuda11.8-onnxruntime> -- Installing: /nix/store/w00p128hhqkh1b0wgjhp7mlazyvhrzzl-cuda11.8-onnxruntime-1.16.3/lib/libonnxruntime_providers_shared.so
+    # cuda11.8-onnxruntime> -- Installing: /nix/store/w00p128hhqkh1b0wgjhp7mlazyvhrzzl-cuda11.8-onnxruntime-1.16.3/lib/libonnxruntime_providers_cuda.so
+    # cuda11.8-onnxruntime> CMake Error at cmake_install.cmake:102 (file):
+    # cuda11.8-onnxruntime>   file RPATH_CHANGE could not write new RPATH:
+    # cuda11.8-onnxruntime>   to the file:
+    # cuda11.8-onnxruntime>     /nix/store/w00p128hhqkh1b0wgjhp7mlazyvhrzzl-cuda11.8-onnxruntime-1.16.3/lib/libonnxruntime_providers_cuda.so
+    # cuda11.8-onnxruntime>   The current RUNPATH is:
+    # cuda11.8-onnxruntime>     /nix/store/w00p128hhqkh1b0wgjhp7mlazyvhrzzl-cuda11.8-onnxruntime-1.16.3/lib:/nix/store/czjp4vj0dazwbh3l8lg6nl563zhcvmv4-cuda11.8-libcublas-11.11.3.6-stubs/lib/stubs:/nix/store/awljar6xmpwddlxvsy57dvn0h5i69k0h-cuda11.8-libcufft-10.9.0.58-stubs/lib/stubs:/nix/store/ngm1df65srhzsh8ycccshplm0iw6szxy-cuda11.8-libcurand-10.3.0.86-stubs/lib/stubs:/nix/store/8mldnl69fcl47bl5g5drj1dx24h16wrw-cuda11.8-cuda_cudart-11.8.89-lib/lib:/nix/store/wpm3ssjy0x5pncqbmgd2jx7gb7bmj1l9-cuda11.8-cudnn-8.6.0.166-lib/lib:/nix/store/l39085sqmkxd5r5j2wnfrchsmmf9aypr-cuda11.8-libcublas-11.11.3.6-lib/lib:/nix/store/q47c04rgdm4az9qbxwx12q471zmwrzr5-cuda11.8-libcufft-10.9.0.58-lib/lib:/nix/store/pr35xdwnwh8pv1glx2f9ah8b2i0p7jy2-cuda11.8-libcurand-10.3.0.86-lib/lib:/nix/store/mvsq4z2g9l05vfwdkr9nihbxyxm18nak-glibc-2.39-52/lib:/nix/store/n06b8gzyhwn9acggacnzl4yypccn77wp-gcc-13.3.0-lib/lib:/nix/store/83a221yx59vfhs49zjdap7y00dr737li-gcc-11.5.0-lib/lib
+    # cuda11.8-onnxruntime>   which does not contain:
+    # cuda11.8-onnxruntime>     /lib64:/build/source/build/_deps/google_nsync-build:/build/source/build/_deps/abseil_cpp-build/absl/strings:/build/source/build/_deps/abseil_cpp-build/absl/crc:/build/source/build/_deps/abseil_cpp-build/absl/container:/build/source/build/_deps/abseil_cpp-build/absl/hash:/build/source/build/_deps/abseil_cpp-build/absl/types:/build/source/build/_deps/abseil_cpp-build/absl/profiling:/build/source/build/_deps/abseil_cpp-build/absl/synchronization:/build/source/build/_deps/abseil_cpp-build/absl/debugging:/build/source/build/_deps/abseil_cpp-build/absl/base:/build/source/build/_deps/abseil_cpp-build/absl/time:/build/source/build/_deps/abseil_cpp-build/absl/numeric:
+    # cuda11.8-onnxruntime>   as was expected.
+    # cuda11.8-onnxruntime>
+    # cuda11.8-onnxruntime> make: *** [Makefile:130: install] Error 1
+    ++ optionals (version == "1.16.3") [
+      (cmakeBool "CMAKE_SKIP_BUILD_RPATH" true)
     ]
     ++ optionals (version != "1.16.3") [
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_GOOGLETEST" gtest.src.outPath)
