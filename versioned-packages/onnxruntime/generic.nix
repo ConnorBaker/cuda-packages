@@ -51,7 +51,6 @@ let
     cmakeFeature
     cmakeOptionType
     optionalString
-    versionOlder
     ;
   inherit (lib.versions) majorMinor;
   inherit (backendStdenv.cc) isClang;
@@ -260,12 +259,9 @@ backendStdenv.mkDerivation (finalAttrs: {
 
   inherit src;
 
+  # Clang generates many more warnings than GCC does, so we just disable erroring on warnings entirely.
   env = optionalAttrs isClang {
-    NIX_CFLAGS_COMPILE = toString [
-      "-Wno-error=deprecated-declarations"
-      "-Wno-error=deprecated-pragma"
-      "-Wno-error=unused-but-set-variable"
-    ];
+    NIX_CFLAGS_COMPILE = "-Wno-error";
   };
 
   nativeBuildInputs =
@@ -288,17 +284,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     );
 
   patches =
-    [
-      # If you stumble on these patches trying to update onnxruntime, check
-      # `git blame` and ping the introducers.
-
-      # Context: we want the upstream to
-      # - always try find_package first (FIND_PACKAGE_ARGS),
-      # - use MakeAvailable instead of the low-level Populate,
-      # - use Eigen3::Eigen as the target name (as declared by libeigen/eigen).
-      # ./0001-eigen-allow-dependency-injection.patch
-    ]
-    ++ optionals (version == "1.16.3") [
+    optionals (version == "1.16.3") [
       (fetchpatch2 {
         name = "cuda-fix-microsoft-gsl.patch";
         url = "https://github.com/microsoft/onnxruntime/pull/17843/commits/46e25263ee6e76b105729a3c9b28f0bdbcbb793f.patch";
@@ -311,22 +297,16 @@ backendStdenv.mkDerivation (finalAttrs: {
       # configuration error that around missing 'gmock' exports.
       ./update-re2.patch
     ];
-  # ++ optionals cudaSupport [
-  #   # We apply the referenced 1064.patch ourselves to our nix dependency.
-  #   #  FIND_PACKAGE_ARGS for CUDA was added in https://github.com/microsoft/onnxruntime/commit/87744e5 so it might be possible to delete this patch after upgrading to 1.17.0
-  #   ./nvcc-gsl.patch
-  # ];
 
   postPatch =
     ''
       substituteInPlace cmake/libonnxruntime.pc.cmake.in \
         --replace-fail '$'{prefix}/@CMAKE_INSTALL_ @CMAKE_INSTALL_
     ''
-    # Remove clog aliases our newer version of clog automatically creates
+    # TODO(@connorbaker): Build failure on 1.16.3 is not addressed by the following patch.
     # cuda11.8-onnxruntime> CMake Error at external/onnxruntime_external_deps.cmake:423 (add_library):
     # cuda11.8-onnxruntime>   add_library cannot create ALIAS target "cpuinfo::clog" because target
     # cuda11.8-onnxruntime>   "clog" does not already exist.
-
     # cuda11.8-onnxruntime> CMake Error at external/onnxruntime_external_deps.cmake:422 (add_library):
     # cuda11.8-onnxruntime>   add_library cannot create ALIAS target "cpuinfo::cpuinfo" because another
     # cuda11.8-onnxruntime>   target with the same name already exists.
@@ -355,6 +335,13 @@ backendStdenv.mkDerivation (finalAttrs: {
     + optionalString isAarch64Linux ''
       rm -v onnxruntime/test/optimizer/nhwc_transformer_test.cc
     '';
+
+  # We must silence NVCC warnings from the frontend like:
+  # onnxruntime> /nix/store/nrb1wyq26xxghhfky7sr22x27fip35vs-source/absl/types/span.h(154): error #2803-D: attribute namespace "gsl" is unrecognized
+  # onnxruntime>   class [[gsl::Pointer]] Span {
+  preConfigure = optionalString isClang ''
+    export NVCC_PREPEND_FLAGS+=" -Xcudafe=--diag_suppress=2803"
+  '';
 
   buildInputs =
     [
@@ -475,7 +462,6 @@ backendStdenv.mkDerivation (finalAttrs: {
   '';
 
   passthru = {
-    inherit protobuf_21 pytorch_clog cpuinfo;
     tests = optionalAttrs pythonSupport {
       python = python3Packages.onnxruntime;
     };
