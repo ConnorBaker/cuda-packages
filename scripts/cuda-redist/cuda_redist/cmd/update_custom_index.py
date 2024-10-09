@@ -1,11 +1,11 @@
 from argparse import ArgumentParser, Namespace
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from logging import Logger
 from pathlib import Path
 from typing import Final
 
 from cuda_redist.custom_index import CustomIndex
-from cuda_redist.extra_types import RedistName, RedistNames, Version
+from cuda_redist.extra_types import RedistName, RedistNames
 from cuda_redist.logger import get_logger
 from cuda_redist.nvidia_index import NvidiaIndex
 
@@ -41,18 +41,6 @@ def get_redist_names(maybe_redist_name: str) -> Sequence[RedistName]:
 
     LOGGER.info("Using redistributable(s) %s", redist_names)
     return redist_names
-
-
-def get_output_map(
-    version_map: Mapping[RedistName, Sequence[Version]],
-) -> Mapping[tuple[RedistName, Version], Path]:
-    base_path: Path = Path(".") / "modules" / "redists"
-    output_map: Mapping[tuple[RedistName, Version], Path] = {
-        (redist_name, version): base_path / redist_name / "versioned-manifests" / f"{version}.json"
-        for redist_name, versions in version_map.items()
-        for version in versions
-    }
-    return output_map
 
 
 def main() -> None:

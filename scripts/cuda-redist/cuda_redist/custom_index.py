@@ -236,7 +236,9 @@ class CustomIndex(PydanticMapping[RedistName, CustomVersionedManifests]):
             mode="json",
         ).items():
             for version, custom_manifest in versioned_custom_manifests.items():
-                output_path: Path = Path(".") / "modules" / "redists" / redist_name / "data" / f"{version}.json"
+                output_path: Path = (
+                    Path(".") / "modules" / "redists" / redist_name / "versioned-manifests" / f"{version}.json"
+                )
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 with output_path.open(mode="w", encoding="utf-8") as file:
                     json.dump(
