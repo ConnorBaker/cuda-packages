@@ -48,6 +48,8 @@
           ...
         }:
         let
+          inherit (lib.attrsets) optionalAttrs;
+
           getOverlay =
             {
               capabilities,
@@ -67,6 +69,14 @@
                 ./modules
               ];
             }).config.overlay;
+
+          xavierPkgs = pkgs.extend (getOverlay {
+            capabilities = [ "7.2" ];
+          });
+          orinPkgs = pkgs.extend (getOverlay {
+            capabilities = [ "8.7" ];
+          });
+          adaOverlay = getOverlay { capabilities = [ "8.9" ]; };
         in
         {
           # Make our package set the default.
@@ -75,11 +85,8 @@
               inherit system;
               # Unfree needs to be set in the initial config attribute set, even though we override it in our overlay.
               config.allowUnfree = true;
-              overlays = [
-                (getOverlay {
-                  capabilities = [ "8.9" ];
-                })
-              ];
+              # Default to Ada
+              overlays = [ adaOverlay ];
             };
           };
 
@@ -89,37 +96,65 @@
           };
 
           legacyPackages =
-            let
-              getPackageSets = args: {
-                inherit (pkgs.extend (getOverlay args)) cudaPackages_11 cudaPackages_12 cudaPackages;
-              };
-              normalPackageSets = getPackageSets { capabilities = [ "8.9" ]; };
-              jetsonPackageSets = {
-                xavier = getPackageSets { capabilities = [ "7.2" ]; };
-                orin = getPackageSets { capabilities = [ "8.7" ]; };
-              };
-            in
-            normalPackageSets // lib.optionalAttrs (system == "aarch64-linux") jetsonPackageSets;
+            # pkgs is by default adaPkgs
+            pkgs
+            // optionalAttrs (system == "aarch64-linux") {
+              xavier = xavierPkgs;
+              orin = orinPkgs;
+            };
 
           packages =
             let
-              inherit (lib.attrsets) isAttrs isDerivation filterAttrs;
+              inherit (lib.attrsets)
+                isDerivation
+                filterAttrs
+                mapAttrs'
+                ;
               inherit (pkgs) linkFarm python311Packages;
+              # NOTE: Computing the `outPath` is the easiest way to check if evaluation will fail for some reason.
+              # Originally, I used meta.available, but that field isn't produced by recursively checking dependents by
+              # default, and requires an undocumented config option (checkMetaRecursively) to do so:
+              # https://github.com/NixOS/nixpkgs/blob/master/pkgs/stdenv/generic/check-meta.nix#L496
+              # What we really need is something like:
+              # https://github.com/NixOS/nixpkgs/pull/245322
               filterForTopLevelPackages = filterAttrs (
                 _: value:
                 let
-                  attempt = isAttrs value && isDerivation value && value.meta.available or false;
-                  forcedAttempt = builtins.deepSeq attempt attempt;
-                  tried = builtins.tryEval forcedAttempt;
+                  attempt = isDerivation value && value.outPath or null != null;
+                  tried = builtins.tryEval (builtins.deepSeq attempt attempt);
                 in
-                if tried.success then tried.value else false
+                tried.success && tried.value
               );
+              mkFlattenedFiltered =
+                cudaPackages:
+                let
+                  # Manually raise and flatten the few nested attributes we have which contain derivations.
+                  raised = mapAttrs' (name: value: {
+                    name = "cuda-library-samples-${name}";
+                    inherit value;
+                  }) cudaPackages.cuda-library-samples;
+                in
+                filterForTopLevelPackages (cudaPackages // raised);
             in
             {
               default = config.packages.cuda-redist;
               cuda-redist = python311Packages.callPackage ./scripts/cuda-redist { };
-              cudaPackages_11 = linkFarm "cudaPackages_11" (filterForTopLevelPackages pkgs.cudaPackages_11);
-              cudaPackages_12 = linkFarm "cudaPackages_12" (filterForTopLevelPackages pkgs.cudaPackages_12);
+              cudaPackages_11 = linkFarm "cudaPackages_11" (mkFlattenedFiltered pkgs.cudaPackages_11);
+              cudaPackages_12 = linkFarm "cudaPackages_12" (mkFlattenedFiltered pkgs.cudaPackages_12);
+            }
+            // optionalAttrs (system == "aarch64-linux") {
+              cudaPackages_11-xavier = linkFarm "cudaPackages_11-xavier" (
+                mkFlattenedFiltered xavierPkgs.cudaPackages_11
+              );
+              cudaPackages_12-xavier = linkFarm "cudaPackages_12-xavier" (
+                mkFlattenedFiltered xavierPkgs.cudaPackages_12
+              );
+              cudaPackages_11-orin = linkFarm "cudaPackages_11-orin" (
+                mkFlattenedFiltered orinPkgs.cudaPackages_11
+              );
+              cudaPackages_12-orin = linkFarm "cudaPackages_12-orin" (
+                mkFlattenedFiltered orinPkgs.cudaPackages_12
+              );
             };
 
           pre-commit.settings.hooks = {

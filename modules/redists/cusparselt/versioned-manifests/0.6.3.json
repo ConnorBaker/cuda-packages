@@ -5,7 +5,6 @@
         "None": {
           "features": {
             "cudaArchitectures": [
-              "sm_52",
               "sm_87"
             ],
             "outputs": [
@@ -16,14 +15,13 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-HIW/1G9es6tgjEueie3QThU+ph7QYbPmGOzBa6XC3/c="
+          "recursiveHash": "sha256-AZAv5LATnU6vcfQ4FtFKlbotRbCnf3woYPfhcL9DUMY="
         }
       },
       "linux-sbsa": {
         "None": {
           "features": {
             "cudaArchitectures": [
-              "sm_52",
               "sm_80",
               "sm_86",
               "sm_87",
@@ -39,14 +37,13 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-Ll4Uo14zida1uD93E81p/A6CkwWk1ZpYSt9WUKDuuxo="
+          "recursiveHash": "sha256-zbwY/qxgkLYKxxYIcAipLMwDxGddzEAM/8vgLNOk2U0="
         }
       },
       "linux-x86_64": {
         "None": {
           "features": {
             "cudaArchitectures": [
-              "sm_52",
               "sm_80",
               "sm_86",
               "sm_87",
@@ -62,7 +59,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-LRd1kMquBu4oJyPVOLH1VPJoB+weakPaZRcx7R0NYfc="
+          "recursiveHash": "sha256-xZwJCsd1rUW1SWztwKolruGR2P2+1jBURRBmtZih91w="
         }
       }
     },
@@ -70,7 +67,7 @@
       "license": "cuSPARSELt",
       "licensePath": "libcusparse_lt/LICENSE.txt",
       "name": "NVIDIA cuSPARSELt",
-      "version": "0.6.2.3"
+      "version": "0.6.3.2"
     }
   }
 }

@@ -19,24 +19,22 @@
 }:
 let
   inherit (lib.attrsets)
-    attrValues
     getBin
     getLib
     getOutput
     ;
-  inherit (lib.lists) any optionals;
-  inherit (lib.trivial) id;
+  inherit (lib.lists) optionals;
 in
 backendStdenv.mkDerivation (finalAttrs: {
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "nccl";
-  version = "2.21.5-1";
+  version = "2.23.4-1";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "nccl";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-IF2tILwW8XnzSmfn7N1CO7jXL95gUp02guIW5n1eaig=";
+    hash = "sha256-DlMxlLO2F079fBkhORNPVN/ASYiVIRfLJw7bDoiClHw=";
   };
 
   __structuredAttrs = true;
@@ -47,15 +45,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     "dev"
     "static"
   ];
-
-  # badPlatformsConditions :: AttrSet Bool
-  # Sets `meta.badPlatforms = meta.platforms` if any of the conditions are true.
-  # Example: Broken on a specific architecture when some condition is met (like targeting Jetson).
-  badPlatformsConditions = {
-    # Samples are built around the CUDA Toolkit, which is not available for
-    # aarch64. Check for both CUDA version and platform.
-    "Platform is unsupported" = flags.isJetsonBuild;
-  };
 
   nativeBuildInputs = [
     autoAddDriverRunpath
@@ -106,12 +95,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     homepage = "https://developer.nvidia.com/nccl";
     license = licenses.bsd3;
     platforms = platforms.linux;
-    broken = any id (attrValues (finalAttrs.brokenConditions or { }));
-    badPlatforms =
-      let
-        isBadPlatform = lists.any trivial.id (attrsets.attrValues finalAttrs.badPlatformsConditions);
-      in
-      lists.optionals isBadPlatform finalAttrs.meta.platforms;
+    badPlatforms = optionals flags.isJetsonBuild [ "aarch64-linux" ];
     maintainers =
       with maintainers;
       [

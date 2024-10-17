@@ -1,13 +1,14 @@
 # TODO(@connorbaker): Package samples as test cases, and make a bin output for tools.
-# Can the python bindings replace the wheels we get from the tensorrt tarball?
 {
   backendStdenv,
   cmake,
+  cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
   cuda_profiler_api,
   cuda-lib,
   cudaMajorMinorVersion,
+  cudaOlder,
   cudnn,
   fetchFromGitHub,
   flags,
@@ -18,6 +19,7 @@
 }:
 let
   inherit (lib.attrsets) getLib;
+  inherit (lib.lists) optionals;
   inherit (lib.strings)
     concatMapStringsSep
     cmakeBool
@@ -87,13 +89,17 @@ backendStdenv.mkDerivation (finalAttrs: {
     which
   ];
 
-  buildInputs = [
-    cuda_cudart
-    cuda_profiler_api
-    cudnn
-    protobuf
-    tensorrt
-  ];
+  buildInputs =
+    [
+      cuda_cudart
+      cuda_profiler_api
+      cudnn
+      protobuf
+      tensorrt
+    ]
+    ++ optionals (cudaOlder "12.0") [
+      cuda_cccl # cub/cub.cuh
+    ];
 
   doCheck = true;
 

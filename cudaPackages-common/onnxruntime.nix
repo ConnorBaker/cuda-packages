@@ -378,7 +378,7 @@ buildPythonPackage {
       compatibility.
     '';
     homepage = "https://github.com/microsoft/onnxruntime";
-    changelog = "https://github.com/microsoft/onnxruntime/releases/tag/v${finalAttrs.version}";
+    changelog = "https://github.com/microsoft/onnxruntime/releases/tag/v${version}";
     # https://github.com/microsoft/onnxruntime/blob/master/BUILD.md#architectures
     platforms = platforms.linux;
     license = licenses.mit;

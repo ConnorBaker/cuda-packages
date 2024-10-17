@@ -24,13 +24,13 @@ in
 backendStdenv.mkDerivation (finalAttrs: {
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "nccl-tests";
-  version = "2.13.9";
+  version = "2.13.10";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "nccl-tests";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-QYuMBPhvHHVo2ku14jD1CVINLPW0cyiXJkXxb77IxbE=";
+    hash = "sha256-H9shp4fYW+dlyL9FZRxX761UCFR/pOBKNHfVme2TfJg=";
   };
 
   strictDeps = true;

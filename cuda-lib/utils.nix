@@ -1030,7 +1030,7 @@ in
     # a sidecar file mapping releases to supported CUDA versions.
     else if redistName == "cutensor" then
       hasSupportedCudaVersionInLib
-    
+
     # TODO: Create constraint.
     else if redistName == "nppplus" then
       default

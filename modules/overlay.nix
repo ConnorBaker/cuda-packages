@@ -264,6 +264,19 @@ in
           cudaPackages_11 = packageSetBuilder final "11.8.0";
           cudaPackages_12 = packageSetBuilder final "12.6.2";
           cudaPackages = final.cudaPackages_12;
+
+          # Package fixes
+          openmpi = prev.openmpi.override (prevAttrs: {
+            # The configure flag openmpi takes expects cuda_cudart to be joined.
+            cudaPackages = prevAttrs.cudaPackages // {
+              cuda_cudart = final.symlinkJoin {
+                name = "cuda_cudart_joined";
+                paths = map (
+                  output: prevAttrs.cudaPackages.cuda_cudart.${output}
+                ) prevAttrs.cudaPackages.cuda_cudart.outputs;
+              };
+            };
+          });
         };
     };
   };

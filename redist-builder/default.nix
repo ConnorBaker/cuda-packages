@@ -33,9 +33,7 @@ let
 
   inherit (lib.attrsets)
     attrValues
-    genAttrs
     mapAttrsToList
-    optionalAttrs
     ;
   inherit (lib.lists)
     any
@@ -43,14 +41,12 @@ let
     findFirstIndex
     intersectLists
     optionals
-    subtractLists
     unique
     ;
   inherit (lib.strings) concatStringsSep concatMapStringsSep optionalString;
   inherit (lib.trivial)
     boolToString
     id
-    warn
     warnIf
     ;
 
@@ -340,36 +336,8 @@ backendStdenv.mkDerivation (
         done
       '';
 
-    passthru =
-      # Make the CUDA-patched stdenv available
-      {
-        stdenv = backendStdenv;
-      }
-      # If broken or platform is unsupported, populate passthru with attributes for all possible outputs (besides out).
-      # This way, if a consumer of a redist package attempts to access an output which doesn't exist on their platform
-      # or configuration, they get an error message about the package being broken or unsupported *instead of* a missing
-      # attribute error.
-      // optionalAttrs (isBroken || isBadPlatform) (
-        let
-          # Subtract finalAttrs.outputs *from* possibleOutputs to get the outputs that are not in finalAttrs.outputs.
-          invalidOutputs = subtractLists finalAttrs.outputs possibleOutputs;
-        in
-        genAttrs invalidOutputs (
-          output:
-          let
-            # Create a variant of the package which is both marked as broken and unsupported.
-            packageMarkedAsBrokenAndUnsupported = finalAttrs.finalPackage.overrideAttrs (prevAttrs: {
-              brokenConditions = prevAttrs.brokenConditions // {
-                "Accessed non-existent output ${output}" = true;
-              };
-              badPlatformsConditions = prevAttrs.badPlatformsConditions // {
-                "Accessed non-existent output ${output}" = true;
-              };
-            });
-          in
-          warn "${finalAttrs.name}.${output} does not exist" packageMarkedAsBrokenAndUnsupported
-        )
-      );
+    # Make the CUDA-patched stdenv available
+    passthru.stdenv = backendStdenv;
 
     meta =
       let

@@ -1,6 +1,7 @@
 {
   backendStdenv,
   cmake,
+  cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
   cuda_profiler_api,
@@ -84,6 +85,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   ];
 
   buildInputs = [
+    cuda_cccl # <thrust/*>
     cuda_cudart
     cuda_profiler_api
     cudnn
