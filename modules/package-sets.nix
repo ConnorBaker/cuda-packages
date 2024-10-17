@@ -109,6 +109,9 @@ let
           cudnn_8_6 = loosePackages.cudnn_8_6_0;
           cudnn_8 = loosePackages.cudnn_8_6_0;
           cudnn = loosePackages.cudnn_8_6_0;
+          tensorrt_8_5 = loosePackages.tensorrt_8_5_2;
+          tensorrt_8 = loosePackages.tensorrt_8_5_2;
+          tensorrt = loosePackages.tensorrt_8_5_2;
         };
 
         addRedistributablePackages =

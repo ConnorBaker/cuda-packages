@@ -2,6 +2,7 @@
 .direnv
 .envrc
 result
+result-*
 
 # Python
 __pycache__
