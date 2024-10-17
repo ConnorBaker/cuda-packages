@@ -1,5 +1,9 @@
 # TODO(@connorbaker): Utility functions for brokenConditions/badPlatformsConditions.
-{ cuda-lib, lib }:
+{
+  cuda-lib,
+  lib,
+  upstreamable-lib,
+}:
 let
   inherit (cuda-lib.data) redistUrlPrefix;
   inherit (cuda-lib.utils)
@@ -36,7 +40,6 @@ let
     flatten
     groupBy'
     reverseList
-    take
     ;
   inherit (lib.options) mkOption;
   inherit (lib.strings)
@@ -57,31 +60,14 @@ let
     pipe
     setFunctionArgs
     ;
-  inherit (lib.versions) major majorMinor splitVersion;
+  inherit (lib.versions) major majorMinor;
 in
 {
-  /**
-    Removes the dots from a string.
-
-    # Type
-
-    ```
-    dropDots :: String -> String
-    ```
-
-    # Arguments
-
-    str
-    : The string to remove dots from
-
-    # Example
-
-    ```nix
-    cuda-lib.utils.dropDots "1.2.3"
-    => "123"
-    ```
-  */
-  dropDots = builtins.replaceStrings [ "." ] [ "" ];
+  inherit (upstreamable-lib.versions)
+    dropDots
+    majorMinorPatch
+    majorMinorPatchBuild
+    ;
 
   /**
     Maps `mkOption` over the values of an attribute set.
@@ -585,64 +571,6 @@ in
       "windows-x86_64"
     else
       "unsupported";
-
-  /**
-    Extracts the major, minor, and patch version from a string.
-
-    # Example
-
-    ```nix
-    cuda-lib.utils.majorMinorPatch "11.0.3.4"
-    => "11.0.3"
-    ```
-
-    # Type
-
-    ```
-    majorMinorPatch :: String -> String
-    ```
-
-    # Arguments
-
-    version
-    : The version string
-  */
-  majorMinorPatch =
-    version:
-    pipe version [
-      splitVersion
-      (take 3)
-      (concatStringsSep ".")
-    ];
-
-  /**
-    Extracts the major, minor, patch, and build version from a string.
-
-    # Example
-
-    ```nix
-    cuda-lib.utils.majorMinorPatchBuild "11.0.3.4"
-    => "11.0.3.4"
-    ```
-
-    # Type
-
-    ```
-    majorMinorPatchBuild :: String -> String
-    ```
-
-    # Arguments
-
-    version
-    : The version string
-  */
-  majorMinorPatchBuild =
-    version:
-    pipe version [
-      splitVersion
-      (take 4)
-      (concatStringsSep ".")
-    ];
 
   /**
     Generates a CUDA variant name from a version.

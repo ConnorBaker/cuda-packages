@@ -2,17 +2,18 @@
 let
   inherit (builtins) import;
   inherit (lib.fixedPoints) makeExtensible;
-
-  cuda-lib = makeExtensible (final: {
-    data = import ./data.nix;
-    types = import ./types.nix {
-      inherit lib;
-      cuda-lib = final;
-    };
-    utils = import ./utils.nix {
-      inherit lib;
-      cuda-lib = final;
-    };
-  });
+  upstreamable-lib = import ../upstreamable-lib {
+    inherit lib;
+  };
 in
-cuda-lib
+makeExtensible (final: {
+  data = import ./data.nix;
+  types = import ./types.nix {
+    inherit lib upstreamable-lib;
+    cuda-lib = final;
+  };
+  utils = import ./utils.nix {
+    inherit lib upstreamable-lib;
+    cuda-lib = final;
+  };
+})
