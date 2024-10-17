@@ -97,7 +97,22 @@ let
           directory = ../packages;
         };
 
-        redistributablePackages =
+        # Various aliases for packages which should be set PRIOR to adding redistributable packages.
+        # This is typically used for packages which we do not have redistributables for, but which re-use
+        # redistributable packaging logic.
+        # For example, CUDNN 8.6.0 is only available for the Jetson as a debian archive, so we alias it
+        # to the versioned name for CUDNN 8.6.
+        # NOTE: The `addRedistributablePackages` function will update these aliases accordingly if there are new,
+        # supported redistributable packages.
+        # jetsonAliases = optionalAttrs (hostRedistArch == "linux-aarch64") {
+        jetsonAliases = {
+          cudnn_8_6 = loosePackages.cudnn_8_6_0;
+          cudnn_8 = loosePackages.cudnn_8_6_0;
+          cudnn = loosePackages.cudnn_8_6_0;
+        };
+
+        addRedistributablePackages =
+          initialPackages:
           let
             # trimmedFilteredRedists still has a tree-like structure. We will use it as a way to get the supported
             # redistributable architectures for each package.
@@ -214,17 +229,12 @@ let
                       existingPackageIsOlder = versionOlder existingPackage.version currentPackage.version;
                     in
 
-                    # If
-                    # - only the current package is supported; or
-                    # - the current package is newer than the existing package
+                    # If the current package is supported and either the existing package is older or not supported,
                     # choose the current package.
-                    if (!existingPackageIsSupported && currentPackageIsSupported) || existingPackageIsOlder then
+                    if currentPackageIsSupported && (existingPackageIsOlder || !existingPackageIsSupported) then
                       currentPackage
 
-                    # Else
-                    # - only existing package is supported; and
-                    # - the existing package is at least as new as the current package
-                    # choose the existing package.
+                    # Otherwise, choose the existing package.
                     else
                       existingPackage
 
@@ -257,10 +267,12 @@ let
               };
           in
           # Fold our builder function over the flattened redists.
-          foldl' flattenedRedistsFoldFn { } trimmedFilteredFlattenedRedists;
+          foldl' flattenedRedistsFoldFn initialPackages trimmedFilteredFlattenedRedists;
       in
       recurseIntoAttrs (
-        coreAttrs // dataAttrs // utilityAttrs // loosePackages // redistributablePackages
+        addRedistributablePackages (
+          coreAttrs // dataAttrs // utilityAttrs // loosePackages // jetsonAliases
+        )
       )
     );
   };

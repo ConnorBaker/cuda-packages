@@ -82,7 +82,7 @@ in
       cudaArchitectures = {
         description = ''
           Real CUDA architectures supported by the package
-          
+
           A value of `null` indicates that the package is not specific to any architecture.
         '';
         type = nullOr (oneOf [
