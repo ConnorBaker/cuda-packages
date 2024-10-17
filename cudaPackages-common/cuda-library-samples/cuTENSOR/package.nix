@@ -1,8 +1,8 @@
 {
   cuda-library-samples,
   lib,
-  libcutensor,
   libcublas,
+  libcutensor,
 }:
 let
   inherit (lib.attrsets) getLib getOutput;
@@ -13,11 +13,6 @@ cuda-library-samples.sample-builder (
   finalAttrs: prevAttrs: {
     sampleName = "cuTENSOR";
     sourceRoot = "source/${finalAttrs.sampleName}";
-
-    cmakeFlags = prevAttrs.cmakeFlags or [ ] ++ [
-      (cmakePath "CUTENSOR_INCLUDE_DIR" (getOutput "include" libcutensor).outPath)
-      (cmakePath "CUTENSOR_LIB_DIR" (getLib libcutensor).outPath)
-    ];
     installExecutablesMatchingPattern = "cuTENSOR_example_*";
 
     postPatch =
@@ -26,6 +21,11 @@ cuda-library-samples.sample-builder (
       + ''
         cp -f ${./CMakeLists.txt} CMakeLists.txt
       '';
+
+    cmakeFlags = prevAttrs.cmakeFlags or [ ] ++ [
+      (cmakePath "CUTENSOR_INCLUDE_DIR" (getOutput "include" libcutensor).outPath)
+      (cmakePath "CUTENSOR_LIB_DIR" (getLib libcutensor).outPath)
+    ];
 
     buildInputs = prevAttrs.buildInputs or [ ] ++ [
       libcublas

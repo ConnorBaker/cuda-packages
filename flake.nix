@@ -158,6 +158,9 @@
               # Nix
               nixfmt.enable = true;
 
+              # Python
+              ruff.enable = true;
+
               # Shell
               shellcheck.enable = true;
               shfmt.enable = true;

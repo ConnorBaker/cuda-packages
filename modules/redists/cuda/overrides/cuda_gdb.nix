@@ -1,6 +1,5 @@
 {
   cudaAtLeast,
-  cudaMajorMinorVersion,
   expat,
   gmp,
   lib,
