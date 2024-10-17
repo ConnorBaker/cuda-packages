@@ -2,10 +2,12 @@
 # the names of dependencies from that package set directly to avoid evaluation errors
 # in the case redistributable packages are not available.
 {
+  backendStdenv,
+  cuda_cccl,
+  cuda_cudart,
+  cuda_nvcc,
   cudaAtLeast,
   cudaMajorMinorVersion,
-  cudaOlder,
-  cudaPackages,
   fetchFromGitHub,
   gitUpdater,
   lib,
@@ -16,14 +18,8 @@
   which,
 }:
 let
+  inherit (lib.attrsets) getBin;
   inherit (lib.lists) optionals;
-  inherit (cudaPackages)
-    backendStdenv
-    cuda_cccl
-    cuda_cudart
-    cuda_nvcc
-    cudatoolkit
-    ;
 in
 backendStdenv.mkDerivation (finalAttrs: {
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
@@ -40,30 +36,36 @@ backendStdenv.mkDerivation (finalAttrs: {
   strictDeps = true;
 
   nativeBuildInputs = [
+    cuda_nvcc
     which
-  ] ++ optionals (cudaOlder "11.4") [ cudatoolkit ] ++ optionals (cudaAtLeast "11.4") [ cuda_nvcc ];
+  ];
 
   buildInputs =
-    [ nccl ]
-    ++ optionals (cudaOlder "11.4") [ cudatoolkit ]
-    ++ optionals (cudaAtLeast "11.4") [ cuda_cudart ]
+    [
+      cuda_cudart
+      nccl
+    ]
     ++ optionals (cudaAtLeast "12.0") [
       cuda_cccl # <nv/target>
     ]
     ++ optionals mpiSupport [ mpi ];
 
-  makeFlags =
-    [ "NCCL_HOME=${nccl}" ]
-    ++ optionals (cudaOlder "11.4") [ "CUDA_HOME=${cudatoolkit}" ]
+  makeFlags = [
     # NOTE: CUDA_HOME is expected to have the bin directory
-    ++ optionals (cudaAtLeast "11.4") [ "CUDA_HOME=${cuda_nvcc}" ]
-    ++ optionals mpiSupport [ "MPI=1" ];
+    # TODO: This won't work with cross-compilation since cuda_nvcc will come from hostPackages by default (aka pkgs).
+    "CUDA_HOME=${getBin cuda_nvcc}"
+    "NCCL_HOME=${nccl}"
+  ] ++ optionals mpiSupport [ "MPI=1" ];
 
   enableParallelBuilding = true;
 
   installPhase = ''
+    runHook preInstall
     mkdir -p "$out/bin"
-    cp -r build/* "$out/bin/"
+    install -Dm755 \
+      $(find build -type f -executable) \
+      "$out/bin"
+    runHook postInstall
   '';
 
   passthru.updateScript = gitUpdater {
