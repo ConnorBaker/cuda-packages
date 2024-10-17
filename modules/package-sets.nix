@@ -92,55 +92,19 @@ let
           cudaOlder = versionOlder final.cudaVersion;
         };
 
-        loosePackages = packagesFromDirectoryRecursive {
+        cudaPackages_11-jetson = packagesFromDirectoryRecursive {
           inherit (final) callPackage;
-          directory = ../packages;
+          directory = ../cudaPackages_11-jetson;
         };
 
-        # Packages for which we provide multiple versions.
-        # NOTE: Using import to avoid the need to fuse `override` functions provided by multiple applications of
-        # `callPackage`.
-        versionedPackages = {
-          onnx_1_16 = final.callPackage ../versioned-packages/onnx/generic.nix {
-            version = "1.16.2";
-          };
-          onnx_1_14 = final.callPackage ../versioned-packages/onnx/generic.nix {
-            version = "1.14.1";
-          };
-
-          onnxruntime_1_19 = final.callPackage ../versioned-packages/onnxruntime/generic.nix {
-            version = "1.19.2";
-          };
-          onnxruntime_1_18 = final.callPackage ../versioned-packages/onnxruntime/generic.nix {
-            version = "1.18.2";
-          };
-          onnxruntime_1_16 = final.callPackage ../versioned-packages/onnxruntime/generic.nix {
-            version = "1.16.3";
-          };
-
-          onnx-tensorrt_10_4 = final.callPackage ../versioned-packages/onnx-tensorrt/generic.nix {
-            version = "10.4";
-          };
-          onnx-tensorrt_8_5 = final.callPackage ../versioned-packages/onnx-tensorrt/generic.nix {
-            version = "8.5";
-          };
+        cudaPackages_12 = packagesFromDirectoryRecursive {
+          inherit (final) callPackage;
+          directory = ../cudaPackages_12;
         };
 
-        # Various aliases for packages which should be set PRIOR to adding redistributable packages.
-        # This is typically used for packages which we do not have redistributables for, but which re-use
-        # redistributable packaging logic.
-        # For example, CUDNN 8.6.0 is only available for the Jetson as a debian archive, so we alias it
-        # to the versioned name for CUDNN 8.6.
-        # NOTE: The `addRedistributablePackages` function will update these aliases accordingly if there are new,
-        # supported redistributable packages.
-        packageAliases = {
-          cudnn_8_6 = loosePackages.cudnn_8_6_0;
-          cudnn_8 = packageAliases.cudnn_8_6;
-          cudnn = packageAliases.cudnn_8;
-
-          tensorrt_8_5 = loosePackages.tensorrt_8_5_2;
-          tensorrt_8 = packageAliases.tensorrt_8_5;
-          tensorrt = packageAliases.tensorrt_8;
+        cudaPackagesCommon = packagesFromDirectoryRecursive {
+          inherit (final) callPackage;
+          directory = ../cudaPackages-common;
         };
 
         addRedistributablePackages =
@@ -188,31 +152,6 @@ let
                 isSupportedPlatform = redistArch == "source" || elem hostRedistArch supportedRedistArchs;
 
                 inherit (config.redists.${redistName}) versionPolicy;
-
-                buildVersionedPackageName = cuda-lib.utils.mkVersionedPackageName {
-                  inherit redistName packageName;
-                  inherit (releaseInfo) version;
-                  versionPolicy = "build";
-                };
-
-                patchVersionedPackageName = cuda-lib.utils.mkVersionedPackageName {
-                  inherit redistName packageName;
-                  inherit (releaseInfo) version;
-                  versionPolicy = "patch";
-                };
-
-                minorVersionedPackageName = cuda-lib.utils.mkVersionedPackageName {
-                  inherit redistName packageName;
-                  inherit (releaseInfo) version;
-                  versionPolicy = "minor";
-                };
-
-                # Included to allow us easy access to the most recent major version of the package.
-                majorVersionedPackageName = cuda-lib.utils.mkVersionedPackageName {
-                  inherit redistName packageName;
-                  inherit (releaseInfo) version;
-                  versionPolicy = "major";
-                };
 
                 # Package which is constructed from the current flattenedRedistsElem.
                 currentPackage = pipe flattenedRedistsElem [
@@ -275,24 +214,6 @@ let
                     currentPackage;
               in
               packages
-              # NOTE: In the case we're processing a CUDA redistributable, the attribute name and the package name are
-              #       the same, so we're effectively replacing the package twice.
-              // optionalAttrs (cuda-lib.utils.versionPolicyAtLeast versionPolicy "build") {
-                # Build versioned package name case -- where we add a build versioned package to the package set.
-                ${buildVersionedPackageName} = packageForName buildVersionedPackageName;
-              }
-              // optionalAttrs (cuda-lib.utils.versionPolicyAtLeast versionPolicy "patch") {
-                # Patch versioned package name case -- where we add a patch versioned package to the package set.
-                ${patchVersionedPackageName} = packageForName patchVersionedPackageName;
-              }
-              // optionalAttrs (cuda-lib.utils.versionPolicyAtLeast versionPolicy "minor") {
-                # Minor versioned package name case -- where we add a minor versioned package to the package set.
-                ${minorVersionedPackageName} = packageForName minorVersionedPackageName;
-              }
-              // optionalAttrs (cuda-lib.utils.versionPolicyAtLeast versionPolicy "major") {
-                # Major versioned package name case -- where we add a major versioned package to the package set.
-                ${majorVersionedPackageName} = packageForName majorVersionedPackageName;
-              }
               // {
                 # Default package name case -- where we create the default version of a package for the package set.
                 ${packageName} = packageForName packageName;
@@ -302,9 +223,16 @@ let
           foldl' flattenedRedistsFoldFn initialPackages trimmedFilteredFlattenedRedists;
       in
       recurseIntoAttrs (
-        addRedistributablePackages (
-          coreAttrs // dataAttrs // utilityAttrs // loosePackages // versionedPackages // packageAliases
-        )
+        (addRedistributablePackages (
+          coreAttrs
+          // dataAttrs
+          // utilityAttrs
+          // cudaPackagesCommon
+          // (optionalAttrs (major cudaMajorMinorPatchVersion == "12") cudaPackages_12)
+        ))
+        // optionalAttrs (
+          ((major cudaMajorMinorPatchVersion == "11") && hostRedistArch == "linux-aarch64")
+        ) cudaPackages_11-jetson
       )
     );
   };
@@ -317,12 +245,16 @@ in
       # NOTE: We must use lazyAttrsOf, else the package set is evaluated immediately for every CUDA version, instead
       # of lazily.
       type = lazyAttrsOf raw;
-      default = pipe config.redists.cuda.versionedManifests [
-        (cuda-lib.utils.newestVersionedManifestsByVersionPolicy config.redists.cuda.versionPolicy)
-        attrNames
-        (map packageSetBuilder)
-        builtins.listToAttrs
-      ];
+      default =
+        let
+          versionedPackageSets = pipe config.redists.cuda.versionedManifests [
+            (cuda-lib.utils.newestVersionedManifestsByVersionPolicy config.redists.cuda.versionPolicy)
+            attrNames
+            (map packageSetBuilder)
+            builtins.listToAttrs
+          ];
+        in
+        versionedPackageSets // { cudaPackages = versionedPackageSets.cudaPackages_12; };
     };
   };
 }

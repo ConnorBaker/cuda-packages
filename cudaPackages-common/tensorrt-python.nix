@@ -1,26 +1,31 @@
 {
   autoPatchelfHook,
+  backendStdenv,
+  cuda-lib,
   lib,
   python3,
-  tensorrt_10_4,
+  tensorrt,
 }:
 let
+  inherit (cuda-lib.utils) dropDots majorMinorPatch;
   inherit (lib.attrsets) getLib;
+  inherit (lib.versions) majorMinor;
   inherit (python3.pkgs) buildPythonPackage;
 in
 buildPythonPackage {
   strictDeps = true;
+  stdenv = backendStdenv;
 
   pname = "tensorrt-python";
-  inherit (tensorrt_10_4) version;
+  inherit (tensorrt) version;
   format = "wheel";
 
   # TODO: Selection logic to choose the correct wheel based on Python version and platform.
-  src = "${tensorrt_10_4.python}/python/tensorrt-10.4.0-cp312-none-linux_x86_64.whl";
+  src = "${tensorrt.python}/python/tensorrt-${majorMinorPatch tensorrt.version}-cp${dropDots (majorMinor python3.version)}-none-linux_x86_64.whl";
 
   nativeBuildInputs = [ autoPatchelfHook ];
 
-  buildInputs = [ (getLib tensorrt_10_4) ];
+  buildInputs = [ (getLib tensorrt) ];
 
   pythonImportsCheck = [ "tensorrt" ];
 

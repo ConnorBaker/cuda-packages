@@ -22,7 +22,8 @@ let
 
   # desiredPython3MinorVersions :: List String
   desiredPython3MinorVersions =
-    if cudaMajorMinorVersion == "12.5" then map builtins.toString (range 8 12) else [ ];
+    assert cudaMajorMinorVersion == "12.6";
+    map builtins.toString (range 8 12);
 
   # python3MinorVersionToPackage :: AttrSet (null | Package)
   python3MinorVersionToPackage = genAttrs desiredPython3MinorVersions (
@@ -72,12 +73,4 @@ prevAttrs: {
   buildInputs = prevAttrs.buildInputs ++ additionalBuildInputs;
 
   postInstall = (prevAttrs.postInstall or "") + additionalPostInstall;
-
-  passthru = recursiveUpdate (prevAttrs.passthru or { }) {
-    # Expose our fixes to the outside world so the cudatoolkit runfile installer can make use of them.
-    fixups.cudatoolkit-legacy-runfile = {
-      buildInputs = additionalBuildInputs;
-      postInstall = additionalPostInstall;
-    };
-  };
 }

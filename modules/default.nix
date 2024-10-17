@@ -5,7 +5,7 @@
   ...
 }:
 let
-  # Create pkgs
+  inherit (nixpkgs) lib;
   pkgs = import nixpkgs {
     inherit system;
     config = {
@@ -16,9 +16,6 @@ let
       cudaHostCompiler = config.cuda.hostCompiler;
     };
   };
-
-  # Create our lib
-  inherit (pkgs) lib;
 
   # Create our cuda-lib
   cuda-lib = import ../cuda-lib { inherit lib; };

@@ -2,8 +2,6 @@
   lib,
   symlinkJoin,
   backendStdenv,
-  cudaOlder,
-  cudatoolkit-legacy-runfile,
   cudaMajorMinorVersion,
   cuda_cccl ? null,
   cuda_cudart ? null,
@@ -63,26 +61,22 @@ let
     (hostPackages: hostPackages ++ targetPackages)
   ];
 in
+symlinkJoin rec {
+  name = "cuda${cudaMajorMinorVersion}-cudatoolkit";
+  version = cudaMajorMinorVersion;
 
-if cudaOlder "11.4" then
-  cudatoolkit-legacy-runfile
-else
-  symlinkJoin rec {
-    name = "cuda${cudaMajorMinorVersion}-cudatoolkit";
-    version = cudaMajorMinorVersion;
+  paths = builtins.concatMap getAllOutputs allPackages;
 
-    paths = builtins.concatMap getAllOutputs allPackages;
-
-    passthru = {
-      cc = lib.warn "cudaPackages.cudatoolkit is deprecated, refer to the manual and use splayed packages instead" backendStdenv.cc;
-      lib = symlinkJoin {
-        inherit name;
-        paths = map getLib allPackages;
-      };
+  passthru = {
+    cc = lib.warn "cudaPackages.cudatoolkit is deprecated, refer to the manual and use splayed packages instead" backendStdenv.cc;
+    lib = symlinkJoin {
+      inherit name;
+      paths = map getLib allPackages;
     };
+  };
 
-    meta = with lib; {
-      description = "Wrapper substituting the deprecated runfile-based CUDA installation";
-      license = licenses.nvidiaCuda;
-    };
-  }
+  meta = with lib; {
+    description = "Wrapper substituting the deprecated runfile-based CUDA installation";
+    license = licenses.nvidiaCuda;
+  };
+}

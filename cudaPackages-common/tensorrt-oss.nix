@@ -4,16 +4,18 @@
   cuda_cudart,
   cuda_nvcc,
   cuda_profiler_api,
+  cuda-lib,
   cudaMajorMinorVersion,
+  cudnn,
   fetchFromGitHub,
   flags,
   lib,
-  onnx,
   onnx-tensorrt,
+  onnx,
   protobuf,
-  tensorrt_10_4,
-  which,
   python3,
+  tensorrt,
+  which,
 }:
 let
   inherit (lib.attrsets) getLib;
@@ -26,8 +28,8 @@ let
   inherit (lib.versions) majorMinor;
   cmakePath = cmakeOptionType "PATH";
 
-  inherit (flags) cudaCapabilities dropDot;
-  inherit (tensorrt_10_4.passthru) cudnn;
+  inherit (flags) cudaCapabilities;
+  inherit (cuda-lib.utils) dropDots;
 in
 
 backendStdenv.mkDerivation (finalAttrs: {
@@ -48,7 +50,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   # Ensure Protobuf is found by CMake.
   # https://github.com/NVIDIA/TensorRT/blob/08ad45bf3df848e722dfdc7d01474b5ba2eff7e9/CMakeLists.txt#L126
   postPatch = ''
-    substituteInPlace CMakeLists.txt \
+    substituteInPlace ./CMakeLists.txt \
       --replace-fail \
         "include(third_party/protobuf.cmake)" \
         "find_package(Protobuf REQUIRED)" \
@@ -79,7 +81,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   # CMAKE_TOOLCHAIN_FILE: The path to a toolchain file for cross compilation.
   # TRT_PLATFORM_ID: Bare-metal build (unlike containerized cross-compilation). Currently supported options: x86_64 (default).
   cmakeFlags = [
-    (cmakePath "TRT_LIB_DIR" "${getLib tensorrt_10_4}")
+    (cmakePath "TRT_LIB_DIR" "${getLib tensorrt}")
     (cmakePath "TRT_OUT_DIR" "$out")
     (cmakeFeature "CUDA_VERSION" cudaMajorMinorVersion)
     (cmakeFeature "CUDNN_VERSION" (majorMinor cudnn.version))
@@ -87,7 +89,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     (cmakeBool "BUILD_PARSERS" false)
     (cmakeBool "BUILD_PLUGINS" true)
     (cmakeBool "BUILD_SAMPLES" true)
-    (cmakeFeature "GPU_ARCHS" (concatMapStringsSep " " dropDot cudaCapabilities))
+    (cmakeFeature "GPU_ARCHS" (concatMapStringsSep " " dropDots cudaCapabilities))
   ];
 
   nativeBuildInputs = [
@@ -104,7 +106,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     onnx
     onnx-tensorrt
     protobuf
-    tensorrt_10_4
+    tensorrt
   ];
 
   doCheck = true;

@@ -3,7 +3,7 @@
   backendStdenv,
   cmake,
   cudaMajorMinorVersion,
-  cudatoolkit-legacy-runfile,
+  cudatoolkit,
   fetchFromGitHub,
   lib,
   libcutensor ? null,
@@ -24,9 +24,9 @@ let
     nativeBuildInputs = [
       autoAddDriverRunpath
       cmake
-      cudatoolkit-legacy-runfile
+      cudatoolkit
     ];
-    buildInputs = [ cudatoolkit-legacy-runfile ];
+    buildInputs = [ cudatoolkit ];
     postFixup = ''
       for exe in $out/bin/*; do
         addDriverRunpath $exe

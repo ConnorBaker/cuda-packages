@@ -3,7 +3,7 @@
   backendStdenv,
   cmake,
   flags,
-  cudatoolkit-legacy-runfile,
+  cudatoolkit,
   cudaMajorMinorVersion,
   cudaMajorMinorPatchVersion,
   fetchFromGitHub,
@@ -100,7 +100,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   dontUseCmakeConfigure = true;
 
   buildInputs = [
-    cudatoolkit-legacy-runfile
+    cudatoolkit
     freeimage
     glfw3
   ];
@@ -116,7 +116,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   enableParallelBuilding = true;
 
   preConfigure = ''
-    export CUDA_PATH=${cudatoolkit-legacy-runfile}
+    export CUDA_PATH=${cudatoolkit}
     export SMS=${strings.replaceStrings [ ";" ] [ " " ] flags.cmakeCudaArchitecturesString}
   '';
 

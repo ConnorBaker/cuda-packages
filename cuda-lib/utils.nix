@@ -60,6 +60,29 @@ let
 in
 {
   /**
+    Removes the dots from a string.
+
+    # Type
+
+    ```
+    dropDots :: String -> String
+    ```
+
+    # Arguments
+
+    str
+    : The string to remove dots from
+
+    # Example
+
+    ```nix
+    cuda-lib.utils.dropDots "1.2.3"
+    => "123"
+    ```
+  */
+  dropDots = builtins.replaceStrings [ "." ] [ "" ];
+
+  /**
     Maps `mkOption` over the values of an attribute set.
 
     # Type

@@ -3,6 +3,6 @@
   config.redists.tensorrt = cuda-lib.utils.mkRedistConfig {
     hasOverrides = true;
     path = ./.;
-    versionPolicy = "minor";
+    versionPolicy = "major";
   };
 }

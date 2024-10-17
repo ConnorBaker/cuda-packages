@@ -65,7 +65,7 @@
                     cuda = {
                       hostCompiler = "gcc";
                       capabilities =
-                        if pkgs.config.cudaCapabilities != [ ] then pkgs.config.cudaCapabilities else [ "8.9" ];
+                        if pkgs.config.cudaCapabilities or [ ] != [ ] then pkgs.config.cudaCapabilities else [ "8.9" ];
                       forwardCompat = false;
                     };
                   }

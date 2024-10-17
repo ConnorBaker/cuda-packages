@@ -3,6 +3,7 @@
   cudaCapabilities ? (pkgs.config.cudaCapabilities or [ ]),
   cudaForwardCompat ? (pkgs.config.cudaForwardCompat or true),
   cudaVersion,
+  cuda-lib,
   lib,
   pkgs,
   stdenv,
@@ -16,6 +17,7 @@ let
     strings
     trivial
     ;
+  inherit (cuda-lib.utils) dropDots;
   inherit (stdenv) hostPlatform;
 
   # Flags are determined based on your CUDA toolkit by default.  You may benefit
@@ -105,13 +107,10 @@ let
   # sanity-checking for all that in below.
   jetsonTargets = lists.intersectLists jetsonComputeCapabilities cudaCapabilities;
 
-  # dropDot :: String -> String
-  dropDot = ver: builtins.replaceStrings [ "." ] [ "" ] ver;
-
   # archMapper :: String -> List String -> List String
   # Maps a feature across a list of architecture versions to produce a list of architectures.
   # For example, "sm" and [ "8.0" "8.6" "8.7" ] produces [ "sm_80" "sm_86" "sm_87" ].
-  archMapper = feat: lists.map (computeCapability: "${feat}_${dropDot computeCapability}");
+  archMapper = feat: lists.map (computeCapability: "${feat}_${dropDots computeCapability}");
 
   # gencodeMapper :: String -> List String -> List String
   # Maps a feature across a list of architecture versions to produce a list of gencode arguments.
@@ -121,7 +120,7 @@ let
     feat:
     lists.map (
       computeCapability:
-      "-gencode=arch=compute_${dropDot computeCapability},code=${feat}_${dropDot computeCapability}"
+      "-gencode=arch=compute_${dropDots computeCapability},code=${feat}_${dropDots computeCapability}"
     );
 
   formatCapabilities =
@@ -137,7 +136,7 @@ let
       #
       # Unknown architectures are rendered as sm_XX gencode flags.
       archNames = lists.unique (
-        lists.map (cap: cudaComputeCapabilityToName.${cap} or "sm_${dropDot cap}") cudaCapabilities
+        lists.map (cap: cudaComputeCapabilityToName.${cap} or "sm_${dropDots cap}") cudaCapabilities
       );
 
       # realArches :: List String
@@ -175,7 +174,7 @@ let
       # cmakeCudaArchitecturesString :: String
       # A semicolon-separated string of CUDA capabilities without dots, suitable for passing to CMake.
       # E.g. "75;86"
-      cmakeCudaArchitecturesString = strings.concatMapStringsSep ";" dropDot cudaCapabilities;
+      cmakeCudaArchitecturesString = strings.concatMapStringsSep ";" dropDots cudaCapabilities;
 
       # Jetson devices cannot be targeted by the same binaries which target non-Jetson devices. While
       # NVIDIA provides both `linux-aarch64` and `linux-sbsa` packages, which both target `aarch64`,
@@ -342,8 +341,8 @@ assert
   # cudaComputeCapabilityToName :: String => String
   inherit cudaComputeCapabilityToName;
 
-  # dropDot :: String -> String
-  inherit dropDot;
+  # dropDots :: String -> String
+  inherit dropDots;
 
   inherit
     defaultCapabilities
