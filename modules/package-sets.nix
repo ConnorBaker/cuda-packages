@@ -109,6 +109,34 @@ let
             inherit (pkgs) protobuf_21;
           };
 
+          onnxruntime_1_19 = builtins.import ../versioned-packages/onnxruntime/1.19.nix {
+            inherit (final)
+              callPackage
+              onnx_1_16
+              onnx-tensorrt_10_4
+              tensorrt_10_4
+              ;
+            inherit (pkgs)
+              fetchFromGitHub
+              flatbuffers_23
+              protobuf_21
+              ;
+          };
+          onnxruntime_1_18 = builtins.import ../versioned-packages/onnxruntime/1.18.nix {
+            inherit (final)
+              callPackage
+              onnx_1_16
+              onnx-tensorrt_10_4
+              tensorrt_10_4
+              ;
+            inherit (pkgs)
+              fetchFromGitHub
+              abseil-cpp_202401
+              flatbuffers_23
+              protobuf_21
+              ;
+          };
+
           onnx-tensorrt_10_4 = builtins.import ../versioned-packages/onnx-tensorrt/10.4.nix {
             inherit (final) callPackage onnx_1_16 tensorrt_10_4;
           };
@@ -132,6 +160,9 @@ let
 
           onnx_1 = versionedPackages.onnx_1_16;
           onnx = packageAliases.onnx_1;
+
+          onnxruntime_1 = versionedPackages.onnxruntime_1_19;
+          onnxruntime = packageAliases.onnxruntime_1;
 
           onnx-tensorrt_10 = versionedPackages.onnx-tensorrt_10_4;
           onnx-tensorrt_8 = versionedPackages.onnx-tensorrt_8_5;

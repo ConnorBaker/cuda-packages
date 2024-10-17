@@ -6,6 +6,7 @@
 }:
 let
   inherit (cudaPackages) cudatoolkit cuda_cudart libcublas;
+  inherit (lib.attrsets) getLib;
   inherit (lib.lists) optionals;
   inherit (lib.strings) hasPrefix;
 in
@@ -15,7 +16,7 @@ finalAttrs: prevAttrs: {
     prevAttrs.buildInputs
     ++ optionals (cudaOlder "11.4") [ cudatoolkit ]
     ++ optionals (cudaAtLeast "11.4") (
-      [ libcublas ]
+      [ (getLib libcublas) ]
       # For some reason, the 1.4.x release of cuTENSOR requires the cudart library.
       ++ optionals (hasPrefix "1.4" finalAttrs.version) [ cuda_cudart ]
     );

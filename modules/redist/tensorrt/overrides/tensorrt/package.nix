@@ -4,13 +4,15 @@
   cudaOlder,
   cudaPackages,
   cudaMajorMinorVersion,
+  flags,
   lib,
+  libcudla ? null,
   patchelf,
   stdenv,
 }:
 let
   inherit (cuda-lib.utils) getRedistArch majorMinorPatch mkVersionedPackageName;
-  inherit (lib.attrsets) attrByPath;
+  inherit (lib.attrsets) attrByPath getLib optionalAttrs;
   inherit (lib.lists) optionals;
   inherit (lib.meta) getExe';
   inherit (lib.strings) concatStringsSep optionalString;
@@ -48,13 +50,20 @@ prevAttrs: {
     "CUDNN version mismatch" = cudnnMismatch;
   };
 
-  badPlatformsConditions = prevAttrs.badPlatformsConditions // {
-    "Unsupported platform" = hostRedistArch == "unsupported";
-  };
+  badPlatformsConditions =
+    prevAttrs.badPlatformsConditions
+    # NOTE: For some reason, CUDA 12.3 is missing `libcudla`.
+    // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions (
+      optionalAttrs flags.isJetsonBuild { inherit libcudla; }
+    )
+    // {
+      "Unsupported platform" = hostRedistArch == "unsupported";
+    };
 
   buildInputs =
     prevAttrs.buildInputs
-    ++ [ cudnn ]
+    ++ [ (getLib cudnn) ]
+    ++ optionals flags.isJetsonBuild [ libcudla ]
     ++ optionals finalAttrs.passthru.useCudatoolkitRunfile [ cudaPackages.cudatoolkit ]
     ++ optionals (!finalAttrs.passthru.useCudatoolkitRunfile) [ cudaPackages.cuda_cudart ];
 
@@ -78,6 +87,10 @@ prevAttrs: {
         mv "targets/${targetString}/$dir" "$dir"
       done
     '';
+
+  autoPatchelfIgnoreMissingDeps = prevAttrs.autoPatchelfIgnoreMissingDeps ++ [
+    "libnvdla_compiler.so"
+  ];
 
   # Tell autoPatchelf about runtime dependencies.
   postFixup =

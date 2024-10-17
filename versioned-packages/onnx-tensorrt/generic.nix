@@ -35,6 +35,8 @@ backendStdenv.mkDerivation (finalAttrs: {
     inherit hash;
   };
 
+  # NOTE: Can't build static libraries on this version for Jetson due to attempts to link against static firmware
+  # binaries.
   patches = optionals (finalAttrs.version == "8.5") [
     ./onnx-8.5-only-dynamic-lib.patch
   ];
