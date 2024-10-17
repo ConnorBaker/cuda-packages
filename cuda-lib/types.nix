@@ -1,9 +1,32 @@
 { cuda-lib, lib }:
 let
+  inherit (cuda-lib.types)
+    attrs
+    cudaRealArch
+    cudaVariant
+    features
+    manifest
+    packageInfo
+    packageName
+    packages
+    packageVariants
+    redistArch
+    redistConfig
+    redistName
+    release
+    releaseInfo
+    sriHash
+    version
+    versionedManifests
+    versionWithNumComponents
+    ;
   inherit (cuda-lib.utils) mkOptions;
+  inherit (lib.attrsets) attrNames;
+  inherit (lib.lists) all;
   inherit (lib.strings) concatStringsSep;
   inherit (lib.types)
     addCheck
+    attrsOf
     enum
     functionTo
     lazyAttrsOf
@@ -35,10 +58,7 @@ in
     : The option type of the values of the attribute set
   */
   attrs =
-    keyType: valueType:
-    addCheck (lib.types.attrsOf valueType) (
-      attrs: builtins.all keyType.check (builtins.attrNames attrs)
-    );
+    keyType: valueType: addCheck (attrsOf valueType) (attrs: all keyType.check (attrNames attrs));
 
   /**
     The option type of a CUDA variant.
@@ -86,8 +106,8 @@ in
           A value of `null` indicates that the package is not specific to any architecture.
         '';
         type = nullOr (oneOf [
-          (nonEmptyListOf cuda-lib.types.cudaRealArch) # Flat lib directory
-          (cuda-lib.types.attrs nonEmptyStr cuda-lib.types.cudaRealArch) # CUDA versioned lib directory
+          (nonEmptyListOf cudaRealArch) # Flat lib directory
+          (attrs nonEmptyStr cudaRealArch) # CUDA versioned lib directory
         ]);
         default = null;
       };
@@ -160,7 +180,7 @@ in
     manifest :: OptionType
     ```
   */
-  manifest = cuda-lib.types.attrs cuda-lib.types.packageName cuda-lib.types.release;
+  manifest = attrs packageName release;
 
   /**
     The option type of a package info attribute set.
@@ -175,11 +195,11 @@ in
     options = mkOptions {
       features = {
         description = "Features the package provides";
-        type = cuda-lib.types.features;
+        type = features;
       };
       recursiveHash = {
         description = "Recursive NAR hash of the unpacked tarball";
-        type = cuda-lib.types.sriHash;
+        type = sriHash;
       };
       relativePath = {
         description = "The path to the package in the redistributable tree or null if it can be reconstructed.";
@@ -198,7 +218,7 @@ in
     packages :: OptionType
     ```
   */
-  packages = cuda-lib.types.attrs cuda-lib.types.redistArch cuda-lib.types.packageVariants;
+  packages = attrs redistArch packageVariants;
 
   /**
     The option type of a package name in a CUDA package set.
@@ -220,7 +240,7 @@ in
     packageVariants :: OptionType
     ```
   */
-  packageVariants = cuda-lib.types.attrs cuda-lib.types.cudaVariant cuda-lib.types.packageInfo;
+  packageVariants = attrs cudaVariant packageInfo;
 
   /**
     The option type of a redistributable architecture name.
@@ -252,13 +272,13 @@ in
           fail, as the `check` function for the type interferes with the functions in the `overrides` attribute
           set.
         '';
-        type = cuda-lib.types.attrs cuda-lib.types.packageName raw;
+        type = attrs packageName raw;
       };
       versionedManifests = {
         description = ''
           Data required to produce packages for (potentially multiple) versions of CUDA.
         '';
-        type = cuda-lib.types.versionedManifests;
+        type = versionedManifests;
       };
       versionPolicy = {
         description = ''
@@ -314,7 +334,7 @@ in
     redists :: OptionType
     ```
   */
-  redists = cuda-lib.types.attrs cuda-lib.types.redistName cuda-lib.types.redistConfig;
+  redists = attrs redistName redistConfig;
 
   /**
     The option type of a release attribute set.
@@ -327,8 +347,8 @@ in
   */
   release = submodule {
     options = mkOptions {
-      releaseInfo.type = cuda-lib.types.releaseInfo;
-      packages.type = cuda-lib.types.packages;
+      releaseInfo.type = releaseInfo;
+      packages.type = packages;
     };
   };
 
@@ -358,7 +378,7 @@ in
       };
       version = {
         description = "The version of the redistributable";
-        type = cuda-lib.types.version;
+        type = version;
       };
     };
   };
@@ -407,7 +427,7 @@ in
     versionedManifests :: OptionType
     ```
   */
-  versionedManifests = cuda-lib.types.attrs cuda-lib.types.version cuda-lib.types.manifest;
+  versionedManifests = attrs version manifest;
 
   # TODO: Better organize/alphabetize.
 
@@ -470,17 +490,31 @@ in
   */
   flattenedRedistsElem = submodule {
     options = mkOptions {
-      cudaVariant.type = cuda-lib.types.cudaVariant;
-      packageInfo.type = cuda-lib.types.packageInfo;
-      packageName.type = cuda-lib.types.packageName;
-      redistArch.type = cuda-lib.types.redistArch;
-      redistName.type = cuda-lib.types.redistName;
-      releaseInfo.type = cuda-lib.types.releaseInfo;
+      cudaVariant.type = cudaVariant;
+      packageInfo.type = packageInfo;
+      packageName.type = packageName;
+      redistArch.type = redistArch;
+      redistName.type = redistName;
+      releaseInfo.type = releaseInfo;
       # NOTE: This is the version of the manifest, not the version of an individual redist package (that is
       # provided by releaseInfo.version).
-      version.type = cuda-lib.types.version;
+      version.type = version;
     };
   };
+
+  /**
+    The option type of `HostCompiler`.
+
+    # Type
+
+    ```
+    hostCompiler :: OptionType
+    ```
+  */
+  hostCompiler = enum [
+    "clang"
+    "gcc"
+  ];
 
   /**
     The option type of a version with a single component.
@@ -491,7 +525,7 @@ in
     majorVersion :: OptionType
     ```
   */
-  majorVersion = cuda-lib.types.versionWithNumComponents 1;
+  majorVersion = versionWithNumComponents 1;
 
   /**
     The option type of a version with two components.
@@ -502,7 +536,7 @@ in
     majorMinorVersion :: OptionType
     ```
   */
-  majorMinorVersion = cuda-lib.types.versionWithNumComponents 2;
+  majorMinorVersion = versionWithNumComponents 2;
 
   /**
     The option type of a version with three components.
@@ -513,7 +547,7 @@ in
     majorMinorPatchVersion :: OptionType
     ```
   */
-  majorMinorPatchVersion = cuda-lib.types.versionWithNumComponents 3;
+  majorMinorPatchVersion = versionWithNumComponents 3;
 
   /**
     The option type of a version with four components.
@@ -524,7 +558,7 @@ in
     majorMinorPatchBuildVersion :: OptionType
     ```
   */
-  majorMinorPatchBuildVersion = cuda-lib.types.versionWithNumComponents 4;
+  majorMinorPatchBuildVersion = versionWithNumComponents 4;
 
   /**
     The option type of a version with a fixed number of components.

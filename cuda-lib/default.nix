@@ -1,4 +1,4 @@
-{ lib, pkgs }:
+{ lib }:
 let
   inherit (builtins) import;
   inherit (lib.fixedPoints) makeExtensible;
@@ -10,7 +10,7 @@ let
       cuda-lib = final;
     };
     utils = import ./utils.nix {
-      inherit pkgs lib;
+      inherit lib;
       cuda-lib = final;
     };
   });
