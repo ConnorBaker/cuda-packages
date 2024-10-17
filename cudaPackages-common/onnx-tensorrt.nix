@@ -8,6 +8,7 @@
   onnx,
   onnx-tensorrt, # For passthru.tests.gpu
   protobuf,
+  pycuda,
   python3,
   tensorrt-python,
   tensorrt,
@@ -22,7 +23,6 @@ let
     buildPythonPackage
     cmake # Yes, we need cmake from python3Packages in order for the build to work.
     setuptools
-    pycuda
     ;
 
   version = "10.4";
@@ -103,6 +103,7 @@ buildPythonPackage {
   ];
 
   buildInputs = [
+    cuda_cudart
     protobuf
     tensorrt
   ];
@@ -120,8 +121,7 @@ buildPythonPackage {
     # Install the header files to the include directory.
     + ''
       mkdir -p "$out/include"
-      install -Dm644 *.h "$out/include"
-      install -Dm644 *.hpp "$out/include"
+      cp *.h *.hpp "$out/include/onnx"
     '';
 
   doCheck = true;

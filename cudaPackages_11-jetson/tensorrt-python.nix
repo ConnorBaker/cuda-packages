@@ -4,9 +4,7 @@
   cuda_cudart,
   cudaMajorMinorVersion,
   lib,
-  onnx-tensorrt,
   python3,
-  runCommand,
   tensorrt,
   tensorrt-oss,
 }:
@@ -25,21 +23,6 @@ let
   pythonMajorVersion = elemAt pythonVersionComponents 0;
   pythonMinorVersion = elemAt pythonVersionComponents 1;
   tensorRTMajorMinorPatchVersion = tensorrt-oss.version;
-
-  # This allows us to break a circular dependency on onnx-tensorrt, which requires tensorrt-python.
-  # We only need the header files.
-  onnx-tensorrt-headers =
-    runCommand "onnx-tensorrt-headers"
-      {
-        strictDeps = true;
-        inherit (onnx-tensorrt) src version;
-        nativeBuildInputs = [ onnx-tensorrt.src ];
-      }
-      ''
-        mkdir -p "$out/include/onnx"
-        cd "${onnx-tensorrt.src}"
-        cp *.h *.hpp "$out/include/onnx"
-      '';
 in
 buildPythonPackage {
   strictDeps = true;
@@ -74,11 +57,10 @@ buildPythonPackage {
         'PYBIND11_DIR' \
         'pybind11_DIR' \
       --replace-fail \
-        'find_path(PY_INCLUDE Python.h HINTS ''${EXT_PATH}/''${PYTHON} /usr/include/''${PYTHON} PATH_SUFFIXES include)' \
+        'find_path(PY_INCLUDE Python.h HINTS ''${EXT_PATH}/''${PYTHON} PATH_SUFFIXES include)' \
         'find_path(PY_INCLUDE Python.h HINTS "${python3}/include/''${PYTHON}" PATH_SUFFIXES include)'
     ''
     # Patch files in packaging
-    # Largely taken from https://github.com/NVIDIA/TensorRT/blob/08ad45bf3df848e722dfdc7d01474b5ba2eff7e9/python/build.sh.
     + ''
       for file in $(find packaging -type f)
       do
@@ -88,23 +70,16 @@ buildPythonPackage {
             '${tensorrt.version}' \
           --replace-quiet \
             '##TENSORRT_MAJMINPATCH##' \
-            '${tensorRTMajorMinorPatchVersion}' \
-          --replace-quiet \
-            '##TENSORRT_PYTHON_VERSION##' \
-            '${tensorRTMajorMinorPatchVersion}' \
-          --replace-quiet \
-            '##TENSORRT_MODULE##' \
-            'tensorrt'
+            '${tensorRTMajorMinorPatchVersion}'
       done
     '';
 
   cmakeFlags = [
     (cmakeFeature "CMAKE_BUILD_TYPE" "Release")
-    (cmakeFeature "TENSORRT_MODULE" "tensorrt")
     (cmakeFeature "EXT_PATH" "/dev/null") # Must be set, too lazy to patch around it
     (cmakeFeature "PYTHON_MAJOR_VERSION" pythonMajorVersion)
     (cmakeFeature "PYTHON_MINOR_VERSION" pythonMinorVersion)
-    (cmakeFeature "TARGET" (if backendStdenv.hostPlatform.isAarch then "aarch64" else "x86_64"))
+    (cmakeFeature "TARGET" "aarch64") # Only ever building for Jetsons in this derivation
   ];
 
   preBuild =
@@ -115,16 +90,15 @@ buildPythonPackage {
     ''
     # Copy the build artifacts to packaging.
     + ''
-      cp -r ./tensorrt ../packaging/bindings_wheel
+      cp -r ./tensorrt ../packaging/
     ''
     # Move to packaging, which contains setup.py, for the Python build.
     + ''
-      cd ../packaging/bindings_wheel
+      cd ../packaging
     '';
 
   buildInputs = [
     cuda_cudart
-    onnx-tensorrt-headers
     pybind11 # In buildInputs instead of dependencies so CMake can find it
     tensorrt
   ];

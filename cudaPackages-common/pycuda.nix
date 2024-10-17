@@ -57,7 +57,6 @@ buildPythonPackage {
   ];
 
   preConfigure = ''
-    ${python3.pythonOnBuildForHost.interpreter} configure.py --help
     ${python3.pythonOnBuildForHost.interpreter} configure.py \
       --no-use-shipped-boost \
       --boost-python-libname=boost_python${dropDots (majorMinor python3.version)}

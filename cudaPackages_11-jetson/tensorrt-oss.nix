@@ -10,6 +10,7 @@
   fetchFromGitHub,
   flags,
   lib,
+  libcublas,
   protobuf,
   tensorrt,
   which,
@@ -33,14 +34,14 @@ backendStdenv.mkDerivation (finalAttrs: {
 
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "tensorrt-oss";
-  version = "10.4.0";
+  version = "8.5.2";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "TensorRT";
-    rev = "refs/tags/v${finalAttrs.version}";
+    rev = "refs/tags/${finalAttrs.version}";
     # NOTE: We supply our own Onnx and Protobuf, so we do not do a recursive clone.
-    hash = "sha256-GAu/VdHrC3UQw9okPexVItLPrRb1m3ZMpCkHNcfzRkE=";
+    hash = "sha256-2y0kEmGBORc1FJtW2EmXITbiKIZJFyvtRJ/oMnPBivA=";
   };
 
   # Ensure Protobuf is found by CMake.
@@ -64,9 +65,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   cudaEnableCmakeFindCudaToolkitSupport = true;
 
   cmakeFlags = [
-    (cmakeFeature "TRT_PLATFORM_ID" (
-      if backendStdenv.hostPlatform.isAarch then "aarch64" else "x86_64"
-    ))
+    (cmakeFeature "TRT_PLATFORM_ID" "aarch64") # Only ever building for Jetsons...
     (cmakePath "TRT_LIB_DIR" "${getLib tensorrt}")
     (cmakePath "TRT_OUT_DIR" "$out")
     (cmakeFeature "CUDA_VERSION" cudaMajorMinorVersion)
@@ -88,6 +87,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     cuda_cudart
     cuda_profiler_api
     cudnn
+    libcublas
     protobuf
     tensorrt
   ];

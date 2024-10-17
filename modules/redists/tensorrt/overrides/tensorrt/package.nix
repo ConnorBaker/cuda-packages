@@ -49,7 +49,7 @@ finalAttrs: prevAttrs: {
       # Replace symlinks to bin and lib with the actual directories from targets.
       for dir in bin lib; do
         # Only replace if the symlink exists.
-        [ -L "$dir" ] || continue
+        [[ -L "$dir" ]] || continue
         rm "$dir"
         mv "targets/${targetString}/$dir" "$dir"
       done
@@ -58,6 +58,19 @@ finalAttrs: prevAttrs: {
   autoPatchelfIgnoreMissingDeps = prevAttrs.autoPatchelfIgnoreMissingDeps ++ [
     "libnvdla_compiler.so"
   ];
+
+  # Create a symlink for the Onnx header files in include/onnx
+  postInstall =
+    (prevAttrs.postInstall or "")
+    + ''
+      mkdir "$include/include/onnx"
+      pushd "$include/include"
+      for file in NvOnnx*.h
+      do
+        ln -s "$PWD/$file" "$PWD/onnx/"
+      done
+      popd
+    '';
 
   # Tell autoPatchelf about runtime dependencies.
   postFixup =

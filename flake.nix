@@ -55,25 +55,33 @@
 
           legacyPackages =
             let
-              evaluatedModules = lib.evalModules {
-                specialArgs = {
-                  inherit system;
-                  inherit (inputs) nixpkgs;
-                };
-                modules = [
-                  {
-                    cuda = {
-                      hostCompiler = "gcc";
-                      capabilities =
-                        if pkgs.config.cudaCapabilities or [ ] != [ ] then pkgs.config.cudaCapabilities else [ "8.9" ];
-                      forwardCompat = false;
-                    };
-                  }
-                  ./modules
-                ];
+              getPackageSets =
+                {
+                  capabilities,
+                  hostCompiler ? "gcc",
+                }:
+                (lib.evalModules {
+                  specialArgs = {
+                    inherit system;
+                    inherit (inputs) nixpkgs;
+                  };
+                  modules = [
+                    {
+                      cuda = {
+                        inherit capabilities hostCompiler;
+                        forwardCompat = false;
+                      };
+                    }
+                    ./modules
+                  ];
+                }).config.packageSets;
+              normalPackageSets = getPackageSets { capabilities = [ "8.9" ]; };
+              jetsonPackageSets = {
+                xavier = getPackageSets { capabilities = [ "7.2" ]; };
+                orin = getPackageSets { capabilities = [ "8.7" ]; };
               };
             in
-            evaluatedModules.config.packageSets;
+            normalPackageSets // lib.optionalAttrs (system == "aarch64-linux") jetsonPackageSets;
 
           packages = {
             default = config.packages.cuda-redist;

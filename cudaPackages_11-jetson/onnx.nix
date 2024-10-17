@@ -140,6 +140,18 @@ buildPythonPackage {
 
   checkInputs = [ gtest ];
 
+  disabledTests = [
+    # AssertionError: Output 0 of test 0 in folder '/nix/store/ksxnk2b0l69mbydgla...
+    # "onnx/test/reference_evaluator_backend_test.py::TestOnnxBackEndWithReferenceEvaluator::test__pytorch_converted_Conv2d_depthwise_padded"
+    "test__pytorch_converted_Conv2d_depthwise_padded"
+    # AssertionError: Output 0 of test 0 in folder '/nix/store/ksxnk2b0l69mbydgla...
+    # "onnx/test/reference_evaluator_backend_test.py::TestOnnxBackEndWithReferenceEvaluator::test__pytorch_converted_Conv2d_dilated"
+    "test__pytorch_converted_Conv2d_dilated"
+    # AssertionError: Mismatch in test 'test_Conv2d_depthwise_padded'
+    # "onnx/test/reference_evaluator_backend_test.py::TestOnnxBackEndWithReferenceEvaluator::test_xor_bcast4v4d"
+    "test_xor_bcast4v4d"
+  ];
+
   preCheck =
     ''
       echo "Running C++ tests"

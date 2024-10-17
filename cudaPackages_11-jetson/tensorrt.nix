@@ -56,6 +56,7 @@ let
   debBuilderArgs = {
     manifestMajorMinorVersion = "35.6";
     sourceName = "tensorrt";
+    # Un-nest the directories
     postDebUnpack = ''
       for dir in include lib; do
         mv "$sourceRoot/usr/$dir/aarch64-linux-gnu" "$sourceRoot/$dir"
@@ -81,6 +82,18 @@ let
         libcublas
         libcudla
       ];
+      # Create a symlink for the Onnx header files in include/onnx
+      postInstall =
+        (prevAttrs.postInstall or "")
+        + ''
+          mkdir "$include/include/onnx"
+          pushd "$include/include"
+          for file in NvOnnx*.h
+          do
+            ln -s "$PWD/$file" "$PWD/onnx/"
+          done
+          popd
+        '';
       autoPatchelfIgnoreMissingDeps = prevAttrs.autoPatchelfIgnoreMissingDeps ++ [
         "libnvdla_compiler.so"
       ];
