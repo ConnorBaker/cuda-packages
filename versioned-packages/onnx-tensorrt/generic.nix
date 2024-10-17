@@ -7,41 +7,55 @@
   fetchFromGitHub,
   lib,
   onnx,
-  protobuf,
-  tensorrt_10_4,
   python3,
+  # Package overrides
+  version,
+  hash,
+  protobuf,
+  tensorrt,
 }:
 let
-  inherit (lib.strings) cmakeBool cmakeFeature;
+  inherit (lib.lists) optionals;
+  inherit (lib.strings) cmakeBool cmakeFeature optionalString;
+  inherit (lib.versions) majorMinor;
 in
+# Version must have only two components.
+assert version == (majorMinor version);
 backendStdenv.mkDerivation (finalAttrs: {
   strictDeps = true;
 
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "onnx-tensorrt";
-  version = "10.4.0";
+  inherit version;
 
   src = fetchFromGitHub {
     owner = "onnx";
     repo = "onnx-tensorrt";
-    rev = "refs/tags/release/10.4-GA";
-    hash = "sha256-ZHWIwPy/iQS6iKAxVL9kKM+KbfzvktFrCElie4Aj8mg=";
+    rev = "refs/tags/release/${finalAttrs.version}-GA";
+    inherit hash;
   };
+
+  patches = optionals (finalAttrs.version == "8.5") [
+    ./onnx-8.5-only-dynamic-lib.patch
+  ];
 
   # Ensure Onnx is found by CMake rather than using the vendored version.
   # https://github.com/onnx/onnx-tensorrt/blob/3775e499322eee17c837e27bff6d07af4261767a/CMakeLists.txt#L90
-  postPatch = ''
+  postPatch = optionalString (finalAttrs.version == "10.4") ''
     substituteInPlace CMakeLists.txt \
       --replace-fail \
         "add_subdirectory(third_party/onnx EXCLUDE_FROM_ALL)" \
         "find_package(ONNX REQUIRED)"
   '';
 
-  cmakeFlags = [
-    (cmakeBool "BUILD_API_TEST" false) # Missing source files
-    (cmakeBool "BUILD_ONNXIFI" false) # Missing source files
-    (cmakeFeature "ONNX_NAMESPACE" "onnx") # Should be the same as what we built Onnx with
-  ];
+  cmakeFlags =
+    [
+      (cmakeBool "BUILD_ONNXIFI" false) # Missing source files
+      (cmakeFeature "ONNX_NAMESPACE" "onnx") # Should be the same as what we built Onnx with
+    ]
+    ++ optionals (finalAttrs.version == "10.4") [
+      (cmakeBool "BUILD_API_TEST" false) # Missing source files
+    ];
 
   nativeBuildInputs = [
     cmake
@@ -54,7 +68,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     cuda_cudart
     onnx
     protobuf
-    tensorrt_10_4
+    tensorrt
   ];
 
   doCheck = true;

@@ -1,0 +1,52 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c015bd9..15df795 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -72,7 +72,7 @@ if(NOT TARGET onnx_proto)
+     set(ONNX_NAMESPACE "onnx2trt_onnx")
+   endif()
+   add_definitions("-DONNX_NAMESPACE=${ONNX_NAMESPACE}")
+-  add_subdirectory(third_party/onnx EXCLUDE_FROM_ALL)
++  find_package(ONNX REQUIRED)
+ endif()
+ 
+ # CUDA
+@@ -116,9 +116,6 @@ set_target_properties(nvonnxparser PROPERTIES
+   LINK_DEPENDS ${PARSER_LINKER_SCRIPT}
+   LINK_FLAGS "-Wl,--version-script=${PARSER_LINKER_SCRIPT}"
+ )
+-add_library(nvonnxparser_static STATIC ${IMPORTER_SOURCES})
+-target_include_directories(nvonnxparser_static PUBLIC ${ONNX_INCLUDE_DIRS} ${TENSORRT_INCLUDE_DIR} ${CUDA_INCLUDE_DIR})
+-target_link_libraries(nvonnxparser_static PUBLIC onnx_proto ${PROTOBUF_LIBRARY} ${TENSORRT_LIBRARY})
+ 
+ # --------------------------------
+ # Onnxifi library
+@@ -126,22 +123,23 @@ target_link_libraries(nvonnxparser_static PUBLIC onnx_proto ${PROTOBUF_LIBRARY}
+ if(BUILD_ONNXIFI)
+   add_library(trt_onnxify SHARED ${ONNXIFI_SOURCES})
+   target_include_directories(trt_onnxify PUBLIC ${CUDA_INCLUDE_DIR} ${ONNX_INCLUDE_DIRS} ${TENSORRT_INCLUDE_DIR})
+-  target_link_libraries(trt_onnxify PUBLIC nvonnxparser_static ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
++  target_link_libraries(trt_onnxify PUBLIC nvonnxparser ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+ endif()
+ 
+ # --------------------------------
+ # API Tests
+ # --------------------------------
+-add_executable(getSupportedAPITest ${API_TESTS_SOURCES})
+-target_include_directories(getSupportedAPITest PUBLIC ${ONNX_INCLUDE_DIRS} ${CUDNN_INCLUDE_DIR})
+-target_link_libraries(getSupportedAPITest PUBLIC ${PROTOBUF_LIB} nvonnxparser_static ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
++if (BUILD_API_TEST)
++  add_executable(getSupportedAPITest ${API_TESTS_SOURCES})
++  target_include_directories(getSupportedAPITest PUBLIC ${ONNX_INCLUDE_DIRS} ${CUDNN_INCLUDE_DIR})
++  target_link_libraries(getSupportedAPITest PUBLIC ${PROTOBUF_LIB} nvonnxparser ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
++endif()
+ 
+ # --------------------------------
+ # Installation
+ # --------------------------------
+ install(TARGETS
+                 nvonnxparser
+-                nvonnxparser_static
+         LIBRARY DESTINATION lib
+         ARCHIVE DESTINATION lib
+ )

@@ -97,6 +97,27 @@ let
           directory = ../packages;
         };
 
+        # Packages for which we provide multiple versions.
+        # NOTE: Using import to avoid the need to fuse `override` functions provided by multiple applications of
+        # `callPackage`.
+        versionedPackages = {
+          onnx_1_16 = builtins.import ../versioned-packages/onnx/1.16.nix {
+            inherit (final) callPackage;
+          };
+          onnx_1_12 = builtins.import ../versioned-packages/onnx/1.12.nix {
+            inherit (final) callPackage;
+            inherit (pkgs) protobuf_21;
+          };
+
+          onnx-tensorrt_10_4 = builtins.import ../versioned-packages/onnx-tensorrt/10.4.nix {
+            inherit (final) callPackage onnx_1_16 tensorrt_10_4;
+          };
+          onnx-tensorrt_8_5 = builtins.import ../versioned-packages/onnx-tensorrt/8.5.nix {
+            inherit (final) callPackage onnx_1_12 tensorrt_8_5;
+            inherit (pkgs) protobuf_21;
+          };
+        };
+
         # Various aliases for packages which should be set PRIOR to adding redistributable packages.
         # This is typically used for packages which we do not have redistributables for, but which re-use
         # redistributable packaging logic.
@@ -104,24 +125,24 @@ let
         # to the versioned name for CUDNN 8.6.
         # NOTE: The `addRedistributablePackages` function will update these aliases accordingly if there are new,
         # supported redistributable packages.
-        # jetsonAliases = optionalAttrs (hostRedistArch == "linux-aarch64") {
         packageAliases = {
           cudnn_8_6 = loosePackages.cudnn_8_6_0;
-          cudnn_8 = loosePackages.cudnn_8_6_0;
-          cudnn = loosePackages.cudnn_8_6_0;
+          cudnn_8 = packageAliases.cudnn_8_6;
+          cudnn = packageAliases.cudnn_8;
 
-          onnx_1 = loosePackages.onnx_1_16;
-          onnx = loosePackages.onnx_1_16;
+          onnx_1 = versionedPackages.onnx_1_16;
+          onnx = packageAliases.onnx_1;
 
-          onnx-tensorrt_10 = loosePackages.onnx-tensorrt_10_4;
-          onnx-tensorrt = loosePackages.onnx-tensorrt_10_4;
+          onnx-tensorrt_10 = versionedPackages.onnx-tensorrt_10_4;
+          onnx-tensorrt_8 = versionedPackages.onnx-tensorrt_8_5;
+          onnx-tensorrt = packageAliases.onnx-tensorrt_10;
 
           tensorrt_8_5 = loosePackages.tensorrt_8_5_2;
-          tensorrt_8 = loosePackages.tensorrt_8_5_2;
-          tensorrt = loosePackages.tensorrt_8_5_2;
+          tensorrt_8 = packageAliases.tensorrt_8_5;
+          tensorrt = packageAliases.tensorrt_8;
 
           tensorrt-oss_10 = loosePackages.tensorrt-oss_10_4;
-          tensorrt-oss = loosePackages.tensorrt-oss_10_4;
+          tensorrt-oss = packageAliases.tensorrt-oss_10;
         };
 
         addRedistributablePackages =
@@ -284,7 +305,7 @@ let
       in
       recurseIntoAttrs (
         addRedistributablePackages (
-          coreAttrs // dataAttrs // utilityAttrs // loosePackages // packageAliases
+          coreAttrs // dataAttrs // utilityAttrs // loosePackages // versionedPackages // packageAliases
         )
       )
     );
