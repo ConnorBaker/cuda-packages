@@ -109,7 +109,7 @@ buildPythonPackage {
   postInstall = ''
     pushd "''${cmakeBuildDir:?}"
     echo "Running CMake install for C++ components"
-    make install
+    make install -j ''${NIX_BUILD_CORES:?}
     popd
   '';
 

@@ -110,7 +110,7 @@ buildPythonPackage {
     ''
       pushd "''${cmakeBuildDir:?}"
       echo "Running CMake install for C++ components"
-      make install
+      make install -j ''${NIX_BUILD_CORES:?}
       popd
     ''
     # Install the header files to the include directory.
@@ -130,7 +130,6 @@ buildPythonPackage {
             strictDeps = true;
             requiredSystemFeatures = [ "cuda" ];
             nativeBuildInputs = [
-              # (getLib cuda_cudart)
               (python3.withPackages (ps: [
                 onnx-tensorrt
                 ps.pytest

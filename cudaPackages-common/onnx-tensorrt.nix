@@ -115,12 +115,12 @@ buildPythonPackage {
     ''
       pushd "''${cmakeBuildDir:?}"
       echo "Running CMake install for C++ components"
-      make install
+      make install -j ''${NIX_BUILD_CORES:?}
       popd
     ''
     # Install the header files to the include directory.
     + ''
-      mkdir -p "$out/include"
+      mkdir -p "$out/include/onnx"
       cp *.h *.hpp "$out/include/onnx"
     '';
 
@@ -135,7 +135,6 @@ buildPythonPackage {
             strictDeps = true;
             requiredSystemFeatures = [ "cuda" ];
             nativeBuildInputs = [
-              # (getLib cuda_cudart)
               (python3.withPackages (ps: [
                 onnx-tensorrt
                 ps.pytest
