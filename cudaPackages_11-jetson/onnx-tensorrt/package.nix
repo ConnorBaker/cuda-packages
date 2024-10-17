@@ -116,7 +116,7 @@ buildPythonPackage {
     # Install the header files to the include directory.
     + ''
       mkdir -p "$out/include/onnx"
-      cp *.h *.hpp "$out/include/onnx"
+      install -Dm644 *.h *.hpp "$out/include/onnx"
     '';
 
   doCheck = true;
@@ -144,7 +144,7 @@ buildPythonPackage {
             ''
             # Run the tests.
             + ''
-              cp "${onnx-tensorrt.src}/onnx_backend_test.py" .
+              install -Dm755 "${onnx-tensorrt.src}/onnx_backend_test.py" .
               python3 onnx_backend_test.py \
                 --verbose \
                 ${if fast then "OnnxBackendRealModelTest" else ""}

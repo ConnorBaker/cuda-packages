@@ -159,7 +159,7 @@ buildPythonPackage {
             # Patch our test file to skip tests that are known to fail.
             # These two tests fail with out of memory errors on a 4090.
             + ''
-              cp "${onnx-tensorrt.src}/onnx_backend_test.py" .
+              install -Dm755 "${onnx-tensorrt.src}/onnx_backend_test.py" .
               substituteInPlace onnx_backend_test.py \
                 --replace-fail \
                   "backend_test.include(r'.*test_vgg19.*')" \

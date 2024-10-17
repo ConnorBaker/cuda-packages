@@ -38,7 +38,7 @@ let
       ''
         mkdir -p "$out/include/onnx"
         cd "${onnx-tensorrt.src}"
-        cp *.h *.hpp "$out/include/onnx"
+        install -Dm644 *.h *.hpp "$out/include/onnx"
       '';
 in
 buildPythonPackage {
