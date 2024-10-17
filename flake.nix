@@ -63,7 +63,7 @@
                 modules = [
                   {
                     cuda = {
-                      hostCompiler = "clang";
+                      hostCompiler = "gcc";
                       capabilities = [ "8.9" ];
                       forwardCompat = false;
                     };

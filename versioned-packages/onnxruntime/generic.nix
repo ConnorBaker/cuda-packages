@@ -1,7 +1,6 @@
 {
   backendStdenv,
   cmake,
-  cpuinfo,
   cuda_cccl, # cub/cub.cuh
   cuda_cudart,
   cuda_nvcc,
@@ -9,7 +8,6 @@
   fetchFromGitHub,
   fetchFromGitLab,
   flags,
-  flatbuffers_23,
   gbenchmark,
   glibcLocales,
   gtest,
@@ -132,16 +130,12 @@ let
             "${src}/cmake/patches/cutlass/cutlass_3.5.0.patch"
           ];
       };
-    in
-    if
-      builtins.elem version [
+      usePatchedCutlassSource = builtins.elem version [
         "1.16.3"
         "1.19.2"
-      ]
-    then
-      patchedCutlassSource
-    else
-      cutlassSource;
+      ];
+    in
+    if usePatchedCutlassSource then patchedCutlassSource else cutlassSource;
 
   date =
     let
@@ -205,12 +199,82 @@ let
       hash = "sha256-PK1ce4C0uCR4TzLFg+elZdSk5DdPCRhhwT3LvEwWnPU=";
     };
 
-  pytorch_clog = backendStdenv.mkDerivation {
+  flatbuffers =
+    let
+      flatbuffersVersion =
+        {
+          "1.16.3" = "1.12.0";
+          "1.18.2" = "23.5.26";
+          "1.19.2" = "23.5.26";
+        }
+        .${version};
+      flatbuffersHash =
+        {
+          "1.12.0" = "sha256-L1B5Y/c897Jg9fGwT2J3+vaXsZ+lfXnskp8Gto1p/Tg=";
+          "23.5.26" = "sha256-e+dNPNbCHYDXUS/W+hMqf/37fhVgEGzId6rhP3cToTE=";
+        }
+        .${flatbuffersVersion};
+    in
+    fetchFromGitHub {
+      owner = "google";
+      repo = "flatbuffers";
+      rev = "v${flatbuffersVersion}";
+      hash = flatbuffersHash;
+    };
+
+  cpuinfoRev =
+    {
+      # Use a different version of cpuinfo that what is pinned in onnxruntime so we can benefit from patches which expose
+      # aliases in CMake.
+      "1.16.3" = "29ad0cbb360653c59204bba8ef658ffcba264a67";
+      "1.18.2" = "959002f82d7962a473d8bf301845f2af720e0aa4";
+      "1.19.2" = "ca678952a9a8eaa6de112d154e8e104b22f9ab3f";
+    }
+    .${version};
+
+  cpuinfo =
+    let
+      cpuinfoHash =
+        {
+          "1.16.3" = "sha256-lI6uKh2j4GfsKiR1om5c0Es6r6gbYFYv7BVAQV/TiN8=";
+          "1.18.2" = "sha256-nOSaLZGqmt+8W5Ut9QHDKznh1cekl1jL2ghCM4mgbgc=";
+          "1.19.2" = "sha256-UKy9TIiO/UJ5w+qLRlMd085CX2qtdVH2W3rtxB5r6MY=";
+        }
+        .${version};
+      cpuinfoSource = fetchFromGitHub {
+        owner = "pytorch";
+        repo = "cpuinfo";
+        rev = cpuinfoRev;
+        hash = cpuinfoHash;
+      };
+      patchedCpuinfoSource = srcOnly {
+        strictDeps = true;
+        name = "cpuinfo-source-${builtins.substring 0 8 cpuinfoRev}-patched";
+        src = cpuinfoSource;
+        patches =
+          optionals
+            (builtins.elem version [
+              "1.18.2"
+              "1.19.2"
+            ])
+            [
+              "${src}/cmake/patches/cpuinfo/9bb12d342fd9479679d505d93a478a6f9cd50a47.patch"
+            ];
+      };
+      usePatchedCpuinfoSource = builtins.elem version [
+        "1.18.2"
+        "1.19.2"
+      ];
+    in
+    if usePatchedCpuinfoSource then patchedCpuinfoSource else cpuinfoSource;
+
+  # NOTE: Versions beyond 1.16.3 expect cpuinfo to be available as a library.
+  clog = backendStdenv.mkDerivation {
     strictDeps = true;
 
     pname = "clog";
-    version = cpuinfo.version;
-    src = "${cpuinfo.src}/deps/clog";
+    version = builtins.substring 0 8 cpuinfoRev;
+    src = "${cpuinfo}/deps/clog";
 
     nativeBuildInputs = [
       cmake
@@ -303,13 +367,8 @@ backendStdenv.mkDerivation (finalAttrs: {
       substituteInPlace cmake/libonnxruntime.pc.cmake.in \
         --replace-fail '$'{prefix}/@CMAKE_INSTALL_ @CMAKE_INSTALL_
     ''
-    # TODO(@connorbaker): Build failure on 1.16.3 is not addressed by the following patch.
-    # cuda11.8-onnxruntime> CMake Error at external/onnxruntime_external_deps.cmake:423 (add_library):
-    # cuda11.8-onnxruntime>   add_library cannot create ALIAS target "cpuinfo::clog" because target
-    # cuda11.8-onnxruntime>   "clog" does not already exist.
-    # cuda11.8-onnxruntime> CMake Error at external/onnxruntime_external_deps.cmake:422 (add_library):
-    # cuda11.8-onnxruntime>   add_library cannot create ALIAS target "cpuinfo::cpuinfo" because another
-    # cuda11.8-onnxruntime>   target with the same name already exists.
+    # We don't need clog aliases because we use a slightly newer version for 1.16.3 which includes CMake changes to
+    # create these aliases for us.
     + optionalString (version == "1.16.3") ''
       substituteInPlace cmake/external/onnxruntime_external_deps.cmake \
         --replace-fail \
@@ -336,7 +395,7 @@ backendStdenv.mkDerivation (finalAttrs: {
       rm -v onnxruntime/test/optimizer/nhwc_transformer_test.cc
     '';
 
-  # We must silence NVCC warnings from the frontend like:
+  # Silence NVCC warnings from the frontend like:
   # onnxruntime> /nix/store/nrb1wyq26xxghhfky7sr22x27fip35vs-source/absl/types/span.h(154): error #2803-D: attribute namespace "gsl" is unrecognized
   # onnxruntime>   class [[gsl::Pointer]] Span {
   preConfigure = optionalString isClang ''
@@ -360,9 +419,14 @@ backendStdenv.mkDerivation (finalAttrs: {
       effectiveTensorRT
       zlib
     ]
-    ++ optionals (version != "1.16.3") [
-      pytorch_clog
-    ]
+    ++ optionals
+      (builtins.elem version [
+        "1.18.2"
+        "1.19.2"
+      ])
+      [
+        clog
+      ]
     ++ optionals nccl.meta.available [
       nccl
     ]
@@ -403,16 +467,15 @@ backendStdenv.mkDerivation (finalAttrs: {
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ABSEIL_CPP" abseil-cpp.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" cutlass.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_DATE" date.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" flatbuffers_23.src.outPath)
+      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" flatbuffers.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_GOOGLE_NSYNC" nsync.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_MP11" mp11.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ONNX" onnx.src.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_PYTORCH_CPUINFO" cpuinfo.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_RE2" re2.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_SAFEINT" safeint.outPath)
-    ]
-    ++ optionals (version == "1.16.3") [
-      (cmakeOptionType "PATH" "GOOGLETEST_SOURCE_DIR" gtest.src.outPath)
+
+      # The inclusion of CMake files sets targets that onnxruntime needs defined for CMake configuration to succeed.
+      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_PYTORCH_CPUINFO" cpuinfo.outPath)
     ]
     ++ optionals (version != "1.16.3") [
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_GOOGLETEST" gtest.src.outPath)
@@ -478,6 +541,10 @@ backendStdenv.mkDerivation (finalAttrs: {
       supports all ONNX releases (1.2+) with both future and backwards
       compatibility.
     '';
+    # TODO(@connorbaker): Fix this error when building with Clang:
+    # cuda11.8-onnxruntime> /nix/store/gvs1z5fzx12xp787ays1ncqlfgv3j1c8-gcc-13.3.0/include/c++/13.3.0/bits/stl_map.h:595:15: error: expression contains unexpanded parameter pack '_Args'
+    # cuda11.8-onnxruntime> if constexpr (__usable_key< __decltype(__a), remove_reference_t< _Args> > )
+    broken = isClang && version == "1.16.3";
     homepage = "https://github.com/microsoft/onnxruntime";
     changelog = "https://github.com/microsoft/onnxruntime/releases/tag/v${finalAttrs.version}";
     # https://github.com/microsoft/onnxruntime/blob/master/BUILD.md#architectures
