@@ -28,7 +28,35 @@
 
   outputs =
     inputs:
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+    let
+      inherit (inputs.nixpkgs.lib)
+        evalModules
+        filterAttrs
+        isDerivation
+        mapAttrs'
+        optionalAttrs
+        ;
+      inherit (inputs.flake-parts.lib) mkFlake;
+
+      # Utility function
+      mkOverlay =
+        {
+          capabilities,
+          hostCompiler ? "gcc",
+        }:
+        (evalModules {
+          modules = [
+            {
+              cuda = {
+                inherit capabilities hostCompiler;
+                forwardCompat = false;
+              };
+            }
+            ./modules
+          ];
+        }).config.overlay;
+    in
+    mkFlake { inherit inputs; } {
       systems = [
         "aarch64-linux"
         "x86_64-linux"
@@ -39,44 +67,25 @@
         inputs.git-hooks-nix.flakeModule
       ];
 
+      flake = {
+        inherit mkOverlay;
+      };
+
       perSystem =
         {
           config,
-          lib,
           pkgs,
           system,
           ...
         }:
         let
-          inherit (lib.attrsets) optionalAttrs;
-
-          getOverlay =
-            {
-              capabilities,
-              hostCompiler ? "gcc",
-            }:
-            (lib.evalModules {
-              specialArgs = {
-                inherit (inputs) nixpkgs;
-              };
-              modules = [
-                {
-                  cuda = {
-                    inherit capabilities hostCompiler;
-                    forwardCompat = false;
-                  };
-                }
-                ./modules
-              ];
-            }).config.overlay;
-
-          xavierPkgs = pkgs.extend (getOverlay {
+          xavierPkgs = pkgs.extend (mkOverlay {
             capabilities = [ "7.2" ];
           });
-          orinPkgs = pkgs.extend (getOverlay {
+          orinPkgs = pkgs.extend (mkOverlay {
             capabilities = [ "8.7" ];
           });
-          adaOverlay = getOverlay { capabilities = [ "8.9" ]; };
+          adaOverlay = mkOverlay { capabilities = [ "8.9" ]; };
         in
         {
           # Make our package set the default.
@@ -105,11 +114,6 @@
 
           packages =
             let
-              inherit (lib.attrsets)
-                isDerivation
-                filterAttrs
-                mapAttrs'
-                ;
               inherit (pkgs) linkFarm python311Packages;
               # NOTE: Computing the `outPath` is the easiest way to check if evaluation will fail for some reason.
               # Originally, I used meta.available, but that field isn't produced by recursively checking dependents by

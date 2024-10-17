@@ -1,10 +1,8 @@
 {
-  nixpkgs,
+  lib,
   ...
 }:
 let
-  inherit (nixpkgs) lib;
-
   # Create our cuda-lib
   cuda-lib = import ../cuda-lib { inherit lib; };
 
