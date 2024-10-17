@@ -29,14 +29,11 @@
   outputs =
     inputs:
     let
-      inherit (inputs.nixpkgs.lib)
-        evalModules
-        filterAttrs
-        isDerivation
-        mapAttrs'
-        optionalAttrs
-        ;
+      inherit (inputs.nixpkgs.lib) evalModules optionalAttrs;
       inherit (inputs.flake-parts.lib) mkFlake;
+
+      cuda-lib = import ./cuda-lib { inherit (inputs.nixpkgs) lib; };
+      inherit (cuda-lib.utils) flattenDrvTree;
 
       # Utility function
       mkOverlay =
@@ -68,35 +65,38 @@
       ];
 
       flake = {
-        inherit mkOverlay;
+        inherit cuda-lib mkOverlay;
       };
 
       perSystem =
-        {
-          config,
-          pkgs,
-          system,
-          ...
-        }:
+        { config, system, ... }:
         let
-          xavierPkgs = pkgs.extend (mkOverlay {
-            capabilities = [ "7.2" ];
-          });
-          orinPkgs = pkgs.extend (mkOverlay {
+          adaPkgs = import inputs.nixpkgs {
+            inherit system;
+            # Unfree needs to be set in the initial config attribute set, even though we override it in our overlay.
+            # TODO: Are config attributes not re-evaluated when the overlay changes? Or is it just the Nix flake's CLI
+            # which warns when an overlay enables allowUnfree and the first pkgs instantiation doesn't?
+            config = {
+              allowUnfree = true;
+              cudaSupport = true;
+              cudaCapabilities = [ "8.9" ];
+            };
+            overlays = [ (mkOverlay { capabilities = [ "8.9" ]; }) ];
+          };
+          orinPkgs = adaPkgs.extend (mkOverlay {
             capabilities = [ "8.7" ];
           });
-          adaOverlay = mkOverlay { capabilities = [ "8.9" ]; };
+          xavierPkgs = adaPkgs.extend (mkOverlay {
+            capabilities = [ "7.2" ];
+          });
+
+          # Utility.
+          inherit (adaPkgs) linkFarm;
         in
         {
-          # Make our package set the default.
+          # Make upstream's cudaPackages the default.
           _module.args = {
-            pkgs = import inputs.nixpkgs {
-              inherit system;
-              # Unfree needs to be set in the initial config attribute set, even though we override it in our overlay.
-              config.allowUnfree = true;
-              # Default to Ada
-              overlays = [ adaOverlay ];
-            };
+            pkgs = adaPkgs;
           };
 
           devShells = {
@@ -105,64 +105,64 @@
           };
 
           legacyPackages =
-            # pkgs is by default adaPkgs
-            pkgs
-            // {
-              allDrvs = pkgs.cudaPackages.cuda-lib.utils.flattenDrvTree pkgs;
-              cudaPackagesDrvs = pkgs.cudaPackages.cuda-lib.utils.flattenDrvTree pkgs.cudaPackages;
+            # Useful attributes to make sure we don't break eval.
+            {
+              inherit adaPkgs;
+              adaCudaPackages11Drvs = linkFarm "adaCudaPackages11Drvs" (flattenDrvTree {
+                attrs = adaPkgs.cudaPackages_11;
+              });
+              adaCudaPackages12Drvs = linkFarm "adaCudaPackages12Drvs" (flattenDrvTree {
+                attrs = adaPkgs.cudaPackages_12;
+              });
+              adaPkgsDrvs = linkFarm "adaPkgsDrvs" (flattenDrvTree {
+                attrs = adaPkgs;
+              });
             }
             // optionalAttrs (system == "aarch64-linux") {
-              xavier = xavierPkgs;
-              orin = orinPkgs;
+              inherit orinPkgs;
+              orinCudaPackages11Drvs = linkFarm "orinCudaPackages11Drvs" (flattenDrvTree {
+                attrs = orinPkgs.cudaPackages_11;
+              });
+              orinCudaPackages12Drvs = linkFarm "orinCudaPackages12Drvs" (flattenDrvTree {
+                attrs = orinPkgs.cudaPackages_12;
+              });
+              orinPkgsDrvs = linkFarm "orinPkgsDrvs" (flattenDrvTree {
+                attrs = orinPkgs;
+              });
+
+              inherit xavierPkgs;
+              xavierCudaPackages11Drvs = linkFarm "xavierCudaPackages11Drvs" (flattenDrvTree {
+                attrs = xavierPkgs.cudaPackages_11;
+              });
+              xavierCudaPackages12Drvs = linkFarm "xavierCudaPackages12Drvs" (flattenDrvTree {
+                attrs = xavierPkgs.cudaPackages_12;
+              });
+              xavierPkgsDrvs = linkFarm "xavierPkgsDrvs" (flattenDrvTree {
+                attrs = xavierPkgs;
+              });
             };
 
           packages =
             let
-              inherit (pkgs) linkFarm python311Packages;
-              # NOTE: Computing the `outPath` is the easiest way to check if evaluation will fail for some reason.
-              # Originally, I used meta.available, but that field isn't produced by recursively checking dependents by
-              # default, and requires an undocumented config option (checkMetaRecursively) to do so:
-              # https://github.com/NixOS/nixpkgs/blob/master/pkgs/stdenv/generic/check-meta.nix#L496
-              # What we really need is something like:
-              # https://github.com/NixOS/nixpkgs/pull/245322
-              filterForTopLevelPackages = filterAttrs (
-                _: value:
-                let
-                  attempt = isDerivation value && value.outPath or null != null;
-                  tried = builtins.tryEval (builtins.deepSeq attempt attempt);
-                in
-                tried.success && tried.value
-              );
-              mkFlattenedFiltered =
-                cudaPackages:
-                let
-                  # Manually raise and flatten the few nested attributes we have which contain derivations.
-                  raised = mapAttrs' (name: value: {
-                    name = "cuda-library-samples-${name}";
-                    inherit value;
-                  }) cudaPackages.cuda-library-samples;
-                in
-                filterForTopLevelPackages (cudaPackages // raised);
+              # Use our package set to ensure the CUDA dependencies we pull in come from our repo and not upstream.
+              inherit (adaPkgs.python311Packages) callPackage;
             in
+            # Actual packages
             {
               default = config.packages.cuda-redist;
-              cuda-redist = python311Packages.callPackage ./scripts/cuda-redist { };
-              cudaPackages_11 = linkFarm "cudaPackages_11" (mkFlattenedFiltered pkgs.cudaPackages_11);
-              cudaPackages_12 = linkFarm "cudaPackages_12" (mkFlattenedFiltered pkgs.cudaPackages_12);
+              cuda-redist = callPackage ./scripts/cuda-redist { };
+            }
+            # Packages to be checked for eval.
+            // {
+              inherit (config.legacyPackages) adaCudaPackages11Drvs adaCudaPackages12Drvs;
             }
             // optionalAttrs (system == "aarch64-linux") {
-              cudaPackages_11-xavier = linkFarm "cudaPackages_11-xavier" (
-                mkFlattenedFiltered xavierPkgs.cudaPackages_11
-              );
-              cudaPackages_12-xavier = linkFarm "cudaPackages_12-xavier" (
-                mkFlattenedFiltered xavierPkgs.cudaPackages_12
-              );
-              cudaPackages_11-orin = linkFarm "cudaPackages_11-orin" (
-                mkFlattenedFiltered orinPkgs.cudaPackages_11
-              );
-              cudaPackages_12-orin = linkFarm "cudaPackages_12-orin" (
-                mkFlattenedFiltered orinPkgs.cudaPackages_12
-              );
+              inherit (config.legacyPackages)
+                orinCudaPackages11Drvs
+                orinCudaPackages12Drvs
+                xavierCudaPackages11Drvs
+                xavierCudaPackages12Drvs
+                ;
             };
 
           pre-commit.settings.hooks = {
