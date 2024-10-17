@@ -46,7 +46,7 @@ def get_redist_names(maybe_redist_name: str) -> Sequence[RedistName]:
 def get_output_map(
     version_map: Mapping[RedistName, Sequence[Version]],
 ) -> Mapping[tuple[RedistName, Version], Path]:
-    base_path: Path = Path(".") / "modules" / "redist"
+    base_path: Path = Path(".") / "modules" / "redists"
     output_map: Mapping[tuple[RedistName, Version], Path] = {
         (redist_name, version): base_path / redist_name / "versioned-manifests" / f"{version}.json"
         for redist_name, versions in version_map.items()

@@ -56,8 +56,7 @@
             let
               evaluatedModules = lib.evalModules {
                 specialArgs = {
-                  inherit pkgs;
-                  cuda-lib = import ./cuda-lib { inherit lib pkgs; };
+                  inherit (inputs) nixpkgs;
                 };
                 modules = [ ./modules ];
               };
