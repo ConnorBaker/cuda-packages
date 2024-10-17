@@ -11,7 +11,6 @@
   cudnn,
   cutlass,
   fetchFromGitHub,
-
   flags,
   gtest,
   lib,

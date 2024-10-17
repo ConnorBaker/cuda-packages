@@ -1,7 +1,7 @@
 {
   cmake,
-  cuda_cudart ? null,
-  cuda_nvcc ? null,
+  cuda_cudart,
+  cuda_nvcc,
   cuda-lib,
   cudaPackages,
   lib,
@@ -34,7 +34,6 @@ in
   badPlatformsConditions =
     prevAttrs.badPlatformsConditions
     // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions {
-      inherit cuda_cudart cuda_nvcc;
       ${desiredCudnnName} = desiredCudnn;
     };
 

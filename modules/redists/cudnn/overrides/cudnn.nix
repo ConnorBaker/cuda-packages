@@ -1,31 +1,23 @@
 {
-  cudaOlder,
-  cudaPackages,
   lib,
+  libcublas,
   patchelf,
   zlib,
 }:
 let
-  inherit (cudaPackages) cudatoolkit libcublas;
   inherit (lib) maintainers;
   inherit (lib.attrsets) getLib;
-  inherit (lib.lists) optionals;
   inherit (lib.meta) getExe;
   inherit (lib.strings) optionalString versionAtLeast versionOlder;
 in
-finalAttrs: prevAttrs:
-let
-  inherit (finalAttrs.passthru) useCudatoolkitRunfile;
-in
-{
-  buildInputs =
-    prevAttrs.buildInputs
-    ++ [ zlib ]
-    ++ optionals useCudatoolkitRunfile [ cudatoolkit ]
+finalAttrs: prevAttrs: {
+  buildInputs = prevAttrs.buildInputs ++ [
     # NOTE: Verions of CUDNN after 9.0 no longer depend on libcublas:
     # https://docs.nvidia.com/deeplearning/cudnn/latest/release-notes.html?highlight=cublas#cudnn-9-0-0
     # However, NVIDIA only provides libcublasLT via the libcublas package.
-    ++ optionals (!useCudatoolkitRunfile) [ (getLib libcublas) ];
+    (getLib libcublas)
+    zlib
+  ];
 
   # Tell autoPatchelf about runtime dependencies. *_infer* libraries only
   # exist in CuDNN 8.
@@ -34,13 +26,9 @@ in
     optionalString
       (versionAtLeast finalAttrs.version "8.0.5.0" && versionOlder finalAttrs.version "9.0.0.0")
       ''
-        ${getExe patchelf} $lib/lib/libcudnn.so --add-needed libcudnn_cnn_infer.so
-        ${getExe patchelf} $lib/lib/libcudnn_ops_infer.so --add-needed libcublas.so --add-needed libcublasLt.so
+        ${getExe patchelf} "$lib/lib/libcudnn.so" --add-needed libcudnn_cnn_infer.so
+        ${getExe patchelf} "$lib/lib/libcudnn_ops_infer.so" --add-needed libcublas.so --add-needed libcublasLt.so
       '';
-
-  passthru = prevAttrs.meta // {
-    useCudatoolkitRunfile = cudaOlder "11.4";
-  };
 
   meta = prevAttrs.meta // {
     homepage = "https://developer.nvidia.com/cudnn";
@@ -56,7 +44,7 @@ in
       fullName = "NVIDIA cuDNN Software License Agreement (EULA)";
       url = "https://docs.nvidia.com/deeplearning/sdk/cudnn-sla/index.html#supplement";
       free = false;
-      redistributable = !useCudatoolkitRunfile;
+      redistributable = true;
     };
   };
 }

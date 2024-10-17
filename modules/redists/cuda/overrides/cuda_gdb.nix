@@ -15,7 +15,6 @@ let
     attrValues
     filterAttrs
     genAttrs
-    recursiveUpdate
     ;
   inherit (lib.lists) map optionals range;
   inherit (lib.strings) optionalString;

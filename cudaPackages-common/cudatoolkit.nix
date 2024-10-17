@@ -1,3 +1,4 @@
+# TODO(@connorbaker): Cleanup.
 {
   lib,
   symlinkJoin,
@@ -15,7 +16,7 @@
   cuda_nvprune ? null,
   cuda_nvrtc ? null,
   cuda_nvtx ? null,
-  cuda_profiler_api ? null,
+  cuda_profiler_api,
   cuda_sanitizer_api ? null,
   libcublas ? null,
   libcufft ? null,

@@ -3,12 +3,14 @@
 # in the case redistributable packages are not available.
 {
   autoAddDriverRunpath,
+  backendStdenv,
+  cuda_cccl ? null, # Only available from CUDA 12.0.
+  cuda_cudart,
+  cuda_nvcc,
   cudaAtLeast,
-  flags,
   cudaMajorMinorVersion,
-  cudaOlder,
-  cudaPackages,
   fetchFromGitHub,
+  flags,
   lib,
   python3,
   which,
@@ -16,13 +18,6 @@
   gitUpdater,
 }:
 let
-  inherit (cudaPackages)
-    backendStdenv
-    cuda_cccl
-    cuda_cudart
-    cuda_nvcc
-    cudatoolkit
-    ;
   inherit (lib.attrsets)
     attrValues
     getBin
@@ -53,24 +48,26 @@ backendStdenv.mkDerivation (finalAttrs: {
     "static"
   ];
 
-  # brokenConditions :: AttrSet Bool
-  # Sets `meta.broken = true` if any of the conditions are true.
-  # Example: Broken on a specific version of CUDA or when a dependency has a specific version.
-  brokenConditions = {
-    "CUDA versions prior to 11.4 cannot build this version of NCCL" = cudaOlder "11.4";
+  # badPlatformsConditions :: AttrSet Bool
+  # Sets `meta.badPlatforms = meta.platforms` if any of the conditions are true.
+  # Example: Broken on a specific architecture when some condition is met (like targeting Jetson).
+  badPlatformsConditions = {
+    # Samples are built around the CUDA Toolkit, which is not available for
+    # aarch64. Check for both CUDA version and platform.
+    "Platform is unsupported" = flags.isJetsonBuild;
   };
 
   nativeBuildInputs = [
-    which
     autoAddDriverRunpath
+    cuda_nvcc
     python3
-  ] ++ optionals (cudaOlder "11.4") [ cudatoolkit ] ++ optionals (cudaAtLeast "11.4") [ cuda_nvcc ];
+    which
+  ];
 
   buildInputs =
-    optionals (cudaOlder "11.4") [ cudatoolkit ]
-    ++ optionals (cudaAtLeast "11.4") [
-      cuda_nvcc # crt/host_config.h
+    [
       cuda_cudart
+      cuda_nvcc # crt/host_config.h
     ]
     # NOTE: CUDA versions in Nixpkgs only use a major and minor version. When we do comparisons
     # against other version, like below, it's important that we use the same format. Otherwise,
@@ -84,21 +81,14 @@ backendStdenv.mkDerivation (finalAttrs: {
     patchShebangs ./src/device/generate.py
   '';
 
-  makeFlags =
-    [
-      "PREFIX=$(out)"
-      "NVCC_GENCODE=${flags.gencodeString}"
-    ]
-    ++ optionals (cudaOlder "11.4") [
-      "CUDA_HOME=${cudatoolkit}"
-      "CUDA_LIB=${cudatoolkit}/lib"
-      "CUDA_INC=${cudatoolkit}/include"
-    ]
-    ++ optionals (cudaAtLeast "11.4") [
-      "CUDA_HOME=${getBin cuda_nvcc}"
-      "CUDA_LIB=${getLib cuda_cudart}/lib"
-      "CUDA_INC=${getOutput "include" cuda_cudart}/include"
-    ];
+  # TODO: This would likely break under cross; need to delineate between build and host packages.
+  makeFlags = [
+    "CUDA_HOME=${getBin cuda_nvcc}"
+    "CUDA_INC=${getOutput "include" cuda_cudart}/include"
+    "CUDA_LIB=${getLib cuda_cudart}/lib"
+    "NVCC_GENCODE=${flags.gencodeString}"
+    "PREFIX=$(out)"
+  ];
 
   enableParallelBuilding = true;
 
@@ -116,10 +106,12 @@ backendStdenv.mkDerivation (finalAttrs: {
     homepage = "https://developer.nvidia.com/nccl";
     license = licenses.bsd3;
     platforms = platforms.linux;
-    broken = any id (attrValues finalAttrs.brokenConditions);
-    # NCCL is not supported on Jetson, because it does not use NVLink or PCI-e for inter-GPU communication.
-    # https://forums.developer.nvidia.com/t/can-jetson-orin-support-nccl/232845/9
-    badPlatforms = optionals flags.isJetsonBuild [ "aarch64-linux" ];
+    broken = any id (attrValues (finalAttrs.brokenConditions or { }));
+    badPlatforms =
+      let
+        isBadPlatform = lists.any trivial.id (attrsets.attrValues finalAttrs.badPlatformsConditions);
+      in
+      lists.optionals isBadPlatform finalAttrs.meta.platforms;
     maintainers =
       with maintainers;
       [

@@ -1,3 +1,4 @@
+# TODO(@connorbaker): Utility functions for brokenConditions/badPlatformsConditions.
 { cuda-lib, lib }:
 let
   inherit (cuda-lib.data) redistUrlPrefix;
@@ -769,13 +770,13 @@ in
     {
       lib,
       libcal ? null,
-      libcublas ? null,
+      libcublas,
       utils,
     }:
     prevAttrs: {
       badPlatformsConditions =
         prevAttrs.badPlatformsConditions
-        // utils.mkMissingPackagesBadPlatformsConditions { inherit libcal libcublas; };
+        // utils.mkMissingPackagesBadPlatformsConditions { inherit libcal; };
     }
     ```
 

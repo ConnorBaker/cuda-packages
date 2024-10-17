@@ -1,9 +1,10 @@
 {
   backendStdenv,
   cmake,
-  cuda_cccl, # cub/cub.cuh
+  cuda_cccl ? null, # cub/cub.cuh -- Only available from CUDA 12.0.
   cuda_cudart,
   cuda_nvcc,
+  cudaAtLeast,
   cudnn,
   cudaMajorMinorVersion,
   fetchFromGitHub,
@@ -216,53 +217,59 @@ buildPythonPackage {
   # Silence NVCC warnings from the frontend like:
   # onnxruntime> /nix/store/nrb1wyq26xxghhfky7sr22x27fip35vs-source/absl/types/span.h(154): error #2803-D: attribute namespace "gsl" is unrecognized
   # onnxruntime>   class [[gsl::Pointer]] Span {
-  preConfigure = optionalString isClang ''
-    export NVCC_PREPEND_FLAGS+=" -Xcudafe=--diag_suppress=2803"
-  '' + ''
-    echo "Running the build script"
-    # python3 "$PWD/tools/ci_build/build.py" --help
-    # exit 1
-    python3 "$PWD/tools/ci_build/build.py" \
-      --build_dir "$PWD/build/Linux" \
-      --build \
-      --update \
-      --skip_submodule_sync \
-      --config "Release" \
-      --clean \
-      --enable_pybind \
-      --build_wheel \
-      --test \
-      --use_cuda \
-      --cuda_home "${cuda_cudart.lib}" \
-      --cudnn_home "${cudnn.lib}" \
-      --use_tensorrt \
-      --use_tensorrt_oss_parser \
-      --use_full_protobuf \
-      --enable_lto \
-      --cmake_extra_defines
-  '';
+  preConfigure =
+    optionalString isClang ''
+      export NVCC_PREPEND_FLAGS+=" -Xcudafe=--diag_suppress=2803"
+    ''
+    + ''
+      echo "Running the build script"
+      # python3 "$PWD/tools/ci_build/build.py" --help
+      # exit 1
+      python3 "$PWD/tools/ci_build/build.py" \
+        --build_dir "$PWD/build/Linux" \
+        --build \
+        --update \
+        --skip_submodule_sync \
+        --config "Release" \
+        --clean \
+        --enable_pybind \
+        --build_wheel \
+        --test \
+        --use_cuda \
+        --cuda_home "${cuda_cudart.lib}" \
+        --cudnn_home "${cudnn.lib}" \
+        --use_tensorrt \
+        --use_tensorrt_oss_parser \
+        --use_full_protobuf \
+        --enable_lto \
+        --cmake_extra_defines
+    '';
 
   dependencies = [
     flatbuffers
   ];
 
-  buildInputs = [
-    cuda_cccl # cub/cub.cuh
-    cuda_cudart
-    cudnn # cudnn.h
-    glibcLocales
-    libcublas # cublas_v2.h
-    libcufft # cufft.h
-    libcurand # curand.h
-    libcusparse # cusparse.h
-    libpng
-    microsoft-gsl
-    nlohmann_json
-    onnx-tensorrt
-    tensorrt
-    zlib
-    clog
-  ] ++ optionals nccl.meta.available [ nccl ];
+  buildInputs =
+    [
+      clog
+      cuda_cudart
+      cudnn # cudnn.h
+      glibcLocales
+      libcublas # cublas_v2.h
+      libcufft # cufft.h
+      libcurand # curand.h
+      libcusparse # cusparse.h
+      libpng
+      microsoft-gsl
+      nlohmann_json
+      onnx-tensorrt
+      tensorrt
+      zlib
+    ]
+    ++ optionals (cudaAtLeast "12.0") [
+      cuda_cccl # <nv/target>
+    ]
+    ++ optionals nccl.meta.available [ nccl ];
   # ++ optionals pythonSupport (
   #   with python3Packages;
   #   [
@@ -349,7 +356,7 @@ buildPythonPackage {
 
   # perform parts of `tools/ci_build/github/linux/copy_strip_binary.sh`
   postInstall = ''
-    install -m644 -Dt $out/include \
+    install -m644 -Dt "$out/include" \
       ../include/onnxruntime/core/framework/provider_options.h \
       ../include/onnxruntime/core/providers/cpu/cpu_provider_factory.h \
       ../include/onnxruntime/core/session/onnxruntime_*.h

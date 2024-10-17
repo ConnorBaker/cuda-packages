@@ -1,22 +1,17 @@
 {
   autoAddDriverRunpath,
+  backendStdenv,
   cmake,
+  cuda_cccl ? null, # Only available from CUDA 12.0.
+  cuda_cudart,
+  cuda_nvcc,
+  cudaAtLeast,
   cudaMajorMinorVersion,
-  cudaPackages,
+  flags,
   lib,
+  libcublas,
 }:
 let
-  inherit (cudaPackages)
-    backendStdenv
-    cuda_cccl
-    cuda_cudart
-    cuda_nvcc
-    cudaAtLeast
-    cudaOlder
-    cudatoolkit
-    flags
-    libcublas
-    ;
   inherit (lib.lists) optionals;
   inherit (lib.strings) cmakeBool cmakeFeature;
   fs = lib.fileset;
@@ -38,17 +33,15 @@ backendStdenv.mkDerivation (finalAttrs: {
   strictDeps = true;
 
   nativeBuildInputs = [
-    cmake
     autoAddDriverRunpath
-  ] ++ optionals (cudaOlder "11.4") [ cudatoolkit ] ++ optionals (cudaAtLeast "11.4") [ cuda_nvcc ];
+    cmake
+    cuda_nvcc
+  ];
 
-  buildInputs =
-    optionals (cudaOlder "11.4") [ cudatoolkit ]
-    ++ optionals (cudaAtLeast "11.4") [
-      cuda_cudart
-      libcublas
-    ]
-    ++ optionals (cudaAtLeast "12.0") [ cuda_cccl ];
+  buildInputs = [
+    cuda_cudart
+    libcublas
+  ] ++ optionals (cudaAtLeast "12.0") [ cuda_cccl ];
 
   cmakeFlags = [
     (cmakeBool "CMAKE_VERBOSE_MAKEFILE" true)
@@ -73,6 +66,5 @@ backendStdenv.mkDerivation (finalAttrs: {
       "ppc64le-linux"
       "x86_64-linux"
     ];
-    badPlatforms = optionals (flags.isJetsonBuild && cudaOlder "11.4") finalAttrs.meta.platforms;
   };
 })

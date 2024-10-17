@@ -2,6 +2,7 @@
   addDriverRunpath,
   cuda_cccl ? null,
   cuda_nvcc,
+  cudaAtLeast,
   lib,
   cuda-lib,
 }:
@@ -45,7 +46,7 @@ finalAttrs: prevAttrs: {
         printWords "${getOutput "include" cuda_nvcc}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
       '')
       # cuda_cuadrt.dev has include/cuda_fp16.h which requires cuda_cccl.dev's include/nv/target
-      + optionalString (cuda_cccl != null && cuda_cccl.meta.available) (''
+      + optionalString (cudaAtLeast "12.0") (''
         printWords "${getOutput "include" cuda_cccl}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
       '')
     );

@@ -1,5 +1,4 @@
 {
-  cudaOlder,
   lib,
   libcublas,
   numactl,
@@ -7,7 +6,6 @@
 }:
 let
   inherit (lib.attrsets) getLib;
-  inherit (lib.lists) optionals;
 in
 prevAttrs: {
   allowFHSReferences = true;
@@ -16,8 +14,4 @@ prevAttrs: {
     numactl
     rdma-core
   ];
-  # Before 11.7 libcufile depends on itself for some reason.
-  autoPatchelfIgnoreMissingDeps =
-    prevAttrs.autoPatchelfIgnoreMissingDeps
-    ++ optionals (cudaOlder "11.7") [ "libcufile.so.0" ];
 }

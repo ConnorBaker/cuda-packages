@@ -9,33 +9,44 @@
   nss,
   numactl,
   pulseaudio,
-  qt5 ? null,
-  qt5Packages ? null,
-  qt6 ? null,
-  qt6Packages ? null,
+  qt6Packages,
   rdma-core,
   ucx,
   wayland,
   xorg,
 }:
 let
-  inherit (lib.attrsets) optionalAttrs;
-  inherit (lib.strings) versionOlder versionAtLeast;
-in
-prevAttrs:
-let
-  inherit (prevAttrs) version;
-  qt = if versionOlder prevAttrs.version "2022.4.2.1" then qt5 else qt6;
-  qtPackages = if versionOlder prevAttrs.version "2022.4.2.1" then qt5 else qt6Packages;
-  qtwayland = lib.getBin qtPackages.qtwayland;
-  qtWaylandPlugins = "${qtwayland}/${qt.qtbase.qtPluginPrefix}";
-  inherit (qtPackages)
+  inherit (lib.attrsets) getBin;
+  inherit (lib.lists) optionals;
+  inherit (lib.strings) versionAtLeast;
+  inherit (gst_all_1)
+    gst-plugins-base
+    gstreamer
+    ;
+  inherit (qt6Packages)
     qtbase
+    qtdeclarative
+    qtimageformats
     qtpositioning
     qtscxml
+    qtsvg
     qttools
+    qtwayland
     qtwebengine
+    wrapQtAppsHook
     ;
+  inherit (xorg)
+    libXcursor
+    libXdamage
+    libXrandr
+    libXtst
+    ;
+
+  qtWaylandPlugins = "${getBin qtwayland}/${qtbase.qtPluginPrefix}";
+in
+finalAttrs: prevAttrs:
+let
+  inherit (finalAttrs) version;
 in
 {
   allowFHSReferences = true;
@@ -65,55 +76,56 @@ in
       patchShebangs nsight-systems
     '';
 
-  nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ qt.wrapQtAppsHook ];
+  nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ wrapQtAppsHook ];
 
   buildInputs = prevAttrs.buildInputs ++ [
-    (qt.qtdeclarative or qt.full)
-    (qt.qtsvg or qt.full)
     boost178
     cuda_cudart
     e2fsprogs
-    gst_all_1.gst-plugins-base
-    gst_all_1.gstreamer
+    gst-plugins-base
+    gstreamer
+    libXcursor
+    libXdamage
+    libXrandr
+    libXtst
     nss
     numactl
     pulseaudio
     qtbase
-    qtWaylandPlugins
+    qtdeclarative
+    qtimageformats
     qtpositioning
     qtscxml
+    qtsvg
     qttools
+    qtWaylandPlugins
     qtwebengine
     rdma-core
     ucx
     wayland
-    xorg.libXcursor
-    xorg.libXdamage
-    xorg.libXrandr
-    xorg.libXtst
   ];
 
   postInstall =
     # 1. Move dependencies of nsys, nsys-ui binaries to bin output
     # 2. Fix paths in wrapper scripts
     let
-      versionString = cuda-lib.utils.majorMinorPatch prevAttrs.version;
+      majorMinorPatchVersion = cuda-lib.utils.majorMinorPatch version;
     in
     prevAttrs.postInstall or ""
     + ''
-      moveToOutput 'nsight-systems/${versionString}/host-linux-*' "''${!outputBin}"
-      moveToOutput 'nsight-systems/${versionString}/target-linux-*' "''${!outputBin}"
+      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/host-linux-*' "''${!outputBin}"
+      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/target-linux-*' "''${!outputBin}"
       substituteInPlace $bin/bin/nsys $bin/bin/nsys-ui \
-        --replace-fail 'nsight-systems-#VERSION_RSPLIT#' nsight-systems/${versionString}
-      for qtlib in $bin/nsight-systems/${versionString}/host-linux-x64/Plugins/*/libq*.so; do
+        --replace-fail 'nsight-systems-#VERSION_RSPLIT#' nsight-systems/${majorMinorPatchVersion}
+      for qtlib in $bin/nsight-systems/${majorMinorPatchVersion}/host-linux-x64/Plugins/*/libq*.so; do
         qtdir=$(basename $(dirname $qtlib))
         filename=$(basename $qtlib)
         for qtpkgdir in ${
-          lib.concatMapStringsSep " " (x: qt6Packages.${x}) [
-            "qtbase"
-            "qtimageformats"
-            "qtsvg"
-            "qtwayland"
+          lib.concatMapStringsSep " " (pkg: pkg.outPath) [
+            qtbase
+            qtimageformats
+            qtsvg
+            qtwayland
           ]
         }; do
           if [ -e $qtpkgdir/lib/qt-6/plugins/$qtdir/$filename ]; then
@@ -123,15 +135,10 @@ in
       done
     '';
 
-  brokenConditions = prevAttrs.brokenConditions // {
-    # Older releases require boost 1.70, which is deprecated in Nixpkgs
-    "CUDA too old (<11.8)" = cudaOlder "11.8";
-  };
-
-  badPlatformsConditions =
-    prevAttrs.badPlatformsConditions
-    // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions (
-      optionalAttrs (versionOlder version "2022.4.2.1") { inherit qt5; }
-      // optionalAttrs (versionAtLeast version "2022.4.2.1") { inherit qt6; }
-    );
+  autoPatchelfIgnoreMissingDeps =
+    prevAttrs.autoPatchelfIgnoreMissingDeps
+    ++ optionals (versionAtLeast version "2024.5.1.113") [
+      # Provided by the driver.
+      "libnvidia-ml.so.1"
+    ];
 }

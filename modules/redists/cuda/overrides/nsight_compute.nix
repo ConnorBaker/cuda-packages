@@ -7,15 +7,16 @@
   kdePackages,
   lib,
   libtiff,
-  qt5 ? null,
-  qt6 ? null,
+  qt6Packages,
   rdma-core,
   ucx,
 }:
 let
-  inherit (lib.attrsets) optionalAttrs;
+  inherit (lib.attrsets) getBin;
   inherit (lib.lists) optionals;
-  inherit (lib.strings) versionOlder versionAtLeast;
+  inherit (lib.strings) versionAtLeast;
+  inherit (gst_all_1) gst-plugins-base;
+  inherit (qt6Packages) qtwayland qtwebview wrapQtAppsHook;
   # Most of this is taken directly from
   # https://github.com/NixOS/nixpkgs/blob/ea4c80b39be4c09702b0cb3b42eab59e2ba4f24b/pkgs/development/libraries/libtiff/default.nix
   libtiff_4_5 = libtiff.overrideAttrs (
@@ -102,9 +103,6 @@ in
 finalAttrs: prevAttrs:
 let
   inherit (finalAttrs) version;
-  qt = if versionOlder version "2022.2.0" then qt5 else qt6;
-  inherit (qt) wrapQtAppsHook qtwebview;
-  qtwayland = lib.getBin qt.qtwayland;
 in
 {
   allowFHSReferences = true;
@@ -113,17 +111,11 @@ in
     prevAttrs.buildInputs
     ++ [ qtwebview ]
     ++ optionals (versionAtLeast version "2022.4") [
+      (getBin qtwayland)
       e2fsprogs
       libtiff_4_5
-      qtwayland
       rdma-core
       ucx
     ]
-    ++ optionals (versionAtLeast version "2023.1") [ gst_all_1.gst-plugins-base ];
-  badPlatformsConditions =
-    prevAttrs.badPlatformsConditions
-    // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions (
-      optionalAttrs (versionOlder version "2022.2.0") { inherit qt5; }
-      // optionalAttrs (versionAtLeast version "2022.2.0") { inherit qt6; }
-    );
+    ++ optionals (versionAtLeast version "2023.1") [ gst-plugins-base ];
 }
