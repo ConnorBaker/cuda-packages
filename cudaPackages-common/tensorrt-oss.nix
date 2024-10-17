@@ -1,3 +1,5 @@
+# TODO(@connorbaker): Package samples as test cases, and make a bin output for tools.
+# Can the python bindings replace the wheels we get from the tensorrt tarball?
 {
   backendStdenv,
   cmake,

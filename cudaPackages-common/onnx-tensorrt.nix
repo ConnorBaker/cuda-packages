@@ -44,6 +44,11 @@ buildPythonPackage {
     hash = "sha256-ZHWIwPy/iQS6iKAxVL9kKM+KbfzvktFrCElie4Aj8mg=";
   };
 
+  outputs = [
+    "out"
+    "static"
+  ];
+
   pyproject = true;
 
   build-system = [ setuptools ];
@@ -121,7 +126,11 @@ buildPythonPackage {
     # Install the header files to the include directory.
     + ''
       mkdir -p "$out/include/onnx"
-      cp *.h *.hpp "$out/include/onnx"
+      install -Dm644 *.h *.hpp "$out/include/onnx"
+    ''
+    # Move static libraries to the static directory.
+    + ''
+      moveToOutput lib/libnvonnxparser_static.a "$static"
     '';
 
   doCheck = true;
