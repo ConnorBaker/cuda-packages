@@ -2,7 +2,6 @@
   config,
   cuda-lib,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -35,7 +34,7 @@ in
             gpu: optionals gpu.isJetson [ gpu.computeCapability ]
           ) config.data.gpus;
         in
-        intersectLists allJetsonComputeCapabilities (pkgs.config.cudaCapabilities or [ ]);
+        intersectLists allJetsonComputeCapabilities config.cuda.capabilities;
     };
   };
 }

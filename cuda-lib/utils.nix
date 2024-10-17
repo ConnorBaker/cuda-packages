@@ -362,7 +362,6 @@ in
       redistName,
       releaseInfo,
       packageInfo,
-      version,
       ...
     }:
     let
@@ -693,20 +692,20 @@ in
     #       One level up, we're using mapAttrs to set the values of the attribute set equal to the newly filtered
     #       attribute set. We then pass this newly mapAttrs-ed attribute set to filterAttrs again, removing any
     #       empty attribute sets.
-    filterAttrs (redistName: redistConfig: { } != redistConfig.versionedManifests) (
+    filterAttrs (_: redistConfig: { } != redistConfig.versionedManifests) (
       mapAttrs (
         redistName: redistConfig:
         redistConfig
         // {
-          versionedManifests = filterAttrs (version: manifest: { } != manifest) (
+          versionedManifests = filterAttrs (_: manifest: { } != manifest) (
             mapAttrs (
               version: manifest:
-              filterAttrs (packageName: release: { } != release.packages) (
+              filterAttrs (_: release: { } != release.packages) (
                 mapAttrs (
                   packageName: release:
                   release
                   // {
-                    packages = filterAttrs (redistArch: packageVariants: { } != packageVariants) (
+                    packages = filterAttrs (_: packageVariants: { } != packageVariants) (
                       mapAttrs (
                         redistArch: packageVariants:
                         filterAttrs (

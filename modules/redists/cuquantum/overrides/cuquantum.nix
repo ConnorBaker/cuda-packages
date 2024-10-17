@@ -1,11 +1,9 @@
 {
-  cuda-lib,
-  lib,
   libcublas,
   libcusolver,
   libcutensor,
 }:
-finalAttrs: prevAttrs: {
+prevAttrs: {
   buildInputs = prevAttrs.buildInputs or [ ] ++ [
     libcublas
     libcusolver

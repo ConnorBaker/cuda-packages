@@ -1,6 +1,5 @@
 {
   cuda-lib,
-  lib,
   libcal ? null,
   libcublas,
 }:

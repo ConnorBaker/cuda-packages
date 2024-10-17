@@ -6,70 +6,45 @@
   lib,
   libxcrypt-legacy,
   ncurses,
-  pkgs,
+  python3,
   stdenv,
 }:
 let
-  inherit (lib.attrsets)
-    attrNames
-    attrValues
-    filterAttrs
-    genAttrs
-    ;
-  inherit (lib.lists) map optionals range;
-  inherit (lib.strings) optionalString;
-
-  # desiredPython3MinorVersions :: List String
-  desiredPython3MinorVersions =
-    assert cudaMajorMinorVersion == "12.6";
-    map builtins.toString (range 8 12);
-
-  # python3MinorVersionToPackage :: AttrSet (null | Package)
-  python3MinorVersionToPackage = genAttrs desiredPython3MinorVersions (
-    minorVersion: pkgs."python3${minorVersion}" or null
-  );
-
-  # python3Available :: AttrSet Package
-  python3Available = filterAttrs (
-    minorVersion: available: available != null
-  ) python3MinorVersionToPackage;
-
-  # python3Unavailable :: AttrSet null
-  python3Unavailable = filterAttrs (
-    minorVersion: available: available == null
-  ) python3MinorVersionToPackage;
-
-  additionalBuildInputs =
-    # x86_64 only needs gmp from 12.0 and on
-    optionals (cudaAtLeast "12.0") [ gmp ]
-    # aarch64, sbsa needs expat
-    ++ optionals (stdenv.hostPlatform.isAarch64) [ expat ]
-    # From 12.5, cuda-gdb comes with Python TUI wrappers
-    ++ optionals (cudaAtLeast "12.5") (
-      [
-        libxcrypt-legacy
-        ncurses
-      ]
-      ++ attrValues python3Available
-    );
-
-  additionalPostInstall =
-    # Remove binaries requiring Python3 versions we do not have
-    optionalString (cudaAtLeast "12.5") ''
-      for minorVersion in ${builtins.concatStringsSep " " (attrNames python3Unavailable)}; do
-        rm -f "''${!outputBin}/bin/cuda-gdb-python3.$minorVersion-tui"
-      done
-    '';
+  inherit (lib.lists) optionals;
+  inherit (lib.strings) optionalString versionAtLeast versionOlder;
+  inherit (lib.versions) majorMinor;
+  python3MajorMinorVersion = majorMinor python3.version;
 in
 prevAttrs: {
   allowFHSReferences = true;
 
   brokenConditions = prevAttrs.brokenConditions // {
-    "None of the desired Python3 versions are available" =
-      desiredPython3MinorVersions != [ ] && python3Available == { };
+    "Unsupported Python 3 version" =
+      (cudaAtLeast "12.5")
+      && (versionOlder python3MajorMinorVersion "3.8" || versionAtLeast python3MajorMinorVersion "3.13");
   };
 
-  buildInputs = prevAttrs.buildInputs ++ additionalBuildInputs;
+  buildInputs =
+    prevAttrs.buildInputs or [ ]
+    # x86_64 only needs gmp from 12.0 and on
+    ++ optionals (cudaAtLeast "12.0") [ gmp ]
+    # aarch64, sbsa needs expat
+    ++ optionals stdenv.hostPlatform.isAarch64 [ expat ]
+    # From 12.5, cuda-gdb comes with Python TUI wrappers
+    ++ optionals (cudaAtLeast "12.5") [
+      libxcrypt-legacy
+      ncurses
+      python3
+    ];
 
-  postInstall = (prevAttrs.postInstall or "") + additionalPostInstall;
+  postInstall =
+    prevAttrs.postInstall or ""
+    # Remove binaries requiring Python3 versions we do not have
+    + optionalString (cudaAtLeast "12.5") ''
+      pushd "''${!outputBin}/bin"
+      mv "cuda-gdb-python${python3MajorMinorVersion}-tui" ../
+      rm -f cuda-gdb-python*-tui
+      mv "../cuda-gdb-python${python3MajorMinorVersion}-tui" . 
+      popd
+    '';
 }

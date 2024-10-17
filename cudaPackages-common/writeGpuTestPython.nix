@@ -17,7 +17,7 @@ let
 in
 
 assert lib.assertMsg (
-  isFunction libraries || all (python3Packages.hasPythonModule) libraries
+  isFunction libraries || all python3Packages.hasPythonModule libraries
 ) "writeGpuTestPython was passed `libraries` from the wrong python release";
 
 content:
@@ -49,7 +49,7 @@ let
           wrapProgram "$out/bin/$name" ''${makeWrapperArgs[@]}
         fi
       '';
-  tester' = tester.overrideAttrs (oldAttrs: {
+  tester' = tester.overrideAttrs {
     passthru.gpuCheck =
       runCommand "test-${name}"
         {
@@ -61,6 +61,6 @@ let
           ${tester.meta.mainProgram or (lib.getName tester')}
           touch $out
         '';
-  });
+  };
 in
 tester'

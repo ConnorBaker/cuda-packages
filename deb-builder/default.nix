@@ -50,7 +50,7 @@ let
   ) manifests.${manifestMajorMinorVersion}.${manifestPackageSet};
 
   debs = mapAttrs (
-    name: attrs:
+    _: attrs:
     fetchurl {
       inherit (attrs) sha256;
       url = "https://repo.download.nvidia.com/jetson/${manifestPackageSet}/${attrs.filename}";

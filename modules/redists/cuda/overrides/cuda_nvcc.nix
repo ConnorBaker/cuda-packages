@@ -2,10 +2,8 @@
   backendStdenv,
   cudaAtLeast,
   cudaOlder,
-  cuda_cudart,
   lib,
   setupCudaHook,
-  cuda-lib,
 }:
 let
   inherit (lib.lists) optionals;

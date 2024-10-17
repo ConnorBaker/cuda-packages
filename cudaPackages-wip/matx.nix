@@ -3,10 +3,6 @@
 # in the case redistributable packages are not available.
 {
   autoAddDriverRunpath,
-  cudaAtLeast,
-  cmake,
-  ninja,
-  flags,
   cutlass,
   cudaMajorMinorVersion,
   cudaOlder,
@@ -15,7 +11,6 @@
   cuda_cudart,
   cuda_nvcc,
   cuquantum,
-  cudatoolkit,
   libcutensor,
   fetchFromGitHub,
   rapids-cmake,
@@ -26,8 +21,7 @@
   gitUpdater,
 }:
 let
-  inherit (lib.lists) optionals;
-  inherit (lib.strings) cmakeFeature cmakeBool;
+  inherit (lib.strings) cmakeBool;
 
   pythonDeps = with python3Packages; [
     pybind11

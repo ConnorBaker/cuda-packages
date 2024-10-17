@@ -5,7 +5,7 @@
 let
   inherit (lib.attrsets) getLib;
 in
-finalAttrs: prevAttrs: {
+prevAttrs: {
   allowFHSReferences = true;
   buildInputs = prevAttrs.buildInputs ++ [ (getLib libcublas) ];
   meta = prevAttrs.meta // {

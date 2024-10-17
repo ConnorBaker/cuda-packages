@@ -1,10 +1,8 @@
 {
   config,
   cuda-lib,
-  cudaOlder,
   cuda_cudart,
   cudnn,
-  cudaMajorMinorVersion,
   flags,
   lib,
   libcudla,

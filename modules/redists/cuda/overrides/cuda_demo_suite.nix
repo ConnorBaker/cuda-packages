@@ -1,5 +1,4 @@
 {
-  lib,
   libcufft,
   libcurand,
   libGLU,

@@ -1,21 +1,9 @@
 {
-  config,
   nixpkgs,
-  system,
   ...
 }:
 let
   inherit (nixpkgs) lib;
-  pkgs = import nixpkgs {
-    inherit system;
-    config = {
-      allowUnfree = true;
-      cudaSupport = true;
-      cudaCapabilities = config.cuda.capabilities;
-      cudaForwardCompat = config.cuda.forwardCompat;
-      cudaHostCompiler = config.cuda.hostCompiler;
-    };
-  };
 
   # Create our cuda-lib
   cuda-lib = import ../cuda-lib { inherit lib; };
@@ -26,12 +14,12 @@ in
 {
   imports = [
     ./data
+    ./overlay.nix
     ./redists
-    ./package-sets.nix
   ];
 
   config._module.args = {
-    inherit cuda-lib lib pkgs;
+    inherit cuda-lib lib;
   };
 
   options = {

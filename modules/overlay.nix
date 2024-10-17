@@ -2,13 +2,13 @@
   config,
   cuda-lib,
   lib,
-  pkgs,
   ...
 }:
 let
   inherit (lib.attrsets)
     attrNames
     dontRecurseIntoAttrs
+    filterAttrs
     mapAttrs
     optionalAttrs
     recurseIntoAttrs
@@ -19,39 +19,37 @@ let
     concatMap
     elem
     foldl'
-    map
     unique
     ;
   inherit (lib.options) mkOption;
-  inherit (lib.strings) replaceStrings versionAtLeast versionOlder;
-  inherit (lib.trivial) const flip pipe;
-  inherit (lib.types) lazyAttrsOf raw;
+  inherit (lib.strings)
+    hasPrefix
+    versionAtLeast
+    versionOlder
+    ;
+  inherit (lib.trivial) const pipe;
+  inherit (lib.types) raw;
   inherit (lib.versions) major majorMinor;
-  inherit (pkgs) newScope stdenv;
 
   # TODO:
   # - Version constraint handling (like for cutensor)
   # - Overrides for cutensor, etc.
 
-  hostRedistArch = cuda-lib.utils.getRedistArch (
-    config.data.jetsonTargets != [ ]
-  ) stdenv.hostPlatform.system;
-
-  mkCudaPackagesPackageSetName = flip pipe [
-    (cuda-lib.utils.versionPolicyToVersionFunction config.redists.cuda.versionPolicy)
-    (replaceStrings [ "." ] [ "_" ])
-    (version: "cudaPackages_${version}")
-  ];
-
-  packageSetBuilder = cudaMajorMinorPatchVersion: {
-    name = mkCudaPackagesPackageSetName cudaMajorMinorPatchVersion;
-    value = makeScope newScope (
-      final:
+  packageSetBuilder =
+    final:
+    let
+      hostRedistArch = cuda-lib.utils.getRedistArch (
+        config.data.jetsonTargets != [ ]
+      ) final.stdenv.hostPlatform.system;
+    in
+    cudaMajorMinorPatchVersion:
+    makeScope final.newScope (
+      finalCudaPackages:
       let
         coreAttrs = {
           cuda-lib = dontRecurseIntoAttrs cuda-lib;
 
-          cudaPackages = dontRecurseIntoAttrs final // {
+          cudaPackages = dontRecurseIntoAttrs finalCudaPackages // {
             __attrsFailEvaluation = true;
           };
           # NOTE: `cudaPackages_11_8.pkgs.cudaPackages.cudaVersion` is 11.8, not `cudaPackages.cudaVersion`.
@@ -59,17 +57,17 @@ let
           #       where the default CUDA version is 11.8.
           #       For example, OpenCV3 with CUDA 11.8: `cudaPackages_11_8.pkgs.opencv3`.
           # NOTE: Using `extend` allows us to maintain a reference to the final cudaPackages. Without this,
-          #       if we use `final.callPackage` and a package accepts `cudaPackages` as an argument, it's
+          #       if we use `finalCudaPackages.callPackage` and a package accepts `cudaPackages` as an argument, it's
           #       provided with `cudaPackages` from the top-level scope, which is not what we want. We want
-          #       to provide the `cudaPackages` from the final scope -- that is, the *current* scope.
+          #       to provide the `cudaPackages` from the finalCudaPackages scope -- that is, the *current* scope.
           # NOTE: While the note attached to `extends` in `pkgs/top-level/stages.nix` states "DO NOT USE THIS
           #       IN NIXPKGS", this `pkgs` should never be evaluated by default, so it should have no impact.
           #       I (@connorbaker) am of the opinion that this is a valid use case for `extends`.
           pkgs = dontRecurseIntoAttrs (
-            pkgs.extend (
+            final.pkgs.extend (
               _: _: {
                 __attrsFailEvaluation = true;
-                inherit (final) cudaPackages;
+                inherit (finalCudaPackages) cudaPackages;
               }
             )
           );
@@ -81,29 +79,33 @@ let
           };
           # CUDA versions
           inherit cudaMajorMinorPatchVersion;
-          cudaMajorMinorVersion = majorMinor final.cudaMajorMinorPatchVersion;
-          cudaMajorVersion = major final.cudaMajorMinorPatchVersion;
-          cudaVersion = final.cudaMajorMinorVersion;
+          cudaMajorMinorVersion = majorMinor finalCudaPackages.cudaMajorMinorPatchVersion;
+          cudaMajorVersion = major finalCudaPackages.cudaMajorMinorPatchVersion;
+          cudaVersion = finalCudaPackages.cudaMajorMinorVersion;
+        };
+
+        aliasAttrs = {
+          cudaFlags = finalCudaPackages.flags;
         };
 
         utilityAttrs = {
           # CUDA version comparison utilities
-          cudaAtLeast = versionAtLeast final.cudaVersion;
-          cudaOlder = versionOlder final.cudaVersion;
+          cudaAtLeast = versionAtLeast finalCudaPackages.cudaVersion;
+          cudaOlder = versionOlder finalCudaPackages.cudaVersion;
         };
 
         cudaPackages_11-jetson = packagesFromDirectoryRecursive {
-          inherit (final) callPackage;
+          inherit (finalCudaPackages) callPackage;
           directory = ../cudaPackages_11-jetson;
         };
 
         cudaPackages_12 = packagesFromDirectoryRecursive {
-          inherit (final) callPackage;
+          inherit (finalCudaPackages) callPackage;
           directory = ../cudaPackages_12;
         };
 
         cudaPackagesCommon = packagesFromDirectoryRecursive {
-          inherit (final) callPackage;
+          inherit (finalCudaPackages) callPackage;
           directory = ../cudaPackages-common;
         };
 
@@ -127,8 +129,6 @@ let
                 packageName,
                 redistArch,
                 redistName,
-                releaseInfo,
-                packageInfo,
                 version,
                 ...
               }:
@@ -151,12 +151,10 @@ let
                 #       without Jetson support (`linux-aarch64` and `linux-sbsa`, respectively).
                 isSupportedPlatform = redistArch == "source" || elem hostRedistArch supportedRedistArchs;
 
-                inherit (config.redists.${redistName}) versionPolicy;
-
                 # Package which is constructed from the current flattenedRedistsElem.
                 currentPackage = pipe flattenedRedistsElem [
                   # Use the package builder
-                  (cuda-lib.utils.buildRedistPackage final)
+                  (cuda-lib.utils.buildRedistPackage finalCudaPackages)
                   # Update meta with the list of supported platforms
                   (
                     pkg:
@@ -226,35 +224,47 @@ let
         (addRedistributablePackages (
           coreAttrs
           // dataAttrs
+          // aliasAttrs
           // utilityAttrs
           // cudaPackagesCommon
-          // (optionalAttrs (major cudaMajorMinorPatchVersion == "12") cudaPackages_12)
+          // optionalAttrs (major cudaMajorMinorPatchVersion == "12") cudaPackages_12
         ))
         // optionalAttrs (
-          ((major cudaMajorMinorPatchVersion == "11") && hostRedistArch == "linux-aarch64")
+          (major cudaMajorMinorPatchVersion == "11") && hostRedistArch == "linux-aarch64"
         ) cudaPackages_11-jetson
       )
     );
-  };
 in
 {
   # Each attribute of packages is a CUDA version, and it maps to the set of packages for that CUDA version.
   options = mapAttrs (const mkOption) {
-    packageSets = {
-      description = "Package sets for each version of CUDA.";
-      # NOTE: We must use lazyAttrsOf, else the package set is evaluated immediately for every CUDA version, instead
-      # of lazily.
-      type = lazyAttrsOf raw;
+    overlay = {
+      description = "Overlay to configure and add CUDA package sets";
+      type = raw;
       default =
-        let
-          versionedPackageSets = pipe config.redists.cuda.versionedManifests [
-            (cuda-lib.utils.newestVersionedManifestsByVersionPolicy config.redists.cuda.versionPolicy)
-            attrNames
-            (map packageSetBuilder)
-            builtins.listToAttrs
-          ];
-        in
-        versionedPackageSets // { cudaPackages = versionedPackageSets.cudaPackages_12; };
+        final: prev:
+        # Error on access to any existing CUDA package sets populated by upstream.
+        (pipe prev [
+          (filterAttrs (name: _: hasPrefix name "cudaPackages"))
+          (mapAttrs (
+            name: _: builtins.throw "Access to Nixpkgs' CUDA package sets (${name}) is not allowed."
+          ))
+        ])
+        # Update with our package sets and config.
+        // {
+          config = prev.config // {
+            allowUnfree = true;
+            cudaSupport = true;
+            cudaCapabilities = config.cuda.capabilities;
+            cudaForwardCompat = config.cuda.forwardCompat;
+            cudaHostCompiler = config.cuda.hostCompiler;
+          };
+
+          # Our package sets.
+          cudaPackages_11 = packageSetBuilder final "11.8.0";
+          cudaPackages_12 = packageSetBuilder final "12.6.2";
+          cudaPackages = final.cudaPackages_12;
+        };
     };
   };
 }

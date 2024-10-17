@@ -73,7 +73,7 @@ let
         runHook postCheck
       '';
     meta = with lib; {
-      description = pyprojectAttrs.project.description;
+      inherit (pyprojectAttrs.project) description;
       homepage = pyprojectAttrs.project.urls.Homepage;
       maintainers = with maintainers; [ connorbaker ];
     };

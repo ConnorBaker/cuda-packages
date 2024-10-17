@@ -1,10 +1,8 @@
 {
-  cuda-lib,
   e2fsprogs,
   fetchpatch,
   fetchzip,
   gst_all_1,
-  kdePackages,
   lib,
   libtiff,
   qt6Packages,
@@ -20,7 +18,7 @@ let
   # Most of this is taken directly from
   # https://github.com/NixOS/nixpkgs/blob/ea4c80b39be4c09702b0cb3b42eab59e2ba4f24b/pkgs/development/libraries/libtiff/default.nix
   libtiff_4_5 = libtiff.overrideAttrs (
-    finalAttrs: prevAttrs: {
+    finalAttrs: _: {
       version = "4.4.0";
       src = fetchzip {
         url = "https://download.osgeo.org/libtiff/tiff-${finalAttrs.version}.tar.gz";

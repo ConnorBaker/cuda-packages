@@ -3,13 +3,11 @@
 # patched elf files, but `cuda_compat` path must take precedence (otherwise,
 # it doesn't have any effect) and thus appear first. Meaning this hook must be
 # executed last.
-
 {
   autoFixElfFiles,
   cuda_compat ? null,
-  flags,
   cudaMajorMinorVersion,
-  lib,
+  flags,
   makeSetupHook,
 }:
 makeSetupHook {
@@ -21,9 +19,8 @@ makeSetupHook {
     libcudaPath = if flags.isJetsonBuild then "${cuda_compat}/compat" else null;
   };
 
-  meta.broken = !flags.isJetsonBuild;
-
-  # Pre-cuda_compat CUDA release:
-  meta.badPlatforms = lib.optionals (cuda_compat == null) lib.platforms.all;
-  meta.platforms = cuda_compat.meta.platforms or [ ];
+  meta = {
+    broken = !flags.isJetsonBuild;
+    platforms = [ "aarch64-linux" ];
+  };
 } ./auto-add-cuda-compat-runpath.sh

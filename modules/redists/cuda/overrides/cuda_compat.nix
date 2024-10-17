@@ -1,4 +1,4 @@
-{ flags, lib }:
+{ flags }:
 prevAttrs: {
   allowFHSReferences = true;
   autoPatchelfIgnoreMissingDeps = prevAttrs.autoPatchelfIgnoreMissingDeps ++ [

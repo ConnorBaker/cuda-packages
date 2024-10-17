@@ -2,7 +2,6 @@
   boost178,
   cuda_cudart,
   cuda-lib,
-  cudaOlder,
   e2fsprogs,
   gst_all_1,
   lib,

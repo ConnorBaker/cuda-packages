@@ -1,1 +1,1 @@
-{ }: _: { allowFHSReferences = true; }
+_: _: { allowFHSReferences = true; }

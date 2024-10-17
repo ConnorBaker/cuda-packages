@@ -47,34 +47,52 @@
           system,
           ...
         }:
+        let
+          getOverlay =
+            {
+              capabilities,
+              hostCompiler ? "gcc",
+            }:
+            (lib.evalModules {
+              specialArgs = {
+                inherit (inputs) nixpkgs;
+              };
+              modules = [
+                {
+                  cuda = {
+                    inherit capabilities hostCompiler;
+                    forwardCompat = false;
+                  };
+                }
+                ./modules
+              ];
+            }).config.overlay;
+        in
         {
+          # Make our package set the default.
+          _module.args = {
+            pkgs = import inputs.nixpkgs {
+              inherit system;
+              # Unfree needs to be set in the initial config attribute set, even though we override it in our overlay.
+              config.allowUnfree = true;
+              overlays = [
+                (getOverlay {
+                  capabilities = [ "8.9" ];
+                })
+              ];
+            };
+          };
+
           devShells = {
+            inherit (config.packages) cuda-redist;
             default = config.devShells.cuda-redist;
-            cuda-redist = config.packages.cuda-redist;
           };
 
           legacyPackages =
             let
-              getPackageSets =
-                {
-                  capabilities,
-                  hostCompiler ? "gcc",
-                }:
-                (lib.evalModules {
-                  specialArgs = {
-                    inherit system;
-                    inherit (inputs) nixpkgs;
-                  };
-                  modules = [
-                    {
-                      cuda = {
-                        inherit capabilities hostCompiler;
-                        forwardCompat = false;
-                      };
-                    }
-                    ./modules
-                  ];
-                }).config.packageSets;
+              getPackageSets = args: {
+                inherit (pkgs.extend (getOverlay args)) cudaPackages_11 cudaPackages_12 cudaPackages;
+              };
               normalPackageSets = getPackageSets { capabilities = [ "8.9" ]; };
               jetsonPackageSets = {
                 xavier = getPackageSets { capabilities = [ "7.2" ]; };
@@ -83,10 +101,26 @@
             in
             normalPackageSets // lib.optionalAttrs (system == "aarch64-linux") jetsonPackageSets;
 
-          packages = {
-            default = config.packages.cuda-redist;
-            cuda-redist = pkgs.python311Packages.callPackage ./scripts/cuda-redist { };
-          };
+          packages =
+            let
+              inherit (lib.attrsets) isAttrs isDerivation filterAttrs;
+              inherit (pkgs) linkFarm python311Packages;
+              filterForTopLevelPackages = filterAttrs (
+                _: value:
+                let
+                  attempt = isAttrs value && isDerivation value && value.meta.available or false;
+                  forcedAttempt = builtins.deepSeq attempt attempt;
+                  tried = builtins.tryEval forcedAttempt;
+                in
+                if tried.success then tried.value else false
+              );
+            in
+            {
+              default = config.packages.cuda-redist;
+              cuda-redist = python311Packages.callPackage ./scripts/cuda-redist { };
+              cudaPackages_11 = linkFarm "cudaPackages_11" (filterForTopLevelPackages pkgs.cudaPackages_11);
+              cudaPackages_12 = linkFarm "cudaPackages_12" (filterForTopLevelPackages pkgs.cudaPackages_12);
+            };
 
           pre-commit.settings.hooks = {
             # Formatter checks
@@ -99,26 +133,6 @@
             deadnix.enable = true;
             nil.enable = true;
             statix.enable = true;
-
-            # Python checks
-            pyright = {
-              enable = true;
-              settings.binPath =
-                let
-                  # We need to provide wrapped version of mypy and pyright which can find our imports.
-                  # TODO: The script we're sourcing is an implementation detail of `mkShell` and we should
-                  # not depend on it exisitng. In fact, the first few lines of the file state as much
-                  # (that's why we need to strip them, sourcing only the content of the script).
-                  wrapper =
-                    name:
-                    pkgs.writeShellScript name ''
-                      source <(sed -n '/^declare/,$p' ${config.devShells.cuda-redist})
-                      ${name} "$@"
-                    '';
-                in
-                "${wrapper "pyright"}";
-            };
-            ruff.enable = true; # Ruff both lints and checks sorted imports
           };
 
           treefmt = {
@@ -143,9 +157,6 @@
 
               # Nix
               nixfmt.enable = true;
-
-              # Python
-              ruff.enable = true;
 
               # Shell
               shellcheck.enable = true;

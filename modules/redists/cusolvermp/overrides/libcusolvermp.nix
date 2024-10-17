@@ -1,7 +1,6 @@
 {
   cuda_cudart,
   cuda-lib,
-  lib,
   libcal ? null,
   libcublas,
   libcusolver,
