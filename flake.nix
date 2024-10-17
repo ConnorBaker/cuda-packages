@@ -44,6 +44,7 @@
           config,
           lib,
           pkgs,
+          system,
           ...
         }:
         {
@@ -56,9 +57,19 @@
             let
               evaluatedModules = lib.evalModules {
                 specialArgs = {
+                  inherit system;
                   inherit (inputs) nixpkgs;
                 };
-                modules = [ ./modules ];
+                modules = [
+                  {
+                    cuda = {
+                      hostCompiler = "clang";
+                      capabilities = [ "8.9" ];
+                      forwardCompat = false;
+                    };
+                  }
+                  ./modules
+                ];
               };
             in
             evaluatedModules.config.packageSets;

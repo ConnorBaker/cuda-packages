@@ -22,7 +22,6 @@
   markForCudatoolkitRootHook,
   path, # Path to Nixpkgs root, needed for setup-cuda-stubs-hook.sh
   pkgs,
-  stdenv,
 }:
 let
   inherit (lib)
@@ -227,7 +226,9 @@ backendStdenv.mkDerivation (
       # one that is compatible with the rest of nixpkgs, even when
       # nvcc forces us to use an older gcc
       # NB: We don't actually know if this is the right thing to do
-      stdenv.cc.cc.lib
+      # NOTE: Not all packages actually need this, but it's easier to just add it than create overrides for nearly all
+      # of them.
+      backendStdenv.cudaHostStdenv.cc.cc.lib
     ];
 
     # Picked up by autoPatchelf
