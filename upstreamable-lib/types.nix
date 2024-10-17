@@ -1,9 +1,11 @@
-{ lib }:
+{ lib, upstreamable-lib }:
 let
-  inherit (builtins) throw toString;
+  inherit (builtins) toString;
+  inherit (lib.trivial) throwIf;
   inherit (lib.types) strMatching;
+  inherit (upstreamable-lib.types) versionWithNumComponents;
 in
-rec {
+{
   /**
     The option type of a version with a single component.
 
@@ -99,8 +101,7 @@ rec {
   */
   versionWithNumComponents =
     numComponents:
-    if numComponents < 1 then
-      throw "numComponents must be positive"
-    else
-      strMatching "^[[:digit:]]+(\.[[:digit:]]+){${toString (numComponents - 1)}}$";
+    throwIf (numComponents < 1) "numComponents must be positive" (
+      strMatching "^[[:digit:]]+(\.[[:digit:]]+){${toString (numComponents - 1)}}$"
+    );
 }

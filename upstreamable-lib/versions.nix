@@ -1,11 +1,12 @@
-{ lib }:
+{ lib, upstreamable-lib }:
 let
   inherit (lib.lists) elemAt take;
   inherit (lib.strings) concatStringsSep replaceStrings;
   inherit (lib.trivial) pipe;
   inherit (lib.versions) splitVersion;
+  inherit (upstreamable-lib.versions) componentAt trimComponents;
 in
-rec {
+{
   /**
     Get the build version string from a string.
 

@@ -63,6 +63,10 @@ let
   inherit (lib.versions) major majorMinor;
 in
 {
+  inherit (upstreamable-lib.attrsets)
+    flattenAttrs
+    flattenDrvTree
+    ;
   inherit (upstreamable-lib.versions)
     dropDots
     majorMinorPatch

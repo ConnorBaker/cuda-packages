@@ -344,6 +344,9 @@ assert
   # dropDots :: String -> String
   inherit dropDots;
 
+  # TODO: Alias to be removed.
+  dropDot = trivial.warn "cudaPackages.flags.dropDot is deprecated, use cudaPackages.flags.dropDots instead" dropDots;
+
   inherit
     defaultCapabilities
     supportedCapabilities

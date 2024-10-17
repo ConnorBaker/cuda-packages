@@ -107,6 +107,10 @@
           legacyPackages =
             # pkgs is by default adaPkgs
             pkgs
+            // {
+              allDrvs = pkgs.cudaPackages.cuda-lib.utils.flattenDrvTree pkgs;
+              cudaPackagesDrvs = pkgs.cudaPackages.cuda-lib.utils.flattenDrvTree pkgs.cudaPackages;
+            }
             // optionalAttrs (system == "aarch64-linux") {
               xavier = xavierPkgs;
               orin = orinPkgs;

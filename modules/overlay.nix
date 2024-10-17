@@ -25,7 +25,7 @@ let
     versionAtLeast
     versionOlder
     ;
-  inherit (lib.trivial) const pipe;
+  inherit (lib.trivial) const pipe warn;
   inherit (lib.types) raw;
   inherit (lib.versions) major majorMinor;
 
@@ -83,7 +83,8 @@ let
         };
 
         aliasAttrs = {
-          cudaFlags = finalCudaPackages.flags;
+          cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
+          cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
         };
 
         utilityAttrs = {
