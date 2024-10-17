@@ -4,12 +4,10 @@
   backendStdenv,
   callPackage,
   config,
-  cuda_cudart,
   cuda-lib,
   cudaMajorMinorVersion,
-  cudnn_8_6_0,
-  libcublas,
-  libcudla,
+  expat,
+  libglvnd,
 }:
 let
   hostRedistArch = cuda-lib.utils.getRedistArch (
@@ -21,33 +19,25 @@ in
 callPackage ../deb-builder {
   # Args for deb-builder
   manifestMajorMinorVersion = "35.6";
-  sourceName = "tensorrt";
+  manifestPackageSet = "t234";
+  debName = "nvidia-l4t-core";
   postDebUnpack = ''
-    for dir in include lib; do
-      mv "$sourceRoot/usr/$dir/aarch64-linux-gnu" "$sourceRoot/$dir"
-    done
-
-    mv "$sourceRoot/usr/src/tensorrt" "$sourceRoot/samples"
+    mv "$sourceRoot/usr/lib/aarch64-linux-gnu/tegra" "$sourceRoot/lib"
     rm -rf "$sourceRoot/usr"
+    rm -rf "$sourceRoot/etc"
+    rm -f "$sourceRoot/lib/ld.so.conf"
   '';
   srcIsNull = hostRedistArchIsUnsupported || cudaVersionIsUnsupported;
   overrideAttrsFn = prevAttrs: {
-    # Samples, lib, and static all reference a FHS
-    allowFHSReferences = true;
     brokenConditions = prevAttrs.brokenConditions // {
       "CUDA version mismatch" = cudaVersionIsUnsupported;
     };
     badPlatformsConditions = prevAttrs.badPlatformsConditions // {
-      "TensorRT 8.5.2.2 is only available for Jetson devices" = hostRedistArchIsUnsupported;
+      "l4t-core 35.6.0 is only available for Jetson devices" = hostRedistArchIsUnsupported;
     };
     buildInputs = prevAttrs.buildInputs or [ ] ++ [
-      cuda_cudart
-      cudnn_8_6_0
-      libcublas
-      libcudla
-    ];
-    autoPatchelfIgnoreMissingDeps = prevAttrs.autoPatchelfIgnoreMissingDeps ++ [
-      "libnvdla_compiler.so"
+      expat
+      libglvnd
     ];
     meta = prevAttrs.meta // {
       platforms = prevAttrs.meta.platforms or [ ] ++ [ "aarch64-linux" ];
@@ -61,30 +51,23 @@ callPackage ../deb-builder {
       # NOTE: Generated manually by unpacking everything and running
       #   ls -1 ./result-lib/lib/*.so | xargs -I{} sh -c 'cuobjdump {} || true' | grep "arch =" | sort -u
       # and populating the list.
-      cudaArchitectures = [
-        "sm_53"
-        "sm_62"
-        "sm_70"
-        "sm_72"
-        "sm_80"
-        "sm_87"
-      ];
+      # cudaArchitectures = [
+      # ];
       outputs = [
         "out"
-        "dev"
-        "include"
-        "lib"
-        "static"
-        "sample"
+        # "dev"
+        # "include"
+        # "lib"
+        # "static"
       ];
     };
     recursiveHash = builtins.throw "`recursiveHash` should never be required by redist-builder";
   };
-  packageName = "tensorrt";
+  packageName = "l4t-core";
   releaseInfo = {
-    license = "TensorRT";
+    license = "tegra";
     licensePath = null;
-    name = "NVIDIA TensorRT";
-    version = "8.5.2.2";
+    name = "NVIDIA CUDA Deep Neural Network library";
+    version = "35.6.0";
   };
 }

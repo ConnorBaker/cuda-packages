@@ -105,13 +105,23 @@ let
         # NOTE: The `addRedistributablePackages` function will update these aliases accordingly if there are new,
         # supported redistributable packages.
         # jetsonAliases = optionalAttrs (hostRedistArch == "linux-aarch64") {
-        jetsonAliases = {
+        packageAliases = {
           cudnn_8_6 = loosePackages.cudnn_8_6_0;
           cudnn_8 = loosePackages.cudnn_8_6_0;
           cudnn = loosePackages.cudnn_8_6_0;
+
+          onnx_1 = loosePackages.onnx_1_16;
+          onnx = loosePackages.onnx_1_16;
+
+          onnx-tensorrt_10 = loosePackages.onnx-tensorrt_10_4;
+          onnx-tensorrt = loosePackages.onnx-tensorrt_10_4;
+
           tensorrt_8_5 = loosePackages.tensorrt_8_5_2;
           tensorrt_8 = loosePackages.tensorrt_8_5_2;
           tensorrt = loosePackages.tensorrt_8_5_2;
+
+          tensorrt-oss_10 = loosePackages.tensorrt-oss_10_4;
+          tensorrt-oss = loosePackages.tensorrt-oss_10_4;
         };
 
         addRedistributablePackages =
@@ -274,7 +284,7 @@ let
       in
       recurseIntoAttrs (
         addRedistributablePackages (
-          coreAttrs // dataAttrs // utilityAttrs // loosePackages // jetsonAliases
+          coreAttrs // dataAttrs // utilityAttrs // loosePackages // packageAliases
         )
       )
     );

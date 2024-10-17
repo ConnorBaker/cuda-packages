@@ -40,7 +40,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "TensorRT";
-    rev = "v${finalAttrs.version}";
+    rev = "refs/tags/v${finalAttrs.version}";
     # NOTE: We supply our own Onnx and Protobuf, so we do not do a recursive clone.
     hash = "sha256-GAu/VdHrC3UQw9okPexVItLPrRb1m3ZMpCkHNcfzRkE=";
   };

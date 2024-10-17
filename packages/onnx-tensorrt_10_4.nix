@@ -24,7 +24,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   src = fetchFromGitHub {
     owner = "onnx";
     repo = "onnx-tensorrt";
-    rev = "release/10.4-GA";
+    rev = "refs/tags/release/10.4-GA";
     hash = "sha256-ZHWIwPy/iQS6iKAxVL9kKM+KbfzvktFrCElie4Aj8mg=";
   };
 

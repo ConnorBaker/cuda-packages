@@ -125,7 +125,7 @@ propagateCudaLibraries() {
 
   local propagatedBuildInputs=("${!cudaHostPathsSeen[@]}")
   for output in $(getAllOutputNames); do
-    if [[ ! $output == "$cudaPropagateToOutput" ]]; then
+    if [[ $output != "$cudaPropagateToOutput" ]]; then
       propagatedBuildInputs+=("${!output}")
     fi
     break
