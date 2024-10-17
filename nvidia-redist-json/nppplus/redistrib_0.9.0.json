@@ -1,0 +1,57 @@
+{
+    "release_date": "2024-06-05",
+    "release_label": "0.9.0",
+    "release_product": "nppplus",
+    "libnpp_plus": {
+        "name": "NVIDIA NPP PLUS library",
+        "license": "NPP PLUS library",
+        "license_path": "libnpp_plus/LICENSE.txt",
+        "version": "0.9.0.0",
+        "linux-x86_64": {
+            "cuda11": {
+                "relative_path": "libnpp_plus/linux-x86_64/libnpp_plus-linux-x86_64-0.9.0.0_cuda11-archive.tar.xz",
+                "sha256": "36bb45a648512a3169e0152f5ad138b8cb2e58a6940bd1f37d1f8f537f98c902",
+                "md5": "60f88cf662c9f8a256f4ae4155d5b33a",
+                "size": "276181964"
+            },
+            "cuda12": {
+                "relative_path": "libnpp_plus/linux-x86_64/libnpp_plus-linux-x86_64-0.9.0.0_cuda12-archive.tar.xz",
+                "sha256": "c41e0bf5494109c19baacbcadce94403a130f04cfb6e60280b68b5c6bec28fb4",
+                "md5": "accc93c547344f6c51f58bd9560963c0",
+                "size": "276175704"
+            }
+        },
+        "cuda_variant": [
+            "11",
+            "12"
+        ],
+        "linux-sbsa": {
+            "cuda11": {
+                "relative_path": "libnpp_plus/linux-sbsa/libnpp_plus-linux-sbsa-0.9.0.0_cuda11-archive.tar.xz",
+                "sha256": "0a21378dd27a61aee28aef9a3ac70d10d449f19ed160a4325e13935059211266",
+                "md5": "da541be695ee948af9c615e35c6d83a5",
+                "size": "275415304"
+            },
+            "cuda12": {
+                "relative_path": "libnpp_plus/linux-sbsa/libnpp_plus-linux-sbsa-0.9.0.0_cuda12-archive.tar.xz",
+                "sha256": "840b662dd6ef6c22503f80a07a5f1275c88bd2555052e8c6674c04bdde3aadd3",
+                "md5": "61287a6f2658e5b3228f54e5866b8a4e",
+                "size": "275414108"
+            }
+        },
+        "windows-x86_64": {
+            "cuda11": {
+                "relative_path": "libnpp_plus/windows-x86_64/libnpp_plus-windows-x86_64-0.9.0.0_cuda11-archive.zip",
+                "sha256": "d72799b9aff46ff4e0e60241654a2aee0d932f05e3e7d9482cf71eb6e8e05eea",
+                "md5": "7924d0b9f61320f44838030d23a93bea",
+                "size": "214650956"
+            },
+            "cuda12": {
+                "relative_path": "libnpp_plus/windows-x86_64/libnpp_plus-windows-x86_64-0.9.0.0_cuda12-archive.zip",
+                "sha256": "0d82d14a057c7021c71cf5c60b5fa834269b4c14b9ffaab1305b024039344c4a",
+                "md5": "716f7872831da94ce69bfbc7ee7885b4",
+                "size": "214650956"
+            }
+        }
+    }
+}

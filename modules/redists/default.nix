@@ -12,6 +12,7 @@ in
     ./cusolvermp
     ./cusparselt
     ./cutensor
+    ./nppplus
     ./nvjpeg2000
     ./nvpl
     ./nvtiff

@@ -33,6 +33,7 @@ RedistName = Literal[
     "cusolvermp",
     "cusparselt",
     "cutensor",
+    "nppplus",
     # NOTE: Some of the earlier manifests don't follow our scheme.
     # "nvidia-driver"
     "nvjpeg2000",

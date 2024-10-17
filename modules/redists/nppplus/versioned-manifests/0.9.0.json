@@ -1,0 +1,128 @@
+{
+  "libnpp_plus": {
+    "packages": {
+      "linux-sbsa": {
+        "cuda11": {
+          "features": {
+            "cudaArchitectures": [
+              "sm_100",
+              "sm_101",
+              "sm_120",
+              "sm_50",
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_89",
+              "sm_90"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-Oqwdyf97v+w8wf8JxiX5xu5Zy6RiZn2B1sQJN1oKvfA="
+        },
+        "cuda12": {
+          "features": {
+            "cudaArchitectures": [
+              "sm_100",
+              "sm_101",
+              "sm_120",
+              "sm_50",
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_89",
+              "sm_90"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-Oqwdyf97v+w8wf8JxiX5xu5Zy6RiZn2B1sQJN1oKvfA="
+        }
+      },
+      "linux-x86_64": {
+        "cuda11": {
+          "features": {
+            "cudaArchitectures": [
+              "sm_100",
+              "sm_101",
+              "sm_120",
+              "sm_50",
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_89",
+              "sm_90"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-3FKxce9PCU5tvmzM9QbHx8b+MQYo3Mubb4/oLv7r2u8="
+        },
+        "cuda12": {
+          "features": {
+            "cudaArchitectures": [
+              "sm_100",
+              "sm_101",
+              "sm_120",
+              "sm_50",
+              "sm_52",
+              "sm_60",
+              "sm_61",
+              "sm_70",
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_89",
+              "sm_90"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-3FKxce9PCU5tvmzM9QbHx8b+MQYo3Mubb4/oLv7r2u8="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NPP PLUS library",
+      "licensePath": "libnpp_plus/LICENSE.txt",
+      "name": "NVIDIA NPP PLUS library",
+      "version": "0.9.0.0"
+    }
+  }
+}
