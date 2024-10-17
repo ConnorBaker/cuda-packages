@@ -219,7 +219,7 @@ buildPythonPackage {
   # onnxruntime>   class [[gsl::Pointer]] Span {
   preConfigure =
     optionalString isClang ''
-      export NVCC_PREPEND_FLAGS+=" -Xcudafe=--diag_suppress=2803"
+      appendToVar NVCC_PREPEND_FLAGS "-Xcudafe=--diag_suppress=2803"
     ''
     + ''
       echo "Running the build script"

@@ -70,7 +70,7 @@ setupCUDAEnvironmentVariables() {
   # https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#compiler-bindir-directory-ccbin
   # NOTE: Using "--compiler-bindir" results in "incompatible redefinition"
   # warnings, while using the short form "-ccbin" does not.
-  export NVCC_PREPEND_FLAGS+=" -ccbin @ccFullPath@"
+  appendToVar NVCC_PREPEND_FLAGS "-ccbin @ccFullPath@"
 
   # NOTE: We set -Xfatbin=-compress-all, which reduces the size of the compiled
   #   binaries. If binaries grow over 2GB, they will fail to link. This is a problem for us, as
@@ -79,7 +79,7 @@ setupCUDAEnvironmentVariables() {
   #
   # @SomeoneSerge: original comment was made by @ConnorBaker in .../cudatoolkit/common.nix
   if [[ -z ${cudaDontCompressFatbin:-} ]]; then
-    export NVCC_PREPEND_FLAGS+=" -Xfatbin=-compress-all"
+    appendToVar NVCC_PREPEND_FLAGS "-Xfatbin=-compress-all"
   fi
 }
 preConfigureHooks+=(setupCUDAEnvironmentVariables)
@@ -102,14 +102,14 @@ setupCUDACmakeFlags() {
   # TODO: Should we default to enabling support if CMake is present and the flag is not set?
   if (("${cudaEnableCmakeFindCudaSupport:-0}" == 1)); then
     echo "setupCUDACmakeFlags: cudaEnableCmakeFindCudaSupport is set, appending -DCUDAToolkit_INCLUDE_DIR and -DCUDAToolkit_ROOT to cmakeFlags" >&2
-    export cmakeFlags+=" -DCUDAToolkit_INCLUDE_DIR=${CUDAToolkit_INCLUDE_DIR:-}"
-    export cmakeFlags+=" -DCUDAToolkit_ROOT=${CUDAToolkit_ROOT:-}"
+    appendToVar cmakeFlags "-DCUDAToolkit_INCLUDE_DIR=${CUDAToolkit_INCLUDE_DIR:-}"
+    appendToVar cmakeFlags "-DCUDAToolkit_ROOT=${CUDAToolkit_ROOT:-}"
   fi
 
   # Support the legacy flag -DCUDA_TOOLKIT_ROOT_DIR
   if (("${cudaEnableCmakeFindCudaToolkitSupport:-0}" == 1)); then
     echo "setupCUDACmakeFlags: cudaEnableCmakeFindCudaToolkitSupport is set, appending legacy flag -DCUDA_TOOLKIT_ROOT_DIR to cmakeFlags" >&2
-    export cmakeFlags+=" -DCUDA_TOOLKIT_ROOT_DIR=${CUDAToolkit_ROOT:-}"
+    appendToVar cmakeFlags "-DCUDA_TOOLKIT_ROOT_DIR=${CUDAToolkit_ROOT:-}"
   fi
 }
 preConfigureHooks+=(setupCUDACmakeFlags)

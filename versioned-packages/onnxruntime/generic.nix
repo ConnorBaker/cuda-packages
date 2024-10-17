@@ -401,7 +401,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   # onnxruntime> /nix/store/nrb1wyq26xxghhfky7sr22x27fip35vs-source/absl/types/span.h(154): error #2803-D: attribute namespace "gsl" is unrecognized
   # onnxruntime>   class [[gsl::Pointer]] Span {
   preConfigure = optionalString isClang ''
-    export NVCC_PREPEND_FLAGS+=" -Xcudafe=--diag_suppress=2803"
+    appendToVar NVCC_PREPEND_FLAGS "-Xcudafe=--diag_suppress=2803"
   '';
 
   buildInputs =
