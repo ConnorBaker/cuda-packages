@@ -25,6 +25,7 @@ let
     cmakeOptionType
     ;
   inherit (lib.versions) majorMinor;
+  # TODO: Add to cuda-lib or upstream.
   cmakePath = cmakeOptionType "PATH";
 
   inherit (flags) cudaCapabilities;
