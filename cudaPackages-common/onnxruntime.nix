@@ -46,6 +46,8 @@ let
     ;
   inherit (lib.versions) majorMinor;
   inherit (backendStdenv.cc) isClang;
+  inherit (python3.pkgs) buildPythonPackage flatbuffers setuptools;
+
   isAarch64Linux = backendStdenv.hostPlatform.system == "aarch64-linux";
 
   version = "1.19.2";
@@ -90,12 +92,12 @@ let
     hash = "sha256-PK1ce4C0uCR4TzLFg+elZdSk5DdPCRhhwT3LvEwWnPU=";
   };
 
-  flatbuffers = fetchFromGitHub {
-    owner = "google";
-    repo = "flatbuffers";
-    rev = "refs/tags/v23.5.26";
-    hash = "sha256-e+dNPNbCHYDXUS/W+hMqf/37fhVgEGzId6rhP3cToTE=";
-  };
+  # flatbuffers = fetchFromGitHub {
+  #   owner = "google";
+  #   repo = "flatbuffers";
+  #   rev = "refs/tags/v23.5.26";
+  #   hash = "sha256-e+dNPNbCHYDXUS/W+hMqf/37fhVgEGzId6rhP3cToTE=";
+  # };
 
   cpuinfoRev = "ca678952a9a8eaa6de112d154e8e104b22f9ab3f";
 
@@ -136,20 +138,21 @@ let
     ];
   };
 in
-backendStdenv.mkDerivation (finalAttrs: {
+buildPythonPackage {
   strictDeps = true;
+  stdenv = backendStdenv;
 
-  name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
+  name = "cuda${cudaMajorMinorVersion}-onnxruntime-${version}";
   pname = "onnxruntime";
   inherit version;
 
   # TODO: build server, and move .so's to lib output
   # Python's wheel is stored in a separate dist output
-  outputs = [
-    "out"
-    "dev"
-    # "dist"
-  ];
+  # outputs = [
+  #   "out"
+  #   "dev"
+  #   # "dist"
+  # ];
 
   src = fetchFromGitHub {
     owner = "microsoft";
@@ -159,15 +162,26 @@ backendStdenv.mkDerivation (finalAttrs: {
     fetchSubmodules = true;
   };
 
+  pyproject = true;
+
   # Clang generates many more warnings than GCC does, so we just disable erroring on warnings entirely.
   env = optionalAttrs isClang { NIX_CFLAGS_COMPILE = "-Wno-error"; };
+
+  # prePatch = ''
+  #   python3 ./setup.py bdist_wheel --help
+  #   exit 1
+  # '';
+
+  build-system = [
+    setuptools
+  ];
 
   nativeBuildInputs = [
     cmake
     cuda_nvcc
     pkg-config
-    protobuf_21
-    python3
+    # protobuf_21
+    # python3
   ];
   # ++ optionals pythonSupport (
   #   with python3Packages;
@@ -204,7 +218,33 @@ backendStdenv.mkDerivation (finalAttrs: {
   # onnxruntime>   class [[gsl::Pointer]] Span {
   preConfigure = optionalString isClang ''
     export NVCC_PREPEND_FLAGS+=" -Xcudafe=--diag_suppress=2803"
+  '' + ''
+    echo "Running the build script"
+    # python3 "$PWD/tools/ci_build/build.py" --help
+    # exit 1
+    python3 "$PWD/tools/ci_build/build.py" \
+      --build_dir "$PWD/build/Linux" \
+      --build \
+      --update \
+      --skip_submodule_sync \
+      --config "Release" \
+      --clean \
+      --enable_pybind \
+      --build_wheel \
+      --test \
+      --use_cuda \
+      --cuda_home "${cuda_cudart.lib}" \
+      --cudnn_home "${cudnn.lib}" \
+      --use_tensorrt \
+      --use_tensorrt_oss_parser \
+      --use_full_protobuf \
+      --enable_lto \
+      --cmake_extra_defines
   '';
+
+  dependencies = [
+    flatbuffers
+  ];
 
   buildInputs = [
     cuda_cccl # cub/cub.cuh
@@ -242,7 +282,7 @@ backendStdenv.mkDerivation (finalAttrs: {
       (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
       (cmakeBool "FETCHCONTENT_QUIET" false)
       (cmakeBool "onnxruntime_BUILD_SHARED_LIB" true)
-      (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" finalAttrs.doCheck)
+      (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" true)
       (cmakeBool "onnxruntime_ENABLE_LTO" true)
       # (cmakeBool "onnxruntime_ENABLE_PYTHON" pythonSupport)
       (cmakeBool "onnxruntime_ENABLE_PYTHON" false)
@@ -261,7 +301,7 @@ backendStdenv.mkDerivation (finalAttrs: {
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ABSEIL_CPP" abseil-cpp.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" cutlass.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_DATE" date.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" flatbuffers.outPath)
+      # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" flatbuffers.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_GOOGLE_NSYNC" nsync.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_MP11" mp11.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ONNX" onnx.src.outPath)
@@ -279,7 +319,7 @@ backendStdenv.mkDerivation (finalAttrs: {
       (cmakeBool "BUILD_ONNX_PYTHON" false)
       (cmakeBool "BUILD_SHARED_LIBS" true)
       (cmakeBool "ONNX_BUILD_BENCHMARKS" false)
-      (cmakeBool "ONNX_BUILD_TESTS" finalAttrs.doCheck)
+      (cmakeBool "ONNX_BUILD_TESTS" true)
       (cmakeBool "ONNX_USE_PROTOBUF_SHARED_LIBS" true)
       (cmakeBool "ONNX_VERIFY_PROTO3" true)
       (cmakeFeature "ONNX_NAMESPACE" "onnx")
@@ -307,8 +347,8 @@ backendStdenv.mkDerivation (finalAttrs: {
   #   ${python3Packages.python.interpreter} ../setup.py bdist_wheel
   # '';
 
+  # perform parts of `tools/ci_build/github/linux/copy_strip_binary.sh`
   postInstall = ''
-    # perform parts of `tools/ci_build/github/linux/copy_strip_binary.sh`
     install -m644 -Dt $out/include \
       ../include/onnxruntime/core/framework/provider_options.h \
       ../include/onnxruntime/core/providers/cpu/cpu_provider_factory.h \
@@ -341,4 +381,4 @@ backendStdenv.mkDerivation (finalAttrs: {
       cbourjau
     ];
   };
-})
+}
