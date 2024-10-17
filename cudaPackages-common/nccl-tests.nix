@@ -3,7 +3,7 @@
 # in the case redistributable packages are not available.
 {
   backendStdenv,
-  cuda_cccl,
+  cuda_cccl ? null, # Only available from CUDA 12.0.
   cuda_cudart,
   cuda_nvcc,
   cudaAtLeast,
