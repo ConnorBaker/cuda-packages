@@ -101,48 +101,28 @@ let
         # NOTE: Using import to avoid the need to fuse `override` functions provided by multiple applications of
         # `callPackage`.
         versionedPackages = {
-          onnx_1_16 = builtins.import ../versioned-packages/onnx/1.16.nix {
-            inherit (final) callPackage;
+          onnx_1_16 = final.callPackage ../versioned-packages/onnx/generic.nix {
+            version = "1.16.2";
           };
-          onnx_1_12 = builtins.import ../versioned-packages/onnx/1.12.nix {
-            inherit (final) callPackage;
-            inherit (pkgs) protobuf_21;
-          };
-
-          onnxruntime_1_19 = builtins.import ../versioned-packages/onnxruntime/1.19.nix {
-            inherit (final)
-              callPackage
-              onnx_1_16
-              onnx-tensorrt_10_4
-              tensorrt_10_4
-              ;
-            inherit (pkgs)
-              fetchFromGitHub
-              flatbuffers_23
-              protobuf_21
-              ;
-          };
-          onnxruntime_1_18 = builtins.import ../versioned-packages/onnxruntime/1.18.nix {
-            inherit (final)
-              callPackage
-              onnx_1_16
-              onnx-tensorrt_10_4
-              tensorrt_10_4
-              ;
-            inherit (pkgs)
-              fetchFromGitHub
-              abseil-cpp_202401
-              flatbuffers_23
-              protobuf_21
-              ;
+          onnx_1_14 = final.callPackage ../versioned-packages/onnx/generic.nix {
+            version = "1.14.1";
           };
 
-          onnx-tensorrt_10_4 = builtins.import ../versioned-packages/onnx-tensorrt/10.4.nix {
-            inherit (final) callPackage onnx_1_16 tensorrt_10_4;
+          onnxruntime_1_19 = final.callPackage ../versioned-packages/onnxruntime/generic.nix {
+            version = "1.19.2";
           };
-          onnx-tensorrt_8_5 = builtins.import ../versioned-packages/onnx-tensorrt/8.5.nix {
-            inherit (final) callPackage onnx_1_12 tensorrt_8_5;
-            inherit (pkgs) protobuf_21;
+          onnxruntime_1_18 = final.callPackage ../versioned-packages/onnxruntime/generic.nix {
+            version = "1.18.2";
+          };
+          onnxruntime_1_16 = final.callPackage ../versioned-packages/onnxruntime/generic.nix {
+            version = "1.16.3";
+          };
+
+          onnx-tensorrt_10_4 = final.callPackage ../versioned-packages/onnx-tensorrt/generic.nix {
+            version = "10.4";
+          };
+          onnx-tensorrt_8_5 = final.callPackage ../versioned-packages/onnx-tensorrt/generic.nix {
+            version = "8.5";
           };
         };
 
@@ -158,22 +138,9 @@ let
           cudnn_8 = packageAliases.cudnn_8_6;
           cudnn = packageAliases.cudnn_8;
 
-          onnx_1 = versionedPackages.onnx_1_16;
-          onnx = packageAliases.onnx_1;
-
-          onnxruntime_1 = versionedPackages.onnxruntime_1_19;
-          onnxruntime = packageAliases.onnxruntime_1;
-
-          onnx-tensorrt_10 = versionedPackages.onnx-tensorrt_10_4;
-          onnx-tensorrt_8 = versionedPackages.onnx-tensorrt_8_5;
-          onnx-tensorrt = packageAliases.onnx-tensorrt_10;
-
           tensorrt_8_5 = loosePackages.tensorrt_8_5_2;
           tensorrt_8 = packageAliases.tensorrt_8_5;
           tensorrt = packageAliases.tensorrt_8;
-
-          tensorrt-oss_10 = loosePackages.tensorrt-oss_10_4;
-          tensorrt-oss = packageAliases.tensorrt-oss_10;
         };
 
         addRedistributablePackages =
