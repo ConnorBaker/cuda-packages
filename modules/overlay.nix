@@ -243,15 +243,7 @@ in
       type = raw;
       default =
         final: prev:
-        # Error on access to any existing CUDA package sets populated by upstream.
-        (pipe prev [
-          (filterAttrs (name: _: hasPrefix name "cudaPackages"))
-          (mapAttrs (
-            name: _: builtins.throw "Access to Nixpkgs' CUDA package sets (${name}) is not allowed."
-          ))
-        ])
-        # Update with our package sets and config.
-        // {
+        {
           config = prev.config // {
             allowUnfree = true;
             cudaSupport = true;
