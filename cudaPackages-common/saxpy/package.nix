@@ -45,7 +45,6 @@ backendStdenv.mkDerivation (finalAttrs: {
 
   cmakeFlags = [
     (cmakeBool "CMAKE_VERBOSE_MAKEFILE" true)
-    (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
   ];
 
   passthru.gpuCheck = finalAttrs.finalPackage.overrideAttrs (prevAttrs: {

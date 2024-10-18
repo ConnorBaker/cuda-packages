@@ -12,8 +12,6 @@
 }:
 overrideAttrsFn:
 let
-  inherit (lib.strings) cmakeFeature;
-
   basePkg = backendStdenv.mkDerivation (finalAttrs: {
     __structuredAttrs = true;
     strictDeps = true;
@@ -33,10 +31,6 @@ let
       autoAddDriverRunpath
       cmake
       cuda_nvcc
-    ];
-
-    cmakeFlags = [
-      (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
     ];
 
     buildInputs = [ cuda_cudart ];

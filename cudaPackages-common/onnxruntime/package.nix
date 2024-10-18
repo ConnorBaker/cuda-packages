@@ -340,7 +340,6 @@ buildPythonPackage {
       (cmakeBool "onnxruntime_USE_TENSORRT_BUILTIN_PARSER" false) # Use onnx-tensorrt
       (cmakeBool "onnxruntime_USE_TENSORRT" true)
       (cmakeBool "onnxruntime_USE_PREINSTALLED_EIGEN" true)
-      (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
       (cmakeFeature "FETCHCONTENT_TRY_FIND_PACKAGE_MODE" "ALWAYS")
       (cmakeFeature "onnxruntime_NVCC_THREADS" "1")
       (cmakeOptionType "PATH" "eigen_SOURCE_PATH" eigen.outPath)
