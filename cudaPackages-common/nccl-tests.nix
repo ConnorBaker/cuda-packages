@@ -22,6 +22,9 @@ let
   inherit (lib.lists) optionals;
 in
 backendStdenv.mkDerivation (finalAttrs: {
+  __structuredAttrs = true;
+  strictDeps = true;
+
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "nccl-tests";
   version = "2.13.10";
@@ -32,8 +35,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     rev = "v${finalAttrs.version}";
     hash = "sha256-H9shp4fYW+dlyL9FZRxX761UCFR/pOBKNHfVme2TfJg=";
   };
-
-  strictDeps = true;
 
   nativeBuildInputs = [
     cuda_nvcc

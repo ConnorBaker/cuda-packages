@@ -100,8 +100,9 @@ buildPythonPackage {
 
   # Re-export the `cmakeFlags` environment variable as CMAKE_ARGS so setup.py will pick them up, then exit
   # the build directory for the python build.
+  # TODO: How does bash handle accessing `cmakeFlags` as an array when __structuredAttrs is not set?
   postConfigure = ''
-    export CMAKE_ARGS="''${cmakeFlags[*]}"
+    export CMAKE_ARGS="''${cmakeFlags[@]}"
     cd ..
   '';
 

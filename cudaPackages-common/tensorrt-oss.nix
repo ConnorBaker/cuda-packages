@@ -34,6 +34,7 @@ let
   inherit (cuda-lib.utils) dropDots;
 in
 backendStdenv.mkDerivation (finalAttrs: {
+  __structuredAttrs = true;
   strictDeps = true;
 
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";

@@ -26,6 +26,9 @@ let
   inherit (lib.lists) optionals;
 in
 backendStdenv.mkDerivation (finalAttrs: {
+  __structuredAttrs = true;
+  strictDeps = true;
+
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "nccl";
   version = "2.23.4-1";
@@ -36,9 +39,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     rev = "v${finalAttrs.version}";
     hash = "sha256-DlMxlLO2F079fBkhORNPVN/ASYiVIRfLJw7bDoiClHw=";
   };
-
-  __structuredAttrs = true;
-  strictDeps = true;
 
   outputs = [
     "out"

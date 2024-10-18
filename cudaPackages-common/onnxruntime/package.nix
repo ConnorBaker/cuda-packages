@@ -10,6 +10,9 @@
   fetchFromGitHub,
   fetchFromGitLab,
   flags,
+
+  # flatbuffers,
+
   gbenchmark,
   glibcLocales,
   gtest,
@@ -37,7 +40,7 @@
 }:
 
 let
-  inherit (lib.attrsets) optionalAttrs;
+  inherit (lib.attrsets) getLib optionalAttrs;
   inherit (lib.lists) optionals;
   inherit (lib.strings)
     cmakeBool
@@ -47,7 +50,7 @@ let
     ;
   inherit (lib.versions) majorMinor;
   inherit (backendStdenv.cc) isClang;
-  inherit (python3.pkgs) buildPythonPackage flatbuffers setuptools;
+  inherit (python3.pkgs) buildPythonPackage setuptools;
 
   isAarch64Linux = backendStdenv.hostPlatform.system == "aarch64-linux";
 
@@ -93,12 +96,12 @@ let
     hash = "sha256-PK1ce4C0uCR4TzLFg+elZdSk5DdPCRhhwT3LvEwWnPU=";
   };
 
-  # flatbuffers = fetchFromGitHub {
-  #   owner = "google";
-  #   repo = "flatbuffers";
-  #   rev = "refs/tags/v23.5.26";
-  #   hash = "sha256-e+dNPNbCHYDXUS/W+hMqf/37fhVgEGzId6rhP3cToTE=";
-  # };
+  flatbuffers = fetchFromGitHub {
+    owner = "google";
+    repo = "flatbuffers";
+    rev = "refs/tags/v23.5.26";
+    hash = "sha256-e+dNPNbCHYDXUS/W+hMqf/37fhVgEGzId6rhP3cToTE=";
+  };
 
   cpuinfoRev = "ca678952a9a8eaa6de112d154e8e104b22f9ab3f";
 
@@ -168,11 +171,6 @@ buildPythonPackage {
   # Clang generates many more warnings than GCC does, so we just disable erroring on warnings entirely.
   env = optionalAttrs isClang { NIX_CFLAGS_COMPILE = "-Wno-error"; };
 
-  # prePatch = ''
-  #   python3 ./setup.py bdist_wheel --help
-  #   exit 1
-  # '';
-
   build-system = [
     setuptools
   ];
@@ -181,7 +179,7 @@ buildPythonPackage {
     cmake
     cuda_nvcc
     pkg-config
-    # protobuf_21
+    protobuf_21
     # python3
   ];
   # ++ optionals pythonSupport (
@@ -209,45 +207,83 @@ buildPythonPackage {
           'set(onnxparser_link_libs nvonnxparser_static)' \
           'set(onnxparser_link_libs nvonnxparser)'
     ''
+    # 
+    + ''
+      rm -f cmake/external/onnxruntime_external_deps.cmake
+      install -Dm644 ${./onnxruntime_external_deps.cmake} cmake/external/onnxruntime_external_deps.cmake
+    ''
+    # TODO: Verify this fails.
     # https://github.com/NixOS/nixpkgs/pull/226734#issuecomment-1663028691
     + optionalString isAarch64Linux ''
       rm -v onnxruntime/test/optimizer/nhwc_transformer_test.cc
     '';
 
-  # Silence NVCC warnings from the frontend like:
-  # onnxruntime> /nix/store/nrb1wyq26xxghhfky7sr22x27fip35vs-source/absl/types/span.h(154): error #2803-D: attribute namespace "gsl" is unrecognized
-  # onnxruntime>   class [[gsl::Pointer]] Span {
+  # Use the same build dir the bash script wrapping the python script wrapping CMake expects us to use.
+  cmakeBuildDir = "build/Linux";
+  # The CMakeLists.txt file is in the root of the source directory, two levels up from the build directory.
+  cmakeDir = "../../cmake";
+
   preConfigure =
+    # Silence NVCC warnings from the frontend like:
+    # onnxruntime> /nix/store/nrb1wyq26xxghhfky7sr22x27fip35vs-source/absl/types/span.h(154): error #2803-D: attribute namespace "gsl" is unrecognized
+    # onnxruntime>   class [[gsl::Pointer]] Span {
     optionalString isClang ''
       appendToVar NVCC_PREPEND_FLAGS "-Xcudafe=--diag_suppress=2803"
-    ''
-    + ''
-      echo "Running the build script"
-      # python3 "$PWD/tools/ci_build/build.py" --help
-      # exit 1
-      python3 "$PWD/tools/ci_build/build.py" \
-        --build_dir "$PWD/build/Linux" \
-        --build \
-        --update \
-        --skip_submodule_sync \
-        --config "Release" \
-        --clean \
-        --enable_pybind \
-        --build_wheel \
-        --test \
-        --use_cuda \
-        --cuda_home "${cuda_cudart.lib}" \
-        --cudnn_home "${cudnn.lib}" \
-        --use_tensorrt \
-        --use_tensorrt_oss_parser \
-        --use_full_protobuf \
-        --enable_lto \
-        --cmake_extra_defines
     '';
 
-  dependencies = [
-    flatbuffers
-  ];
+  postConfigure =
+    # Return to the root of the source directory, leaving and deleting CMake's build directory.
+    ''
+      cd "''${cmakeDir:?}"/..
+      rm -rf "''${cmakeBuildDir:?}"
+    ''
+    # Allow CMake to run its configuration setup hook to fully populate the cmakeFlags shell variable.
+    # We'll format it and use it for the Python build.
+    # To do that, we need to splat the cmakeFlags array and use bash string substitution to remove the leading on each
+    # entry "-D".
+    # TODO: If Python packaging supported __structuredAttrs, we could use `${cmakeFlags[@]#-D}`. But it doesn't, so we have
+    # to use `${cmakeFlags[@]//-D/}` and hope none of our flags contain "-D".
+    # TODO: How does bash handle accessing `cmakeFlags` as an array when __structuredAttrs is not set?
+    # TODO: Conditionally enable NCCL.
+    # NOTE: We need to specify CMAKE_CUDA_COMPILER to avoid the setup script trying to choose the compiler itself
+    # (which it will fail to do because we use splayed installations).
+    + ''
+      python3 "$PWD/tools/ci_build/build.py" \
+          --build_dir "''${cmakeBuildDir:?}" \
+          --build \
+          --build_shared_lib \
+          --update \
+          --skip_submodule_sync \
+          --config "Release" \
+          --clean \
+          --parallel ''${NIX_BUILD_CORES:?} \
+          --enable_pybind \
+          --build_wheel \
+          --test \
+          --enable_nccl \
+          --nccl_home "${getLib nccl}" \
+          --use_cuda \
+          --cuda_home "${getLib cuda_cudart}" \
+          --cudnn_home "${getLib cudnn}" \
+          --use_tensorrt \
+          --tensorrt_home "${getLib tensorrt}" \
+          --use_tensorrt_oss_parser \
+          --use_full_protobuf \
+          --enable_lto \
+          --cmake_extra_defines ''${cmakeFlags[@]//-D/} CMAKE_CUDA_COMPILER="${cuda_nvcc.bin}/bin/nvcc"
+    '';
+
+  # NOTE: Cannot re-use flatbuffers built in Nixpkgs for some reason.
+
+  # TODO:
+  # python3.12-cuda12.6-onnxruntime> In file included from /nix/store/b98gmgf0hv1fmwk6sff5q316mpd8h169-source/googletest/include/gtest/gtest-assertion-result.h:46,
+  # python3.12-cuda12.6-onnxruntime>                  from /nix/store/b98gmgf0hv1fmwk6sff5q316mpd8h169-source/googletest/include/gtest/gtest.h:64,
+  # python3.12-cuda12.6-onnxruntime>                  from /build/source/onnxruntime/test/util/file_util.cc:3:
+  # python3.12-cuda12.6-onnxruntime> /nix/store/b98gmgf0hv1fmwk6sff5q316mpd8h169-source/googletest/include/gtest/gtest-message.h:62:10: fatal error: absl/strings/internal/has_absl_stringify.h: No such file or directory
+  # python3.12-cuda12.6-onnxruntime>    62 | #include "absl/strings/internal/has_absl_stringify.h"
+  # python3.12-cuda12.6-onnxruntime>       |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # python3.12-cuda12.6-onnxruntime> compilation terminated.
+  # python3.12-cuda12.6-onnxruntime> make[2]: *** [CMakeFiles/onnxruntime_test_utils.dir/build.make:104: CMakeFiles/onnxruntime_test_utils.dir/build/source/onnxruntime/test/util/file_util.cc.o] Error 1
 
   buildInputs =
     [
@@ -263,13 +299,18 @@ buildPythonPackage {
       microsoft-gsl
       nlohmann_json
       onnx-tensorrt
+      onnx
       tensorrt
       zlib
     ]
     ++ optionals (cudaAtLeast "12.0") [
       cuda_cccl # <nv/target>
     ]
-    ++ optionals nccl.meta.available [ nccl ];
+    ++ optionals nccl.meta.available [ nccl ]
+
+    # TODO: This should depend on doCheck.
+    # TODO: Why can't CMake find gtest in checkInputs?
+    ++ optionals true [ gtest ];
   # ++ optionals pythonSupport (
   #   with python3Packages;
   #   [
@@ -280,8 +321,6 @@ buildPythonPackage {
   # );
 
   enableParallelBuilding = true;
-
-  cmakeDir = "../cmake";
 
   cmakeFlags =
     [
@@ -308,10 +347,10 @@ buildPythonPackage {
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ABSEIL_CPP" abseil-cpp.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" cutlass.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_DATE" date.outPath)
-      # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" flatbuffers.outPath)
+      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" flatbuffers.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_GOOGLE_NSYNC" nsync.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_MP11" mp11.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ONNX" onnx.src.outPath)
+      # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ONNX" onnx.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_RE2" re2.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_SAFEINT" safeint.outPath)
 
@@ -336,7 +375,8 @@ buildPythonPackage {
       (cmakeBool "ONNX_GEN_PB_TYPE_STUBS" false)
     ];
 
-  nativeCheckInputs = [ gtest ];
+  # nativeCheckInputs = [ gtest ];
+  # checkInputs = [ gtest ];
   # ++ optionals pythonSupport (
   #   with python3Packages;
   #   [

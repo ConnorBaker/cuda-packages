@@ -30,6 +30,9 @@ let
 in
 # TODO: This can also be packaged for Python!
 backendStdenv.mkDerivation (finalAttrs: {
+  __structuredAttrs = true;
+  strictDeps = true;
+
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "cutlass";
   version = "3.5.1";
@@ -40,8 +43,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     rev = "refs/tags/v${finalAttrs.version}";
     hash = "sha256-sTGYN+bjtEqQ7Ootr/wvx3P9f8MCDSSj3qyCWjfdLEA=";
   };
-
-  strictDeps = true;
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a
   # superset of the `out` (`bin`) or `dev` outputs (whih is what the multiple-outputs setup hook does by default).

@@ -69,8 +69,12 @@ setupCUDAEnvironmentVariables() {
   # uses the last --compiler-bindir it gets on the command line.
   # https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#compiler-bindir-directory-ccbin
   # NOTE: Using "--compiler-bindir" results in "incompatible redefinition"
-  # warnings, while using the short form "-ccbin" does not.
+  # warnings, while using the short form "-ccbin" does not... more often than not.
+  # Perhaps the two forms can't exist in the same command line?
   appendToVar NVCC_PREPEND_FLAGS "-ccbin @ccFullPath@"
+
+  # NOTE: CUDA 12.5 and later allow setting NVCC_CCBIN as a lower-precedent way of using -ccbin.
+  export NVCC_CCBIN="@ccFullPath@"
 
   # NOTE: We set -Xfatbin=-compress-all, which reduces the size of the compiled
   #   binaries. If binaries grow over 2GB, they will fail to link. This is a problem for us, as
