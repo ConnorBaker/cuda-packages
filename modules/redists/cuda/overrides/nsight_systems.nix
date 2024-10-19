@@ -1,6 +1,7 @@
 {
   boost178,
   cuda_cudart,
+  cuda_nvml_dev,
   cuda-lib,
   e2fsprogs,
   gst_all_1,
@@ -15,7 +16,7 @@
   xorg,
 }:
 let
-  inherit (lib.attrsets) getBin;
+  inherit (lib.attrsets) getBin getOutput;
   inherit (lib.lists) optionals;
   inherit (lib.strings) versionAtLeast;
   inherit (gst_all_1)
@@ -77,32 +78,37 @@ in
 
   nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ wrapQtAppsHook ];
 
-  buildInputs = prevAttrs.buildInputs ++ [
-    boost178
-    cuda_cudart
-    e2fsprogs
-    gst-plugins-base
-    gstreamer
-    libXcursor
-    libXdamage
-    libXrandr
-    libXtst
-    nss
-    numactl
-    pulseaudio
-    qtbase
-    qtdeclarative
-    qtimageformats
-    qtpositioning
-    qtscxml
-    qtsvg
-    qttools
-    qtWaylandPlugins
-    qtwebengine
-    rdma-core
-    ucx
-    wayland
-  ];
+  buildInputs =
+    prevAttrs.buildInputs
+    ++ [
+      boost178
+      cuda_cudart
+      e2fsprogs
+      gst-plugins-base
+      gstreamer
+      libXcursor
+      libXdamage
+      libXrandr
+      libXtst
+      nss
+      numactl
+      pulseaudio
+      qtbase
+      qtdeclarative
+      qtimageformats
+      qtpositioning
+      qtscxml
+      qtsvg
+      qttools
+      qtWaylandPlugins
+      qtwebengine
+      rdma-core
+      ucx
+      wayland
+    ]
+    ++ optionals (versionAtLeast version "2024") [
+      (getOutput "stubs" cuda_nvml_dev)
+    ];
 
   postInstall =
     # 1. Move dependencies of nsys, nsys-ui binaries to bin output
@@ -133,11 +139,4 @@ in
         done
       done
     '';
-
-  autoPatchelfIgnoreMissingDeps =
-    prevAttrs.autoPatchelfIgnoreMissingDeps
-    ++ optionals (versionAtLeast version "2024.5.1.113") [
-      # Provided by the driver.
-      "libnvidia-ml.so.1"
-    ];
 }

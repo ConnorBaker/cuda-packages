@@ -1,17 +1,23 @@
 {
   addDriverRunpath,
-  cuda_cccl ? null,
+  cuda_cccl,
   cuda_nvcc,
   cudaAtLeast,
+  flags,
   lib,
 }:
 let
   inherit (lib.attrsets) getOutput;
+  inherit (lib.lists) elem optionals;
   inherit (lib.strings) optionalString;
 in
 finalAttrs: prevAttrs: {
   # Include the static libraries as well since CMake needs them during the configure phase.
-  propagatedBuildOutputs = prevAttrs.propagatedBuildOutputs ++ [ "static" ];
+  propagatedBuildOutputs =
+    prevAttrs.propagatedBuildOutputs
+    ++ [ "static" ]
+    # cuda_compat provides its own libcuda.so, so we need to make sure it's not shadowed.
+    ++ optionals (!flags.isJetsonBuild) [ "stubs" ];
 
   # The libcuda stub's pkg-config doesn't follow the general pattern:
   postPatch =
@@ -19,21 +25,14 @@ finalAttrs: prevAttrs: {
     + ''
       while IFS= read -r -d $'\0' path; do
         sed -i \
-          -e "s|^libdir\s*=.*/lib\$|libdir=''${!outputLib}/lib/stubs|" \
+          -e "s|^libdir\s*=.*/lib\$|libdir=''${stubs:?}/lib/stubs|" \
           -e "s|^Libs\s*:\(.*\)\$|Libs: \1 -Wl,-rpath,${addDriverRunpath.driverLink}/lib|" \
           "$path"
       done < <(find -iname 'cuda-*.pc' -print0)
-    ''
-    # Namelink may not be enough, add a soname.
-    # Cf. https://gitlab.kitware.com/cmake/cmake/-/issues/25536
-    + ''
-      if [[ -f lib/stubs/libcuda.so && ! -f lib/stubs/libcuda.so.1 ]]; then
-        ln -s libcuda.so lib/stubs/libcuda.so.1
-      fi
     '';
 
   postInstall =
-    (prevAttrs.postInstall or "")
+    prevAttrs.postInstall or ""
     # NOTE: We can't patch a single output with overrideAttrs, so we need to use nix-support.
     # NOTE: Make sure to guard against the assert running when the package isn't available.
     + optionalString finalAttrs.finalPackage.meta.available (
@@ -48,5 +47,17 @@ finalAttrs: prevAttrs: {
       + optionalString (cudaAtLeast "12.0") ''
         printWords "${getOutput "include" cuda_cccl}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
       ''
-    );
+    )
+    # Namelink may not be enough, add a soname.
+    # Cf. https://gitlab.kitware.com/cmake/cmake/-/issues/25536
+    # NOTE: Add symlinks inside $stubs/lib so autoPatchelfHook can find them -- it doesn't recurse into subdirectories.
+    + optionalString (elem "stubs" finalAttrs.outputs) ''
+      pushd "$stubs/lib/stubs"
+      [[ -f libcuda.so && ! -f libcuda.so.1 ]] && ln -s libcuda.so libcuda.so.1
+      for file in *
+      do
+        ln -s "$PWD/$file" "$PWD/../$file"
+      done
+      popd
+    '';
 }

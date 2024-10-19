@@ -1,16 +1,16 @@
 {
+  cuda_cudart,
   lib,
-  libcublas,
   numactl,
   rdma-core,
 }:
 let
-  inherit (lib.attrsets) getLib;
+  inherit (lib.attrsets) getOutput;
 in
 prevAttrs: {
   allowFHSReferences = true;
   buildInputs = prevAttrs.buildInputs ++ [
-    (getLib libcublas)
+    (getOutput "stubs" cuda_cudart)
     numactl
     rdma-core
   ];

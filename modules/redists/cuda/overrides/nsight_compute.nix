@@ -1,4 +1,5 @@
 {
+  cuda_cudart,
   e2fsprogs,
   fetchpatch,
   fetchzip,
@@ -10,7 +11,7 @@
   ucx,
 }:
 let
-  inherit (lib.attrsets) getBin;
+  inherit (lib.attrsets) getBin getOutput;
   inherit (lib.lists) optionals;
   inherit (lib.strings) versionAtLeast;
   inherit (gst_all_1) gst-plugins-base;
@@ -115,5 +116,8 @@ in
       rdma-core
       ucx
     ]
-    ++ optionals (versionAtLeast version "2023.1") [ gst-plugins-base ];
+    ++ optionals (versionAtLeast version "2023.1") [
+      (getOutput "stubs" cuda_cudart)
+      gst-plugins-base
+    ];
 }

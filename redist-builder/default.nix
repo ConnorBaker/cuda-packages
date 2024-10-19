@@ -20,7 +20,6 @@
   flags,
   lib,
   markForCudatoolkitRootHook,
-  path, # Path to Nixpkgs root, needed for setup-cuda-stubs-hook.sh
   pkgs,
 }:
 let
@@ -37,7 +36,6 @@ let
     ;
   inherit (lib.lists)
     any
-    elem
     findFirstIndex
     intersectLists
     optionals
@@ -71,7 +69,6 @@ backendStdenv.mkDerivation (
   let
     isBadPlatform = any id (attrValues finalAttrs.badPlatformsConditions);
     isBroken = any id (attrValues finalAttrs.brokenConditions);
-    hasStubs = elem "stubs" finalAttrs.outputs;
   in
   {
     # NOTE: Even though there's no actual buildPhase going on here, the derivations of the
@@ -95,15 +92,14 @@ backendStdenv.mkDerivation (
     # NOTE: Because the `dev` output is special in Nixpkgs -- make-derivation.nix uses it as the default if
     # it is present -- we must ensure that it brings in the expected dependencies. For us, this means that `dev`
     # should include `bin`, `include`, and `lib` -- `static` is notably absent because it is quite large.
-    # Additionally, we include `stubs`, as it simplifies the use of packages.
-    propagatedBuildOutputs = intersectLists (
-      [
-        "bin"
-        "include"
-        "lib"
-      ]
-      ++ optionals hasStubs [ "stubs" ]
-    ) finalAttrs.outputs;
+    # We do not include `stubs`, as a number of packages contain stubs for libraries they already ship with!
+    # Only a few, like cuda_cudart, actually provide stubs for libraries we're missing.
+    # As such, these packages should override propagatedBuildOutputs to add `stubs`.
+    propagatedBuildOutputs = intersectLists [
+      "bin"
+      "include"
+      "lib"
+    ] finalAttrs.outputs;
 
     # We have a separate output for include files; don't use the dev output.
     outputInclude = "include";
@@ -272,20 +268,6 @@ backendStdenv.mkDerivation (
       + ''
         ${concatMapStringsSep "\n" mkMoveToOutputCommand (builtins.tail finalAttrs.outputs)}
       ''
-      # If there's a `stubs` output, add the setupCudaStubsHook to it.
-      # NOTE:
-      #   We can't make this a standalone setup hook because of the way the multiple-output setup hook works: we'd run
-      #   into infinite recursion errors because the setup hook contains the store path of the `stubs` output.
-      #   One way to get around that problem is to template the script inside a phase, like we do here, so the package
-      #   itself maintains the store path of the `stubs` output, and we don't cross derivation boundaries, causing
-      #   infinite recursion.
-      + optionalString hasStubs ''
-        mkdir -p "$stubs/nix-support"
-        cat "${./setup-cuda-stubs-hook.sh}" >> "$stubs/nix-support/setup-hook"
-        substituteInPlace "$stubs/nix-support/setup-hook" \
-          --replace-fail "@stubs@" "${builtins.placeholder "stubs"}" \
-          --replace-fail "@roles@" "${path + "/pkgs/build-support/setup-hooks/role.bash"}"
-      ''
       # Post-install hook
       + ''
         runHook postInstall
@@ -305,12 +287,6 @@ backendStdenv.mkDerivation (
       fi
     '';
 
-    # libcuda needs to be resolved during runtime
-    autoPatchelfIgnoreMissingDeps = [
-      "libcuda.so"
-      "libcuda.so.*"
-    ];
-
     # TODO(@connorbaker): https://github.com/NixOS/nixpkgs/issues/323126.
     # _multioutPropagateDev() currently expects a space-separated string rather than an array.
     # Because it is a postFixup hook, we correct it in preFixup.
@@ -326,6 +302,8 @@ backendStdenv.mkDerivation (
       ''
       # NOTE: We must use printWords to ensure the output is a single line.
       # See addPkg in ./pkgs/build-support/buildenv/builder.pl -- it splits on spaces.
+      # TODO: The comment in the for-loop says to skip out and dev, but the code only skips out.
+      # Since `dev` depends on `out` by default, wouldn't this cause a cycle?
       + ''
         for output in $(getAllOutputNames); do
           # Skip out and dev outputs

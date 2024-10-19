@@ -8,10 +8,14 @@
   cuda-lib,
   cudaMajorMinorVersion,
   cudnn,
+  flags,
+  lib,
   libcublas,
   libcudla,
 }:
 let
+  inherit (lib.lists) optionals;
+
   hostRedistArch = cuda-lib.utils.getRedistArch (
     config.data.jetsonTargets != [ ]
   ) backendStdenv.hostPlatform.system;
@@ -94,9 +98,11 @@ let
           done
           popd
         '';
-      autoPatchelfIgnoreMissingDeps = prevAttrs.autoPatchelfIgnoreMissingDeps ++ [
-        "libnvdla_compiler.so"
-      ];
+      autoPatchelfIgnoreMissingDeps =
+        prevAttrs.autoPatchelfIgnoreMissingDeps or [ ]
+        ++ optionals flags.isJetsonBuild [
+          "libnvdla_compiler.so"
+        ];
       passthru = prevAttrs.passthru // {
         inherit cudnn;
       };

@@ -53,9 +53,11 @@ finalAttrs: prevAttrs: {
       done
     '';
 
-  autoPatchelfIgnoreMissingDeps = prevAttrs.autoPatchelfIgnoreMissingDeps ++ [
-    "libnvdla_compiler.so"
-  ];
+  autoPatchelfIgnoreMissingDeps =
+    prevAttrs.autoPatchelfIgnoreMissingDeps or [ ]
+    ++ optionals flags.isJetsonBuild [
+      "libnvdla_compiler.so"
+    ];
 
   # Create a symlink for the Onnx header files in include/onnx
   postInstall =
