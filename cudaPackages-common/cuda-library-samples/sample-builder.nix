@@ -1,6 +1,5 @@
 # TODO(@connorbaker): Cleanup.
 {
-  autoAddDriverRunpath,
   backendStdenv,
   cmake,
   cuda_cudart,
@@ -28,7 +27,6 @@ let
     };
 
     nativeBuildInputs = [
-      autoAddDriverRunpath
       cmake
       cuda_nvcc
     ];

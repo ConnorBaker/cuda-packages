@@ -13,8 +13,6 @@
   releaseInfo,
   # General callPackage-supplied arguments
   autoAddCudaCompatRunpath,
-  autoAddDriverRunpath,
-  autoPatchelfHook,
   backendStdenv,
   cudaMajorMinorVersion,
   flags,
@@ -196,12 +194,10 @@ backendStdenv.mkDerivation (
 
     nativeBuildInputs =
       [
-        autoPatchelfHook
         # This hook will make sure libcuda can be found
         # in typically /lib/opengl-driver by adding that
         # directory to the rpath of all ELF binaries.
         # Check e.g. with `patchelf --print-rpath path/to/my/binary
-        autoAddDriverRunpath
         markForCudatoolkitRootHook
       ]
       # autoAddCudaCompatRunpath depends on cuda_compat and would cause

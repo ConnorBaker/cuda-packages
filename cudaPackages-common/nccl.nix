@@ -2,7 +2,6 @@
 # the names of dependencies from that package set directly to avoid evaluation errors
 # in the case redistributable packages are not available.
 {
-  autoAddDriverRunpath,
   backendStdenv,
   cuda_cccl ? null, # Only available from CUDA 12.0.
   cuda_cudart,
@@ -47,7 +46,6 @@ backendStdenv.mkDerivation (finalAttrs: {
   ];
 
   nativeBuildInputs = [
-    autoAddDriverRunpath
     cuda_nvcc
     python3
     which
