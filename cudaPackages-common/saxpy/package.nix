@@ -1,5 +1,4 @@
 {
-  autoAddDriverRunpath,
   backendStdenv,
   cmake,
   cuda_cccl ? null, # Only available from CUDA 12.0.
@@ -7,23 +6,23 @@
   cuda_nvcc,
   cudaAtLeast,
   cudaMajorMinorVersion,
-  flags,
   lib,
   libcublas,
+  saxpy,
 }:
 let
+  inherit (lib.fileset) toSource unions;
   inherit (lib.lists) optionals;
-  inherit (lib.strings) cmakeBool cmakeFeature;
-  fs = lib.fileset;
+  inherit (lib.strings) cmakeBool;
 in
 backendStdenv.mkDerivation (finalAttrs: {
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "saxpy";
   version = "unstable-2023-07-11";
 
-  src = fs.toSource {
+  src = toSource {
     root = ./.;
-    fileset = fs.unions [
+    fileset = unions [
       ./CMakeLists.txt
       ./saxpy.cu
     ];
@@ -33,7 +32,6 @@ backendStdenv.mkDerivation (finalAttrs: {
   strictDeps = true;
 
   nativeBuildInputs = [
-    autoAddDriverRunpath
     cmake
     cuda_nvcc
   ];
@@ -47,7 +45,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     (cmakeBool "CMAKE_VERBOSE_MAKEFILE" true)
   ];
 
-  passthru.gpuCheck = finalAttrs.finalPackage.overrideAttrs (prevAttrs: {
+  passthru.tests.test = saxpy.overrideAttrs (prevAttrs: {
     requiredSystemFeatures = [ "cuda" ];
     doInstallCheck = true;
     postInstallCheck = ''

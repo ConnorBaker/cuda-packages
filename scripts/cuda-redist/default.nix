@@ -6,6 +6,7 @@
   lib,
   makeWrapper,
   nixVersions,
+  patchelf,
   pydantic,
   pyright,
   pythonAtLeast,
@@ -38,6 +39,7 @@ let
     propagatedBuildInputs = [
       cudaPackages.cuda_cuobjdump
       nixVersions.latest
+      patchelf
     ];
     pythonImportsCheck = [ finalAttrs.pname ];
     nativeCheckInputs = [

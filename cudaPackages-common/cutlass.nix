@@ -1,6 +1,5 @@
 {
   addDriverRunpath,
-  autoAddDriverRunpath,
   backendStdenv,
   cmake,
   cuda_cudart,
@@ -25,10 +24,12 @@
   gitUpdater,
 }:
 let
+  inherit (lib.asserts) assertMsg;
   inherit (lib.lists) optionals;
   inherit (lib.strings) cmakeBool cmakeFeature optionalString;
 in
 # TODO: This can also be packaged for Python!
+assert assertMsg (!enableTools) "enableTools is not yet implemented";
 backendStdenv.mkDerivation (finalAttrs: {
   __structuredAttrs = true;
   strictDeps = true;
@@ -49,7 +50,6 @@ backendStdenv.mkDerivation (finalAttrs: {
   outputs = [ "out" ];
 
   nativeBuildInputs = [
-    autoAddDriverRunpath
     cuda_nvcc
     cmake
     ninja
@@ -137,8 +137,7 @@ backendStdenv.mkDerivation (finalAttrs: {
       inherit (finalAttrs) pname version;
       rev-prefix = "v";
     };
-    # TODO: These can be removed.
-    tests.withGpu = cutlass.overrideAttrs { doCheck = true; };
+    tests.test = cutlass.overrideAttrs { doCheck = true; };
   };
 
   meta = with lib; {

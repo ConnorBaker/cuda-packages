@@ -88,8 +88,7 @@ let
         libcublas
         zlib
       ];
-      # Tell autoPatchelf about runtime dependencies. *_infer* libraries only
-      # exist in CuDNN 8.
+      # Tell patchelf about runtime dependencies. *_infer* libraries only exist in CuDNN 8.
       postFixup =
         prevAttrs.postFixup or ""
         + ''

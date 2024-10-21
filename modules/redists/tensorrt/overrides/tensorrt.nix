@@ -13,7 +13,7 @@ let
   inherit (cuda-lib.utils) getRedistArch majorMinorPatch;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) optionals;
-  inherit (lib.meta) getExe';
+  inherit (lib.meta) getExe;
   inherit (lib.strings) concatStringsSep optionalString;
   hostRedistArch = getRedistArch (config.data.jetsonTargets != [ ]) stdenv.hostPlatform.system;
 in
@@ -79,7 +79,7 @@ finalAttrs: prevAttrs: {
     in
     (prevAttrs.postFixup or "")
     + ''
-      ${getExe' patchelf "patchelf"} --add-needed libnvinfer.so \
+      ${getExe patchelf} --add-needed libnvinfer.so \
         "$lib/lib/libnvinfer.so.${versionTriple}" \
         "$lib/lib/libnvinfer_plugin.so.${versionTriple}" \
         "$lib/lib/libnvinfer_builder_resource.so.${versionTriple}"
