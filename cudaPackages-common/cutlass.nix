@@ -1,5 +1,6 @@
 {
   addDriverRunpath,
+  autoAddDriverRunpath,
   backendStdenv,
   cmake,
   cuda_cudart,
@@ -48,6 +49,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   outputs = [ "out" ];
 
   nativeBuildInputs = [
+    autoAddDriverRunpath
     cuda_nvcc
     cmake
     ninja
@@ -131,11 +133,12 @@ backendStdenv.mkDerivation (finalAttrs: {
   ];
 
   passthru = {
-    tests.test = cutlass.overrideAttrs { doCheck = true; };
     updateScript = gitUpdater {
       inherit (finalAttrs) pname version;
       rev-prefix = "v";
     };
+    # TODO: These can be removed.
+    tests.withGpu = cutlass.overrideAttrs { doCheck = true; };
   };
 
   meta = with lib; {

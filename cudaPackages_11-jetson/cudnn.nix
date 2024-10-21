@@ -88,8 +88,8 @@ let
         libcublas
         zlib
       ];
-      # Tell patchelf about runtime dependencies. *_infer* libraries only exist in CuDNN 8.
-      # TODO: Doesn't autoPatchelfHook have a variable we can set for runtime dependencies?
+      # Tell autoPatchelf about runtime dependencies. *_infer* libraries only
+      # exist in CuDNN 8.
       postFixup =
         prevAttrs.postFixup or ""
         + ''

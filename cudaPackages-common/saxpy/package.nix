@@ -1,4 +1,5 @@
 {
+  autoAddDriverRunpath,
   backendStdenv,
   cmake,
   cuda_cccl ? null, # Only available from CUDA 12.0.
@@ -6,22 +7,23 @@
   cuda_nvcc,
   cudaAtLeast,
   cudaMajorMinorVersion,
+  flags,
   lib,
   libcublas,
 }:
 let
-  inherit (lib.fileset) toSource unions;
   inherit (lib.lists) optionals;
-  inherit (lib.strings) cmakeBool;
+  inherit (lib.strings) cmakeBool cmakeFeature;
+  fs = lib.fileset;
 in
 backendStdenv.mkDerivation (finalAttrs: {
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "saxpy";
   version = "unstable-2023-07-11";
 
-  src = toSource {
+  src = fs.toSource {
     root = ./.;
-    fileset = unions [
+    fileset = fs.unions [
       ./CMakeLists.txt
       ./saxpy.cu
     ];
@@ -31,6 +33,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   strictDeps = true;
 
   nativeBuildInputs = [
+    autoAddDriverRunpath
     cmake
     cuda_nvcc
   ];

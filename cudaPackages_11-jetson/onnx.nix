@@ -1,5 +1,6 @@
 {
   abseil-cpp,
+  autoPatchelfHook,
   backendStdenv,
   fetchFromGitHub,
   gtest,
@@ -52,6 +53,7 @@ buildPythonPackage {
 
   nativeBuildInputs = [
     abseil-cpp
+    autoPatchelfHook
     protobuf_21
     pybind11
   ];

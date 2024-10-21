@@ -1,4 +1,8 @@
+# NOTE: Though NCCL is called within the cudaPackages package set, we avoid passing in
+# the names of dependencies from that package set directly to avoid evaluation errors
+# in the case redistributable packages are not available.
 {
+  autoAddDriverRunpath,
   cutlass,
   cudaMajorMinorVersion,
   cudaOlder,
@@ -42,6 +46,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [
     rapids-cmake
     which
+    autoAddDriverRunpath
   ] ++ pythonDeps ++ [ cuda_nvcc ];
 
   postPatch =

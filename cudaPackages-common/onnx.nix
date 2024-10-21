@@ -1,5 +1,6 @@
 {
   abseil-cpp,
+  autoPatchelfHook,
   backendStdenv,
   fetchFromGitHub,
   fetchpatch2,
@@ -51,6 +52,7 @@ buildPythonPackage {
 
   nativeBuildInputs = [
     abseil-cpp
+    autoPatchelfHook
     protobuf
     pybind11
   ];
@@ -142,6 +144,7 @@ buildPythonPackage {
   pythonImportsCheck = [ "onnx" ];
 
   # Some libraries maintain a reference to /build/source, so we need to remove the reference.
+  # We use the autoPatchelfHook as a safeguard to ensure that we don't miss any dependencies.
   preFixup = ''
     find "$out" \
       -type f \

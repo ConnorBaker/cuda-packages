@@ -1,4 +1,5 @@
 {
+  autoAddDriverRunpath,
   backendStdenv,
   cuda_cudart,
   cuda_nvcc,
@@ -51,6 +52,7 @@ buildPythonPackage {
   ];
 
   nativeBuildInputs = [
+    autoAddDriverRunpath
     cuda_nvcc
   ];
 
