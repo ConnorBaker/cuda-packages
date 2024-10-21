@@ -4,6 +4,7 @@
   ucc,
 }:
 let
+  inherit (builtins) placeholder;
   inherit (lib.attrsets) getOutput;
   inherit (lib.lists) elem;
   inherit (lib.strings) optionalString;
@@ -22,6 +23,6 @@ finalAttrs: prevAttrs: {
     mkdir -p "$out/nix-support"
     cat "${./set-ucc-config-file-hook.sh}" >> "$out/nix-support/setup-hook"
     substituteInPlace "$out/nix-support/setup-hook" \
-      --replace-fail "@out@" "${builtins.placeholder "out"}"
+      --replace-fail "@out@" "${placeholder "out"}"
   '';
 }
