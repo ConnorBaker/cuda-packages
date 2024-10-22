@@ -1,18 +1,15 @@
 {
+  abseil-cpp,
   backendStdenv,
   cmake,
   cuda_cccl ? null, # cub/cub.cuh -- Only available from CUDA 12.0.
   cuda_cudart,
   cuda_nvcc,
   cudaAtLeast,
-  cudnn,
   cudaMajorMinorVersion,
+  cudnn,
   fetchFromGitHub,
   fetchFromGitLab,
-  flags,
-
-  # flatbuffers,
-
   gbenchmark,
   glibcLocales,
   gtest,
@@ -25,18 +22,17 @@
   microsoft-gsl,
   nccl,
   nlohmann_json,
-  srcOnly,
   nsync,
-  onnx,
   onnx-tensorrt,
+  onnx,
   onnxruntime, # For passthru.tests
   pkg-config,
+  protobuf,
   python3,
   re2,
+  srcOnly,
   tensorrt,
   zlib,
-  abseil-cpp,
-  protobuf_21,
 }:
 
 let
@@ -50,7 +46,12 @@ let
     ;
   inherit (lib.versions) majorMinor;
   inherit (backendStdenv.cc) isClang;
-  inherit (python3.pkgs) buildPythonPackage setuptools;
+  inherit (python3.pkgs)
+    buildPythonPackage
+    protobuf4
+    pybind11
+    setuptools
+    ;
 
   isAarch64Linux = backendStdenv.hostPlatform.system == "aarch64-linux";
 
@@ -106,6 +107,7 @@ let
   cpuinfoRev = "ca678952a9a8eaa6de112d154e8e104b22f9ab3f";
 
   cpuinfo = srcOnly {
+    __structuredAttrs = true;
     strictDeps = true;
     name = "cpuinfo-source-${builtins.substring 0 8 cpuinfoRev}-patched";
     src = fetchFromGitHub {
@@ -121,6 +123,7 @@ let
 
   # NOTE: Versions beyond 1.16.3 expect cpuinfo to be available as a library.
   clog = backendStdenv.mkDerivation {
+    __structuredAttrs = true;
     strictDeps = true;
 
     pname = "clog";
@@ -142,7 +145,8 @@ let
     ];
   };
 in
-buildPythonPackage {
+backendStdenv.mkDerivation {
+  __structuredAttrs = true;
   strictDeps = true;
   stdenv = backendStdenv;
 
@@ -173,13 +177,15 @@ buildPythonPackage {
 
   build-system = [
     setuptools
+    # protobuf4
   ];
 
   nativeBuildInputs = [
     cmake
     cuda_nvcc
     pkg-config
-    protobuf_21
+    protobuf
+    pybind11
     # python3
   ];
   # ++ optionals pythonSupport (
@@ -207,7 +213,7 @@ buildPythonPackage {
           'set(onnxparser_link_libs nvonnxparser_static)' \
           'set(onnxparser_link_libs nvonnxparser)'
     ''
-    # 
+    # Use our own externel deps CMake file
     + ''
       rm -f cmake/external/onnxruntime_external_deps.cmake
       install -Dm644 ${./onnxruntime_external_deps.cmake} cmake/external/onnxruntime_external_deps.cmake
@@ -219,9 +225,9 @@ buildPythonPackage {
     '';
 
   # Use the same build dir the bash script wrapping the python script wrapping CMake expects us to use.
-  cmakeBuildDir = "build/Linux";
+  # cmakeBuildDir = "build/Linux";
   # The CMakeLists.txt file is in the root of the source directory, two levels up from the build directory.
-  cmakeDir = "../../cmake";
+  cmakeDir = "../cmake";
 
   preConfigure =
     # Silence NVCC warnings from the frontend like:
@@ -231,47 +237,52 @@ buildPythonPackage {
       appendToVar NVCC_PREPEND_FLAGS "-Xcudafe=--diag_suppress=2803"
     '';
 
-  postConfigure =
-    # Return to the root of the source directory, leaving and deleting CMake's build directory.
-    ''
-      cd "''${cmakeDir:?}"/..
-      rm -rf "''${cmakeBuildDir:?}"
-    ''
-    # Allow CMake to run its configuration setup hook to fully populate the cmakeFlags shell variable.
-    # We'll format it and use it for the Python build.
-    # To do that, we need to splat the cmakeFlags array and use bash string substitution to remove the leading on each
-    # entry "-D".
-    # TODO: If Python packaging supported __structuredAttrs, we could use `${cmakeFlags[@]#-D}`. But it doesn't, so we have
-    # to use `${cmakeFlags[@]//-D/}` and hope none of our flags contain "-D".
-    # TODO: How does bash handle accessing `cmakeFlags` as an array when __structuredAttrs is not set?
-    # TODO: Conditionally enable NCCL.
-    # NOTE: We need to specify CMAKE_CUDA_COMPILER to avoid the setup script trying to choose the compiler itself
-    # (which it will fail to do because we use splayed installations).
-    + ''
-      python3 "$PWD/tools/ci_build/build.py" \
-          --build_dir "''${cmakeBuildDir:?}" \
-          --build \
-          --build_shared_lib \
-          --update \
-          --skip_submodule_sync \
-          --config "Release" \
-          --clean \
-          --parallel ''${NIX_BUILD_CORES:?} \
-          --enable_pybind \
-          --build_wheel \
-          --test \
-          --enable_nccl \
-          --nccl_home "${getLib nccl}" \
-          --use_cuda \
-          --cuda_home "${getLib cuda_cudart}" \
-          --cudnn_home "${getLib cudnn}" \
-          --use_tensorrt \
-          --tensorrt_home "${getLib tensorrt}" \
-          --use_tensorrt_oss_parser \
-          --use_full_protobuf \
-          --enable_lto \
-          --cmake_extra_defines ''${cmakeFlags[@]//-D/} CMAKE_CUDA_COMPILER="${cuda_nvcc.bin}/bin/nvcc"
-    '';
+  # postConfigure =
+  # Return to the root of the source directory, leaving and deleting CMake's build directory.
+  # ''
+  #   cd "''${cmakeDir:?}"/..
+  #   rm -rf "''${cmakeBuildDir:?}"
+  # '';
+  # Allow CMake to run its configuration setup hook to fully populate the cmakeFlags shell variable.
+  # We'll format it and use it for the Python build.
+  # To do that, we need to splat the cmakeFlags array and use bash string substitution to remove the leading on each
+  # entry "-D".
+  # TODO: If Python packaging supported __structuredAttrs, we could use `${cmakeFlags[@]#-D}`. But it doesn't, so we have
+  # to use `${cmakeFlags[@]//-D/}` and hope none of our flags contain "-D".
+  # TODO: How does bash handle accessing `cmakeFlags` as an array when __structuredAttrs is not set?
+  # TODO: Conditionally enable NCCL.
+  # NOTE: We need to specify CMAKE_CUDA_COMPILER to avoid the setup script trying to choose the compiler itself
+  # (which it will fail to do because we use splayed installations).
+  # TODO: Why do we need to pass Protobuf_LIBRARIES explicitly?
+  # --clean \
+  # + ''
+  #   python3 "$PWD/tools/ci_build/build.py" \
+  #       --build_dir "''${cmakeBuildDir:?}" \
+  #       --build \
+  #       --build_shared_lib \
+  #       --update \
+  #       --skip_submodule_sync \
+  #       --config "Release" \
+  #       --parallel ''${NIX_BUILD_CORES:?} \
+  #       --enable_pybind \
+  #       --build_wheel \
+  #       --enable_lto \
+  #       --test \
+  #       --enable_nccl \
+  #       --nccl_home "${getLib nccl}" \
+  #       --use_cuda \
+  #       --cuda_home "${getLib cuda_cudart}" \
+  #       --cudnn_home "${getLib cudnn}" \
+  #       --use_tensorrt \
+  #       --tensorrt_home "${getLib tensorrt}" \
+  #       --use_tensorrt_oss_parser \
+  #       --use_full_protobuf \
+  #       --cmake_extra_defines \
+  #         ''${cmakeFlags[@]//-D/} \
+  #         CMAKE_CUDA_COMPILER="${cuda_nvcc.bin}/bin/nvcc" \
+  #         Protobuf_LIBRARIES="${getLib protobuf}/lib/libprotobuf.so"
+  #   echo "Done with the python3 script for building"
+  # '';
 
   # NOTE: Cannot re-use flatbuffers built in Nixpkgs for some reason.
 
@@ -287,6 +298,7 @@ buildPythonPackage {
 
   buildInputs =
     [
+      abseil-cpp
       clog
       cuda_cudart
       cudnn # cudnn.h
@@ -296,10 +308,15 @@ buildPythonPackage {
       libcurand # curand.h
       libcusparse # cusparse.h
       libpng
+      # eigen
       microsoft-gsl
       nlohmann_json
       onnx-tensorrt
       onnx
+      flatbuffers
+      protobuf
+      re2
+      nsync
       tensorrt
       zlib
     ]
@@ -322,57 +339,47 @@ buildPythonPackage {
 
   enableParallelBuilding = true;
 
-  cmakeFlags =
-    [
-      (cmakeBool "ABSL_ENABLE_INSTALL" true)
-      (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
-      (cmakeBool "FETCHCONTENT_QUIET" false)
-      (cmakeBool "onnxruntime_BUILD_SHARED_LIB" true)
-      (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" true)
-      (cmakeBool "onnxruntime_ENABLE_LTO" true)
-      # (cmakeBool "onnxruntime_ENABLE_PYTHON" pythonSupport)
-      (cmakeBool "onnxruntime_ENABLE_PYTHON" false)
-      (cmakeBool "onnxruntime_USE_CUDA" true)
-      (cmakeBool "onnxruntime_USE_FULL_PROTOBUF" true) # NOTE: Using protobuf_21-lite causes linking errors
-      (cmakeBool "onnxruntime_USE_NCCL" nccl.meta.available)
-      # TODO(@connorbaker): Unclear if this actually causes onnxruntime to use onnx-tensorrt;
-      # the CMake code indicates it merely searches for the library for the parser wherever tensorrt was discovered.
-      (cmakeBool "onnxruntime_USE_TENSORRT_BUILTIN_PARSER" false) # Use onnx-tensorrt
-      (cmakeBool "onnxruntime_USE_TENSORRT" true)
-      (cmakeBool "onnxruntime_USE_PREINSTALLED_EIGEN" true)
-      (cmakeFeature "FETCHCONTENT_TRY_FIND_PACKAGE_MODE" "ALWAYS")
-      (cmakeFeature "onnxruntime_NVCC_THREADS" "1")
-      (cmakeOptionType "PATH" "eigen_SOURCE_PATH" eigen.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ABSEIL_CPP" abseil-cpp.src.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" cutlass.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_DATE" date.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" flatbuffers.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_GOOGLE_NSYNC" nsync.src.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_MP11" mp11.outPath)
-      # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ONNX" onnx.src.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_RE2" re2.src.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_SAFEINT" safeint.outPath)
+  # TODO:
+  # cuda12.6-onnxruntime> [ 11%] Built target custom_op_library
+  # cuda12.6-onnxruntime> [ 11%] Running cpp protocol buffer (full) compiler on /build/source/onnxruntime/test/proto/tml.proto
+  # cuda12.6-onnxruntime> onnx/onnx-ml.proto: File not found.
+  # cuda12.6-onnxruntime> tml.proto:3:1: Import "onnx/onnx-ml.proto" was not found or had errors.
+  # cuda12.6-onnxruntime> tml.proto:95:5: "onnx.TensorProto" is not defined.
+  # cuda12.6-onnxruntime> make[2]: *** [CMakeFiles/onnx_test_data_proto.dir/build.make:75: tml.pb.h] Error 1
+  # cuda12.6-onnxruntime> make[1]: *** [CMakeFiles/Makefile2:755: CMakeFiles/onnx_test_data_proto.dir/all] Error 2
+  # cuda12.6-onnxruntime> make[1]: *** Waiting for unfinished jobs....
 
-      # The inclusion of CMake files sets targets that onnxruntime needs defined for CMake configuration to succeed.
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_PYTORCH_CPUINFO" cpuinfo.outPath)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_GOOGLETEST" gtest.src.outPath)
-    ]
-    # Onnx flags
-    # TODO: Reuse Onnx build since we've got both the C++ libraries and the Python bindings
-    ++ [
-      # (cmakeBool "BUILD_ONNX_PYTHON" pythonSupport)
-      (cmakeBool "BUILD_ONNX_PYTHON" false)
-      (cmakeBool "BUILD_SHARED_LIBS" true)
-      (cmakeBool "ONNX_BUILD_BENCHMARKS" false)
-      (cmakeBool "ONNX_BUILD_TESTS" true)
-      (cmakeBool "ONNX_USE_PROTOBUF_SHARED_LIBS" true)
-      (cmakeBool "ONNX_VERIFY_PROTO3" true)
-      (cmakeFeature "ONNX_NAMESPACE" "onnx")
-    ]
-    ++ optionals (majorMinor onnx.version == "1.16") [
-      (cmakeBool "ONNX_BUILD_SHARED_LIBS" true)
-      (cmakeBool "ONNX_GEN_PB_TYPE_STUBS" false)
-    ];
+  cmakeFlags = [
+    (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
+    (cmakeBool "onnxruntime_BUILD_SHARED_LIB" true)
+    (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" true)
+    (cmakeBool "onnxruntime_ENABLE_LTO" true)
+    (cmakeBool "onnxruntime_ENABLE_PYTHON" true)
+    (cmakeBool "onnxruntime_USE_CUDA" true)
+    (cmakeBool "onnxruntime_USE_FULL_PROTOBUF" true) # NOTE: Using protobuf_21-lite causes linking errors
+    (cmakeBool "onnxruntime_USE_NCCL" nccl.meta.available)
+    # TODO(@connorbaker): Unclear if this actually causes onnxruntime to use onnx-tensorrt;
+    # the CMake code indicates it merely searches for the library for the parser wherever tensorrt was discovered.
+    (cmakeBool "onnxruntime_USE_TENSORRT_BUILTIN_PARSER" false) # Use onnx-tensorrt
+    (cmakeBool "onnxruntime_USE_TENSORRT" true)
+    (cmakeFeature "FETCHCONTENT_TRY_FIND_PACKAGE_MODE" "ALWAYS")
+    (cmakeFeature "onnxruntime_NVCC_THREADS" "1")
+    (cmakeBool "onnxruntime_USE_PREINSTALLED_EIGEN" true)
+    (cmakeOptionType "PATH" "eigen_SOURCE_PATH" eigen.outPath)
+    # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ABSEIL_CPP" abseil-cpp.src.outPath)
+    (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" cutlass.outPath)
+    (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_DATE" date.outPath)
+    (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" flatbuffers.outPath)
+    # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_GOOGLE_NSYNC" nsync.src.outPath)
+    (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_MP11" mp11.outPath)
+    # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ONNX" onnx.src.outPath)
+    # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_RE2" re2.src.outPath)
+    (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_SAFEINT" safeint.outPath)
+
+    # The inclusion of CMake files sets targets that onnxruntime needs defined for CMake configuration to succeed.
+    (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_PYTORCH_CPUINFO" cpuinfo.outPath)
+    # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_GOOGLETEST" gtest.src.outPath)
+  ];
 
   # nativeCheckInputs = [ gtest ];
   # checkInputs = [ gtest ];

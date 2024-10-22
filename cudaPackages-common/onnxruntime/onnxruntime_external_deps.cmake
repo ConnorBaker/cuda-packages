@@ -2,43 +2,13 @@ message("Loading Dependencies URLs ...")
 
 include(external/helper_functions.cmake)
 
-file(STRINGS deps.txt ONNXRUNTIME_DEPS_LIST)
-foreach(ONNXRUNTIME_DEP IN LISTS ONNXRUNTIME_DEPS_LIST)
-  # Lines start with "#" are comments
-  if(NOT ONNXRUNTIME_DEP MATCHES "^#")
-    # The first column is name
-    list(POP_FRONT ONNXRUNTIME_DEP ONNXRUNTIME_DEP_NAME)
-    # The second column is URL
-    # The URL below may be a local file path or an HTTPS URL
-    list(POP_FRONT ONNXRUNTIME_DEP ONNXRUNTIME_DEP_URL)
-    set(DEP_URL_${ONNXRUNTIME_DEP_NAME} ${ONNXRUNTIME_DEP_URL})
-    # The third column is SHA1 hash value
-    set(DEP_SHA1_${ONNXRUNTIME_DEP_NAME} ${ONNXRUNTIME_DEP})
-
-    if(ONNXRUNTIME_DEP_URL MATCHES "^https://")
-      # Search a local mirror folder
-      string(REGEX REPLACE "^https://" "${REPO_ROOT}/mirror/" LOCAL_URL "${ONNXRUNTIME_DEP_URL}")
-
-      if(EXISTS "${LOCAL_URL}")
-        cmake_path(ABSOLUTE_PATH LOCAL_URL)
-        set(DEP_URL_${ONNXRUNTIME_DEP_NAME} "${LOCAL_URL}")
-      endif()
-    endif()
-  endif()
-endforeach()
-
 message("Loading Dependencies ...")
-# ABSL should be included before protobuf because protobuf may use absl
-include(external/abseil-cpp.cmake)
+
+find_package(absl REQUIRED)
 
 set(RE2_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 
-FetchContent_Declare(
-    re2
-    URL ${DEP_URL_re2}
-    URL_HASH SHA1=${DEP_SHA1_re2}
-    FIND_PACKAGE_ARGS NAMES re2
-)
+find_package(re2 REQUIRED)
 
 if (onnxruntime_BUILD_UNIT_TESTS)
   # WebAssembly threading support in Node.js is still an experimental feature and
@@ -212,13 +182,14 @@ else()
 endif()
 
 #Protobuf depends on absl and utf8_range
-FetchContent_Declare(
-  Protobuf
-  URL ${DEP_URL_protobuf}
-  URL_HASH SHA1=${DEP_SHA1_protobuf}
-  PATCH_COMMAND ${ONNXRUNTIME_PROTOBUF_PATCH_COMMAND}
-  FIND_PACKAGE_ARGS 3.21.12 NAMES Protobuf
-)
+# FetchContent_Declare(
+#   Protobuf
+#   URL ${DEP_URL_protobuf}
+#   URL_HASH SHA1=${DEP_SHA1_protobuf}
+#   PATCH_COMMAND ${ONNXRUNTIME_PROTOBUF_PATCH_COMMAND}
+#   FIND_PACKAGE_ARGS 3.21.12 NAMES Protobuf
+# )
+find_package(Protobuf REQUIRED)
 
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "Build protobuf tests" FORCE)
 #TODO: we'd better to turn the following option off. However, it will cause
@@ -354,17 +325,20 @@ endif()
 
 
 if (onnxruntime_BUILD_BENCHMARKS)
-  onnxruntime_fetchcontent_makeavailable(google_benchmark)
+  # onnxruntime_fetchcontent_makeavailable(google_benchmark)
+  find_package(benchmark REQUIRED)
 endif()
 
 if (NOT WIN32)
   #nsync tests failed on Mac Build
   set(NSYNC_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-  onnxruntime_fetchcontent_makeavailable(google_nsync)
-  if (google_nsync_SOURCE_DIR)
-    add_library(nsync::nsync_cpp ALIAS nsync_cpp)
-    target_include_directories(nsync_cpp PUBLIC ${google_nsync_SOURCE_DIR}/public)
-  endif()
+  find_package(nsync_cpp REQUIRED)
+  add_library(nsync::nsync_cpp ALIAS nsync_cpp)
+  # onnxruntime_fetchcontent_makeavailable(google_nsync)
+  # if (google_nsync_SOURCE_DIR)
+  #   add_library(nsync::nsync_cpp ALIAS nsync_cpp)
+  #   target_include_directories(nsync_cpp PUBLIC ${google_nsync_SOURCE_DIR}/public)
+  # endif()
 endif()
 
 if(onnxruntime_USE_CUDA)
@@ -393,11 +367,21 @@ FetchContent_Declare(
 # use fetch content rather than makeavailable because safeint only includes unconditional test targets
 FetchContent_Populate(safeint)
 # The next line will generate an error message "fatal: not a git repository", but it is ok. It is from flatbuffers
-onnxruntime_fetchcontent_makeavailable(utf8_range)
+# onnxruntime_fetchcontent_makeavailable(utf8_range)
 # protobuf's cmake/utf8_range.cmake has the following line
-include_directories(${utf8_range_SOURCE_DIR})
+# include_directories(${utf8_range_SOURCE_DIR})
 
-onnxruntime_fetchcontent_makeavailable(Protobuf nlohmann_json mp11 re2 GSL flatbuffers ${ONNXRUNTIME_CPUINFO_PROJ} ${ONNXRUNTIME_CLOG_PROJ})
+# onnxruntime_fetchcontent_makeavailable(Protobuf nlohmann_json mp11 re2 GSL flatbuffers ${ONNXRUNTIME_CPUINFO_PROJ} ${ONNXRUNTIME_CLOG_PROJ})
+find_package(Protobuf REQUIRED)
+find_package(nlohmann_json REQUIRED)
+onnxruntime_fetchcontent_makeavailable(mp11)
+find_package(re2 REQUIRED)
+find_package(Microsoft.GSL REQUIRED)
+onnxruntime_fetchcontent_makeavailable(flatbuffers)
+onnxruntime_fetchcontent_makeavailable(${ONNXRUNTIME_CPUINFO_PROJ})
+onnxruntime_fetchcontent_makeavailable(${ONNXRUNTIME_CLOG_PROJ})
+
+
 if(NOT flatbuffers_FOUND)
   if(NOT TARGET flatbuffers::flatbuffers)
     add_library(flatbuffers::flatbuffers ALIAS flatbuffers)
@@ -425,7 +409,8 @@ namespace std { using ::getenv; }
 endif()
 
 if (onnxruntime_BUILD_UNIT_TESTS)
-  onnxruntime_fetchcontent_makeavailable(googletest)
+  # onnxruntime_fetchcontent_makeavailable(googletest)
+  find_package(GTest REQUIRED)
 endif()
 
 if(Protobuf_FOUND)
@@ -485,27 +470,13 @@ else()
   set(ONNXRUNTIME_ONNX_PATCH_COMMAND "")
 endif()
 
-# FetchContent_Declare(
-#   onnx
-#   URL ${DEP_URL_onnx}
-#   URL_HASH SHA1=${DEP_SHA1_onnx}
-#   PATCH_COMMAND ${ONNXRUNTIME_ONNX_PATCH_COMMAND}
-# )
-
-find_package(ONNX REQUIRED)
-
-
-
-
-
 include(eigen)
 include(wil)
 
-# if (NOT onnxruntime_MINIMAL_BUILD)
-#     onnxruntime_fetchcontent_makeavailable(onnx)
-# else()
-#   include(onnx_minimal)
-# endif()
+find_package(ONNX REQUIRED)
+add_library(onnx ALIAS ONNX::onnx)
+add_library(onnx_proto ALIAS ONNX::onnx_proto)
+find_package(pybind11 REQUIRED)
 
 set(GSL_TARGET "Microsoft.GSL::GSL")
 set(GSL_INCLUDE_DIR "$<TARGET_PROPERTY:${GSL_TARGET},INTERFACE_INCLUDE_DIRECTORIES>")
@@ -541,13 +512,13 @@ set(onnxruntime_EXTERNAL_LIBRARIES ${onnxruntime_EXTERNAL_LIBRARIES_XNNPACK} ${W
 set(onnxruntime_EXTERNAL_DEPENDENCIES onnx_proto flatbuffers::flatbuffers)
 
 # target_compile_definitions(onnx PUBLIC $<TARGET_PROPERTY:onnx_proto,INTERFACE_COMPILE_DEFINITIONS> PRIVATE "__ONNX_DISABLE_STATIC_REGISTRATION")
-if (NOT onnxruntime_USE_FULL_PROTOBUF)
-  target_compile_definitions(onnx PUBLIC "__ONNX_NO_DOC_STRINGS")
-endif()
+# if (NOT onnxruntime_USE_FULL_PROTOBUF)
+#   target_compile_definitions(onnx PUBLIC "__ONNX_NO_DOC_STRINGS")
+# endif()
 
-if (onnxruntime_RUN_ONNX_TESTS)
-  add_definitions(-DORT_RUN_EXTERNAL_ONNX_TESTS)
-endif()
+# if (onnxruntime_RUN_ONNX_TESTS)
+#   add_definitions(-DORT_RUN_EXTERNAL_ONNX_TESTS)
+# endif()
 
 
 if(onnxruntime_ENABLE_ATEN)

@@ -158,7 +158,8 @@ buildPythonPackage {
     ''
     # Fixups for pytest
     + ''
-      export HOME=$(mktemp -d)
+      export HOME="$(mktemp --directory)"
+      trap 'rm -rf -- "''${HOME@Q}"' EXIT
     ''
     # Detecting source dir as a python package confuses pytest and causes import errors
     + ''

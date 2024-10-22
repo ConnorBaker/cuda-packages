@@ -140,7 +140,8 @@ buildPythonPackage {
             # Make a temporary directory for the tests and error out if anything fails.
             ''
               set -e
-              export HOME="$(mktemp -d)"
+              export HOME="$(mktemp --directory)"
+              trap 'rm -rf -- "''${HOME@Q}"' EXIT
             ''
             # Run the tests.
             + ''

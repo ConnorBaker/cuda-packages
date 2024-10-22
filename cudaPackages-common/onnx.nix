@@ -11,8 +11,10 @@
 }:
 let
   inherit (builtins) storeDir;
+  inherit (lib.attrsets) attrNames;
+  inherit (lib.lists) map;
   inherit (lib.meta) getExe;
-  inherit (lib.strings) cmakeBool cmakeFeature;
+  inherit (lib.strings) cmakeFeature;
   inherit (python3.pkgs)
     buildPythonPackage
     cmake
@@ -27,6 +29,20 @@ let
     setuptools
     tabulate
     ;
+
+  # Python setup.py just takes stuff from the environment.
+  env = {
+    BUILD_ONNX_PYTHON = "1";
+    BUILD_SHARED_LIBS = "1";
+    ONNX_BUILD_BENCHMARKS = "0";
+    ONNX_BUILD_SHARED_LIBS = "1";
+    ONNX_BUILD_TESTS = "1";
+    ONNX_GEN_PB_TYPE_STUBS = "1";
+    ONNX_ML = "1"; # NOTE: If this is `true`, onnx-tensorrt fails to build due to missing protobuf files.
+    ONNX_NAMESPACE = "onnx";
+    ONNX_USE_PROTOBUF_SHARED_LIBS = "1";
+    ONNX_VERIFY_PROTO3 = "1";
+  };
 in
 buildPythonPackage {
   strictDeps = true;
@@ -83,18 +99,9 @@ buildPythonPackage {
   # Declared in setup.py
   cmakeBuildDir = ".setuptools-cmake-build";
 
-  cmakeFlags = [
-    (cmakeBool "BUILD_ONNX_PYTHON" true)
-    (cmakeBool "BUILD_SHARED_LIBS" true)
-    (cmakeBool "ONNX_BUILD_BENCHMARKS" false)
-    (cmakeBool "ONNX_BUILD_TESTS" true)
-    (cmakeBool "ONNX_ML" false) # NOTE: If this is `true`, onnx-tensorrt fails to build due to missing protobuf files.
-    (cmakeBool "ONNX_USE_PROTOBUF_SHARED_LIBS" true)
-    (cmakeBool "ONNX_VERIFY_PROTO3" true)
-    (cmakeFeature "ONNX_NAMESPACE" "onnx")
-    (cmakeBool "ONNX_BUILD_SHARED_LIBS" true)
-    (cmakeBool "ONNX_GEN_PB_TYPE_STUBS" true)
-  ];
+  inherit env;
+
+  cmakeFlags = map (name: cmakeFeature name env.${name}) (attrNames env);
 
   # Re-export the `cmakeFlags` environment variable as CMAKE_ARGS so setup.py will pick them up, then exit
   # the build directory for the python build.
@@ -104,13 +111,22 @@ buildPythonPackage {
     cd ..
   '';
 
-  # After the python install is complete, re-enter the build directory to  install the C++ components.
-  postInstall = ''
-    pushd "''${cmakeBuildDir:?}"
-    echo "Running CMake install for C++ components"
-    make install -j ''${NIX_BUILD_CORES:?}
-    popd
-  '';
+  postInstall =
+    # After the python install is complete, re-enter the build directory to install the C++ components.
+    ''
+      pushd "''${cmakeBuildDir:?}"
+      echo "Running CMake install for C++ components"
+      make install -j ''${NIX_BUILD_CORES:?}
+      popd
+    ''
+    # Patch up the include directory to avoid allowing downstream consumers choose between onnx and onnx-ml, since that's an innate
+    # part of the library we've produced.
+    + ''
+      substituteInPlace "$out/include/onnx/onnx_pb.h" \
+        --replace-fail \
+          "#ifdef ONNX_ML" \
+          "#if ''${ONNX_ML:?}"
+    '';
 
   doCheck = true;
 
@@ -132,7 +148,8 @@ buildPythonPackage {
     ''
     # Fixups for pytest
     + ''
-      export HOME=$(mktemp -d)
+      export HOME="$(mktemp --directory)"
+      trap 'rm -rf -- "''${HOME@Q}"' EXIT
     ''
     # Detecting source dir as a python package confuses pytest and causes import errors
     + ''

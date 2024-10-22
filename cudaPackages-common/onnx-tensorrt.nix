@@ -154,7 +154,8 @@ buildPythonPackage {
             # Make a temporary directory for the tests and error out if anything fails.
             ''
               set -e
-              export HOME="$(mktemp -d)"
+              export HOME="$(mktemp --directory)"
+              trap 'rm -rf -- "''${HOME@Q}"' EXIT
             ''
             # Patch our test file to skip tests that are known to fail.
             # These two tests fail with out of memory errors on a 4090.
