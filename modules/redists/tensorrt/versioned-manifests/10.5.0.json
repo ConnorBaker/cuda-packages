@@ -20,8 +20,8 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-xBtMJYJT8Vmm0bxN473iq+dI/xuWHVORYa3H6Kg1tr0=",
-          "relativePath": "tensorrt/10.4.0/tars/TensorRT-10.4.0.26.l4t.aarch64-gnu.cuda-12.6.tar.gz"
+          "recursiveHash": "sha256-85nPVRjqYuFT9QqkfUJOMwoNEKvQB3Ty+78dqY3IjbQ=",
+          "relativePath": "tensorrt/10.5.0/tars/TensorRT-10.5.0.18.l4t.aarch64-gnu.cuda-12.6.tar.gz"
         }
       },
       "linux-sbsa": {
@@ -48,8 +48,8 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-7lh83MCpN7IcvLWJk1A6EyRp5hZkaQLblnDUW/md+eI=",
-          "relativePath": "tensorrt/10.4.0/tars/TensorRT-10.4.0.26.Ubuntu-24.04.aarch64-gnu.cuda-12.6.tar.gz"
+          "recursiveHash": "sha256-tF4SAdMLRfYZLQQd8hqLvkjQ6O1TMKTUr+WZorMNLs8=",
+          "relativePath": "tensorrt/10.5.0/tars/TensorRT-10.5.0.18.Ubuntu-24.04.aarch64-gnu.cuda-12.6.tar.gz"
         }
       },
       "linux-x86_64": {
@@ -76,8 +76,8 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-fu99jSsJkOLkq/6+N7huNBlI8Nf7ZiJJDCQ+/z3jWJg=",
-          "relativePath": "tensorrt/10.4.0/tars/TensorRT-10.4.0.26.Linux.x86_64-gnu.cuda-11.8.tar.gz"
+          "recursiveHash": "sha256-50o6iSiR1Z2Qp0hA5JM9sAqlEoa/PSHT2urEK7PRN2s=",
+          "relativePath": "tensorrt/10.5.0/tars/TensorRT-10.5.0.18.Linux.x86_64-gnu.cuda-11.8.tar.gz"
         },
         "cuda12": {
           "features": {
@@ -102,15 +102,15 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-O4GZuqvvPLGMK9shMXjkcmtoETjurU1WIMnac8WJCbw=",
-          "relativePath": "tensorrt/10.4.0/tars/TensorRT-10.4.0.26.Linux.x86_64-gnu.cuda-12.6.tar.gz"
+          "recursiveHash": "sha256-Pui90+LPF37m3NmsdJcU4wM5EJGvNm7aFBK0viBX5Js=",
+          "relativePath": "tensorrt/10.5.0/tars/TensorRT-10.5.0.18.Linux.x86_64-gnu.cuda-12.6.tar.gz"
         }
       }
     },
     "releaseInfo": {
       "license": "TensorRT",
       "name": "NVIDIA TensorRT",
-      "version": "10.4.0.26"
+      "version": "10.5.0.18"
     }
   }
 }

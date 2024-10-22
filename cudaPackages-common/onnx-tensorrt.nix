@@ -25,7 +25,7 @@ let
     setuptools
     ;
 
-  version = "10.4";
+  version = "10.5";
 in
 # Version must have only two components.
 assert version == (majorMinor version);
@@ -41,7 +41,7 @@ buildPythonPackage {
     owner = "onnx";
     repo = "onnx-tensorrt";
     rev = "refs/tags/release/${version}-GA";
-    hash = "sha256-ZHWIwPy/iQS6iKAxVL9kKM+KbfzvktFrCElie4Aj8mg=";
+    hash = "sha256-AgLp8701ZsVWI7bvq+7OpjhAmOpYM2mbyOG/Rwen1x4=";
   };
 
   outputs = [

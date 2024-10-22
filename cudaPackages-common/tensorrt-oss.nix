@@ -39,14 +39,14 @@ backendStdenv.mkDerivation (finalAttrs: {
 
   name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "tensorrt-oss";
-  version = "10.4.0";
+  version = "10.5.0";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "TensorRT";
     rev = "refs/tags/v${finalAttrs.version}";
     # NOTE: We supply our own Onnx and Protobuf, so we do not do a recursive clone.
-    hash = "sha256-GAu/VdHrC3UQw9okPexVItLPrRb1m3ZMpCkHNcfzRkE=";
+    hash = "sha256-No0JKfvi6ETXrnebMX+tAVhz7fuuCwYAp/WNUN73XzY=";
   };
 
   # Ensure Protobuf is found by CMake.
