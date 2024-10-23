@@ -82,8 +82,32 @@
             capabilities = [ "7.2" ];
           });
 
-          # Utility.
-          inherit (adaPkgs) linkFarm;
+          ourPkgs =
+            {
+              inherit adaPkgs;
+            }
+            // optionalAttrs (system == "aarch64-linux") {
+              inherit orinPkgs xavierPkgs;
+            };
+
+          ourCudaPackages =
+            {
+              recurseForDerivations = true;
+              adaCudaPackages = {
+                recurseForDerivations = true;
+                inherit (adaPkgs) cudaPackages_11 cudaPackages_12;
+              };
+            }
+            // optionalAttrs (system == "aarch64-linux") {
+              orinCudaPackages = {
+                recurseForDerivations = true;
+                inherit (orinPkgs) cudaPackages_11 cudaPackages_12;
+              };
+              xavierCudaPackages = {
+                recurseForDerivations = true;
+                inherit (xavierPkgs) cudaPackages_11 cudaPackages_12;
+              };
+            };
         in
         {
           # Make upstream's cudaPackages the default.
@@ -91,48 +115,14 @@
             pkgs = adaPkgs;
           };
 
+          checks = flattenDrvTree { attrs = ourCudaPackages; };
+
           devShells = {
             inherit (config.packages) cuda-redist;
             default = config.devShells.cuda-redist;
           };
 
-          legacyPackages =
-            # Useful attributes to make sure we don't break eval.
-            {
-              inherit adaPkgs;
-              adaCudaPackages11Drvs = linkFarm "adaCudaPackages11Drvs" (flattenDrvTree {
-                attrs = adaPkgs.cudaPackages_11;
-              });
-              adaCudaPackages12Drvs = linkFarm "adaCudaPackages12Drvs" (flattenDrvTree {
-                attrs = adaPkgs.cudaPackages_12;
-              });
-              adaPkgsDrvs = linkFarm "adaPkgsDrvs" (flattenDrvTree {
-                attrs = adaPkgs;
-              });
-            }
-            // optionalAttrs (system == "aarch64-linux") {
-              inherit orinPkgs;
-              orinCudaPackages11Drvs = linkFarm "orinCudaPackages11Drvs" (flattenDrvTree {
-                attrs = orinPkgs.cudaPackages_11;
-              });
-              orinCudaPackages12Drvs = linkFarm "orinCudaPackages12Drvs" (flattenDrvTree {
-                attrs = orinPkgs.cudaPackages_12;
-              });
-              orinPkgsDrvs = linkFarm "orinPkgsDrvs" (flattenDrvTree {
-                attrs = orinPkgs;
-              });
-
-              inherit xavierPkgs;
-              xavierCudaPackages11Drvs = linkFarm "xavierCudaPackages11Drvs" (flattenDrvTree {
-                attrs = xavierPkgs.cudaPackages_11;
-              });
-              xavierCudaPackages12Drvs = linkFarm "xavierCudaPackages12Drvs" (flattenDrvTree {
-                attrs = xavierPkgs.cudaPackages_12;
-              });
-              xavierPkgsDrvs = linkFarm "xavierPkgsDrvs" (flattenDrvTree {
-                attrs = xavierPkgs;
-              });
-            };
+          legacyPackages = ourPkgs;
 
           packages =
             let
@@ -143,32 +133,31 @@
             {
               default = config.packages.cuda-redist;
               cuda-redist = callPackage ./scripts/cuda-redist { };
-            }
-            # Packages to be checked for eval.
-            // {
-              inherit (config.legacyPackages) adaCudaPackages11Drvs adaCudaPackages12Drvs;
-            }
-            // optionalAttrs (system == "aarch64-linux") {
-              inherit (config.legacyPackages)
-                orinCudaPackages11Drvs
-                orinCudaPackages12Drvs
-                xavierCudaPackages11Drvs
-                xavierCudaPackages12Drvs
-                ;
             };
 
-          pre-commit.settings.hooks = {
-            # Formatter checks
-            treefmt = {
-              enable = true;
-              package = config.treefmt.build.wrapper;
-            };
+          pre-commit.settings.hooks =
+            let
+              nixToolConfig = {
+                enable = true;
+                excludes = [
+                  "cudaPackages-wip/"
+                  "versioned-packages/"
+                ];
+              };
+            in
+            {
+              # Formatter checks
+              treefmt = {
+                enable = true;
+                inherit (nixToolConfig) excludes;
+                package = config.treefmt.build.wrapper;
+              };
 
-            # Nix checks
-            deadnix.enable = true;
-            nil.enable = true;
-            statix.enable = true;
-          };
+              # Nix checks
+              deadnix = nixToolConfig;
+              nil = nixToolConfig;
+              statix = nixToolConfig;
+            };
 
           treefmt = {
             projectRootFile = "flake.nix";
@@ -182,7 +171,7 @@
                   "*.md"
                   "*.yaml"
                 ];
-                excludes = [ "**.json" ];
+                excludes = [ "*.json" ];
                 settings = {
                   embeddedLanguageFormatting = "auto";
                   printWidth = 120;

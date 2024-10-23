@@ -4,7 +4,6 @@
 {
   autoAddDriverRunpath,
   cutlass,
-  cudaMajorMinorVersion,
   cudaOlder,
   backendStdenv,
   cuda_cccl,

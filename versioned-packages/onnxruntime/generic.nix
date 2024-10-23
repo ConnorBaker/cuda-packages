@@ -4,7 +4,6 @@
   cuda_cccl, # cub/cub.cuh
   cuda_cudart,
   cuda_nvcc,
-  cudaMajorMinorVersion,
   fetchFromGitHub,
   fetchFromGitLab,
   flags,

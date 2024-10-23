@@ -30,10 +30,7 @@ let
     teams
     ;
 
-  inherit (lib.attrsets)
-    attrValues
-    mapAttrsToList
-    ;
+  inherit (lib.attrsets) attrValues;
   inherit (lib.lists)
     any
     findFirstIndex
@@ -41,12 +38,8 @@ let
     optionals
     unique
     ;
-  inherit (lib.strings) concatStringsSep concatMapStringsSep optionalString;
-  inherit (lib.trivial)
-    boolToString
-    id
-    warnIf
-    ;
+  inherit (lib.strings) concatMapStringsSep optionalString;
+  inherit (lib.trivial) id;
 
   # Order is important here so we use a list.
   possibleOutputs = [
@@ -308,33 +301,13 @@ backendStdenv.mkDerivation (
     # Make the CUDA-patched stdenv available
     passthru.stdenv = backendStdenv;
 
-    meta =
-      let
-        warnIfBadPlatform = warnIf isBadPlatform ''
-          ${finalAttrs.name} has met least one condition in `badPlatformsConditions`:
-          ${concatStringsSep "\n" (
-            mapAttrsToList (
-              condition: isMet: "-  ${condition}: ${boolToString isMet}"
-            ) finalAttrs.badPlatformsConditions
-          )}
-        '';
-
-        warnIfBroken = warnIf isBroken ''
-          ${finalAttrs.name} has met least one condition in `brokenConditions`:
-          ${concatStringsSep "\n" (
-            mapAttrsToList (
-              condition: isMet: "-  ${condition}: ${boolToString isMet}"
-            ) finalAttrs.brokenConditions
-          )}
-        '';
-      in
-      {
-        description = "${releaseInfo.name}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";
-        sourceProvenance = [ sourceTypes.binaryNativeCode ];
-        broken = warnIfBroken isBroken;
-        badPlatforms = warnIfBadPlatform (optionals isBadPlatform platforms.all);
-        license = licenses.unfree;
-        maintainers = teams.cuda.members;
-      };
+    meta = {
+      description = "${releaseInfo.name}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";
+      sourceProvenance = [ sourceTypes.binaryNativeCode ];
+      broken = isBroken;
+      badPlatforms = optionals isBadPlatform platforms.all;
+      license = licenses.unfree;
+      maintainers = teams.cuda.members;
+    };
   }
 )
