@@ -476,6 +476,7 @@ include(wil)
 find_package(ONNX REQUIRED)
 add_library(onnx ALIAS ONNX::onnx)
 add_library(onnx_proto ALIAS ONNX::onnx_proto)
+find_path(onnx_SOURCE_DIR NAMES "onnx/onnx-ml.proto3" "onnx/onnx-ml.proto" REQUIRED HINTS ${ONNX_INCLUDE_DIR})
 find_package(pybind11 REQUIRED)
 
 set(GSL_TARGET "Microsoft.GSL::GSL")

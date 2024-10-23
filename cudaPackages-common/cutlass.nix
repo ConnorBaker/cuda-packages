@@ -5,7 +5,6 @@
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
-  cudaMajorMinorVersion,
   cudaOlder,
   cudnn,
   cutlass,
@@ -31,10 +30,6 @@ in
 # TODO: This can also be packaged for Python!
 assert assertMsg (!enableTools) "enableTools is not yet implemented";
 backendStdenv.mkDerivation (finalAttrs: {
-  __structuredAttrs = true;
-  strictDeps = true;
-
-  name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "cutlass";
   version = "3.5.1";
 

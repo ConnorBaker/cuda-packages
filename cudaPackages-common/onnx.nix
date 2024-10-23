@@ -45,7 +45,9 @@ let
   };
 in
 buildPythonPackage {
-  strictDeps = true;
+  # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
+  # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
+  __structuredAttrs = false;
   stdenv = backendStdenv;
 
   pname = "onnx";
@@ -122,10 +124,22 @@ buildPythonPackage {
     # Patch up the include directory to avoid allowing downstream consumers choose between onnx and onnx-ml, since that's an innate
     # part of the library we've produced.
     + ''
+      echo "Patching $out/include/onnx/onnx_pb.h"
       substituteInPlace "$out/include/onnx/onnx_pb.h" \
         --replace-fail \
           "#ifdef ONNX_ML" \
           "#if ''${ONNX_ML:?}"
+    ''
+    # Symlink the protobuf files in the python package to the C++ include directory.
+    # TODO: Should these only be available to the python package?
+    + ''
+      pushd "$out/${python3.sitePackages}/onnx"
+      echo "Symlinking protobuf files to $out/include/onnx"
+      for file in *.proto
+      do
+        ln -s "$PWD/$file" "$out/include/onnx/$file"
+      done
+      popd
     '';
 
   doCheck = true;

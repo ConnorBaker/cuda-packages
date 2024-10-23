@@ -30,7 +30,6 @@ let
   ];
 in
 backendStdenv.mkDerivation (finalAttrs: {
-  name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "MatX";
   version = "0.8.0";
 
@@ -40,8 +39,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     rev = "refs/tags/v${finalAttrs.version}";
     hash = "sha256-7ygdfo27tXz0f6jz6RwDCGwSQun3HqZJ9o6w2vKGM3s=";
   };
-
-  strictDeps = true;
 
   nativeBuildInputs = [
     rapids-cmake

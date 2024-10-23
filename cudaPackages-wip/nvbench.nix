@@ -8,7 +8,6 @@
   cuda_cupti,
   cuda_nvcc,
   cuda_nvml_dev,
-  cudaMajorMinorVersion,
   fetchFromGitHub,
   lib,
   rapids-cmake,
@@ -32,7 +31,6 @@ let
 
 in
 backendStdenv.mkDerivation (finalAttrs: {
-  name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "nvbench";
   version = "0-unstable-2024-05-31";
 
@@ -42,8 +40,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     rev = "a171514056e5d6a7f52a035dd6c812fa301d4f4f";
     hash = "sha256-S8IVvJPUrPVmilw6ftqr+oia5uoVALmteBWORiASDBg=";
   };
-
-  strictDeps = true;
 
   outputs = [
     "out"

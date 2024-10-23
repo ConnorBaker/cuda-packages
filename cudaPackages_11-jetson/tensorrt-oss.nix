@@ -31,9 +31,6 @@ let
   inherit (cuda-lib.utils) dropDots;
 in
 backendStdenv.mkDerivation (finalAttrs: {
-  strictDeps = true;
-
-  name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "tensorrt-oss";
   version = "8.5.2";
 

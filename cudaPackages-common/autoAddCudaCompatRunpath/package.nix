@@ -6,12 +6,11 @@
 {
   autoFixElfFiles,
   cuda_compat ? null,
-  cudaMajorMinorVersion,
   flags,
   makeSetupHook,
 }:
 makeSetupHook {
-  name = "cuda${cudaMajorMinorVersion}-auto-add-cuda-compat-runpath-hook";
+  name = "${flags.cudaNamePrefix}-auto-add-cuda-compat-runpath-hook";
   propagatedBuildInputs = [ autoFixElfFiles ];
 
   substitutions = {

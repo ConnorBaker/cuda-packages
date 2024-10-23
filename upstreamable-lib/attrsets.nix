@@ -151,7 +151,7 @@ in
     {
       attrs,
 
-      doTrace ? true,
+      doTrace ? false,
 
       # No release package attrpath may have any of these attrnames as
       # its initial component.

@@ -2,6 +2,7 @@
   config,
   cudaCapabilities ? (pkgs.config.cudaCapabilities or [ ]),
   cudaForwardCompat ? (pkgs.config.cudaForwardCompat or true),
+  cudaMajorMinorVersion,
   cudaVersion,
   cuda-lib,
   lib,
@@ -346,6 +347,8 @@ assert
 
   # TODO: Alias to be removed.
   dropDot = trivial.warn "cudaPackages.flags.dropDot is deprecated, use cudaPackages.flags.dropDots instead" dropDots;
+
+  cudaNamePrefix = "cuda${cudaMajorMinorVersion}";
 
   inherit
     defaultCapabilities

@@ -310,7 +310,6 @@ in
 backendStdenv.mkDerivation (finalAttrs: {
   strictDeps = true;
 
-  name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "onnxruntime";
   inherit version;
 

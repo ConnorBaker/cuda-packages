@@ -5,7 +5,6 @@
   cuda_cudart,
   cuda_nvcc,
   cudaAtLeast,
-  cudaMajorMinorVersion,
   lib,
   libcublas,
   saxpy,
@@ -15,8 +14,7 @@ let
   inherit (lib.lists) optionals;
   inherit (lib.strings) cmakeBool;
 in
-backendStdenv.mkDerivation (finalAttrs: {
-  name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
+backendStdenv.mkDerivation {
   pname = "saxpy";
   version = "unstable-2023-07-11";
 
@@ -27,9 +25,6 @@ backendStdenv.mkDerivation (finalAttrs: {
       ./saxpy.cu
     ];
   };
-
-  __structuredAttrs = true;
-  strictDeps = true;
 
   nativeBuildInputs = [
     cmake
@@ -64,4 +59,4 @@ backendStdenv.mkDerivation (finalAttrs: {
       "x86_64-linux"
     ];
   };
-})
+}

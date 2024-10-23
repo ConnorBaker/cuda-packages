@@ -7,7 +7,6 @@
   cuda_cudart,
   cuda_nvcc,
   cudaAtLeast,
-  cudaMajorMinorVersion,
   fetchFromGitHub,
   gitUpdater,
   lib,
@@ -22,10 +21,6 @@ let
   inherit (lib.lists) optionals;
 in
 backendStdenv.mkDerivation (finalAttrs: {
-  __structuredAttrs = true;
-  strictDeps = true;
-
-  name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "nccl-tests";
   version = "2.13.10";
 

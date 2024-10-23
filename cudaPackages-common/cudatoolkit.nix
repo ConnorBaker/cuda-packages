@@ -18,6 +18,7 @@
   cuda_nvtx ? null,
   cuda_profiler_api,
   cuda_sanitizer_api ? null,
+  flags,
   libcublas ? null,
   libcufft ? null,
   libcurand ? null,
@@ -27,8 +28,9 @@
 }:
 
 let
+  inherit (flags) cudaNamePrefix;
   inherit (lib.attrsets) getLib;
-  inherit (lib.lists) filter map;
+  inherit (lib.lists) concatMap filter map;
   inherit (lib.trivial) pipe;
   getAllOutputs = p: p.all or p;
   hostPackages = filter (p: p != null) [
@@ -63,10 +65,10 @@ let
   ];
 in
 symlinkJoin rec {
-  name = "cuda${cudaMajorMinorVersion}-cudatoolkit";
+  name = "${cudaNamePrefix}-cudatoolkit";
   version = cudaMajorMinorVersion;
 
-  paths = builtins.concatMap getAllOutputs allPackages;
+  paths = concatMap getAllOutputs allPackages;
 
   passthru = {
     cc = lib.warn "cudaPackages.cudatoolkit is deprecated, refer to the manual and use splayed packages instead" backendStdenv.cc;

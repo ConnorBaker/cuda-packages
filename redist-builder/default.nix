@@ -75,17 +75,8 @@ backendStdenv.mkDerivation (
     # redistributables are sensitive to the compiler flags provided to stdenv. The patchelf package
     # is sensitive to the compiler flags provided to stdenv, and we depend on it. As such, we are
     # also sensitive to the compiler flags provided to stdenv.
-    name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
     pname = packageName;
     inherit (releaseInfo) version;
-
-    # Don't force serialization to string for structured attributes, like outputToPatterns
-    # and brokenConditions.
-    # Avoids "set cannot be coerced to string" errors.
-    __structuredAttrs = true;
-
-    # Keep better track of dependencies.
-    strictDeps = true;
 
     outputs = [ "out" ] ++ componentOutputs;
 

@@ -15,7 +15,6 @@
   lib,
   protobuf,
   tensorrt,
-  which,
 }:
 let
   inherit (lib.attrsets) getLib;
@@ -34,10 +33,6 @@ let
   inherit (cuda-lib.utils) dropDots;
 in
 backendStdenv.mkDerivation (finalAttrs: {
-  __structuredAttrs = true;
-  strictDeps = true;
-
-  name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "tensorrt-oss";
   version = "10.5.0";
 
@@ -64,7 +59,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   # NOTE: NVIDIA's CMake file looks for the C++ compiler through the environment variable and expects a full path.
   # https://github.com/NVIDIA/TensorRT/blob/08ad45bf3df848e722dfdc7d01474b5ba2eff7e9/CMakeLists.txt#L62-L64
   preConfigure = ''
-    export CXX="$(which c++)"
+    export CXX="${backendStdenv.cc}/bin/${backendStdenv.cc.targetPrefix}c++"
   '';
 
   cudaEnableCmakeFindCudaToolkitSupport = true;
@@ -87,7 +82,6 @@ backendStdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [
     cmake
     cuda_nvcc
-    which
   ];
 
   buildInputs =

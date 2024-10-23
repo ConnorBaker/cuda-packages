@@ -1,13 +1,13 @@
 {
   abseil-cpp,
+  addDriverRunpath,
   backendStdenv,
   cmake,
-  cuda_cccl ? null, # cub/cub.cuh -- Only available from CUDA 12.0.
+  cuda_cccl, # cub/cub.cuh -- Only available from CUDA 12.0.
   cuda_cudart,
   cuda_nvcc,
-  cudaAtLeast,
-  cudaMajorMinorVersion,
   cudnn,
+  doCheck ? false,
   fetchFromGitHub,
   fetchFromGitLab,
   gbenchmark,
@@ -26,6 +26,7 @@
   onnx-tensorrt,
   onnx,
   onnxruntime, # For passthru.tests
+  patchelf,
   pkg-config,
   protobuf,
   python3,
@@ -38,6 +39,7 @@
 let
   inherit (lib.attrsets) getLib optionalAttrs;
   inherit (lib.lists) optionals;
+  inherit (lib.meta) getExe;
   inherit (lib.strings)
     cmakeBool
     cmakeFeature
@@ -65,6 +67,7 @@ let
   };
 
   cutlass = srcOnly {
+    __structuredAttrs = true;
     strictDeps = true;
     name = "cutlass-source-3.5.0-patched";
     src = fetchFromGitHub {
@@ -123,9 +126,6 @@ let
 
   # NOTE: Versions beyond 1.16.3 expect cpuinfo to be available as a library.
   clog = backendStdenv.mkDerivation {
-    __structuredAttrs = true;
-    strictDeps = true;
-
     pname = "clog";
     version = builtins.substring 0 8 cpuinfoRev;
     src = "${cpuinfo}/deps/clog";
@@ -146,11 +146,11 @@ let
   };
 in
 backendStdenv.mkDerivation {
-  __structuredAttrs = true;
-  strictDeps = true;
+  # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
+  # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
+  __structuredAttrs = false;
   stdenv = backendStdenv;
 
-  name = "cuda${cudaMajorMinorVersion}-onnxruntime-${version}";
   pname = "onnxruntime";
   inherit version;
 
@@ -183,6 +183,7 @@ backendStdenv.mkDerivation {
   nativeBuildInputs = [
     cmake
     cuda_nvcc
+    patchelf
     pkg-config
     protobuf
     pybind11
@@ -286,48 +287,33 @@ backendStdenv.mkDerivation {
 
   # NOTE: Cannot re-use flatbuffers built in Nixpkgs for some reason.
 
-  # TODO:
-  # python3.12-cuda12.6-onnxruntime> In file included from /nix/store/b98gmgf0hv1fmwk6sff5q316mpd8h169-source/googletest/include/gtest/gtest-assertion-result.h:46,
-  # python3.12-cuda12.6-onnxruntime>                  from /nix/store/b98gmgf0hv1fmwk6sff5q316mpd8h169-source/googletest/include/gtest/gtest.h:64,
-  # python3.12-cuda12.6-onnxruntime>                  from /build/source/onnxruntime/test/util/file_util.cc:3:
-  # python3.12-cuda12.6-onnxruntime> /nix/store/b98gmgf0hv1fmwk6sff5q316mpd8h169-source/googletest/include/gtest/gtest-message.h:62:10: fatal error: absl/strings/internal/has_absl_stringify.h: No such file or directory
-  # python3.12-cuda12.6-onnxruntime>    62 | #include "absl/strings/internal/has_absl_stringify.h"
-  # python3.12-cuda12.6-onnxruntime>       |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # python3.12-cuda12.6-onnxruntime> compilation terminated.
-  # python3.12-cuda12.6-onnxruntime> make[2]: *** [CMakeFiles/onnxruntime_test_utils.dir/build.make:104: CMakeFiles/onnxruntime_test_utils.dir/build/source/onnxruntime/test/util/file_util.cc.o] Error 1
+  buildInputs = [
+    abseil-cpp
+    clog
+    cuda_cccl # CUDA 11.x <cub/cub.cuh>, CUDA 12.x <nv/target>
+    cuda_cudart
+    cudnn # cudnn.h
+    flatbuffers
+    glibcLocales
+    libcublas # cublas_v2.h
+    libcufft # cufft.h
+    libcurand # curand.h
+    libcusparse # cusparse.h
+    libpng
+    microsoft-gsl
+    nlohmann_json
+    nsync
+    onnx
+    onnx-tensorrt
+    protobuf
+    re2
+    tensorrt
+    zlib
+  ] ++ optionals nccl.meta.available [ nccl ];
 
-  buildInputs =
-    [
-      abseil-cpp
-      clog
-      cuda_cudart
-      cudnn # cudnn.h
-      glibcLocales
-      libcublas # cublas_v2.h
-      libcufft # cufft.h
-      libcurand # curand.h
-      libcusparse # cusparse.h
-      libpng
-      # eigen
-      microsoft-gsl
-      nlohmann_json
-      onnx-tensorrt
-      onnx
-      flatbuffers
-      protobuf
-      re2
-      nsync
-      tensorrt
-      zlib
-    ]
-    ++ optionals (cudaAtLeast "12.0") [
-      cuda_cccl # <nv/target>
-    ]
-    ++ optionals nccl.meta.available [ nccl ]
-
-    # TODO: This should depend on doCheck.
-    # TODO: Why can't CMake find gtest in checkInputs?
-    ++ optionals true [ gtest ];
+  # TODO: This should depend on doCheck.
+  # TODO: Why can't CMake find gtest in checkInputs?
+  # ++ optionals doCheck [ gtest ];
   # ++ optionals pythonSupport (
   #   with python3Packages;
   #   [
@@ -352,7 +338,7 @@ backendStdenv.mkDerivation {
   cmakeFlags = [
     (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
     (cmakeBool "onnxruntime_BUILD_SHARED_LIB" true)
-    (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" true)
+    (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" doCheck)
     (cmakeBool "onnxruntime_ENABLE_LTO" true)
     (cmakeBool "onnxruntime_ENABLE_PYTHON" true)
     (cmakeBool "onnxruntime_USE_CUDA" true)
@@ -382,7 +368,7 @@ backendStdenv.mkDerivation {
   ];
 
   # nativeCheckInputs = [ gtest ];
-  # checkInputs = [ gtest ];
+  checkInputs = [ gtest ];
   # ++ optionals pythonSupport (
   #   with python3Packages;
   #   [
@@ -394,7 +380,25 @@ backendStdenv.mkDerivation {
 
   # aarch64-linux fails cpuinfo test, because /sys/devices/system/cpu/ does not exist in the sandbox
   # as does testing on the GPU
-  doCheck = false;
+  inherit doCheck;
+
+  # NOTE: Because the test cases immediately create and try to run the binaries, we don't have an opportunity
+  # to patch them with autoAddDriverRunpath. To get around this, we add the driver runpath to the environment.
+  preCheck = optionalString doCheck ''
+    export LD_LIBRARY_PATH="$(readlink -mnv "${addDriverRunpath.driverLink}/lib")"
+  '';
+
+  # Failed tests:
+  # ActivationOpTest.ONNX_Gelu
+  # CApiTest.custom_op_set_input_memory_type
+
+  requiredSystemFeatures =
+    [
+      "big-parallel"
+    ]
+    ++ optionals doCheck [
+      "cuda"
+    ];
 
   # postBuild = optionalString pythonSupport ''
   #   ${python3Packages.python.interpreter} ../setup.py bdist_wheel
@@ -408,9 +412,14 @@ backendStdenv.mkDerivation {
       ../include/onnxruntime/core/session/onnxruntime_*.h
   '';
 
-  # passthru = {
-  #   tests = optionalAttrs pythonSupport { python = python3Packages.onnxruntime; };
-  # };
+  # /build/source/onnxruntime/core/session/provider_bridge_ort.cc:1586 void onnxruntime::ProviderSharedLibrary::Ensure() [ONNXRuntimeError] : 1 : FAIL : Failed to load library libonnxruntime_providers_shared.so with error: libonnxruntime_providers_shared.so: cannot open shared object file: No such file or directory
+  postFixup = optionalString doCheck ''
+    patchelf --add-runpath "$out/lib" "$out/bin/onnx_test_runner"
+  '';
+
+  passthru.tests = {
+    gpu = onnxruntime.override { doCheck = true; };
+  };
 
   meta = with lib; {
     description = "Cross-platform, high performance scoring engine for ML models";

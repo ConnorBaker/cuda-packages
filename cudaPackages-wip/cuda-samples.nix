@@ -53,15 +53,6 @@ let
       or misc.fakeHash;
 in
 backendStdenv.mkDerivation (finalAttrs: {
-  # Don't force serialization to string for structured attributes, like outputToPatterns
-  # and brokenConditions.
-  # Avoids "set cannot be coerced to string" errors.
-  __structuredAttrs = true;
-
-  # Keep better track of dependencies.
-  strictDeps = true;
-
-  name = "cuda${cudaMajorMinorVersion}-${finalAttrs.pname}";
   pname = "cuda-samples";
   version = cudaMajorMinorPatchVersion;
 
