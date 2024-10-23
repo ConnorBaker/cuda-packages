@@ -294,20 +294,6 @@ in
         '';
         type = versionedManifests;
       };
-      versionPolicy = {
-        description = ''
-          Only the latest version matching the selected policy will be used. If a version has fewer parts than the
-          selected policy, it will be treated as if it has the missing parts set to 0. For example, if the policy
-          is "minor" and the latest version is "1.2", it will be treated as "1.2.0".
-        '';
-        type = enum [
-          "major"
-          "minor"
-          "patch"
-          "build"
-        ];
-        default = "minor";
-      };
     };
   };
 
@@ -457,29 +443,6 @@ in
   # NOTE: I can't think of a way to actually improve this error message, because we would need to do type-checking on the options attribute set,
   # not the config attribute set (which is where checks are performed).
   cudaCapability = strMatching "^[[:digit:]]+\\.[[:digit:]]+[a-z]?$";
-
-  /**
-    The option type of an element of a flattened `Redists`.
-
-    # Type
-
-    ```
-    flattenedRedistsElem :: OptionType
-    ```
-  */
-  flattenedRedistsElem = submodule {
-    options = mkOptions {
-      cudaVariant.type = cudaVariant;
-      packageInfo.type = packageInfo;
-      packageName.type = packageName;
-      redistArch.type = redistArch;
-      redistName.type = redistName;
-      releaseInfo.type = releaseInfo;
-      # NOTE: This is the version of the manifest, not the version of an individual redist package (that is
-      # provided by releaseInfo.version).
-      version.type = version;
-    };
-  };
 
   /**
     The option type of `HostCompiler`.

@@ -1,60 +1,50 @@
-# TODO(@connorbaker): Utility functions for brokenConditions/badPlatformsConditions.
 {
   cuda-lib,
   lib,
   upstreamable-lib,
 }:
 let
+  inherit (builtins) import readDir;
   inherit (cuda-lib.data) redistUrlPrefix;
   inherit (cuda-lib.utils)
     getLibPath
-    majorMinorPatch
-    majorMinorPatchBuild
-    mapPackageInfoRedistsToList
-    mkCudaVariant
     mkRedistUrl
     mkRelativePath
     mkTensorRTUrl
-    packageSatisfiesRedistRequirements
-    versionPolicyToNumComponents
-    versionPolicyToVersionFunction
     ;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets)
     attrNames
-    attrValues
     filterAttrs
-    genAttrs
+    foldlAttrs
+    hasAttr
     intersectAttrs
     mapAttrs
     mapAttrs'
-    mapAttrsToList
-    optionalAttrs
     removeAttrs
     ;
   inherit (lib.customisation) makeOverridable;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.licenses) nvidiaCudaRedist;
   inherit (lib.lists)
+    concatMap
+    elem
+    filter
     findFirst
-    flatten
-    groupBy'
+    head
     reverseList
+    unique
     ;
   inherit (lib.options) mkOption;
   inherit (lib.strings)
     concatStringsSep
     hasPrefix
     removeSuffix
-    replaceStrings
-    versionAtLeast
-    versionOlder
     ;
   inherit (lib.trivial)
     const
     flip
     functionArgs
-    id
     importJSON
     mapNullable
     pipe
@@ -90,74 +80,6 @@ in
   mkOptions = mapAttrs (const mkOption);
 
   /**
-    Function to map over the `packageInfo` elements of a `Redists`, returning a list of the results.
-
-    The function must accept an attribute set with the following attributes:
-
-    - cudaVariant: The CUDA variant of the package
-    - packageInfo: The package information
-    - packageName: The name of the package
-    - redistArch: The redist architecture of the package
-    - redistName: The name of the redistributable
-    - releaseInfo: The release information of the package
-    - version: The version of the manifest
-
-    # Type
-
-    ```
-    mapPackageInfoRedistsToList :: ({ cudaVariant :: CudaVariant
-                                    , packageInfo :: PackageInfo
-                                    , packageName :: PackageName
-                                    , redistArch :: RedistArch
-                                    , redistName :: RedistName
-                                    , releaseInfo :: ReleaseInfo
-                                    , version :: Version
-                                    } -> B)
-                                -> Redists
-                                -> List B
-    ```
-
-    # Arguments
-
-    f
-    : Function to apply
-
-    redists
-    : The `Redists` value to map over
-  */
-  mapPackageInfoRedistsToList =
-    f: redists:
-    flatten (
-      mapAttrsToList (
-        redistName: redistConfig:
-        mapAttrsToList (
-          version:
-          mapAttrsToList (
-            packageName:
-            { releaseInfo, packages }:
-            mapAttrsToList (
-              redistArch:
-              mapAttrsToList (
-                cudaVariant: packageInfo:
-                f {
-                  inherit
-                    cudaVariant
-                    packageInfo
-                    packageName
-                    redistArch
-                    redistName
-                    releaseInfo
-                    version
-                    ;
-                }
-              )
-            ) packages
-          )
-        ) redistConfig.versionedManifests
-      ) redists
-    );
-
-  /**
     Helper function to build a `redistConfig`.
 
     # Type
@@ -165,7 +87,6 @@ in
     ```
     mkRedistConfig :: { hasOverrides :: Bool
                       , path :: Path
-                      , versionPolicy :: VersionPolicy
                       }
                    -> RedistConfig
     ```
@@ -177,25 +98,20 @@ in
 
     path
     : The path to the redistributable directory
-
-    versionPolicy
-    : The version policy to use
   */
   mkRedistConfig =
     {
       hasOverrides,
       path,
-      versionPolicy,
     }:
     {
-      inherit versionPolicy;
       overrides =
         if hasOverrides then
           packagesFromDirectoryRecursive {
             # Function which loads the file as a Nix expression and ignores the second argument.
             # NOTE: We don't actually want to callPackage these functions at this point, so we use builtins.import
             # instead. We do, however, have to match the callPackage signature.
-            callPackage = path: _: builtins.import path;
+            callPackage = path: _: import path;
             directory = path + "/overrides";
           }
         else
@@ -203,7 +119,7 @@ in
       versionedManifests = mapAttrs' (filename: _: {
         name = removeSuffix ".json" filename;
         value = importJSON (path + "/versioned-manifests/${filename}");
-      }) (builtins.readDir (path + "/versioned-manifests"));
+      }) (readDir (path + "/versioned-manifests"));
     };
 
   /**
@@ -244,17 +160,20 @@ in
     # Type
 
     ```
-    mkRelativePath :: { packageName :: PackageName
+    mkRelativePath :: { cudaVariant :: CudaVariant
+                      , packageName :: PackageName
                       , redistArch :: RedistArch
                       , redistName :: RedistName
-                      , releaseInfo :: ReleaseInfo
-                      , cudaVariant :: CudaVariant
                       , relativePath :: NullOr NonEmptyStr
+                      , releaseInfo :: ReleaseInfo
                       }
                    -> String
     ```
 
     # Arguments
+
+    cudaVariant
+    : The CUDA variant of the package
 
     packageName
     : The name of the package
@@ -265,24 +184,20 @@ in
     redistName
     : The name of the redistributable
 
-    releaseInfo
-    : The release information of the package
-
-    cudaVariant
-    : The CUDA variant of the package
-
     relativePath
     : An optional relative path to the redistributable, defaults to null
+
+    releaseInfo
+    : The release information of the package
   */
   mkRelativePath =
     {
+      cudaVariant,
       packageName,
       redistArch,
       redistName,
-      releaseInfo,
-      cudaVariant,
       relativePath ? null,
-      ...
+      releaseInfo,
     }:
     assert assertMsg (redistName != "tensorrt")
       "mkRelativePath: tensorrt does not use standard naming conventions for relative paths; use mkTensorRTUrl";
@@ -330,29 +245,53 @@ in
     # Type
 
     ```
-    buildRedistPackage :: AttrSet -> FlattenedRedistsElem -> Package
+    buildRedistPackage :: { cudaVariant :: CudaVariant
+                          , finalCudaPackages :: Attrs
+                          , packageInfo :: PackageInfo
+                          , packageName :: PackageName
+                          , redistArch :: RedistArch
+                          , redistName :: RedistName
+                          , releaseInfo :: ReleaseInfo
+                          }
+                       -> Attrs
     ```
 
     # Arguments
 
-    final
+    cudaVariant
+    : The desired CUDA variant
+
+    finalCudaPackages
     : The fixed-point of the package set
 
-    flattenedRedistsElem
-    : The flattened `Redists` element to build
+    packageInfo
+    : The package information
+
+    packageName
+    : The name of the package
+
+    redistArch
+    : The redistributable architecture of the host
+
+    redistName
+    : The name of the redistributable package set
+
+    releaseInfo
+    : The release information
   */
   buildRedistPackage =
     let
-      redistBuilderFn = builtins.import ../redist-builder;
+      redistBuilderFn = import ../redist-builder;
       redistBuilderFnArgs = functionArgs redistBuilderFn;
     in
-    final:
-    flattenedRedistsElem@{
+    {
+      cudaVariant,
+      finalCudaPackages,
+      packageInfo,
       packageName,
+      redistArch,
       redistName,
       releaseInfo,
-      packageInfo,
-      ...
     }:
     let
       # Attribute set of functions which are callPackage-able and provide arguments for a package's overrideAttrs. The
@@ -360,21 +299,28 @@ in
 
       # These overrides contain the package-specific logic required to build or fixup a package constructed with the
       # redistributable builder.
-      overrideAttrsFnFn = final.config.redists.${redistName}.overrides.${packageName} or null;
+      overrideAttrsFnFn = finalCudaPackages.config.redists.${redistName}.overrides.${packageName} or null;
       overrideAttrsFnFnArgs = if overrideAttrsFnFn != null then functionArgs overrideAttrsFnFn else { };
 
       redistBuilderArgs = {
-        inherit (flattenedRedistsElem) packageInfo packageName releaseInfo;
-        libPath = getLibPath final.cudaMajorMinorPatchVersion packageInfo.features.cudaVersionsInLib;
+        inherit packageInfo packageName releaseInfo;
+        libPath = getLibPath finalCudaPackages.cudaMajorMinorPatchVersion packageInfo.features.cudaVersionsInLib;
         # The source is given by the tarball, which we unpack and use as a FOD.
-        src = final.pkgs.fetchzip {
+        src = finalCudaPackages.pkgs.fetchzip {
           url =
             if redistName == "tensorrt" then
               mkTensorRTUrl packageInfo.relativePath
             else
-              mkRedistUrl redistName (
-                mkRelativePath (flattenedRedistsElem // { inherit (packageInfo) relativePath; })
-              );
+              mkRedistUrl redistName (mkRelativePath {
+                inherit
+                  cudaVariant
+                  packageName
+                  redistArch
+                  redistName
+                  releaseInfo
+                  ;
+                inherit (packageInfo) relativePath;
+              });
           hash = packageInfo.recursiveHash;
         };
       };
@@ -387,7 +333,7 @@ in
         # Create a function which returns its argument -- but make it expect all the arguments we need!
         (setFunctionArgs (pkgs: pkgs))
         # Call our newly minted function with callPackage to get all the arguments we need.
-        (flip final.callPackage redistBuilderArgs)
+        (flip finalCudaPackages.callPackage redistBuilderArgs)
         # Remove the callPackage-provided attributes.
         (flip removeAttrs [
           "override"
@@ -423,6 +369,124 @@ in
       ];
     in
     package;
+
+  /**
+    Function to build redistributable packages.
+
+    # Type
+
+    ```
+    buildRedistPackages :: { desiredCudaVariant :: CudaVariant
+                           , finalCudaPackages :: Attrs
+                           , hostRedistArch :: RedistArch
+                           , manifest :: Manifest
+                           , redistName :: RedistName
+                           }
+                        -> Attrs
+    ```
+
+    # Arguments
+
+    desiredCudaVariant
+    : The desired CUDA variant
+
+    finalCudaPackages
+    : The fixed-point of the package set
+
+    hostRedistArch
+    : The redistributable architecture of the host
+
+    manifest
+    : The manifest to build packages from
+
+    redistName
+    : The name of the redistributable package set
+  */
+  buildRedistPackages =
+    {
+      desiredCudaVariant,
+      finalCudaPackages,
+      hostRedistArch,
+      manifest,
+      redistName,
+    }:
+    foldlAttrs (
+      acc:
+      # Package name
+      packageName:
+      # A release, which is a collection of the package for different architectures and CUDA versions, along with
+      # release information.
+      { packages, releaseInfo }:
+      let
+        # Names of redistributable architectures for the package which provide a release for the current CUDA version.
+        supportedRedistArchs = filter (
+          redistArch:
+          let
+            packageVariants = packages.${redistArch};
+          in
+          hasAttr "None" packageVariants || hasAttr desiredCudaVariant packageVariants
+        ) (attrNames packages);
+        supportedNixPlatforms = unique (concatMap cuda-lib.utils.getNixPlatforms supportedRedistArchs);
+
+        # NOTE: We must check for compatibility with the redistributable architecture, not the Nix platform,
+        #       because the redistributable architecture is able to disambiguate between aarch64-linux with and
+        #       without Jetson support (`linux-aarch64` and `linux-sbsa`, respectively).
+        nixPlatformIsSupported = elem hostRedistArch supportedRedistArchs;
+
+        # Choose the source release by default, if it exists.
+        # If it doesn't and our platform is supported, use the host redistributable architecture.
+        # Otherwise, use whatever is first in the list of supported redistributable architectures -- the package won't be valid
+        # on the host platform, but we will at least have an entry for it.
+        redistArch =
+          if hasAttr "source" packages then
+            "source"
+          else if nixPlatformIsSupported then
+            hostRedistArch
+          else
+            head supportedRedistArchs;
+        packageVariants = packages.${redistArch};
+
+        # Choose the version without a CUDA variant by default, if it exists.
+        cudaVariant = if hasAttr "None" packageVariants then "None" else desiredCudaVariant;
+        packageInfo = packageVariants.${cudaVariant};
+
+        package =
+          pipe
+            {
+              inherit
+                cudaVariant
+                finalCudaPackages
+                packageInfo
+                packageName
+                redistArch
+                redistName
+                releaseInfo
+                ;
+            }
+            [
+              # Use the package builder
+              cuda-lib.utils.buildRedistPackage
+              # Update meta with the list of supported platforms
+              (
+                pkg:
+                pkg.overrideAttrs (prevAttrs: {
+                  src = if nixPlatformIsSupported then prevAttrs.src else null;
+                  outputs = if nixPlatformIsSupported then prevAttrs.outputs else [ "out" ];
+                  meta = prevAttrs.meta // {
+                    platforms = supportedNixPlatforms;
+                  };
+                })
+              )
+            ];
+      in
+      if supportedRedistArchs == [ ] then
+        acc
+      else
+        acc
+        // {
+          ${packageName} = package;
+        }
+    ) { } manifest;
 
   /**
     Returns the path to the CUDA library directory for a given version or null if no such version exists.
@@ -600,88 +664,6 @@ in
   mkCudaVariant = version: "cuda${major version}";
 
   /**
-    Generates a filtered `Redists` given a `MajorMinorPatchVersion` for CUDA.
-
-    # Type
-
-    ```
-    mkFilteredRedists :: MajorMinorPatchVersion -> Redists -> Redists
-    ```
-
-    # Arguments
-
-    cudaMajorMinorPatchVersion
-    : The CUDA version to filter by
-
-    redists
-    : The `Redists` value to filter
-  */
-  mkFilteredRedists =
-    cudaMajorMinorPatchVersion: redists:
-    # NOTE: Here's what's happening with this particular mess of code:
-    #       Working from the inside out, at each level we're filter the attribute set, removing packages which
-    #       won't work with the current CUDA version.
-    #       One level up, we're using mapAttrs to set the values of the attribute set equal to the newly filtered
-    #       attribute set. We then pass this newly mapAttrs-ed attribute set to filterAttrs again, removing any
-    #       empty attribute sets.
-    filterAttrs (_: redistConfig: { } != redistConfig.versionedManifests) (
-      mapAttrs (
-        redistName: redistConfig:
-        redistConfig
-        // {
-          versionedManifests = filterAttrs (_: manifest: { } != manifest) (
-            mapAttrs (
-              version: manifest:
-              filterAttrs (_: release: { } != release.packages) (
-                mapAttrs (
-                  packageName: release:
-                  release
-                  // {
-                    packages = filterAttrs (_: packageVariants: { } != packageVariants) (
-                      mapAttrs (
-                        redistArch: packageVariants:
-                        filterAttrs (
-                          cudaVariant: packageInfo:
-                          packageSatisfiesRedistRequirements cudaMajorMinorPatchVersion {
-                            inherit
-                              cudaVariant
-                              packageInfo
-                              packageName
-                              redistArch
-                              redistName
-                              version
-                              ;
-                            inherit (release) releaseInfo;
-                          }
-                        ) packageVariants
-                      ) release.packages
-                    );
-                  }
-                ) manifest
-              )
-            ) redistConfig.versionedManifests
-          );
-        }
-      ) redists
-    );
-
-  /**
-    Function to flatten a `Redists` value into a list of `FlattenedRedistsElem`.
-
-    # Type
-
-    ```
-    mkFlattenedRedists :: Redists -> List FlattenedRedistsElem
-    ```
-
-    # Arguments
-
-    redists
-    : The `Redists` to flatten
-  */
-  mkFlattenedRedists = mapPackageInfoRedistsToList id;
-
-  /**
     Utility function to generate a set of badPlatformsConditions for missing packages.
 
     Used to mark a package as unsupported if any of its required packages are missing (null).
@@ -735,337 +717,4 @@ in
         }
       ))
     ];
-
-  /**
-    Helper function to reduce the number of attribute sets we need to traverse to create all the package sets.
-    Since the CUDA redistributables make up the largest number of packages in a `Redists` value, we can save time by
-    flattening the `Redists` which does not contain CUDA redistributables, and reusing it for each version of CUDA.
-    Additionally, we flatten only the CUDA redistributables for the version of CUDA we're currently processing.
-
-    # Type
-
-    ```
-    mkTrimmedRedists :: MajorMinorPatchVersion -> Redists -> Redists
-    ```
-
-    # Arguments
-
-    cudaMajorMinorPatchVersion
-    : The CUDA version to filter by
-
-    redists
-    : The `Redists` to filter
-  */
-  mkTrimmedRedists =
-    cudaMajorMinorPatchVersion: redists:
-    redists
-    // optionalAttrs (redists ? cuda) {
-      cuda = redists.cuda // {
-        versionedManifests =
-          optionalAttrs (redists.cuda.versionedManifests ? ${cudaMajorMinorPatchVersion})
-            { ${cudaMajorMinorPatchVersion} = redists.cuda.versionedManifests.${cudaMajorMinorPatchVersion}; };
-      };
-    };
-
-  /**
-    Function to generate a versioned package name.
-
-    Expects a redistName, packageName, and version.
-
-    NOTE: version should come from releaseInfo when taking arguments from a flattenedRedistsElem, as the top-level
-    version attribute is the version of the manifest.
-
-    # Type
-
-    ```
-    mkVersionedPackageName :: { packageName :: PackageName
-                              , redistName :: RedistName
-                              , version :: Version
-                              , versionPolicy :: VersionPolicy
-                              }
-                           -> PackageName
-    ```
-
-    # Arguments
-
-    packageName
-    : The name of the package
-
-    redistName
-    : The name of the redistributable
-
-    version
-    : The version of the package
-
-    versionPolicy
-    : The version policy to use
-  */
-  mkVersionedPackageName =
-    {
-      packageName,
-      redistName,
-      version,
-      versionPolicy,
-    }:
-    if redistName == "cuda" then
-      # CUDA redistributables don't have versioned package names.
-      packageName
-    else
-      # Everything else does.
-      pipe version [
-        (versionPolicyToVersionFunction versionPolicy)
-        # Drop dots and replace them with underscores in the version.
-        (replaceStrings [ "." ] [ "_" ])
-        # Append the version to the package name.
-        (version: "${packageName}_${version}")
-      ];
-
-  /**
-    Filters a `VersionedManifests` attribute set by a version policy, keeping only the latest version of each manifest,
-    as determined by the version policy.
-
-    # Type
-
-    ```
-    newestVersionedManifestsByVersionPolicy :: VersionPolicy -> VersionedManifests -> VersionedManifests
-    ```
-
-    # Arguments
-
-    versionPolicy
-    : The version policy to use
-
-    versionedManifests
-    : The `VersionedManifests` to filter
-  */
-  newestVersionedManifestsByVersionPolicy =
-    versionPolicy:
-    let
-      versionFunction = versionPolicyToVersionFunction versionPolicy;
-    in
-    versionedManifests:
-    let
-      newestVersionsByVersionPolicy = groupBy' (
-        a: b: if versionOlder a b then b else a
-      ) "0.0.0.0" versionFunction (attrNames versionedManifests);
-    in
-    if versionedManifests == { } then
-      { }
-    else
-      genAttrs (attrValues newestVersionsByVersionPolicy) (version: versionedManifests.${version});
-
-  /**
-    Function to determine if a package satisfies the redistributable requirements for a given redistributable.
-    Expects a cudaMajorMinorPatchVersion and a flattenedRedistsElem.
-    Returns an attribute set of conditions, which when any are true, indicate the package does not satisfy a particular
-    condition.
-
-    # Type
-
-    ```
-    packageSatisfiesRedistRequirements :: String -> FlattenedRedistsElem -> Bool
-    ```
-
-    # Arguments
-
-    cudaMajorMinorPatchVersion
-    : The CUDA version to filter by
-
-    flattenedRedistsElem
-    : The element to check
-  */
-  packageSatisfiesRedistRequirements =
-    cudaMajorMinorPatchVersion:
-    {
-      cudaVariant,
-      packageInfo,
-      redistArch,
-      redistName,
-      version,
-      ...
-    }:
-    let
-      inherit (packageInfo.features) cudaVersionsInLib;
-
-      # One of the subdirectories of the lib directory contains a supported version for our version of CUDA.
-      # This is typically found with older versions of redistributables which don't use separate tarballs for each
-      # supported CUDA version.
-      hasSupportedCudaVersionInLib = (getLibPath cudaMajorMinorPatchVersion cudaVersionsInLib) != null;
-
-      # There is a variant for the desired CUDA version.
-      isDesiredCudaVariant = cudaVariant == (mkCudaVariant cudaMajorMinorPatchVersion);
-
-      # Helpers
-      cudaOlder = versionOlder cudaMajorMinorPatchVersion;
-      cudaAtLeast = versionAtLeast cudaMajorMinorPatchVersion;
-
-      # Default value for packages which don't specify some policy.
-      default = isDesiredCudaVariant || hasSupportedCudaVersionInLib;
-    in
-    # Source packages are built on all platforms.
-    # NOTE: Source packages are responsible for ensuring they depend on the correct version of their dependencies
-    #       -- they may not be the default version available in the package set!
-    if redistArch == "source" then
-      true
-
-    # CUBLASMP: Only packaged to support redistributables for CUDA 11.4 and later.
-    # https://docs.nvidia.com/cuda/cublasmp/getting_started/index.html
-    else if redistName == "cublasmp" then
-      cudaAtLeast "11.4" && isDesiredCudaVariant
-
-    # CUDA: None of the CUDA redistributables have CUDA variants, but we only need to check that the release
-    # version matches the CUDA version we want.
-    else if redistName == "cuda" then
-      version == cudaMajorMinorPatchVersion
-
-    # CUDNN: Since cuDNN 8.5, it is possible to use the dynamic library for a CUDA release with any CUDA version
-    # in that major release series. For example, the cuDNN 8.5 dynamic library for CUDA 11.0 can be used with
-    # any CUDA 11.x release. (This functionality is not present for the CUDA 10.2 releases.)
-    # As such, it is enough that the cuda variant matches to accept the package.
-    else if redistName == "cudnn" then
-      # CUDNN requires libcublasLt.so, which was introduced with CUDA 10.1, so we don't support CUDA 10.0.
-      cudaAtLeast "10.1" && isDesiredCudaVariant
-
-    # TODO: Create constraint.
-    else if redistName == "cudss" then
-      default
-
-    # CUQUANTUM: Only available for CUDA 11.4 and later.
-    else if redistName == "cuquantum" then
-      # Releases prior to 23.03 are only compatible with CUDA 11 -- they look for libnames with
-      # a .11 suffix.
-      # They also don't provide CUDA versions in lib or cuda variants.
-      if versionOlder version "23.03.0" then
-        cudaAtLeast "11.4" && cudaOlder "12.0"
-
-      # Releases including and after 23.03 provide CUDA versions in lib or cuda variants.
-      else
-        isDesiredCudaVariant || hasSupportedCudaVersionInLib
-
-    # TODO: Create constraint.
-    else if redistName == "cusolvermp" then
-      default
-
-    # CUSPARSELT:
-    # Versions prior to 0.5.0 support CUDA 11.x (which we restrict to 11.4 and later).
-    # Versions including and after 0.5.0 support only CUDA 12.0.
-    # https://docs.nvidia.com/cuda/cusparselt/release_notes.html
-    else if redistName == "cusparselt" then
-      if versionAtLeast version "0.5.0" then
-        cudaAtLeast "12.0"
-      else
-        cudaAtLeast "11.4" && cudaOlder "12.0"
-
-    # CUTENSOR: Instead of providing CUDA variants, cuTensor provides multiple versions of the library nested
-    # in the lib directory. So long as one of the versions in cudaVersionsInLib is a prefix of the current CUDA
-    # version, we accept the package. We should have a more stringent version check, but no one has written
-    # a sidecar file mapping releases to supported CUDA versions.
-    else if redistName == "cutensor" then
-      hasSupportedCudaVersionInLib
-
-    # TODO: Create constraint.
-    else if redistName == "nppplus" then
-      default
-
-    # TODO: Create constraint.
-    else if redistName == "nvidia-driver" then
-      default
-
-    # TODO: Create constraint.
-    else if redistName == "nvjpeg2000" then
-      default
-
-    # TODO: Create constraint.
-    else if redistName == "nvpl" then
-      default
-
-    # TODO: Create constraint.
-    else if redistName == "nvtiff" then
-      default
-
-    # TODO: Create constraint.
-    else if redistName == "tensorrt" then
-      default
-
-    # NOTE: We must be total.
-    else
-      builtins.throw "Unsupported NVIDIA redistributable: ${redistName}";
-
-  /**
-    Returns true if a version policy is at least as specific (has at least as many components) as another version
-    policy.
-
-    # Type
-
-    ```
-    versionPolicyAtLeast :: VersionPolicy -> VersionPolicy -> Bool
-    ```
-
-    # Arguments
-
-    versionPolicy1
-    : The first version policy
-
-    versionPolicy2
-    : The second version policy
-  */
-  versionPolicyAtLeast =
-    versionPolicy1: versionPolicy2:
-    versionPolicyToNumComponents versionPolicy1 >= versionPolicyToNumComponents versionPolicy2;
-
-  /**
-    Maps a `VersionPolicy` to the number of components in the version.
-
-    # Type
-
-    ```
-    versionPolicyToNumComponents :: VersionPolicy -> Natural
-    ```
-
-    # Arguments
-
-    versionPolicy
-    : The version policy
-  */
-  versionPolicyToNumComponents =
-    versionPolicy:
-    if versionPolicy == "major" then
-      1
-    else if versionPolicy == "minor" then
-      2
-    else if versionPolicy == "patch" then
-      3
-    else if versionPolicy == "build" then
-      4
-    else
-      builtins.throw "Unsupported version policy: ${versionPolicy}";
-
-  /**
-    Function to generate a version function from a version policy.
-
-    Expects a version policy and returns a version function.
-
-    # Type
-
-    ```
-    versionPolicyToVersionFunction :: VersionPolicy -> String -> Version
-    ```
-
-    # Arguments
-
-    versionPolicy
-    : The version policy
-  */
-  versionPolicyToVersionFunction =
-    versionPolicy:
-    if versionPolicy == "major" then
-      major
-    else if versionPolicy == "minor" then
-      majorMinor
-    else if versionPolicy == "patch" then
-      majorMinorPatch
-    else if versionPolicy == "build" then
-      majorMinorPatchBuild
-    else
-      builtins.throw "Unsupported version policy: ${versionPolicy}";
 }

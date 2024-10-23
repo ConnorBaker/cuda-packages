@@ -1,8 +1,7 @@
 { cuda-lib, ... }:
 {
   config.redists.cusparselt = cuda-lib.utils.mkRedistConfig {
-    hasOverrides = false;
+    hasOverrides = true;
     path = ./.;
-    versionPolicy = "minor";
   };
 }

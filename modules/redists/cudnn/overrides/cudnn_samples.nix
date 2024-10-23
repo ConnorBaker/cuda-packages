@@ -2,8 +2,7 @@
   cmake,
   cuda_cudart,
   cuda_nvcc,
-  cuda-lib,
-  cudaPackages,
+  cudnn,
   lib,
 }:
 let
@@ -11,13 +10,6 @@ let
 in
 prevAttrs:
 let
-  desiredCudnnName = cuda-lib.utils.mkVersionedPackageName {
-    packageName = "cudnn";
-    redistName = "cudnn";
-    inherit (prevAttrs) version;
-    versionPolicy = "minor";
-  };
-  desiredCudnn = cudaPackages.${desiredCudnnName} or null;
   cudnnSamplesMajorVersion = major prevAttrs.version;
 in
 {
@@ -31,18 +23,13 @@ in
       true;
   };
 
-  badPlatformsConditions =
-    prevAttrs.badPlatformsConditions
-    // cuda-lib.utils.mkMissingPackagesBadPlatformsConditions {
-      ${desiredCudnnName} = desiredCudnn;
-    };
-
   nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
     cmake
     cuda_nvcc
   ];
+
   buildInputs = prevAttrs.buildInputs or [ ] ++ [
     cuda_cudart
-    desiredCudnn
+    cudnn
   ];
 }

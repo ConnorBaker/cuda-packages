@@ -2,9 +2,7 @@
 let
   inherit (builtins) import;
   inherit (lib.fixedPoints) makeExtensible;
-  upstreamable-lib = import ../upstreamable-lib {
-    inherit lib;
-  };
+  upstreamable-lib = import ../upstreamable-lib { inherit lib; };
 in
 makeExtensible (final: {
   data = import ./data.nix;

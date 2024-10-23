@@ -5,7 +5,7 @@
   cudnn,
   flags,
   lib,
-  libcudla,
+  libcudla ? null, # only for Jetson
   patchelf,
   stdenv,
 }:
