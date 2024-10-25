@@ -49,7 +49,11 @@ let
             __structuredAttrs = mkDerivationPrevAttrs.__structuredAttrs or true;
             strictDeps = mkDerivationPrevAttrs.strictDeps or true;
             # Name should be prefixed by cudaNamePrefix to create more descriptive path names.
-            name = "${cudaNamePrefix}-${mkDerivationPrevAttrs.pname}-${mkDerivationPrevAttrs.version}";
+            name =
+              if mkDerivationPrevAttrs ? pname && mkDerivationPrevAttrs ? version then
+                "${cudaNamePrefix}-${mkDerivationPrevAttrs.pname}-${mkDerivationPrevAttrs.version}"
+              else
+                "${cudaNamePrefix}-${mkDerivationPrevAttrs.name}";
           });
       }
     );

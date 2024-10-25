@@ -141,7 +141,7 @@ buildPythonPackage {
             ''
               set -e
               export HOME="$(mktemp --directory)"
-              trap 'rm -rf -- "''${HOME@Q}"' EXIT
+              trap "rm -rf -- ''${HOME@Q}" EXIT
             ''
             # Run the tests.
             + ''

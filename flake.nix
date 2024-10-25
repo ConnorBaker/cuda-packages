@@ -21,7 +21,14 @@
   outputs =
     inputs:
     let
-      inherit (inputs.nixpkgs.lib) evalModules optionalAttrs;
+      inherit (inputs.nixpkgs.lib.attrsets)
+        mapAttrs
+        optionalAttrs
+        recurseIntoAttrs
+        ;
+      inherit (inputs.nixpkgs.lib.modules)
+        evalModules
+        ;
       inherit (inputs.flake-parts.lib) mkFlake;
 
       cuda-lib = import ./cuda-lib { inherit (inputs.nixpkgs) lib; };
@@ -61,73 +68,71 @@
       };
 
       perSystem =
-        { config, system, ... }:
+        {
+          config,
+          pkgs,
+          system,
+          ...
+        }:
         let
-          adaPkgs = import inputs.nixpkgs {
-            inherit system;
-            # Unfree needs to be set in the initial config attribute set, even though we override it in our overlay.
-            # TODO: Are config attributes not re-evaluated when the overlay changes? Or is it just the Nix flake's CLI
-            # which warns when an overlay enables allowUnfree and the first pkgs instantiation doesn't?
-            config = {
-              allowUnfree = true;
-              cudaSupport = true;
-              cudaCapabilities = [ "8.9" ];
-            };
-            overlays = [ (mkOverlay { capabilities = [ "8.9" ]; }) ];
-          };
-          orinPkgs = adaPkgs.extend (mkOverlay {
-            capabilities = [ "8.7" ];
-          });
-          xavierPkgs = adaPkgs.extend (mkOverlay {
-            capabilities = [ "7.2" ];
-          });
-
-          ourPkgs =
+          configs =
             {
-              inherit adaPkgs;
+              ada = "8.9";
             }
             // optionalAttrs (system == "aarch64-linux") {
-              inherit orinPkgs xavierPkgs;
+              orin = "8.7";
+              xavier = "7.2";
             };
 
-          ourCudaPackages =
-            {
-              recurseForDerivations = true;
-              adaCudaPackages = {
-                recurseForDerivations = true;
-                inherit (adaPkgs) cudaPackages_11 cudaPackages_12;
+          ourPkgs = mapAttrs (
+            _: capability:
+            import inputs.nixpkgs {
+              inherit system;
+              config = {
+                allowUnfree = true;
+                cudaSupport = true;
+                cudaCapabilities = [ capability ];
               };
+              overlays = [
+                (mkOverlay { capabilities = [ capability ]; })
+              ];
             }
-            // optionalAttrs (system == "aarch64-linux") {
-              orinCudaPackages = {
-                recurseForDerivations = true;
-                inherit (orinPkgs) cudaPackages_11 cudaPackages_12;
-              };
-              xavierCudaPackages = {
-                recurseForDerivations = true;
-                inherit (xavierPkgs) cudaPackages_11 cudaPackages_12;
-              };
-            };
+          ) configs;
+
+          ourCudaPackages = mapAttrs (name: _: {
+            inherit (ourPkgs.${name}) cudaPackages_11 cudaPackages_12;
+          }) configs;
         in
         {
-          # Make upstream's cudaPackages the default.
-          _module.args = {
-            pkgs = adaPkgs;
-          };
+          _module.args.pkgs = ourPkgs.ada;
 
-          checks = flattenDrvTree { attrs = ourCudaPackages; };
+          checks = flattenDrvTree (recurseIntoAttrs (mapAttrs (_: recurseIntoAttrs) ourCudaPackages));
 
           devShells = {
             inherit (config.packages) cuda-redist;
             default = config.devShells.cuda-redist;
           };
 
-          legacyPackages = ourPkgs;
+          legacyPackages = ourPkgs // {
+            # Paths must be relative to the flake root.
+            adaCudaPackagesDrvAttrEval = map (
+              attrPath:
+              cuda-lib.utils.unsafeEvalFlakeDrv ./. (
+                [
+                  "legacyPackages"
+                  system
+                  "ada"
+                  "cudaPackages"
+                ]
+                ++ attrPath
+              )
+            ) (cuda-lib.utils.drvAttrPaths ourPkgs.ada.cudaPackages);
+          };
 
           packages =
             let
               # Use our package set to ensure the CUDA dependencies we pull in come from our repo and not upstream.
-              inherit (adaPkgs.python311Packages) callPackage;
+              inherit (pkgs.python311Packages) callPackage;
             in
             # Actual packages
             {
