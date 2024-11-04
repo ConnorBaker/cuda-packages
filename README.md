@@ -12,3 +12,15 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 - `autoAddDriverRunpath` for CMake projects is a crutch -- the correct fix is to have the CMake project link against `CUDA::cudart`.
 - `cudaStdenv` sets `strictDeps=true` and `__structuredAttrs=true` _by default_. Packages must have a good reason to opt out (e.g., Python packaging has not been updated yet to support structured attributes: <https://github.com/NixOS/nixpkgs/pull/347194>).
 - `cudaStdenv` uses a name prefix for more descriptive store path names.
+
+## Todo
+
+- A bunch of stuff (including docs)
+- Packages:
+    - https://developer.download.nvidia.com/compute/nvcomp/redist/
+    - https://developer.download.nvidia.com/compute/redist/nvshmem/
+    - https://developer.download.nvidia.com/compute/nvidia-hpc-benchmarks/redist/
+    - https://developer.nvidia.com/nvidia-hpc-sdk-249-downloads
+    - https://github.com/NVIDIA/gdrcopy
+    - https://github.com/NVIDIA/nvImageCodec
+    - https://developer.download.nvidia.com/compute/nvidia-driver/redist/ (for use with nixGL?)

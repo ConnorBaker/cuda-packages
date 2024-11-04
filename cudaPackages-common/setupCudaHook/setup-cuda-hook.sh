@@ -59,13 +59,13 @@ setupCUDAEnvironmentVariables() {
   done
 
   # Set CUDAHOSTCXX if unset or null
-  # https://cmake.org/cmake/help/latest/envvar/CUDAHOSTCXX.html#cudahostcxx
+  # https://cmake.org/cmake/help/latest/envvar/CUDAHOSTCXX.html
   if [[ -z ${CUDAHOSTCXX:-} ]]; then
     export CUDAHOSTCXX="@ccFullPath@"
   fi
 
   # Set CUDAARCHS if unset or null
-  # https://cmake.org/cmake/help/latest/envvar/CUDAARCHS.html#envvar:CUDAARCHS
+  # https://cmake.org/cmake/help/latest/envvar/CUDAARCHS.html
   if [[ -z ${CUDAARCHS:-} ]]; then
     export CUDAARCHS="@cudaArchs@"
   fi
