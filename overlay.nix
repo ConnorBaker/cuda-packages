@@ -31,10 +31,12 @@ let
     ;
   inherit (final.lib.customisation) makeScope;
   inherit (final.lib.filesystem) packagesFromDirectoryRecursive;
+  inherit (final.lib.fixedPoints) composeManyExtensions extends;
   inherit (final.lib.lists)
     foldl'
     head
     length
+    optionals
     ;
   inherit (final.lib.strings)
     versionAtLeast
@@ -71,83 +73,110 @@ let
 
       # Packaging-specific utilities.
       desiredCudaVariant = mkCudaVariant cudaMajorMinorPatchVersion;
-    in
-    makeScope final.newScope (
-      finalCudaPackages:
-      recurseIntoAttrs {
-        cuda-lib = dontRecurseIntoAttrs cuda-lib;
 
-        cudaPackages = dontRecurseIntoAttrs finalCudaPackages // {
-          __attrsFailEvaluation = true;
-        };
+      cudaPackagesFun =
+        finalCudaPackages:
+        recurseIntoAttrs {
+          cuda-lib = dontRecurseIntoAttrs cuda-lib;
 
-        pkgs = dontRecurseIntoAttrs final // {
-          __attrsFailEvaluation = true;
-        };
+          cudaPackages = dontRecurseIntoAttrs finalCudaPackages // {
+            __attrsFailEvaluation = true;
+          };
 
-        config = dontRecurseIntoAttrs config // {
-          __attrsFailEvaluation = true;
-        };
+          pkgs = dontRecurseIntoAttrs final // {
+            __attrsFailEvaluation = true;
+          };
 
-        # CUDA versions
-        inherit cudaMajorMinorPatchVersion cudaMajorMinorVersion cudaMajorVersion;
-        cudaVersion = warn "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorVersion;
+          config = dontRecurseIntoAttrs config // {
+            __attrsFailEvaluation = true;
+          };
 
-        # CUDA version comparison utilities
-        inherit
-          cudaAtLeast
-          cudaAtMost
-          cudaBoundedExclusive
-          cudaBoundedInclusive
-          cudaNewer
-          cudaOlder
-          ;
+          # CUDA versions
+          inherit cudaMajorMinorPatchVersion cudaMajorMinorVersion cudaMajorVersion;
+          cudaVersion = warn "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorVersion;
 
-        # Alilases
-        cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
-        cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
-      }
-      # Redistributable packages
-      // foldlAttrs (
-        acc: redistName: redistConfig:
-        let
-          inherit (redistConfig) versionedManifests;
-          manifestVersions =
-            if redistName == "cuda" then [ cudaMajorMinorPatchVersion ] else attrNames versionedManifests;
-          manifestVersion = head manifestVersions;
-        in
-        throwIf (
-          length manifestVersions != 1
-        ) "Expected exactly one version for ${redistName} manifests (found ${toJSON manifestVersions})" acc
-        // buildRedistPackages {
+          # CUDA version comparison utilities
           inherit
-            desiredCudaVariant
-            finalCudaPackages
-            hostRedistArch
-            redistName
+            cudaAtLeast
+            cudaAtMost
+            cudaBoundedExclusive
+            cudaBoundedInclusive
+            cudaNewer
+            cudaOlder
             ;
-          manifest = versionedManifests.${manifestVersion};
-        }
-      ) { } config.redists
-      # cudaPackagesCommon
-      // packagesFromDirectoryRecursive {
-        inherit (finalCudaPackages) callPackage;
-        directory = ./cudaPackages-common;
-      }
-      # cudaPackages_11-jetson
-      // optionalAttrs (isCuda11 && isJetsonBuild) (packagesFromDirectoryRecursive {
-        inherit (finalCudaPackages) callPackage;
-        directory = ./cudaPackages_11-jetson;
-      })
-      # cudaPackages_12
-      // optionalAttrs isCuda12 (packagesFromDirectoryRecursive {
-        inherit (finalCudaPackages) callPackage;
-        directory = ./cudaPackages_12;
-      })
-    );
+        };
+
+      extensions =
+        [
+          # Aliases
+          (finalCudaPackages: _: {
+            cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
+            cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
+          })
+          # Redistributable packages
+          (
+            finalCudaPackages: _:
+            foldlAttrs (
+              acc: redistName: redistConfig:
+              let
+                inherit (redistConfig) versionedManifests;
+                manifestVersions =
+                  if redistName == "cuda" then [ cudaMajorMinorPatchVersion ] else attrNames versionedManifests;
+                manifestVersion = head manifestVersions;
+              in
+              throwIf (
+                length manifestVersions != 1
+              ) "Expected exactly one version for ${redistName} manifests (found ${toJSON manifestVersions})" acc
+              // buildRedistPackages {
+                inherit
+                  desiredCudaVariant
+                  finalCudaPackages
+                  hostRedistArch
+                  redistName
+                  ;
+                manifest = versionedManifests.${manifestVersion};
+              }
+            ) { } config.redists
+          )
+          # cudaPackagesCommon
+          (
+            finalCudaPackages: _:
+            packagesFromDirectoryRecursive {
+              inherit (finalCudaPackages) callPackage;
+              directory = ./cudaPackages-common;
+            }
+          )
+        ]
+        # cudaPackages_11-jetson
+        ++ optionals (isCuda11 && isJetsonBuild) [
+          (
+            finalCudaPackages: _:
+            packagesFromDirectoryRecursive {
+              inherit (finalCudaPackages) callPackage;
+              directory = ./cudaPackages_11-jetson;
+            }
+          )
+
+        ]
+        # cudaPackages_12
+        ++ optionals isCuda12 [
+          (
+            finalCudaPackages: _:
+            packagesFromDirectoryRecursive {
+              inherit (finalCudaPackages) callPackage;
+              directory = ./cudaPackages_12;
+            }
+          )
+        ]
+        ++ final.cudaPackagesExtensions;
+    in
+    makeScope final.newScope (extends (composeManyExtensions extensions) cudaPackagesFun);
 in
 {
+  # For changing the manifests available.
   cudaModules = [ ./modules ];
+  # For adding packages in an ad-hoc manner.
+  cudaPackagesExtensions = [ ];
 
   # Our package sets, configured for the compute capabilities in config.
   cudaPackages_11 = packageSetBuilder "11.8.0";
