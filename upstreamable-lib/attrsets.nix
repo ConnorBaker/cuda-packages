@@ -56,7 +56,7 @@ in
     {
       includeCond,
       recurseCond,
-      trace ? true,
+      trace ? false,
     }:
     let
       maybeTrace = traceIf trace;

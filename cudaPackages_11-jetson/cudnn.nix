@@ -3,7 +3,6 @@
 {
   backendStdenv,
   callPackage,
-  config,
   cuda-lib,
   cudaMajorMinorVersion,
   flags,

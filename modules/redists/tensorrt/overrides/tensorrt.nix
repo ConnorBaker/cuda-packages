@@ -1,5 +1,4 @@
 {
-  config,
   cuda-lib,
   cuda_cudart,
   cudnn,

@@ -7,8 +7,7 @@
 let
   inherit (cuda-lib.utils) mkOptions;
   inherit (lib.attrsets) attrNames;
-  inherit (lib.lists) concatMap intersectLists optionals;
-  inherit (lib.types) listOf nonEmptyListOf;
+  inherit (lib.types) nonEmptyListOf;
 in
 {
   imports = [

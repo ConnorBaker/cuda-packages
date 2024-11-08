@@ -22,15 +22,11 @@
     inputs:
     let
       inherit (inputs.nixpkgs.lib.attrsets)
-        cartesianProduct
         genAttrs
         getAttrs
-        mapCartesianProduct
         recurseIntoAttrs
-        recursiveUpdate
         ;
-      inherit (inputs.nixpkgs.lib.lists) foldl' optionals;
-      inherit (inputs.nixpkgs.lib.modules) evalModules;
+      inherit (inputs.nixpkgs.lib.lists) optionals;
       inherit (inputs.flake-parts.lib) mkFlake;
 
       cuda-lib = import ./cuda-lib { inherit (inputs.nixpkgs) lib; };

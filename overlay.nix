@@ -46,7 +46,7 @@ let
     ;
   inherit (final.lib.versions) major majorMinor;
 
-  hasJetsonTarget = getJetsonTargets config.data.gpus final.config.cudaCapabilities != [];
+  hasJetsonTarget = (getJetsonTargets config.data.gpus (final.config.cudaCapabilities or [ ])) != [ ];
 
   hostRedistArch = getRedistArch hasJetsonTarget final.stdenv.hostPlatform.system;
 
@@ -149,7 +149,7 @@ in
 {
   cudaModules = [ ./modules ];
 
-  # # Our package sets, configured for the compute capabilities in config.
+  # Our package sets, configured for the compute capabilities in config.
   cudaPackages_11 = packageSetBuilder "11.8.0";
   cudaPackages_12 = packageSetBuilder "12.6.2";
   cudaPackages = final.cudaPackages_12;
