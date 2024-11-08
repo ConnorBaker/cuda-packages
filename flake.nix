@@ -22,35 +22,19 @@
     inputs:
     let
       inherit (inputs.nixpkgs.lib.attrsets)
-        mapAttrs
-        optionalAttrs
+        cartesianProduct
+        genAttrs
+        getAttrs
+        mapCartesianProduct
         recurseIntoAttrs
+        recursiveUpdate
         ;
-      inherit (inputs.nixpkgs.lib.modules)
-        evalModules
-        ;
+      inherit (inputs.nixpkgs.lib.lists) foldl' optionals;
+      inherit (inputs.nixpkgs.lib.modules) evalModules;
       inherit (inputs.flake-parts.lib) mkFlake;
 
       cuda-lib = import ./cuda-lib { inherit (inputs.nixpkgs) lib; };
       inherit (cuda-lib.utils) flattenDrvTree;
-
-      # Utility function
-      mkOverlay =
-        {
-          capabilities,
-          hostCompiler ? "gcc",
-        }:
-        (evalModules {
-          modules = [
-            {
-              cuda = {
-                inherit capabilities hostCompiler;
-                forwardCompat = false;
-              };
-            }
-            ./modules
-          ];
-        }).config.overlay;
     in
     mkFlake { inherit inputs; } {
       systems = [
@@ -64,7 +48,8 @@
       ];
 
       flake = {
-        inherit cuda-lib mkOverlay;
+        inherit cuda-lib;
+        overlays.default = import ./overlay.nix;
       };
 
       perSystem =
@@ -74,71 +59,57 @@
           system,
           ...
         }:
-        let
-          configs =
-            {
-              ada = "8.9";
-            }
-            // optionalAttrs (system == "aarch64-linux") {
-              orin = "8.7";
-              xavier = "7.2";
-            };
-
-          ourPkgs = mapAttrs (
-            _: capability:
-            import inputs.nixpkgs {
-              inherit system;
-              config = {
-                allowUnfree = true;
-                cudaSupport = true;
-                cudaCapabilities = [ capability ];
-              };
-              overlays = [
-                (mkOverlay { capabilities = [ capability ]; })
-              ];
-            }
-          ) configs;
-
-          ourCudaPackages = mapAttrs (name: _: {
-            inherit (ourPkgs.${name}) cudaPackages_11 cudaPackages_12;
-          }) configs;
-        in
         {
-          _module.args.pkgs = ourPkgs.ada;
+          _module.args.pkgs = import inputs.nixpkgs {
+            inherit system;
+            # TODO: Due to the way Nixpkgs is built in stages, the config attribute set is not re-evaluated.
+            # This is problematic for us because we use it to signal the CUDA capabilities to the overlay.
+            # The only way I've found to combat this is to use pkgs.extend, which is not ideal.
+            # TODO: This also means that Nixpkgs needs to be imported *with* the correct config attribute set
+            # from the start, unless they're willing to re-import Nixpkgs with the correct config.
+            config = {
+              allowUnfree = true;
+              cudaSupport = true;
+            };
+            overlays = [ inputs.self.overlays.default ];
+          };
 
-          checks = flattenDrvTree (recurseIntoAttrs (mapAttrs (_: recurseIntoAttrs) ourCudaPackages));
+          checks =
+            let
+              tree =
+                genAttrs
+                  (
+                    [
+                      "sm_89"
+                    ]
+                    ++ optionals (pkgs.stdenv.hostPlatform.system == "aarch64-linux") [
+                      "sm_72"
+                      "sm_87"
+                    ]
+                  )
+                  (
+                    realArchitecture:
+                    recurseIntoAttrs (
+                      getAttrs [
+                        "cudaPackages_11"
+                        "cudaPackages_12"
+                      ] pkgs.pkgsCuda.${realArchitecture}
+                    )
+                  );
+            in
+            flattenDrvTree (recurseIntoAttrs tree);
 
           devShells = {
             inherit (config.packages) cuda-redist;
             default = config.devShells.cuda-redist;
           };
 
-          legacyPackages = ourPkgs // {
-            # Paths must be relative to the flake root.
-            adaCudaPackagesDrvAttrEval = map (
-              attrPath:
-              cuda-lib.utils.unsafeEvalFlakeDrv ./. (
-                [
-                  "legacyPackages"
-                  system
-                  "ada"
-                  "cudaPackages"
-                ]
-                ++ attrPath
-              )
-            ) (cuda-lib.utils.drvAttrPaths ourPkgs.ada.cudaPackages);
-          };
+          legacyPackages = pkgs;
 
-          packages =
-            let
-              # Use our package set to ensure the CUDA dependencies we pull in come from our repo and not upstream.
-              inherit (pkgs.python311Packages) callPackage;
-            in
-            # Actual packages
-            {
-              default = config.packages.cuda-redist;
-              cuda-redist = callPackage ./scripts/cuda-redist { };
-            };
+          packages = {
+            default = config.packages.cuda-redist;
+            cuda-redist = pkgs.python311Packages.callPackage ./scripts/cuda-redist { };
+          };
 
           pre-commit.settings.hooks =
             let

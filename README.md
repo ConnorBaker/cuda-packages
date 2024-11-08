@@ -16,11 +16,12 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 ## Todo
 
 - A bunch of stuff (including docs)
+- Throw if trying to build for a capability newer than the CUDA package set can support.
 - Packages:
-    - https://developer.download.nvidia.com/compute/nvcomp/redist/
-    - https://developer.download.nvidia.com/compute/redist/nvshmem/
-    - https://developer.download.nvidia.com/compute/nvidia-hpc-benchmarks/redist/
-    - https://developer.nvidia.com/nvidia-hpc-sdk-249-downloads
-    - https://github.com/NVIDIA/gdrcopy
-    - https://github.com/NVIDIA/nvImageCodec
-    - https://developer.download.nvidia.com/compute/nvidia-driver/redist/ (for use with nixGL?)
+  - https://developer.download.nvidia.com/compute/nvcomp/redist/
+  - https://developer.download.nvidia.com/compute/redist/nvshmem/
+  - https://developer.download.nvidia.com/compute/nvidia-hpc-benchmarks/redist/
+  - https://developer.nvidia.com/nvidia-hpc-sdk-249-downloads
+  - https://github.com/NVIDIA/gdrcopy
+  - https://github.com/NVIDIA/nvImageCodec
+  - https://developer.download.nvidia.com/compute/nvidia-driver/redist/ (for use with nixGL?)

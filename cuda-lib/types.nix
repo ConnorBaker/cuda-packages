@@ -445,15 +445,15 @@ in
   cudaCapability = strMatching "^[[:digit:]]+\\.[[:digit:]]+[a-z]?$";
 
   /**
-    The option type of `HostCompiler`.
+    The option type of `NvccHostCompiler`.
 
     # Type
 
     ```
-    hostCompiler :: OptionType
+    nvccHostCompiler :: OptionType
     ```
   */
-  hostCompiler = enum [
+  nvccHostCompiler = enum [
     "clang"
     "gcc"
   ];

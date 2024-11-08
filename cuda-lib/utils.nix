@@ -4,7 +4,7 @@
   upstreamable-lib,
 }:
 let
-  inherit (builtins) toJSON import readDir;
+  inherit (builtins) import readDir;
   inherit (cuda-lib.data) redistUrlPrefix;
   inherit (cuda-lib.utils)
     getLibPath
@@ -17,13 +17,11 @@ let
     attrNames
     filterAttrs
     foldlAttrs
-    getAttrFromPath
     hasAttr
     intersectAttrs
     mapAttrs
     mapAttrs'
     removeAttrs
-    showAttrPath
     ;
   inherit (lib.customisation) makeOverridable;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
@@ -34,6 +32,8 @@ let
     filter
     findFirst
     head
+    optionals
+    intersectLists
     reverseList
     unique
     ;
@@ -42,8 +42,6 @@ let
     concatStringsSep
     hasPrefix
     removeSuffix
-    escapeNixString
-    escapeShellArg
     ;
   inherit (lib.trivial)
     const
@@ -63,96 +61,17 @@ in
     flattenAttrs
     flattenDrvTree
     ;
+  inherit (upstreamable-lib.strings)
+    versionAtMost
+    versionNewer
+    versionBoundedExclusive
+    versionBoundedInclusive
+    ;
   inherit (upstreamable-lib.versions)
     dropDots
     majorMinorPatch
     majorMinorPatchBuild
     ;
-
-  unsafeEvalFlakeAttr =
-    let
-      inherit (builtins) exec;
-    in
-    flakeRef: attrPath:
-    let
-      attr = showAttrPath attrPath;
-    in
-    # Disallow shell expansion in the flake reference and attribute path.
-    # TODO: Pipe stdout and stderr to different files to avoid interleaving with main process output and basic error handling.
-    # TODO: Better quoting of flakeRef and attrPath?
-    exec [
-      "/usr/bin/env"
-      "bash"
-      "-c"
-      ''
-        set -euo pipefail
-        export TEMP_DIR="$(mktemp --directory)"
-        trap "rm -rf -- ''${TEMP_DIR@Q}" EXIT
-        NIX_SHOW_STATS=1 NIX_SHOW_STATS_PATH="$TEMP_DIR/stats.json" nix eval --json '${escapeShellArg flakeRef}#${escapeShellArg attr}' > "$TEMP_DIR/value.json"
-        nix eval --impure --file - <<'EOF'
-          let
-            inherit (builtins) fromJSON getEnv readFile;
-            tempDir = getEnv "TEMP_DIR";
-            importTempJSON = filename: fromJSON (readFile (tempDir + "/" + filename));
-          in
-          {
-            attr = ${escapeNixString attr};
-            attrPath = fromJSON ${escapeNixString (toJSON attrPath)};
-            stats = importTempJSON "stats.json";
-            value = importTempJSON "value.json";
-          }
-        EOF
-      ''
-    ];
-
-  unsafeEvalFlakeDrv =
-    let
-      inherit (builtins) exec;
-    in
-    flakeRef: attrPath:
-    let
-      attr = showAttrPath attrPath;
-    in
-    # Disallow shell expansion in the flake reference and attribute path.
-    # TODO: Pipe stdout and stderr to different files to avoid interleaving with main process output and basic error handling.
-    # TODO: Better quoting of flakeRef and attrPath?
-    # TODO: Use xargs to run some number of jobs in parallel. God this is cursed.
-    exec [
-      "/usr/bin/env"
-      "bash"
-      "-c"
-      ''
-        set -euo pipefail
-        export TEMP_DIR="$(mktemp --directory)"
-        trap "rm -rf -- ''${TEMP_DIR@Q}" EXIT
-        NIX_SHOW_STATS=1 NIX_SHOW_STATS_PATH="$TEMP_DIR/stats.json" \
-          nix eval \
-          '${escapeShellArg flakeRef}#${escapeShellArg attr}' \
-          --json \
-          --read-only \
-          --no-eval-cache \
-          --apply 'drv: { inherit (drv) drvPath name system; }' \
-          2> "$TEMP_DIR/eval.stderr" > "$TEMP_DIR/drv.json" || true
-        nix eval \
-          --impure \
-          --read-only \
-          --no-eval-cache \
-          --file - <<'EOF'
-          let
-            inherit (builtins) fromJSON getEnv readFile;
-            tempDir = getEnv "TEMP_DIR";
-            drvAttrsText = readFile (tempDir + "/drv.json");
-            drvAttrs = if drvAttrsText == "" then {} else fromJSON drvAttrsText;
-          in
-          {
-            attr = ${escapeNixString attr};
-            attrPath = fromJSON ${escapeNixString (toJSON attrPath)};
-            stats = fromJSON (readFile (tempDir + "/stats.json"));
-            error = readFile (tempDir + "/eval.stderr");
-          } // drvAttrs
-        EOF
-      ''
-    ];
 
   /**
     Maps `mkOption` over the values of an attribute set.
@@ -808,4 +727,30 @@ in
         }
       ))
     ];
+
+  mkRealArchitecture = cudaCapability: "sm_" + cuda-lib.utils.dropDots cudaCapability;
+  mkVirtualArchitecture = cudaCapability: "compute_" + cuda-lib.utils.dropDots cudaCapability;
+
+  # This is used solely for utility functions getNixPlatform and getRedistArch which are needed before the flags
+  # attribute set of values and functions is created in the package fixed-point.
+  getJetsonTargets =
+    gpus: cudaCapabilities:
+    let
+      allJetsonComputeCapabilities = concatMap (
+        gpu: optionals gpu.isJetson [ gpu.computeCapability ]
+      ) gpus;
+    in
+    intersectLists allJetsonComputeCapabilities cudaCapabilities;
+  # TODO: Move to doc.
+  # jetsonTargets = {
+  #   description = "List of Jetson targets";
+  #   type = listOf cuda-lib.types.cudaCapability;
+  #   default =
+  #     let
+  #       allJetsonComputeCapabilities = concatMap (
+  #         gpu: optionals gpu.isJetson [ gpu.computeCapability ]
+  #       ) config.data.gpus;
+  #     in
+  #     intersectLists allJetsonComputeCapabilities config.cuda.capabilities;
+  # };
 }

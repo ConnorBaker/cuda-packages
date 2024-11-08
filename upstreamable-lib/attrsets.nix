@@ -16,7 +16,6 @@ let
   inherit (lib.debug) traceIf;
   inherit (lib.lists)
     concatMap
-    optionals
     head
     last
     ;
@@ -36,6 +35,7 @@ in
     ```
     attrPaths :: { includeCond :: List String -> Any -> Bool
                  , recurseCond :: List String -> Any -> Bool
+                 , trace :: ?Bool = false
                  }
               -> AttrSet
               -> List (List String)
@@ -203,6 +203,7 @@ in
     ```
     flattenAttrs :: { includeCond :: List String -> Any -> Bool
                     , recurseCond :: List String -> Any -> Bool
+                    , trace :: ?Bool = false
                     }
                  -> AttrSet
                  -> AttrSet
@@ -222,11 +223,7 @@ in
     # Type
 
     ```
-    flattenDrvTree :: { includeCond :: List String -> Any -> Bool
-                      , recurseCond :: List String -> Any -> Bool
-                      }
-                   -> AttrSet
-                   -> AttrSet
+    flattenDrvTree :: AttrSet -> AttrSet
     ```
   */
   flattenDrvTree = flattenAttrs drvAttrPathsStrategy;

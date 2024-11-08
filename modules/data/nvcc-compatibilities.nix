@@ -22,7 +22,7 @@ in
       NOTE: Because all platforms NVIDIA supports use GCC and Clang, we omit the architectures here.
     '';
     type = cuda-lib.types.attrs cuda-lib.types.majorMinorVersion (
-      cuda-lib.types.attrs cuda-lib.types.hostCompiler (submodule {
+      cuda-lib.types.attrs cuda-lib.types.nvccHostCompiler (submodule {
         options = mkOptions {
           maxMajorVersion = {
             description = "The maximum major version of a compiler supported by the NVCC available with this CUDA version.";

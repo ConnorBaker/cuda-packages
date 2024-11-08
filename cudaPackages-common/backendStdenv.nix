@@ -17,7 +17,8 @@
 # E.g. for cudaPackages_11_8 we use gcc11 with gcc12's libstdc++
 # Cf. https://github.com/NixOS/nixpkgs/pull/218265 for context
 let
-  inherit (config.cuda) hostCompiler;
+  # TODO: Make option.
+  nvccHostCompiler = pkgs.config.cudaNvccHostCompiler or "gcc";
   inherit (flags) cudaNamePrefix;
   inherit (lib.customisation) extendDerivation;
   inherit (stdenvAdapters) useLibsFrom;
@@ -61,9 +62,9 @@ let
   cudaHostStdenv =
     let
       cudaHostCompilerMajorVersion =
-        config.data.nvccCompatibilities.${cudaVersion}.${hostCompiler}.maxMajorVersion;
+        config.data.nvccCompatibilities.${cudaVersion}.${nvccHostCompiler}.maxMajorVersion;
     in
-    if hostCompiler == "clang" then
+    if nvccHostCompiler == "clang" then
       pkgs."llvmPackages_${cudaHostCompilerMajorVersion}".stdenv
     else
       pkgs."gcc${cudaHostCompilerMajorVersion}Stdenv";

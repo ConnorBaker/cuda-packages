@@ -8,6 +8,10 @@ makeExtensible (final: {
     inherit lib;
     upstreamable-lib = final;
   };
+  strings = import ./strings.nix {
+    inherit lib;
+    upstreamable-lib = final;
+  };
   types = import ./types.nix {
     inherit lib;
     upstreamable-lib = final;

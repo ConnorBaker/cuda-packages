@@ -15,7 +15,7 @@ let
   inherit (lib.lists) optionals;
   inherit (lib.meta) getExe;
   inherit (lib.strings) concatStringsSep optionalString;
-  hostRedistArch = getRedistArch (config.data.jetsonTargets != [ ]) stdenv.hostPlatform.system;
+  hostRedistArch = getRedistArch (flags.jetsonTargets != [ ]) stdenv.hostPlatform.system;
 in
 finalAttrs: prevAttrs: {
   allowFHSReferences = true;

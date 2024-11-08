@@ -3,15 +3,15 @@
 {
   backendStdenv,
   callPackage,
-  config,
   cuda-lib,
   cudaMajorMinorVersion,
   expat,
+  flags,
   libglvnd,
 }:
 let
   hostRedistArch = cuda-lib.utils.getRedistArch (
-    config.data.jetsonTargets != [ ]
+    flags.jetsonTargets != [ ]
   ) backendStdenv.hostPlatform.system;
   hostRedistArchIsUnsupported = hostRedistArch != "linux-aarch64";
   cudaVersionIsUnsupported = cudaMajorMinorVersion != "11.8";
