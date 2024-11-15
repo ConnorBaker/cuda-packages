@@ -60,6 +60,7 @@ let
 
   isAarch64Linux = backendStdenv.hostPlatform.system == "aarch64-linux";
 
+  # NOTE: As of 1.20, gotta use an older version of Eigen.
   eigen = fetchFromGitLab {
     owner = "libeigen";
     repo = "eigen";
@@ -130,8 +131,6 @@ let
     src = fetchFromGitHub {
       owner = "microsoft";
       repo = "onnxruntime";
-      # rev = "refs/tags/v${finalAttrs.version}";
-      # hash = "sha256-bYgoyrJxI7qMOU6k4iYwd4n+ecXPKAPvatvCBUf8VP4=";
       rev = "632a36a23394a9deacf19c221db4ff89287ac152";
       hash = "sha256-7SrbDgYuLj60IYeeiSA9GxSn+P8xe5kSBRxFKxZuIh4=";
       fetchSubmodules = true;
@@ -185,20 +184,17 @@ let
             'set(onnxparser_link_libs nvonnxparser_static)' \
             'set(onnxparser_link_libs nvonnxparser)'
       ''
-      # Use the system's nsync
-      # + ''
-      #   mv cmake/external/onnxruntime_external_deps.cmake cmake/external/onnxruntime_external_deps.cmake.bak
-      #   cat <(echo \
-      #   "
-      #   find_package(cpuinfo REQUIRED)
-      #   ") cmake/external/onnxruntime_external_deps.cmake.bak > cmake/external/onnxruntime_external_deps.cmake
-      #   cat cmake/external/onnxruntime_external_deps.cmake
-      # ''
-      # Use our own externel deps CMake file
-      # + ''
-      #   rm -f cmake/external/onnxruntime_external_deps.cmake
-      #   install -Dm644 ${./onnxruntime_external_deps.cmake} cmake/external/onnxruntime_external_deps.cmake
-      # ''
+      # cudnn_frontend doesn't provide a library
+      + ''
+        substituteInPlace cmake/onnxruntime_providers_cuda.cmake \
+          --replace-fail \
+            'target_link_libraries(''${target} PRIVATE CUDA::cublasLt CUDA::cublas CUDNN::cudnn_all cudnn_frontend ' \
+            'target_link_libraries(''${target} PRIVATE CUDA::cublasLt CUDA::cublas CUDNN::cudnn_all '
+        substituteInPlace cmake/onnxruntime_unittests.cmake \
+          --replace-fail \
+            'target_link_libraries(''${_UT_TARGET} PRIVATE CUDA::cudart cudnn_frontend)' \
+            'target_link_libraries(''${_UT_TARGET} PRIVATE CUDA::cudart)'
+      ''
       # Disable failing tests.
       # TODO: Is this on all platforms, or just x86_64-linux?
       + ''
@@ -341,7 +337,7 @@ let
     cmakeFlags = [
       (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
       (cmakeBool "onnxruntime_BUILD_SHARED_LIB" true)
-      (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" doCheck)
+      (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" finalAttrs.doCheck)
       (cmakeBool "onnxruntime_ENABLE_LTO" true)
       (cmakeBool "onnxruntime_ENABLE_PYTHON" true)
       (cmakeBool "onnxruntime_USE_CUDA" true)
@@ -356,18 +352,10 @@ let
       (cmakeFeature "onnxruntime_NVCC_THREADS" "1")
       (cmakeBool "onnxruntime_USE_PREINSTALLED_EIGEN" true)
       (cmakeOptionType "PATH" "eigen_SOURCE_PATH" eigen.outPath)
-      # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ABSEIL_CPP" abseil-cpp.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" cutlass.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_DATE" date.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" flatbuffers.outPath)
-      # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_MP11" mp11.outPath)
-      # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_ONNX" onnx.src.outPath)
-      # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_RE2" re2.src.outPath)
       (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_SAFEINT" safeint.outPath)
-
-      # The inclusion of CMake files sets targets that onnxruntime needs defined for CMake configuration to succeed.
-      # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_PYTORCH_CPUINFO" cpuinfo.outPath)
-      # (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_GOOGLETEST" gtest.src.outPath)
     ];
 
     # nativeCheckInputs = [ gtest ];
@@ -387,7 +375,7 @@ let
 
     # NOTE: Because the test cases immediately create and try to run the binaries, we don't have an opportunity
     # to patch them with autoAddDriverRunpath. To get around this, we add the driver runpath to the environment.
-    preCheck = optionalString doCheck ''
+    preCheck = optionalString finalAttrs.doCheck ''
       export LD_LIBRARY_PATH="$(readlink -mnv "${addDriverRunpath.driverLink}/lib")"
     '';
 
@@ -395,7 +383,7 @@ let
     # ActivationOpTest.ONNX_Gelu
     # CApiTest.custom_op_set_input_memory_type
 
-    requiredSystemFeatures = [ "big-parallel" ] ++ optionals doCheck [ "cuda" ];
+    requiredSystemFeatures = [ "big-parallel" ] ++ optionals finalAttrs.doCheck [ "cuda" ];
 
     # postBuild = optionalString pythonSupport ''
     #   ${python3Packages.python.interpreter} ../setup.py bdist_wheel
@@ -410,7 +398,7 @@ let
     '';
 
     # /build/source/onnxruntime/core/session/provider_bridge_ort.cc:1586 void onnxruntime::ProviderSharedLibrary::Ensure() [ONNXRuntimeError] : 1 : FAIL : Failed to load library libonnxruntime_providers_shared.so with error: libonnxruntime_providers_shared.so: cannot open shared object file: No such file or directory
-    postFixup = optionalString doCheck ''
+    postFixup = optionalString finalAttrs.doCheck ''
       patchelf --add-rpath "$out/lib" "$out/bin/onnx_test_runner"
     '';
 
