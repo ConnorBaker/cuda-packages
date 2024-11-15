@@ -5,7 +5,6 @@
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
-  cudaOlder,
   cudnn,
   cutlass,
   fetchFromGitHub,
@@ -28,16 +27,18 @@ let
   inherit (lib.strings) cmakeBool cmakeFeature optionalString;
 in
 # TODO: This can also be packaged for Python!
+# TODO: Tests.
 assert assertMsg (!enableTools) "enableTools is not yet implemented";
 backendStdenv.mkDerivation (finalAttrs: {
   pname = "cutlass";
-  version = "3.5.1";
+  # They didn't cut a 3.6.0 release...
+  version = "3.6.0-unstable-2024-11-08";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "cutlass";
-    rev = "refs/tags/v${finalAttrs.version}";
-    hash = "sha256-sTGYN+bjtEqQ7Ootr/wvx3P9f8MCDSSj3qyCWjfdLEA=";
+    rev = "8aa95dbb888be6d81c6fbf7169718c5244b53227";
+    hash = "sha256-ZDkpgVjg0RIvfgXRb/7D7YjKcgWWTiIEQJu4Ho/4P48=";
   };
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a
@@ -139,7 +140,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     description = "CUDA Templates for Linear Algebra Subroutines";
     homepage = "https://github.com/NVIDIA/cutlass";
     license = licenses.asl20;
-    broken = cudaOlder "11.4";
     platforms = [
       "aarch64-linux"
       "x86_64-linux"

@@ -84,7 +84,13 @@ backendStdenv.mkDerivation (finalAttrs: {
     description = "Multi-GPU and multi-node collective communication primitives for NVIDIA GPUs";
     homepage = "https://developer.nvidia.com/nccl";
     license = licenses.bsd3;
-    platforms = platforms.linux;
+    platforms =
+      optionals (!flags.isJetsonBuild) [
+        "aarch64-linux"
+      ]
+      ++ [
+        "x86_64-linux"
+      ];
     badPlatforms = optionals flags.isJetsonBuild [ "aarch64-linux" ];
     maintainers =
       with maintainers;

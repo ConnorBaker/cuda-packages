@@ -44,6 +44,9 @@ class NixStoreEntry(PydanticObject, extra="allow", alias_generator=to_camel):
                     pkgs = import nixpkgs {{ system = builtins.currentSystem; }};
                 in
                 pkgs.srcOnly {{
+                    __structuredAttrs = true;
+                    strictDeps = true;
+                    stdenv = pkgs.stdenvNoCC;
                     name = "{name}";
                     src = pkgs.fetchurl {{
                         url = "{url}";

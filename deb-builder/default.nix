@@ -11,6 +11,7 @@ in
   lib,
   fetchurl,
   srcOnly,
+  stdenvNoCC,
   # Use a particular manifest
   manifestMajorMinorVersion,
   # Use a particular package set from the manifest
@@ -68,6 +69,7 @@ let
   unpacked = srcOnly {
     __structuredAttrs = true;
     strictDeps = true;
+    stdenv = stdenvNoCC;
 
     pname = if sourceName != null then sourceName else debName;
     inherit version;

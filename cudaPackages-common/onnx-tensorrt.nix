@@ -5,15 +5,14 @@
   fetchFromGitHub,
   lib,
   onnx,
-  onnx-tensorrt, # For passthru.tests.gpu
   protobuf,
   pycuda,
   python3,
   tensorrt-python,
-  tensorrt,
-  runCommand,
+  tensorrt-oss,
 }:
 let
+  inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets) getLib;
   inherit (lib.strings) cmakeBool cmakeFeature;
   inherit (lib.versions) majorMinor;
@@ -24,177 +23,150 @@ let
     setuptools
     ;
 
-  version = "10.5";
-in
-# Version must have only two components.
-assert version == (majorMinor version);
-buildPythonPackage {
-  # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
-  # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
-  __structuredAttrs = false;
-  stdenv = backendStdenv;
+  finalAttrs = {
+    # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
+    # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
+    __structuredAttrs = false;
+    stdenv = backendStdenv;
 
-  pname = "onnx-tensorrt";
-  inherit version;
+    pname = "onnx-tensorrt";
+    version = "10.6";
 
-  src = fetchFromGitHub {
-    owner = "onnx";
-    repo = "onnx-tensorrt";
-    rev = "refs/tags/release/${version}-GA";
-    hash = "sha256-AgLp8701ZsVWI7bvq+7OpjhAmOpYM2mbyOG/Rwen1x4=";
-  };
-
-  outputs = [
-    "out"
-    "static"
-  ];
-
-  pyproject = true;
-
-  build-system = [ setuptools ];
-
-  nativeBuildInputs = [
-    cmake
-    cuda_nvcc
-    protobuf
-  ];
-
-  postPatch =
-    # Ensure Onnx is found by CMake rather than using the vendored version.
-    # https://github.com/onnx/onnx-tensorrt/blob/3775e499322eee17c837e27bff6d07af4261767a/CMakeLists.txt#L90
-    ''
-      substituteInPlace CMakeLists.txt \
-        --replace-fail \
-          "add_subdirectory(third_party/onnx EXCLUDE_FROM_ALL)" \
-          "find_package(ONNX REQUIRED)"
-    ''
-    # The python library `onnx_tensorrt` references itself during the install phase. Unfortunately, it tries to access
-    # the GPU when it is imported, which causes a segfault.
-    # Patch `setup.py` to not rely on `onnx_tensorrt`.
-    # TODO: Should use actual version given in `__init__.py` instead of hardcoding.
-    + ''
-      substituteInPlace setup.py \
-        --replace-fail \
-          "import onnx_tensorrt" \
-          "" \
-        --replace-fail \
-          "onnx_tensorrt.__version__" \
-          "${version}"
-    ''
-    # Patch onnx_tensorrt/backend.py to load the path to libcudart.so directly so the end-user doesn't need to manually
-    # add it to LD_LIBRARY_PATH.
-    + ''
-      substituteInPlace onnx_tensorrt/backend.py \
-        --replace-fail \
-          "LoadLibrary('libcudart.so')" \
-          "LoadLibrary('${getLib cuda_cudart}/lib/libcudart.so')"
-    '';
-
-  cmakeFlags = [
-    (cmakeBool "BUILD_API_TEST" false) # Missing source files
-    (cmakeBool "BUILD_ONNXIFI" false) # Missing source files
-    (cmakeFeature "ONNX_NAMESPACE" "onnx") # Should be the same as what we built Onnx with
-  ];
-
-  # After CMake configuration finishes, exit the build directory for the python build.
-  postConfigure = ''
-    cd ..
-  '';
-
-  dependencies = [
-    onnx
-    pycuda
-    tensorrt-python
-  ];
-
-  buildInputs = [
-    cuda_cudart
-    protobuf
-    tensorrt
-  ];
-
-  propagatedBuildInputs = [ (getLib cuda_cudart) ];
-
-  postInstall =
-    # After the python install is complete, re-enter the build directory to  install the C++ components.
-    ''
-      pushd "''${cmakeBuildDir:?}"
-      echo "Running CMake install for C++ components"
-      make install -j ''${NIX_BUILD_CORES:?}
-      popd
-    ''
-    # Install the header files to the include directory.
-    + ''
-      mkdir -p "$out/include/onnx"
-      install -Dm644 *.h *.hpp "$out/include/onnx"
-    ''
-    # Move static libraries to the static directory.
-    + ''
-      moveToOutput lib/libnvonnxparser_static.a "$static"
-    '';
-
-  doCheck = true;
-
-  passthru.tests =
-    let
-      runOnnxTests =
-        { fast }:
-        runCommand "onnx-tensorrt-gpu-tests-${if fast then "short" else "long"}"
-          {
-            strictDeps = true;
-            requiredSystemFeatures = [ "cuda" ];
-            nativeBuildInputs = [
-              (python3.withPackages (ps: [
-                onnx-tensorrt
-                ps.pytest
-              ]))
-            ];
-          }
-          (
-            # Make a temporary directory for the tests and error out if anything fails.
-            ''
-              set -e
-              export HOME="$(mktemp --directory)"
-              trap "rm -rf -- ''${HOME@Q}" EXIT
-            ''
-            # Patch our test file to skip tests that are known to fail.
-            # These two tests fail with out of memory errors on a 4090.
-            + ''
-              install -Dm755 "${onnx-tensorrt.src}/onnx_backend_test.py" .
-              substituteInPlace onnx_backend_test.py \
-                --replace-fail \
-                  "backend_test.include(r'.*test_vgg19.*')" \
-                  "# backend_test.include(r'.*test_vgg19.*')" \
-                --replace-fail \
-                  "backend_test.include(r'.*test_zfnet512.*')" \
-                  "# backend_test.include(r'.*test_zfnet512.*')"
-            ''
-            # Run the tests.
-            + ''
-              python3 onnx_backend_test.py \
-                --verbose \
-                ${if fast then "OnnxBackendRealModelTest" else ""}
-            ''
-            # If we make it here, make an empty output and delete the temporary directory.
-            + ''
-              touch $out
-              rm -rf "$HOME"
-            ''
-          );
-    in
-    {
-      # NOTE: gpuShort shows
-      # Ran 18 tests in 210.529s
-      # on a 4090.
-      gpuShort = runOnnxTests { fast = true; };
-      gpuLong = runOnnxTests { fast = false; };
+    src = fetchFromGitHub {
+      owner = "onnx";
+      repo = "onnx-tensorrt";
+      rev = "refs/tags/release/${finalAttrs.version}-GA";
+      hash = "sha256-mhOzSeysMIC5KmHupuOz1sZsaP/Zv81ucx193njkU20=";
     };
 
-  meta = with lib; {
-    description = "TensorRT backend for Onnx";
-    homepage = "https://github.com/onnx/onnx-tensorrt";
-    license = licenses.asl20;
-    platforms = platforms.linux;
-    maintainers = with maintainers; [ connorbaker ] ++ teams.cuda.members;
+    outputs = [
+      "out"
+      "static"
+      "test_script"
+    ];
+
+    pyproject = true;
+
+    # NOTE: The project, as of 10.6, does not use ninja.
+    build-system = [
+      cmake
+      setuptools
+    ];
+
+    nativeBuildInputs = [
+      cuda_nvcc
+      protobuf
+    ];
+
+    postPatch =
+      # Ensure Onnx is found by CMake rather than using the vendored version.
+      # https://github.com/onnx/onnx-tensorrt/blob/3775e499322eee17c837e27bff6d07af4261767a/CMakeLists.txt#L90
+      ''
+        substituteInPlace CMakeLists.txt \
+          --replace-fail \
+            "add_subdirectory(third_party/onnx EXCLUDE_FROM_ALL)" \
+            "find_package(ONNX REQUIRED)"
+      ''
+      # The python library `onnx_tensorrt` references itself during the install phase. Unfortunately, it tries to access
+      # the GPU when it is imported, which causes a segfault.
+      # Patch `setup.py` to not rely on `onnx_tensorrt`.
+      # TODO: Should use actual version given in `__init__.py` instead of hardcoding.
+      + ''
+        substituteInPlace setup.py \
+          --replace-fail \
+            "import onnx_tensorrt" \
+            "" \
+          --replace-fail \
+            "onnx_tensorrt.__version__" \
+            "${finalAttrs.version}"
+      ''
+      # Patch onnx_tensorrt/backend.py to load the path to libcudart.so directly so the end-user doesn't need to manually
+      # add it to LD_LIBRARY_PATH.
+      + ''
+        substituteInPlace onnx_tensorrt/backend.py \
+          --replace-fail \
+            "LoadLibrary('libcudart.so')" \
+            "LoadLibrary('${getLib cuda_cudart}/lib/libcudart.so')"
+      '';
+
+    cmakeFlags = [
+      (cmakeBool "BUILD_API_TEST" false) # Missing source files
+      (cmakeBool "BUILD_ONNXIFI" false) # Missing source files
+      (cmakeFeature "ONNX_NAMESPACE" "onnx") # Should be the same as what we built Onnx with
+    ];
+
+    # After CMake configuration finishes, return to the source directory to install the C++ components.
+    postConfigure = ''
+      cd "$NIX_BUILD_TOP/$sourceRoot"
+    '';
+
+    dependencies = [
+      onnx
+      pycuda
+      tensorrt-python
+    ];
+
+    buildInputs = [
+      cuda_cudart
+      protobuf
+      tensorrt-oss
+    ];
+
+    propagatedBuildInputs = [ (getLib cuda_cudart) ];
+
+    postInstall =
+      # After the python install is complete, re-enter the build directory to  install the C++ components.
+      ''
+        pushd "''${cmakeBuildDir:?}"
+        echo "Running CMake install for C++ components"
+        make install -j ''${NIX_BUILD_CORES:?}
+        popd
+      ''
+      # Install the header files to the include directory.
+      + ''
+        mkdir -p "$out/include/onnx"
+        install -Dm644 *.h *.hpp "$out/include/onnx"
+      ''
+      # Move static libraries to the static directory.
+      + ''
+        moveToOutput lib/libnvonnxparser_static.a "$static"
+      ''
+      # Copy over the file we'll use for testing.
+      + ''
+        mkdir -p "$test_script"
+        install -Dm755 "$NIX_BUILD_TOP/$sourceRoot/onnx_backend_test.py" "$test_script/onnx_backend_test.py"
+      ''
+      # Patch our test file to skip tests that are known to fail.
+      # These two tests fail with out of memory errors on a 4090.
+      + ''
+        substituteInPlace "$test_script/onnx_backend_test.py" \
+          --replace-fail \
+            "backend_test.include(r'.*test_vgg19.*')" \
+            "# backend_test.include(r'.*test_vgg19.*')" \
+          --replace-fail \
+            "backend_test.include(r'.*test_zfnet512.*')" \
+            "# backend_test.include(r'.*test_zfnet512.*')"
+      '';
+
+    doCheck = true;
+
+    meta = with lib; {
+      description = "TensorRT backend for Onnx";
+      homepage = "https://github.com/onnx/onnx-tensorrt";
+      license = licenses.asl20;
+      platforms = [
+        "aarch64-linux"
+        "x86_64-linux"
+      ];
+      maintainers = with maintainers; [ connorbaker ] ++ teams.cuda.members;
+    };
   };
-}
+
+in
+assert assertMsg (
+  finalAttrs.version == majorMinor finalAttrs.version
+) "Version must have only two components";
+assert assertMsg (
+  finalAttrs.version == majorMinor tensorrt-oss.version
+) "Version must match tensorrt-oss";
+buildPythonPackage finalAttrs

@@ -22,13 +22,13 @@ let
 in
 backendStdenv.mkDerivation (finalAttrs: {
   pname = "nccl-tests";
-  version = "2.13.10";
+  version = "2.13.11";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "nccl-tests";
     rev = "refs/tags/v${finalAttrs.version}";
-    hash = "sha256-H9shp4fYW+dlyL9FZRxX761UCFR/pOBKNHfVme2TfJg=";
+    hash = "sha256-KJtnCTArnE8wZOCp2sJ1PLmuX0PD46Ku2ynCXh2HU6w=";
   };
 
   nativeBuildInputs = [
@@ -72,7 +72,10 @@ backendStdenv.mkDerivation (finalAttrs: {
   meta = with lib; {
     description = "Tests to check both the performance and the correctness of NVIDIA NCCL operations";
     homepage = "https://github.com/NVIDIA/nccl-tests";
-    platforms = platforms.linux;
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
     license = licenses.bsd3;
     broken = !pkgs.config.cudaSupport || (mpiSupport && mpi == null);
     maintainers = with maintainers; [ jmillerpdt ] ++ teams.cuda.members;

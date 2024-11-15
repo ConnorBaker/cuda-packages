@@ -106,7 +106,8 @@ let
         inherit cudnn;
       };
       meta = prevAttrs.meta // {
-        platforms = prevAttrs.meta.platforms or [ ] ++ [ "aarch64-linux" ];
+        broken = !flags.isJetsonBuild;
+        platforms = [ "aarch64-linux" ];
       };
     };
   };

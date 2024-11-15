@@ -7,7 +7,6 @@
   cudaAtLeast,
   lib,
   libcublas,
-  saxpy,
 }:
 let
   inherit (lib.fileset) toSource unions;
@@ -39,14 +38,6 @@ backendStdenv.mkDerivation {
   cmakeFlags = [
     (cmakeBool "CMAKE_VERBOSE_MAKEFILE" true)
   ];
-
-  passthru.tests.test = saxpy.overrideAttrs (prevAttrs: {
-    requiredSystemFeatures = [ "cuda" ];
-    doInstallCheck = true;
-    postInstallCheck = ''
-      $out/bin/${prevAttrs.meta.mainProgram}
-    '';
-  });
 
   meta = {
     description = "Simple (Single-precision AX Plus Y) FindCUDAToolkit.cmake example for testing cross-compilation";

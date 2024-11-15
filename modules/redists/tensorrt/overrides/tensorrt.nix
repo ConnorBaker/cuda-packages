@@ -59,6 +59,8 @@ finalAttrs: prevAttrs: {
     ];
 
   # Create a symlink for the Onnx header files in include/onnx
+  # NOTE(@connorbaker): This is shared with the tensorrt-oss package, with the `out` output swapped with `include`.
+  # When updating one, check if the other should be updated.
   postInstall =
     (prevAttrs.postInstall or "")
     + ''

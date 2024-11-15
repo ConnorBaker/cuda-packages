@@ -13,6 +13,7 @@
   fetchFromGitHub,
   flags,
   lib,
+  ninja,
   protobuf,
   tensorrt,
 }:
@@ -34,14 +35,14 @@ let
 in
 backendStdenv.mkDerivation (finalAttrs: {
   pname = "tensorrt-oss";
-  version = "10.5.0";
+  version = "10.6.0";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "TensorRT";
     rev = "refs/tags/v${finalAttrs.version}";
     # NOTE: We supply our own Onnx and Protobuf, so we do not do a recursive clone.
-    hash = "sha256-No0JKfvi6ETXrnebMX+tAVhz7fuuCwYAp/WNUN73XzY=";
+    hash = "sha256-nnzicyCjVqpAonIhx3u9yNnoJkZ0XXjJ8oxQH+wfrtE=";
   };
 
   # Ensure Protobuf is found by CMake.
@@ -82,6 +83,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [
     cmake
     cuda_nvcc
+    ninja
   ];
 
   buildInputs =
@@ -96,13 +98,41 @@ backendStdenv.mkDerivation (finalAttrs: {
       cuda_cccl # cub/cub.cuh
     ];
 
+  # For some reason, the two include directorires we need aren't copied to the output.
+  # onnx-tensorrt requires it, so we copy it manually.
+  postInstall =
+    ''
+      pushd "$NIX_BUILD_TOP/$sourceRoot"
+      cp -r ./include "$out/"
+      pushd "python"
+      mkdir -p "$out/python"
+      cp -r ./include "$out/python/"
+      popd
+      popd
+    ''
+    # Create a symlink for the Onnx header files in include/onnx
+    # NOTE(@connorbaker): This is shared with the tensorrt override, with the `include` output swapped with `out`.
+    # When updating one, check if the other should be updated.
+    + ''
+      mkdir "$out/include/onnx"
+      pushd "$out/include"
+      for file in NvOnnx*.h
+      do
+        ln -s "$PWD/$file" "$PWD/onnx/"
+      done
+      popd
+    '';
+
   doCheck = true;
 
   meta = with lib; {
     description = "Open Source Software (OSS) components of NVIDIA TensorRT";
     homepage = "https://github.com/NVIDIA/TensorRT";
     license = licenses.asl20;
-    platforms = platforms.linux;
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
     maintainers = with maintainers; [ connorbaker ] ++ teams.cuda.members;
   };
 })

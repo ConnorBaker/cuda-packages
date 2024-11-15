@@ -186,6 +186,8 @@ buildPythonPackage {
     description = "Open Neural Network Exchange";
     homepage = "https://onnx.ai";
     license = licenses.asl20;
+    broken = !flags.isJetsonBuild;
+    platforms = [ "aarch64-linux" ];
     maintainers = with maintainers; [ connorbaker ];
   };
 }

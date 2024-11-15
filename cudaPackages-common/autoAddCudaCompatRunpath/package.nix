@@ -7,6 +7,7 @@
   autoFixElfFiles,
   cuda_compat ? null,
   flags,
+  lib,
   makeSetupHook,
 }:
 makeSetupHook {
@@ -19,7 +20,9 @@ makeSetupHook {
   };
 
   meta = {
+    description = "Setup hook which propagates cuda-compat on Jetson devices";
     broken = !flags.isJetsonBuild;
     platforms = [ "aarch64-linux" ];
+    maintainers = lib.teams.cuda.members;
   };
 } ./auto-add-cuda-compat-runpath.sh

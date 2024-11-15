@@ -21,6 +21,7 @@
   nlohmann_json,
   fetchpatch2,
   srcOnly,
+  stdenvNoCC,
   nsync,
   onnx_1_14,
   onnx_1_16,
@@ -118,7 +119,9 @@ let
         hash = cutlassHash;
       };
       patchedCutlassSource = srcOnly {
+        __structuredAttrs = true;
         strictDeps = true;
+        stdenv = stdenvNoCC;
         name = "cutlass-source-${cutlassVersion}-patched";
         src = cutlassSource;
         patches =
@@ -247,7 +250,9 @@ let
         hash = cpuinfoHash;
       };
       patchedCpuinfoSource = srcOnly {
+        __structuredAttrs = true;
         strictDeps = true;
+        stdenv = stdenvNoCC;
         name = "cpuinfo-source-${builtins.substring 0 8 cpuinfoRev}-patched";
         src = cpuinfoSource;
         patches =

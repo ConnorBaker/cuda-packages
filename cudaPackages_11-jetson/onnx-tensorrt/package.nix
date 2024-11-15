@@ -166,7 +166,8 @@ buildPythonPackage {
     description = "TensorRT backend for Onnx";
     homepage = "https://github.com/onnx/onnx-tensorrt";
     license = licenses.asl20;
-    platforms = platforms.linux;
+    broken = !flags.isJetsonBuild;
+    platforms = [ "aarch64-linux" ];
     maintainers = with maintainers; [ connorbaker ] ++ teams.cuda.members;
   };
 }

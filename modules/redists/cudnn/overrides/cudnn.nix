@@ -4,7 +4,7 @@
   zlib,
 }:
 let
-  inherit (lib) maintainers;
+  inherit (lib) maintainers teams;
   inherit (lib.attrsets) getLib;
 in
 prevAttrs: {
@@ -24,7 +24,8 @@ prevAttrs: {
         mdaiter
         samuela
         connorbaker
-      ]);
+      ])
+      ++ teams.cuda.members;
     license = {
       shortName = "cuDNN EULA";
       fullName = "NVIDIA cuDNN Software License Agreement (EULA)";

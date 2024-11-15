@@ -2,6 +2,7 @@
 {
   backendStdenv,
   flags,
+  lib,
   makeSetupHook,
 }:
 let
@@ -16,5 +17,14 @@ makeSetupHook {
     ccFullPath = "${backendStdenv.cc}/bin/${backendStdenv.cc.targetPrefix}c++";
     cudaArchs = cmakeCudaArchitecturesString;
     setupCudaHook = placeholder "out";
+  };
+
+  meta = {
+    description = "Setup hook for CUDA packages";
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
+    maintainers = lib.teams.cuda.members;
   };
 } ./setup-cuda-hook.sh

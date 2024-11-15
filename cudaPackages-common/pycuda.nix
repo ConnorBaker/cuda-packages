@@ -37,14 +37,14 @@ buildPythonPackage {
   stdenv = backendStdenv;
 
   pname = "pycuda";
-  version = "2024.1.2";
+  version = "2024.1.2-unstable-2024-11-05";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "inducer";
     repo = "pycuda";
-    rev = "refs/tags/v2024.1.2";
-    hash = "sha256-hOjb2TMSMxexNBermL6JHHc6CmHUSW6EKPbXyhp7B00=";
+    rev = "247be65a858ff0ee8a24ffc09013c067e028bbdf";
+    hash = "sha256-i1Xy/WW8ZPL3EckExzFyBmO1D5BFX6jZMydmBDQZOA8=";
   };
 
   build-system = [
@@ -89,9 +89,19 @@ buildPythonPackage {
   '';
 
   meta = with lib; {
-    homepage = "https://github.com/inducer/pycuda/";
     description = "CUDA integration for Python";
+    homepage = "https://github.com/inducer/pycuda/";
     license = licenses.mit;
-    maintainers = with maintainers; [ artuuge ];
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
+    maintainers =
+      with maintainers;
+      [
+        artuuge
+        connorbaker
+      ]
+      ++ teams.cuda.members;
   };
 }

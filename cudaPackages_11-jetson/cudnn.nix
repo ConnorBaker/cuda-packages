@@ -96,7 +96,8 @@ let
           ${getExe patchelf} $lib/lib/libcudnn_ops_infer.so --add-needed libcublas.so --add-needed libcublasLt.so
         '';
       meta = prevAttrs.meta // {
-        platforms = prevAttrs.meta.platforms or [ ] ++ [ "aarch64-linux" ];
+        broken = !flags.isJetsonBuild;
+        platforms = [ "aarch64-linux" ];
       };
     };
   };

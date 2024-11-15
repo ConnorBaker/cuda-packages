@@ -97,7 +97,8 @@ backendStdenv.mkDerivation (finalAttrs: {
     description = "Open Source Software (OSS) components of NVIDIA TensorRT";
     homepage = "https://github.com/NVIDIA/TensorRT";
     license = licenses.asl20;
-    platforms = platforms.linux;
+    broken = !flags.isJetsonBuild;
+    platforms = [ "aarch64-linux" ];
     maintainers = with maintainers; [ connorbaker ] ++ teams.cuda.members;
   };
 })
