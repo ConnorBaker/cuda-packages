@@ -48,7 +48,9 @@ let
 
     pname = "tensorrt-python";
 
-    inherit (tensorrt-oss) src version;
+    inherit (tensorrt-oss) version;
+
+    src = "${tensorrt-oss.src}/python";
 
     pyproject = true;
 
@@ -58,12 +60,6 @@ let
       setuptools
       wheel
     ];
-
-    # Set `sourceRoot` to our python subdirectory.
-    prePatch = ''
-      export sourceRoot="$sourceRoot/python"
-      cd "$NIX_BUILD_TOP/$sourceRoot"
-    '';
 
     postPatch =
       # Patch the python CMakeLists.txt to use our supplied packages.
@@ -142,7 +138,7 @@ let
         "aarch64-linux"
         "x86_64-linux"
       ];
-      maintainers = with maintainers; [ connorbaker ] ++ teams.cuda.members;
+      maintainers = (with maintainers; [ connorbaker ]) ++ teams.cuda.members;
     };
   };
 in

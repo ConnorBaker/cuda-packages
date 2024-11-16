@@ -93,11 +93,10 @@ backendStdenv.mkDerivation (finalAttrs: {
       ];
     badPlatforms = optionals flags.isJetsonBuild [ "aarch64-linux" ];
     maintainers =
-      with maintainers;
-      [
+      (with maintainers; [
         mdaiter
         orivej
-      ]
+      ])
       ++ teams.cuda.members;
   };
 })

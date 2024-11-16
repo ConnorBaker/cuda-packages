@@ -4,6 +4,14 @@
   python3Packages,
   makeWrapper,
 }:
+let
+  inherit (builtins) isFunction all;
+  inherit (lib.asserts) assertMsg;
+  inherit (lib.attrsets) removeAttrs;
+  inherit (lib.lists) optionals;
+  inherit (lib.meta) getExe;
+  inherit (lib.strings) getName;
+in
 {
   feature ? "cuda",
   name ? if feature == null then "cpu" else feature,
@@ -12,11 +20,10 @@
 }@args:
 
 let
-  inherit (builtins) isFunction all;
   librariesFun = if isFunction libraries then libraries else (_: libraries);
 in
 
-assert lib.assertMsg (
+assert assertMsg (
   isFunction libraries || all python3Packages.hasPythonModule libraries
 ) "writeGpuTestPython was passed `libraries` from the wrong python release";
 
@@ -27,7 +34,7 @@ let
   tester =
     runCommand "tester-${name}"
       (
-        lib.removeAttrs args [
+        removeAttrs args [
           "libraries"
           "name"
         ]
@@ -40,7 +47,7 @@ let
       ''
         mkdir -p "$out"/bin
         cat << EOF >"$out/bin/$name"
-        #!${lib.getExe interpreter}
+        #!${getExe interpreter}
         EOF
         cat "$contentPath" >>"$out/bin/$name"
         chmod +x "$out/bin/$name"
@@ -54,11 +61,11 @@ let
       runCommand "test-${name}"
         {
           nativeBuildInputs = [ tester' ];
-          requiredSystemFeatures = lib.optionals (feature != null) [ feature ];
+          requiredSystemFeatures = optionals (feature != null) [ feature ];
         }
         ''
           set -e
-          ${tester.meta.mainProgram or (lib.getName tester')}
+          ${tester.meta.mainProgram or (getName tester')}
           touch $out
         '';
   };

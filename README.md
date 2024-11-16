@@ -12,11 +12,14 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 - `autoAddDriverRunpath` for CMake projects is a crutch -- the correct fix is to have the CMake project link against `CUDA::cudart`.
 - `cudaStdenv` sets `strictDeps=true` and `__structuredAttrs=true` _by default_. Packages must have a good reason to opt out (e.g., Python packaging has not been updated yet to support structured attributes: <https://github.com/NixOS/nixpkgs/pull/347194>).
 - `cudaStdenv` uses a name prefix for more descriptive store path names.
+  - Prefix is available as `flags.cudaNamePrefix`.
 
 ## Todo
 
 - A bunch of stuff (including docs)
+- Update the setup hooks to use the logging functionality introduced in newer versions of Nixpkgs's `setup.sh`.
 - Throw if trying to build for a capability newer than the CUDA package set can support.
+- Figure out why separable compilation isn't working.
 - Packages:
   - https://developer.download.nvidia.com/compute/nvcomp/redist/
   - https://developer.download.nvidia.com/compute/redist/nvshmem/

@@ -1,0 +1,399 @@
+{
+  abseil-cpp,
+  addDriverRunpath,
+  backendStdenv,
+  callPackage,
+  clog,
+  cpuinfo,
+  cuda_cccl, # cub/cub.cuh -- Only available from CUDA 12.0.
+  cuda_cudart,
+  cuda_nvcc,
+  cudnn-frontend,
+  cudnn,
+  cutlass,
+  doCheck ? false,
+  fetchFromGitHub,
+  glibcLocales,
+  gtest,
+  lib,
+  libcublas, # cublas_v2.h
+  libcufft, # cufft.h
+  libcurand, # curand.h
+  libcusparse, # cusparse.h
+  libpng,
+  microsoft-gsl,
+  nccl,
+  nlohmann_json,
+  onnx-tensorrt,
+  onnx,
+  onnxruntime, # For passthru.tests
+  patchelf,
+  pkg-config,
+  protobuf,
+  python3,
+  re2,
+  tensorrt,
+  zlib,
+}:
+let
+  inherit (lib) licenses maintainers teams;
+  inherit (lib.attrsets) getLib mapAttrs optionalAttrs;
+  inherit (lib.lists) optionals;
+  inherit (lib.strings)
+    cmakeBool
+    cmakeFeature
+    cmakeOptionType
+    optionalString
+    ;
+  inherit (lib.trivial) const flip;
+  inherit (backendStdenv.cc) isClang;
+  inherit (python3.pkgs)
+    buildPythonPackage
+    cmake
+    coloredlogs
+    flatbuffers
+    pybind11
+    sympy
+    setuptools
+    ;
+
+  isAarch64Linux = backendStdenv.hostPlatform.system == "aarch64-linux";
+
+  vendored = mapAttrs (const (flip callPackage { })) {
+    eigen = ./eigen.nix;
+    date = ./date.nix;
+    safeint = ./safeint.nix;
+    flatbuffers = ./flatbuffers.nix;
+  };
+
+  # TODO: Only building and installing Python package; no installation of the C++ library.
+
+  finalAttrs = {
+    # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
+    # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
+    __structuredAttrs = false;
+    stdenv = backendStdenv;
+
+    pname = "onnxruntime";
+
+    # NOTE: Using newer version because nsync has been removed from the build system
+    version = "1.20.0-unstable-2024-11-14";
+
+    src = fetchFromGitHub {
+      owner = "microsoft";
+      repo = "onnxruntime";
+      rev = "bbe7c8773837aa7573e202aefd2c633a06be2c23";
+      hash = "sha256-gV0UyHkl8b9kE+s3FuuFYQ9hjXcWC5iLT6dcYKKLLJ8=";
+      fetchSubmodules = true;
+    };
+
+    pyproject = true;
+
+    # Clang generates many more warnings than GCC does, so we just disable erroring on warnings entirely.
+    env = optionalAttrs isClang { NIX_CFLAGS_COMPILE = "-Wno-error"; };
+
+    # NOTE: Blocked moving to newer protobuf:
+    # https://github.com/microsoft/onnxruntime/issues/21308
+
+    build-system = [
+      cmake
+      setuptools
+      # protobuf4
+    ];
+
+    nativeBuildInputs = [
+      cuda_nvcc
+      patchelf
+      pkg-config
+      protobuf
+      pybind11
+      # python3
+    ];
+    # ++ optionals pythonSupport (
+    #   with python3Packages;
+    #   [
+    #     pip
+    #     python
+    #     pythonOutputDistHook
+    #     setuptools
+    #     wheel
+    #   ]
+    # );
+
+    buildInputs =
+      # Normal build inputs which are taken as-is from Nixpkgs
+      [
+        abseil-cpp
+        clog
+        cuda_cccl # CUDA 11.x <cub/cub.cuh>, CUDA 12.x <nv/target>
+        cuda_cudart
+        cudnn # cudnn.h
+        cudnn-frontend # cudnn_frontend.h
+        cpuinfo
+        cutlass.src # NOTE: onnxruntime uses samples from the repo, and as a header-only library there's not much point in building it.
+        glibcLocales
+        libcublas # cublas_v2.h
+        libcufft # cufft.h
+        libcurand # curand.h
+        libcusparse # cusparse.h
+        libpng
+        microsoft-gsl
+        nlohmann_json
+        onnx
+        onnx-tensorrt
+        protobuf
+        re2
+        tensorrt
+        zlib
+      ]
+      ++ optionals nccl.meta.available [ nccl ]
+      # Build inputs used for source.
+      # TODO(@connorbaker): Package these and get onnxruntime to use them instead of building them in the derivation.
+      ++ (with vendored; [
+        date
+        eigen
+        flatbuffers # NOTE: Cannot re-use flatbuffers built in Nixpkgs for some reason.
+        safeint
+      ]);
+
+    dependencies = [
+      coloredlogs
+      flatbuffers
+      sympy
+    ];
+
+    postPatch =
+      ''
+        substituteInPlace cmake/libonnxruntime.pc.cmake.in \
+          --replace-fail \
+            '$'{prefix}/@CMAKE_INSTALL_ \
+            "@CMAKE_INSTALL_"
+      ''
+      # Don't require the static libraries
+      + ''
+        substituteInPlace cmake/onnxruntime_providers_tensorrt.cmake \
+          --replace-fail \
+            'set(onnxparser_link_libs nvonnxparser_static)' \
+            'set(onnxparser_link_libs nvonnxparser)'
+      ''
+      # cudnn_frontend doesn't provide a library
+      # https://github.com/microsoft/onnxruntime/issues/22855
+      + ''
+        substituteInPlace cmake/onnxruntime_providers_cuda.cmake \
+          --replace-fail \
+            'target_link_libraries(''${target} PRIVATE CUDA::cublasLt CUDA::cublas CUDNN::cudnn_all cudnn_frontend ' \
+            'target_link_libraries(''${target} PRIVATE CUDA::cublasLt CUDA::cublas CUDNN::cudnn_all '
+        substituteInPlace cmake/onnxruntime_unittests.cmake \
+          --replace-fail \
+            'target_link_libraries(''${_UT_TARGET} PRIVATE cudnn_frontend)' \
+            ""
+      ''
+      # Disable failing tests.
+      # TODO: Is this on all platforms, or just x86_64-linux?
+      + ''
+        substituteInPlace onnxruntime/test/shared_lib/test_inference.cc \
+          --replace-fail \
+            'TEST(CApiTest, custom_op_set_input_memory_type) {' \
+            'TEST(CApiTest, DISABLED_custom_op_set_input_memory_type) {'
+        substituteInPlace onnxruntime/test/providers/cpu/activation/activation_op_test.cc \
+          --replace-fail \
+            'TEST_F(ActivationOpTest, ONNX_Gelu) {' \
+            'TEST_F(ActivationOpTest, DISABLED_ONNX_Gelu) {'
+      ''
+      # TODO: Verify this fails.
+      # https://github.com/NixOS/nixpkgs/pull/226734#issuecomment-1663028691
+      + optionalString isAarch64Linux ''
+        rm -v onnxruntime/test/optimizer/nhwc_transformer_test.cc
+      '';
+
+    # Use the same build dir the bash script wrapping the python script wrapping CMake expects us to use.
+    # NOTE: Python script will actually use build/Linux/Release!
+    cmakeBuildDir = "build/Linux";
+
+    # The CMakeLists.txt file is in the root of the source directory, two levels up from the build directory.
+    cmakeDir = "../../cmake";
+
+    # Silence NVCC warnings from the frontend like:
+    # onnxruntime> /nix/store/nrb1wyq26xxghhfky7sr22x27fip35vs-source/absl/types/span.h(154): error #2803-D: attribute namespace "gsl" is unrecognized
+    # onnxruntime>   class [[gsl::Pointer]] Span {
+    preConfigure = optionalString isClang ''
+      appendToVar NVCC_PREPEND_FLAGS "-Xcudafe=--diag_suppress=2803"
+    '';
+
+    cmakeFlags =
+      [
+        # Must set to true to avoid CMake trying to download dependencies.
+        (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
+        (cmakeFeature "FETCHCONTENT_TRY_FIND_PACKAGE_MODE" "ALWAYS")
+        # Configure build
+        (cmakeBool "onnxruntime_BUILD_SHARED_LIB" true)
+        (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" finalAttrs.doCheck) # TODO: Build unit tests so long as they don't require GPU access.
+        (cmakeBool "onnxruntime_ENABLE_LTO" true)
+        (cmakeBool "onnxruntime_ENABLE_PYTHON" true)
+        (cmakeBool "onnxruntime_USE_CUDA" true)
+        (cmakeBool "onnxruntime_USE_FULL_PROTOBUF" true) # NOTE: Using protobuf_21-lite causes linking errors
+        (cmakeBool "onnxruntime_USE_NCCL" nccl.meta.available) # TODO(@connorbaker): available is not a reliable indicator of whether NCCL is available (no recursive meta checking)
+        # TODO(@connorbaker): Unclear if this actually causes onnxruntime to use onnx-tensorrt;
+        # the CMake code indicates it merely searches for the library for the parser wherever tensorrt was discovered.
+        (cmakeBool "onnxruntime_USE_TENSORRT_BUILTIN_PARSER" false) # Use onnx-tensorrt
+        (cmakeBool "onnxruntime_USE_TENSORRT" true)
+        (cmakeFeature "onnxruntime_NVCC_THREADS" "1")
+        (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" cutlass.src.outPath)
+      ]
+      # Our vendored libraries
+      ++ [
+        (cmakeBool "onnxruntime_USE_PREINSTALLED_EIGEN" true)
+        (cmakeOptionType "PATH" "eigen_SOURCE_PATH" vendored.eigen.outPath)
+        (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_DATE" vendored.date.outPath)
+        (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" vendored.flatbuffers.outPath)
+        (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_SAFEINT" vendored.safeint.outPath)
+      ];
+
+    # TODO: Removed Ninja since it gets added to cmakeFlags and we'd need to filter it out prior to passing it to the Python script.
+    postConfigure =
+      # Return to the root of the source directory, leaving and deleting CMake's build directory.
+      ''
+        cd "$NIX_BUILD_TOP/$sourceRoot"
+        rm -rf "''${cmakeBuildDir:?}"
+      ''
+      # Allow CMake to run its configuration setup hook to fully populate the cmakeFlags shell variable.
+      # We'll format it and use it for the Python build.
+      # To do that, we need to splat the cmakeFlags array and use bash string substitution to remove the leading on each
+      # entry "-D".
+      # TODO: If Python packaging supported __structuredAttrs, we could use `${cmakeFlags[@]#-D}`. But it doesn't, so we have
+      # to use `${cmakeFlags[@]//-D/}` and hope none of our flags contain "-D".
+      # TODO: How does bash handle accessing `cmakeFlags` as an array when __structuredAttrs is not set?
+      # TODO: Conditionally enable NCCL.
+      # NOTE: We need to specify CMAKE_CUDA_COMPILER to avoid the setup script trying to choose the compiler itself
+      # (which it will fail to do because we use splayed installations).
+      # TODO: Why do we need to pass Protobuf_LIBRARIES explicitly?
+      # --clean \
+      # NOTE: Removed `--test`.
+      + ''
+        python3 "$NIX_BUILD_TOP/$sourceRoot/tools/ci_build/build.py" \
+            --build_dir "''${cmakeBuildDir:?}" \
+            --build \
+            --build_shared_lib \
+            --skip_tests \
+            --update \
+            --skip_submodule_sync \
+            --config "Release" \
+            --parallel ''${NIX_BUILD_CORES:?} \
+            --enable_pybind \
+            --build_wheel \
+            --enable_lto \
+            --enable_nccl \
+            --nccl_home "${getLib nccl}" \
+            --use_cuda \
+            --cuda_home "${getLib cuda_cudart}" \
+            --cudnn_home "${getLib cudnn}" \
+            --use_tensorrt \
+            --tensorrt_home "${getLib tensorrt}" \
+            --use_tensorrt_oss_parser \
+            --use_full_protobuf \
+            --cmake_extra_defines \
+              ''${cmakeFlags[@]//-D/} \
+              CMAKE_CUDA_COMPILER="${cuda_nvcc.bin}/bin/nvcc" \
+              Protobuf_LIBRARIES="${getLib protobuf}/lib/libprotobuf.so"
+
+        pushd "$NIX_BUILD_TOP/$sourceRoot/$cmakeBuildDir/Release"
+      '';
+
+    enableParallelBuilding = true;
+
+    # Let the Python script from onnxruntime handle wheel creation.
+    # TODO: Did this break the build, even before configurePhase ran?
+    dontUsePypaBuild = true;
+
+    # TODO: This should depend on doCheck.
+    # TODO: Why can't CMake find gtest in checkInputs?
+    # ++ optionals doCheck [ gtest ];
+    # ++ optionals pythonSupport (
+    #   with python3Packages;
+    #   [
+    #     numpy
+    #     pybind11
+    #     packaging
+    #   ]
+    # );
+
+    # aarch64-linux fails cpuinfo test, because /sys/devices/system/cpu/ does not exist in the sandbox
+    # as does testing on the GPU
+    inherit doCheck;
+
+    # nativeCheckInputs = [ gtest ];
+    checkInputs = [ gtest ];
+    # ++ optionals pythonSupport (
+    #   with python3Packages;
+    #   [
+    #     pytest
+    #     sympy
+    #     onnx
+    #   ]
+    # );
+
+    # NOTE: Because the test cases immediately create and try to run the binaries, we don't have an opportunity
+    # to patch them with autoAddDriverRunpath. To get around this, we add the driver runpath to the environment.
+    preCheck = optionalString finalAttrs.doCheck ''
+      export LD_LIBRARY_PATH="$(readlink -mnv "${addDriverRunpath.driverLink}/lib")"
+    '';
+
+    # Failed tests:
+    # ActivationOpTest.ONNX_Gelu
+    # CApiTest.custom_op_set_input_memory_type
+
+    requiredSystemFeatures = [ "big-parallel" ] ++ optionals finalAttrs.doCheck [ "cuda" ];
+
+    # postBuild = optionalString pythonSupport ''
+    #   ${python3Packages.python.interpreter} ../setup.py bdist_wheel
+    # '';
+
+    # perform parts of `tools/ci_build/github/linux/copy_strip_binary.sh`
+    postInstall = ''
+      install -m644 -Dt "$out/include" \
+        "$NIX_BUILD_TOP/$sourceRoot/include/onnxruntime/core/framework/provider_options.h" \
+        "$NIX_BUILD_TOP/$sourceRoot/include/onnxruntime/core/providers/cpu/cpu_provider_factory.h" \
+        "$NIX_BUILD_TOP/$sourceRoot/include/onnxruntime/core/session/onnxruntime_"*.h
+    '';
+
+    # /build/source/onnxruntime/core/session/provider_bridge_ort.cc:1586 void onnxruntime::ProviderSharedLibrary::Ensure() [ONNXRuntimeError] : 1 : FAIL : Failed to load library libonnxruntime_providers_shared.so with error: libonnxruntime_providers_shared.so: cannot open shared object file: No such file or directory
+    postFixup = optionalString finalAttrs.doCheck ''
+      patchelf --add-rpath "$out/lib" "$out/bin/onnx_test_runner"
+    '';
+
+    passthru = {
+      tests = {
+        gpu = onnxruntime.override { doCheck = true; };
+      };
+    };
+
+    meta = {
+      description = "Cross-platform, high performance scoring engine for ML models";
+      longDescription = ''
+        ONNX Runtime is a performance-focused complete scoring engine
+        for Open Neural Network Exchange (ONNX) models, with an open
+        extensible architecture to continually address the latest developments
+        in AI and Deep Learning. ONNX Runtime stays up to date with the ONNX
+        standard with complete implementation of all ONNX operators, and
+        supports all ONNX releases (1.2+) with both future and backwards
+        compatibility.
+      '';
+      homepage = "https://github.com/microsoft/onnxruntime";
+      changelog = "https://github.com/microsoft/onnxruntime/releases/tag/v${finalAttrs.version}";
+      # https://github.com/microsoft/onnxruntime/blob/master/BUILD.md#architectures
+      platforms = [
+        "aarch64-linux"
+        "x86_64-linux"
+      ];
+      license = licenses.mit;
+      maintainers =
+        (with maintainers; [
+          puffnfresh
+          ck3d
+          cbourjau
+        ])
+        ++ teams.cuda.members;
+    };
+  };
+in
+buildPythonPackage finalAttrs

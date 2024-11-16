@@ -77,10 +77,9 @@ backendStdenv.mkDerivation (finalAttrs: {
     platforms = platforms.linux;
     badPlatforms = optionals flags.isJetsonBuild [ "aarch64-linux" ];
     maintainers =
-      with maintainers;
-      [
+      (with maintainers; [
         connorbaker
-      ]
+      ])
       ++ teams.cuda.members;
   };
 })

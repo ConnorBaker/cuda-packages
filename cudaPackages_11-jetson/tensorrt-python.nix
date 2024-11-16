@@ -112,6 +112,6 @@ buildPythonPackage {
     license = licenses.asl20;
     broken = !flags.isJetsonBuild;
     platforms = [ "aarch64-linux" ];
-    maintainers = with maintainers; [ connorbaker ] ++ teams.cuda.members;
+    maintainers = (with maintainers; [ connorbaker ]) ++ teams.cuda.members;
   };
 }

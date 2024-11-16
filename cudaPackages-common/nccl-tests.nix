@@ -78,6 +78,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     ];
     license = licenses.bsd3;
     broken = !pkgs.config.cudaSupport || (mpiSupport && mpi == null);
-    maintainers = with maintainers; [ jmillerpdt ] ++ teams.cuda.members;
+    maintainers = (with maintainers; [ jmillerpdt ]) ++ teams.cuda.members;
   };
 })

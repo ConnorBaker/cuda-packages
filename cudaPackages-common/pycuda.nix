@@ -97,11 +97,10 @@ buildPythonPackage {
       "x86_64-linux"
     ];
     maintainers =
-      with maintainers;
-      [
+      (with maintainers; [
         artuuge
         connorbaker
-      ]
+      ])
       ++ teams.cuda.members;
   };
 }

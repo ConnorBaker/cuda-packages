@@ -60,36 +60,37 @@ let
 
   hostRedistArch = getRedistArch hasJetsonTarget final.stdenv.hostPlatform.system;
 
-  fetchFromGitHubAutoName =
+  addNameToFetchFromGitLikeArgs =
     args:
-    final.fetchFromGitHub (
-      if args ? name then
-        # Use `name` when provided.
-        args
-      else
-        let
-          inherit (args) owner repo rev;
-          revStrippedRefsTags = removePrefix "refs/tags/" rev;
-          isTag = revStrippedRefsTags != rev;
-          isHash = match "^[0-9a-f]{40}$" rev == [ ];
-          shortHash = substring 0 8 rev;
-        in
-        args
-        // {
-          name = concatStringsSep "-" [
-            owner
-            repo
-            (
-              if isTag then
-                revStrippedRefsTags
-              else if isHash then
-                shortHash
-              else
-                throw "Expected either a tag or a hash for the revision"
-            )
-          ];
-        }
-    );
+    if args ? name then
+      # Use `name` when provided.
+      args
+    else
+      let
+        inherit (args) owner repo rev;
+        revStrippedRefsTags = removePrefix "refs/tags/" rev;
+        isTag = revStrippedRefsTags != rev;
+        isHash = match "^[0-9a-f]{40}$" rev == [ ];
+        shortHash = substring 0 8 rev;
+      in
+      args
+      // {
+        name = concatStringsSep "-" [
+          owner
+          repo
+          (
+            if isTag then
+              revStrippedRefsTags
+            else if isHash then
+              shortHash
+            else
+              throw "Expected either a tag or a hash for the revision"
+          )
+        ];
+      };
+
+  fetchFromGitHubAutoName = args: final.fetchFromGitHub (addNameToFetchFromGitLikeArgs args);
+  fetchFromGitLabAutoName = args: final.fetchFromGitLab (addNameToFetchFromGitLikeArgs args);
 
   packageSetBuilder =
     cudaMajorMinorPatchVersion:
@@ -146,6 +147,7 @@ let
 
           # Utility function for automatically naming fetchFromGitHub derivations with `name`.
           fetchFromGitHub = fetchFromGitHubAutoName;
+          fetchFromGitLab = fetchFromGitLabAutoName;
 
           # Ensure protobuf is fixed to a specific version which is broadly compatible.
           # TODO: Make conditional on not being cudaPackages_11-jetson, which supports older versions of software and
