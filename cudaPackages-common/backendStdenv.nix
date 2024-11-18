@@ -1,6 +1,7 @@
 {
   config,
   cudaMajorMinorVersion,
+  cudaMajorVersion,
   lib,
   path,
   pkgs,
@@ -16,8 +17,7 @@
 # E.g. for cudaPackages_11_8 we use gcc11 with gcc12's libstdc++
 # Cf. https://github.com/NixOS/nixpkgs/pull/218265 for context
 let
-  # TODO: Make option.
-  nvccHostCompiler = pkgs.config.cudaNvccHostCompiler or "gcc";
+  nvccConfig = config."cuda${cudaMajorVersion}".nvcc;
   cudaNamePrefix = "cuda${cudaMajorMinorVersion}";
   inherit (lib.customisation) extendDerivation;
   inherit (stdenvAdapters) useLibsFrom;
@@ -60,13 +60,15 @@ let
 
   cudaHostStdenv =
     let
-      cudaHostCompilerMajorVersion =
-        config.data.nvccCompatibilities.${cudaMajorMinorVersion}.${nvccHostCompiler}.maxMajorVersion;
+      defaultNvccHostCompilerMajorVersion =
+        config.data.nvccCompatibilities.${cudaMajorMinorVersion}.gcc.maxMajorVersion;
+      defaultNvccHostStdenv =
+        if nvccConfig.allowUnsupportedCompiler then
+          pkgs.gccStdenv
+        else
+          pkgs."gcc${defaultNvccHostCompilerMajorVersion}Stdenv";
     in
-    if nvccHostCompiler == "clang" then
-      pkgs."llvmPackages_${cudaHostCompilerMajorVersion}".stdenv
-    else
-      pkgs."gcc${cudaHostCompilerMajorVersion}Stdenv";
+    if nvccConfig.hostStdenv == null then defaultNvccHostStdenv else nvccConfig.hostStdenv;
 
   # Always use libs from the default stdenv, as the rest of Nixpkgs will use them and we want to avoid conflicts
   # caused by having multiple versions of glibc available and in use.

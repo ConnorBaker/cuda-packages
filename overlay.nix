@@ -229,8 +229,8 @@ in
   cudaPackagesExtensions = [ ];
 
   # Our package sets, configured for the compute capabilities in config.
-  cudaPackages_11 = packageSetBuilder config.cuda11MajorMinorPatchVersion;
-  cudaPackages_12 = packageSetBuilder config.cuda12MajorMinorPatchVersion;
+  cudaPackages_11 = packageSetBuilder config.cuda11.majorMinorPatchVersion;
+  cudaPackages_12 = packageSetBuilder config.cuda12.majorMinorPatchVersion;
   cudaPackages = final.cudaPackages_12;
 
   # Nixpkgs package sets matrixed by real architecture (e.g., `sm_90a`).

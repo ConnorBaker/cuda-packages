@@ -443,18 +443,4 @@ in
   # NOTE: I can't think of a way to actually improve this error message, because we would need to do type-checking on the options attribute set,
   # not the config attribute set (which is where checks are performed).
   cudaCapability = strMatching "^[[:digit:]]+\\.[[:digit:]]+[a-z]?$";
-
-  /**
-    The option type of `NvccHostCompiler`.
-
-    # Type
-
-    ```
-    nvccHostCompiler :: OptionType
-    ```
-  */
-  nvccHostCompiler = enum [
-    "clang"
-    "gcc"
-  ];
 }

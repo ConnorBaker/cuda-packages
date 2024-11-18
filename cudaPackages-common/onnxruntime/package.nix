@@ -8,6 +8,7 @@
   cuda_cccl, # cub/cub.cuh -- Only available from CUDA 12.0.
   cuda_cudart,
   cuda_nvcc,
+  cudaOlder,
   cudnn-frontend,
   cudnn,
   cutlass,
@@ -37,7 +38,7 @@
 }:
 let
   inherit (lib) licenses maintainers teams;
-  inherit (lib.attrsets) getLib mapAttrs optionalAttrs;
+  inherit (lib.attrsets) getLib mapAttrs;
   inherit (lib.lists) optionals;
   inherit (lib.strings)
     cmakeBool
@@ -89,8 +90,10 @@ let
 
     pyproject = true;
 
-    # Clang generates many more warnings than GCC does, so we just disable erroring on warnings entirely.
-    env = optionalAttrs isClang { NIX_CFLAGS_COMPILE = "-Wno-error"; };
+    env.NIX_CFLAGS_COMPILE = builtins.toString (
+      # Clang generates many more warnings than GCC does, so we just disable erroring on warnings entirely.
+      optionals isClang [ "-Wno-error" ]
+    );
 
     # NOTE: Blocked moving to newer protobuf:
     # https://github.com/microsoft/onnxruntime/issues/21308
@@ -380,6 +383,7 @@ let
       '';
       homepage = "https://github.com/microsoft/onnxruntime";
       changelog = "https://github.com/microsoft/onnxruntime/releases/tag/v${finalAttrs.version}";
+      broken = cudaOlder "12";
       # https://github.com/microsoft/onnxruntime/blob/master/BUILD.md#architectures
       platforms = [
         "aarch64-linux"

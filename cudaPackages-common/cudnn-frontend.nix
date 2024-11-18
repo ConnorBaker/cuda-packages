@@ -12,6 +12,7 @@
   lib,
   libcublas,
   ninja,
+  nlohmann_json,
 }:
 let
   inherit (lib.lists) optionals;
@@ -57,34 +58,45 @@ backendStdenv.mkDerivation (finalAttrs: {
     cuda_cudart
   ];
 
-  # Link against forgotten libraries and add commands to install targets.
-  postPatch = optionalString finalAttrs.doCheck ''
-    echo >> ./CMakeLists.txt \
-    "
-    target_link_libraries(
-      legacy_samples PRIVATE
-      CUDA::cublasLt
-      CUDA::nvrtc
-    )
+  postPatch =
+    # Patch the source to use our nlohmann_json.
+    # nlohmann_json should be the only vendored dependency.
+    ''
+      rm -rf include/cudnn_frontend/thirdparty/nlohmann
+      rmdir include/cudnn_frontend/thirdparty
+      substituteInPlace include/cudnn_frontend_utils.h \
+        --replace-fail \
+          '#include "cudnn_frontend/thirdparty/nlohmann/json.hpp"' \
+          '#include <nlohmann/json.hpp>'
+    ''
+    # Link against forgotten libraries and add commands to install targets.
+    + optionalString finalAttrs.doCheck ''
+      echo >> ./CMakeLists.txt \
+      "
+      target_link_libraries(
+        legacy_samples PRIVATE
+        CUDA::cublasLt
+        CUDA::nvrtc
+      )
 
-    target_link_libraries(
-      samples PRIVATE
-      CUDA::cublasLt
-      CUDA::nvrtc
-    )
+      target_link_libraries(
+        samples PRIVATE
+        CUDA::cublasLt
+        CUDA::nvrtc
+      )
 
-    target_link_libraries(
-      tests
-      CUDA::cublasLt
-      CUDA::nvrtc
-    )
+      target_link_libraries(
+        tests
+        CUDA::cublasLt
+        CUDA::nvrtc
+      )
 
-    install(
-      TARGETS legacy_samples samples tests
-      DESTINATION ''${CMAKE_INSTALL_BINDIR}
-    )
-    "
-  '';
+      install(
+        TARGETS legacy_samples samples tests
+        DESTINATION ''${CMAKE_INSTALL_BINDIR}
+      )
+      "
+    '';
 
   cmakeFlags = [
     (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
@@ -106,6 +118,10 @@ backendStdenv.mkDerivation (finalAttrs: {
   enableParallelChecking = true;
 
   enableParallelInstalling = true;
+
+  propagatedBuildInputs = [
+    nlohmann_json
+  ];
 
   doCheck = true;
 
