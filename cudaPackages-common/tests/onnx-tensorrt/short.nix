@@ -1,5 +1,5 @@
 {
-  flags,
+  backendStdenv,
   cuda_cudart,
   onnx-tensorrt,
   python3,
@@ -10,7 +10,7 @@ writeShellApplication {
     __structuredAttrs = true;
     strictDeps = true;
   };
-  name = "${flags.cudaNamePrefix}-tests-onnx-tensorrt-short";
+  name = "${backendStdenv.cudaNamePrefix}-tests-onnx-tensorrt-short";
   runtimeInputs = [
     cuda_cudart
     (python3.withPackages (ps: [

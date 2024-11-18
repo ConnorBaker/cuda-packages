@@ -1,7 +1,6 @@
 {
   config,
-  cudaVersion,
-  flags,
+  cudaMajorMinorVersion,
   lib,
   path,
   pkgs,
@@ -19,7 +18,7 @@
 let
   # TODO: Make option.
   nvccHostCompiler = pkgs.config.cudaNvccHostCompiler or "gcc";
-  inherit (flags) cudaNamePrefix;
+  cudaNamePrefix = "cuda${cudaMajorMinorVersion}";
   inherit (lib.customisation) extendDerivation;
   inherit (stdenvAdapters) useLibsFrom;
 
@@ -62,7 +61,7 @@ let
   cudaHostStdenv =
     let
       cudaHostCompilerMajorVersion =
-        config.data.nvccCompatibilities.${cudaVersion}.${nvccHostCompiler}.maxMajorVersion;
+        config.data.nvccCompatibilities.${cudaMajorMinorVersion}.${nvccHostCompiler}.maxMajorVersion;
     in
     if nvccHostCompiler == "clang" then
       pkgs."llvmPackages_${cudaHostCompilerMajorVersion}".stdenv
@@ -75,6 +74,7 @@ let
 
   passthruExtra = {
     inherit cudaHostStdenv;
+    inherit cudaNamePrefix;
   };
 
   assertCondition = true;

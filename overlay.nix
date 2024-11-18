@@ -45,7 +45,6 @@ let
     ;
   inherit (final.lib.strings)
     concatStringsSep
-    hasPrefix
     removePrefix
     versionAtLeast
     versionOlder
@@ -230,8 +229,8 @@ in
   cudaPackagesExtensions = [ ];
 
   # Our package sets, configured for the compute capabilities in config.
-  cudaPackages_11 = packageSetBuilder "11.8.0";
-  cudaPackages_12 = packageSetBuilder "12.6.2";
+  cudaPackages_11 = packageSetBuilder config.cuda11MajorMinorPatchVersion;
+  cudaPackages_12 = packageSetBuilder config.cuda12MajorMinorPatchVersion;
   cudaPackages = final.cudaPackages_12;
 
   # Nixpkgs package sets matrixed by real architecture (e.g., `sm_90a`).
@@ -246,6 +245,7 @@ in
       {
         computeCapability,
         isJetson,
+        # TODO: Use versioned names (i.e., minCudaMajorMinorVersion)
         minCudaVersion,
         maxCudaVersion,
         ...

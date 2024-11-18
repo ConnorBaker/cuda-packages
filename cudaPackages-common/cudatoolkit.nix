@@ -18,7 +18,6 @@
   cuda_nvtx ? null,
   cuda_profiler_api,
   cuda_sanitizer_api ? null,
-  flags,
   libcublas ? null,
   libcufft ? null,
   libcurand ? null,
@@ -28,7 +27,7 @@
 }:
 
 let
-  inherit (flags) cudaNamePrefix;
+  inherit (backendStdenv) cudaNamePrefix;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) concatMap filter map;
   inherit (lib.trivial) pipe;

@@ -1,6 +1,6 @@
 {
+  backendStdenv,
   cudnn-frontend,
-  flags,
   lib,
   writeShellApplication,
 }:
@@ -12,7 +12,7 @@ writeShellApplication {
     __structuredAttrs = true;
     strictDeps = true;
   };
-  name = "${flags.cudaNamePrefix}-tests-cudnn-frontend-tests";
+  name = "${backendStdenv.cudaNamePrefix}-tests-cudnn-frontend-tests";
   runtimeInputs = [ cudnn-frontend.tests ];
   text = ''
     args=( --rng-seed=0 )

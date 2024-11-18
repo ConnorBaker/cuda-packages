@@ -5,13 +5,14 @@
 # executed last.
 {
   autoFixElfFiles,
+  backendStdenv,
   cuda_compat ? null,
   flags,
   lib,
   makeSetupHook,
 }:
 makeSetupHook {
-  name = "${flags.cudaNamePrefix}-auto-add-cuda-compat-runpath-hook";
+  name = "${backendStdenv.cudaNamePrefix}-auto-add-cuda-compat-runpath-hook";
   propagatedBuildInputs = [ autoFixElfFiles ];
 
   substitutions = {

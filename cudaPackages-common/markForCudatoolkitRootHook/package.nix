@@ -1,12 +1,12 @@
 # Internal hook, used by cudatoolkit and cuda redist packages
 # to accommodate automatic CUDAToolkit_ROOT construction
 {
-  flags,
+  backendStdenv,
   lib,
   makeSetupHook,
 }:
 makeSetupHook {
-  name = "${flags.cudaNamePrefix}-mark-for-cudatoolkit-root-hook";
+  name = "${backendStdenv.cudaNamePrefix}-mark-for-cudatoolkit-root-hook";
 
   meta = {
     description = "Setup hook which marks CUDA packages for inclusion in CUDA environment variables";

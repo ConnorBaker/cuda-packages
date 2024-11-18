@@ -6,7 +6,8 @@
   makeSetupHook,
 }:
 let
-  inherit (flags) cmakeCudaArchitecturesString cudaNamePrefix;
+  inherit (backendStdenv) cc cudaNamePrefix;
+  inherit (flags) cmakeCudaArchitecturesString;
 in
 makeSetupHook {
   name = "${cudaNamePrefix}-setup-cuda-hook";
@@ -14,7 +15,7 @@ makeSetupHook {
   substitutions = {
     # Required in addition to ccRoot as otherwise bin/gcc is looked up
     # when building CMakeCUDACompilerId.cu
-    ccFullPath = "${backendStdenv.cc}/bin/${backendStdenv.cc.targetPrefix}c++";
+    ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
     cudaArchs = cmakeCudaArchitecturesString;
     setupCudaHook = placeholder "out";
   };

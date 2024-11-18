@@ -1,5 +1,5 @@
 {
-  flags,
+  backendStdenv,
   lib,
   saxpy,
   writeShellApplication,
@@ -12,7 +12,7 @@ writeShellApplication {
     __structuredAttrs = true;
     strictDeps = true;
   };
-  name = "${flags.cudaNamePrefix}-tests-saxpy";
+  name = "${backendStdenv.cudaNamePrefix}-tests-saxpy";
   runtimeInputs = [ saxpy ];
   text = ''
     "${getExe saxpy}" "$@"
