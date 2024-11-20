@@ -1,6 +1,6 @@
-{ cuda-lib, lib, ... }:
+{ lib, ... }:
 let
-  inherit (cuda-lib.utils) mkOptions;
+  inherit (lib.cuda.utils) mkOptions;
   inherit (lib.options) mkOption;
   inherit (lib.types)
     bool
@@ -27,7 +27,7 @@ in
         };
         computeCapability = {
           description = "The compute capability of the GPU.";
-          type = cuda-lib.types.cudaCapability;
+          type = lib.cuda.types.cudaCapability;
         };
         dontDefaultAfter = {
           description = ''
@@ -35,7 +35,7 @@ in
 
             The value `null` means we always include this GPU in the default capabilities if it is supported.
           '';
-          type = nullOr cuda-lib.types.majorMinorVersion;
+          type = nullOr lib.cuda.types.majorMinorVersion;
         };
         isJetson = {
           description = ''
@@ -50,11 +50,11 @@ in
           description = ''
             The maximum (exclusive) CUDA version that supports this GPU. `null` means there is no maximum.
           '';
-          type = nullOr cuda-lib.types.majorMinorVersion;
+          type = nullOr lib.cuda.types.majorMinorVersion;
         };
         minCudaVersion = {
           description = "The minimum (inclusive) CUDA version that supports this GPU.";
-          type = cuda-lib.types.majorMinorVersion;
+          type = lib.cuda.types.majorMinorVersion;
         };
       };
     });

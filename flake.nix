@@ -28,9 +28,8 @@
         ;
       inherit (inputs.nixpkgs.lib.lists) optionals;
       inherit (inputs.flake-parts.lib) mkFlake;
-
-      cuda-lib = import ./cuda-lib { inherit (inputs.nixpkgs) lib; };
-      inherit (cuda-lib.utils) flattenDrvTree;
+      lib = import ./lib { inherit (inputs.nixpkgs) lib; };
+      inherit (lib.cuda.utils) flattenDrvTree;
     in
     mkFlake { inherit inputs; } {
       systems = [
@@ -44,7 +43,8 @@
       ];
 
       flake = {
-        inherit cuda-lib;
+        cuda-lib = lib.cuda;
+        upstreamable-lib = lib.upstreamable;
         overlays.default = import ./overlay.nix;
       };
 
@@ -112,8 +112,7 @@
               nixToolConfig = {
                 enable = true;
                 excludes = [
-                  "cudaPackages-wip/"
-                  "versioned-packages/"
+                  "cuda-packages/wip/"
                 ];
               };
             in

@@ -1,8 +1,7 @@
 final: prev:
 let
-  cuda-lib = import ./cuda-lib { inherit (final) lib; };
-
-  inherit (final.lib.modules) evalModules;
+  inherit (final) lib;
+  inherit (lib.modules) evalModules;
   inherit
     (evalModules {
       modules = final.cudaModules;
@@ -16,7 +15,7 @@ let
     throw
     toJSON
     ;
-  inherit (cuda-lib.utils)
+  inherit (lib.cuda.utils)
     buildRedistPackages
     getJetsonTargets
     getRedistArch
@@ -27,33 +26,33 @@ let
     versionBoundedInclusive
     versionNewer
     ;
-  inherit (final.lib.attrsets)
+  inherit (lib.attrsets)
     attrNames
     dontRecurseIntoAttrs
     foldlAttrs
     optionalAttrs
     recurseIntoAttrs
     ;
-  inherit (final.lib.customisation) makeScope;
-  inherit (final.lib.filesystem) packagesFromDirectoryRecursive;
-  inherit (final.lib.fixedPoints) composeManyExtensions extends;
-  inherit (final.lib.lists)
+  inherit (lib.customisation) makeScope;
+  inherit (lib.filesystem) packagesFromDirectoryRecursive;
+  inherit (lib.fixedPoints) composeManyExtensions extends;
+  inherit (lib.lists)
     foldl'
     head
     length
     optionals
     ;
-  inherit (final.lib.strings)
+  inherit (lib.strings)
     concatStringsSep
     removePrefix
     versionAtLeast
     versionOlder
     ;
-  inherit (final.lib.trivial)
+  inherit (lib.trivial)
     warn
     throwIf
     ;
-  inherit (final.lib.versions) major majorMinor;
+  inherit (lib.versions) major majorMinor;
 
   hasJetsonTarget = (getJetsonTargets config.data.gpus (final.config.cudaCapabilities or [ ])) != [ ];
 
@@ -108,6 +107,8 @@ let
 
       isCuda11 = cudaMajorVersion == "11";
       isCuda12 = cudaMajorVersion == "12";
+      # NOTE: Remember that hostRedistArch uses NVIDIA's naming convention, and that the Jetson is linux-aarch64.
+      # ARM servers are linux-sbsa.
       isJetsonBuild = hostRedistArch == "linux-aarch64";
 
       # Packaging-specific utilities.
@@ -116,8 +117,6 @@ let
       cudaPackagesFun =
         finalCudaPackages:
         recurseIntoAttrs {
-          cuda-lib = dontRecurseIntoAttrs cuda-lib;
-
           cudaPackages = dontRecurseIntoAttrs finalCudaPackages // {
             __attrsFailEvaluation = true;
           };
@@ -169,11 +168,14 @@ let
             foldlAttrs (
               acc: redistName: redistConfig:
               let
-                inherit (redistConfig) versionedManifests;
                 manifestVersions =
-                  if redistName == "cuda" then [ cudaMajorMinorPatchVersion ] else attrNames versionedManifests;
+                  if redistName == "cuda" then
+                    [ cudaMajorMinorPatchVersion ]
+                  else
+                    attrNames redistConfig.versionedManifests;
                 manifestVersion = head manifestVersions;
               in
+              # TODO: This will prevent users adding their own redists.
               throwIf (
                 length manifestVersions != 1
               ) "Expected exactly one version for ${redistName} manifests (found ${toJSON manifestVersions})" acc
@@ -182,9 +184,10 @@ let
                   desiredCudaVariant
                   finalCudaPackages
                   hostRedistArch
+                  manifestVersion
+                  redistConfig
                   redistName
                   ;
-                manifest = versionedManifests.${manifestVersion};
               }
             ) { } config.redists
           )
@@ -193,9 +196,20 @@ let
             finalCudaPackages: _:
             packagesFromDirectoryRecursive {
               inherit (finalCudaPackages) callPackage;
-              directory = ./cudaPackages-common;
+              directory = ./cuda-packages/common;
             }
           )
+        ]
+        # cudaPackages_11
+        ++ optionals isCuda11 [
+          (
+            finalCudaPackages: _:
+            packagesFromDirectoryRecursive {
+              inherit (finalCudaPackages) callPackage;
+              directory = ./cuda-packages/11;
+            }
+          )
+
         ]
         # cudaPackages_11-jetson
         ++ optionals (isCuda11 && isJetsonBuild) [
@@ -203,7 +217,7 @@ let
             finalCudaPackages: _:
             packagesFromDirectoryRecursive {
               inherit (finalCudaPackages) callPackage;
-              directory = ./cudaPackages_11-jetson;
+              directory = ./cuda-packages/11-jetson;
             }
           )
 
@@ -214,7 +228,7 @@ let
             finalCudaPackages: _:
             packagesFromDirectoryRecursive {
               inherit (finalCudaPackages) callPackage;
-              directory = ./cudaPackages_12;
+              directory = ./cuda-packages/12;
             }
           )
         ]
@@ -223,8 +237,14 @@ let
     makeScope final.newScope (extends (composeManyExtensions extensions) cudaPackagesFun);
 in
 {
+  # Add our attribute sets to lib.
+  # TODO: Can't use final.lib here because we get infinite recursion.
+  # This means that we clobber any changes to lib made by the user after this overlay is applied.
+  lib = import ./lib { inherit (prev) lib; };
+
   # For changing the manifests available.
   cudaModules = [ ./modules ];
+
   # For adding packages in an ad-hoc manner.
   cudaPackagesExtensions = [ ];
 

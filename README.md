@@ -16,6 +16,11 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 
 ## Todo
 
+- Manifests and overrides are versioned
+- TODO: Just renamed the directories to remove the `versioned-` prefix.
+
+  - This prevents conflicts when downstream consumers add their own manifests and overrides.
+
 - A bunch of stuff (including docs)
 - Update the setup hooks to use the logging functionality introduced in newer versions of Nixpkgs's `setup.sh`.
 - Throw if trying to build for a capability newer than the CUDA package set can support.

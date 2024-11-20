@@ -1,28 +1,22 @@
-{ cuda-lib, lib, ... }:
+{ lib, ... }:
 let
+  inherit (builtins) readDir;
+  inherit (lib.attrsets) foldlAttrs optionalAttrs;
   inherit (lib.options) mkOption;
+  inherit (lib.cuda.utils) mkRedistConfig;
 in
 {
-  imports = [
-    ./cublasmp
-    ./cuda
-    ./cudnn
-    ./cudss
-    ./cuquantum
-    ./cusolvermp
-    ./cusparselt
-    ./cutensor
-    ./nppplus
-    ./nvjpeg2000
-    ./nvpl
-    ./nvtiff
-    ./tensorrt
-  ];
   options = {
     redists = mkOption {
       description = "A mapping from redist name to redistConfig";
-      type = cuda-lib.types.redists;
-      default = { };
+      type = lib.cuda.types.redists;
+      default = foldlAttrs (
+        acc: pathName: pathType:
+        acc
+        // optionalAttrs (pathType == "directory") {
+          ${pathName} = mkRedistConfig (./. + "/${pathName}");
+        }
+      ) { } (readDir ./.);
     };
   };
 }
