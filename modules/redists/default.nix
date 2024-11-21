@@ -1,8 +1,8 @@
 { lib, ... }:
 let
   inherit (builtins) readDir;
-  inherit (lib.asserts) assertMsg mapAttrs;
-  inherit (lib.attrsets) foldlAttrs optionalAttrs;
+  inherit (lib.asserts) assertMsg;
+  inherit (lib.attrsets) foldlAttrs optionalAttrs mapAttrs;
   inherit (lib.modules) mkDefault;
   inherit (lib.options) mkOption;
   inherit (lib.cuda.types) redistName;
