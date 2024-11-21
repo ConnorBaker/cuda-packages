@@ -4,8 +4,8 @@
   ...
 }:
 let
-  inherit (lib.cuda.utils) mkOptions;
   inherit (lib.attrsets) attrNames;
+  inherit (lib.options) mkOption;
   inherit (lib.types) nonEmptyListOf;
 in
 {
@@ -13,13 +13,11 @@ in
     ./gpus.nix
     ./nvcc-compatibilities.nix
   ];
-  options.data = mkOptions {
-    cudaMajorMinorPatchVersions = {
-      description = ''
-        List of CUDA major.minor.patch versions available across runfile installers and redist packages
-      '';
-      type = nonEmptyListOf lib.cuda.types.majorMinorPatchVersion;
-      default = attrNames config.redists.cuda.versionedManifests;
-    };
+  options.data.cudaMajorMinorPatchVersions = mkOption {
+    description = ''
+      List of CUDA major.minor.patch versions available across runfile installers and redist packages
+    '';
+    type = nonEmptyListOf lib.cuda.types.majorMinorPatchVersion;
+    default = attrNames config.redists.cuda.versionedManifests;
   };
 }

@@ -14,6 +14,7 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 
 ## Todo
 
+- Merging of submodules appears to not work :l
 - Allow multiple versions of non-cuda-redist packages (e.g., CUDNN) to be installed at once?
 - Manifests and overrides are versioned
   - This prevents conflicts when downstream consumers add their own manifests and overrides.
