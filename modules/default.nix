@@ -37,6 +37,7 @@ in
         allowUnsupportedCompiler = mkDefault false;
       };
       majorMinorPatchVersion = mkDefault "11.8.0";
+      packagesDirectory = mkDefault null;
     };
     cuda12 = {
       nvcc = {
@@ -44,6 +45,7 @@ in
         allowUnsupportedCompiler = mkDefault false;
       };
       majorMinorPatchVersion = mkDefault "12.6.2";
+      packagesDirectory = mkDefault ../cuda-packages/12.6.2;
     };
   };
 }

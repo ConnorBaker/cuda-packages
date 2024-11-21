@@ -2,7 +2,6 @@
 let
   inherit (lib.cuda.types)
     attrs
-    cudaPackagesConfig
     cudaRealArch
     cudaVariant
     features
@@ -39,6 +38,7 @@ let
     nullOr
     oneOf
     package
+    path
     raw
     strMatching
     submodule
@@ -484,6 +484,7 @@ in
 
   # TODO: Docs
   cudaPackagesConfig = submodule {
+    freeformType = raw;
     options = mkOptions {
       nvcc = {
         description = ''
@@ -500,6 +501,13 @@ in
           NOTE: You must supply a versioned manifest of the same format as exists in this repo.
         '';
         type = majorMinorPatchVersion;
+      };
+      packagesDirectory = {
+        description = ''
+          The path to a directory containing Nix expressions to add to the package set.
+        '';
+        type = nullOr path;
+        default = null;
       };
     };
   };

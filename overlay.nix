@@ -4,7 +4,7 @@ let
   inherit (lib.modules) evalModules;
   inherit
     (evalModules {
-      modules = final.cudaModules;
+      modules = [ ./modules ] ++ final.cudaModules;
     })
     config
     ;
@@ -40,7 +40,6 @@ let
     foldl'
     head
     length
-    optionals
     ;
   inherit (lib.strings)
     concatStringsSep
@@ -107,9 +106,6 @@ let
 
       isCuda11 = cudaMajorVersion == "11";
       isCuda12 = cudaMajorVersion == "12";
-      # NOTE: Remember that hostRedistArch uses NVIDIA's naming convention, and that the Jetson is linux-aarch64.
-      # ARM servers are linux-sbsa.
-      isJetsonBuild = hostRedistArch == "linux-aarch64";
 
       # Packaging-specific utilities.
       desiredCudaVariant = mkCudaVariant cudaMajorMinorPatchVersion;
@@ -131,7 +127,6 @@ let
 
           # CUDA versions
           inherit cudaMajorMinorPatchVersion cudaMajorMinorVersion cudaMajorVersion;
-          cudaVersion = warn "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorVersion;
 
           # CUDA version comparison utilities
           inherit
@@ -141,6 +136,8 @@ let
             cudaBoundedInclusive
             cudaNewer
             cudaOlder
+            isCuda11
+            isCuda12
             ;
 
           # Utility function for automatically naming fetchFromGitHub derivations with `name`.
@@ -159,6 +156,7 @@ let
         [
           # Aliases
           (finalCudaPackages: _: {
+            cudaVersion = warn "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorVersion;
             cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
             cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
           })
@@ -191,7 +189,7 @@ let
               }
             ) { } config.redists
           )
-          # cudaPackagesCommon
+          # Common packages
           (
             finalCudaPackages: _:
             packagesFromDirectoryRecursive {
@@ -199,39 +197,25 @@ let
               directory = ./cuda-packages/common;
             }
           )
-        ]
-        # cudaPackages_11
-        ++ optionals isCuda11 [
+          # Version-specific packages
           (
             finalCudaPackages: _:
-            packagesFromDirectoryRecursive {
-              inherit (finalCudaPackages) callPackage;
-              directory = ./cuda-packages/11;
-            }
+            optionalAttrs (isCuda11 && config.cuda11.packagesDirectory != null)
+              (packagesFromDirectoryRecursive {
+                inherit (finalCudaPackages) callPackage;
+                directory = config.cuda11.packagesDirectory;
+              })
           )
-
-        ]
-        # cudaPackages_11-jetson
-        ++ optionals (isCuda11 && isJetsonBuild) [
           (
             finalCudaPackages: _:
-            packagesFromDirectoryRecursive {
-              inherit (finalCudaPackages) callPackage;
-              directory = ./cuda-packages/11-jetson;
-            }
-          )
-
-        ]
-        # cudaPackages_12
-        ++ optionals isCuda12 [
-          (
-            finalCudaPackages: _:
-            packagesFromDirectoryRecursive {
-              inherit (finalCudaPackages) callPackage;
-              directory = ./cuda-packages/12;
-            }
+            optionalAttrs (isCuda12 && config.cuda12.packagesDirectory != null)
+              (packagesFromDirectoryRecursive {
+                inherit (finalCudaPackages) callPackage;
+                directory = config.cuda12.packagesDirectory;
+              })
           )
         ]
+        # User additions
         ++ final.cudaPackagesExtensions;
     in
     makeScope final.newScope (extends (composeManyExtensions extensions) cudaPackagesFun);
@@ -243,7 +227,7 @@ in
   lib = import ./lib { inherit (prev) lib; };
 
   # For changing the manifests available.
-  cudaModules = [ ./modules ];
+  cudaModules = [ ];
 
   # For adding packages in an ad-hoc manner.
   cudaPackagesExtensions = [ ];
