@@ -4,11 +4,11 @@
   autoAddDriverRunpath,
   autoPatchelfHook,
   backendStdenv,
+  config,
   cudaMajorMinorVersion,
   flags,
   lib,
   markForCudatoolkitRootHook,
-  pkgs,
 }:
 let
   inherit (lib)
@@ -142,7 +142,7 @@ backendStdenv.mkDerivation (
     # a required package missing.
     # NOTE: Use this when a broken condition means evaluation can fail!
     badPlatformsConditions = {
-      "CUDA support is not enabled" = !pkgs.config.cudaSupport;
+      "CUDA support is not enabled" = !config.cudaSupport;
       "Platform is not supported" = finalAttrs.src == null;
     };
 

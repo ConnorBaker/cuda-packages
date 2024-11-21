@@ -1,6 +1,6 @@
 {
   backendStdenv,
-  config,
+  cudaConfig,
   cudaAtLeast,
   cudaOlder,
   cudaMajorVersion,
@@ -13,7 +13,7 @@ let
 in
 finalAttrs: prevAttrs: {
   # TODO: This seems like a very dangerous option.
-  postPatch = optionalString config."cuda${cudaMajorVersion}".nvcc.allowUnsupportedCompiler ''
+  postPatch = optionalString cudaConfig."cuda${cudaMajorVersion}".nvcc.allowUnsupportedCompiler ''
     substituteInPlace include/crt/host_config.h \
       --replace-fail \
         "#if !__NV_NO_HOST_COMPILER_CHECK" \

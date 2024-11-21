@@ -3,6 +3,7 @@
 # in the case redistributable packages are not available.
 {
   backendStdenv,
+  config,
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
@@ -13,7 +14,6 @@
   mpi,
   mpiSupport ? false,
   nccl,
-  pkgs,
   which,
 }:
 let
@@ -77,7 +77,7 @@ backendStdenv.mkDerivation (finalAttrs: {
       "x86_64-linux"
     ];
     license = licenses.bsd3;
-    broken = !pkgs.config.cudaSupport || (mpiSupport && mpi == null);
+    broken = !config.cudaSupport || (mpiSupport && mpi == null);
     maintainers = (with maintainers; [ jmillerpdt ]) ++ teams.cuda.members;
   };
 })

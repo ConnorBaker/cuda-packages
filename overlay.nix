@@ -1,13 +1,7 @@
 final: prev:
 let
-  inherit (final) lib;
+  inherit (final) lib cudaConfig;
   inherit (lib.modules) evalModules;
-  inherit
-    (evalModules {
-      modules = [ ./modules ] ++ final.cudaModules;
-    })
-    config
-    ;
 
   inherit (builtins)
     match
@@ -40,6 +34,7 @@ let
     foldl'
     head
     length
+    optionals
     ;
   inherit (lib.strings)
     concatStringsSep
@@ -53,7 +48,8 @@ let
     ;
   inherit (lib.versions) major majorMinor;
 
-  hasJetsonTarget = (getJetsonTargets config.data.gpus (final.config.cudaCapabilities or [ ])) != [ ];
+  hasJetsonTarget =
+    (getJetsonTargets cudaConfig.data.gpus (final.config.cudaCapabilities or [ ])) != [ ];
 
   hostRedistArch = getRedistArch hasJetsonTarget final.stdenv.hostPlatform.system;
 
@@ -121,10 +117,6 @@ let
             __attrsFailEvaluation = true;
           };
 
-          config = dontRecurseIntoAttrs config // {
-            __attrsFailEvaluation = true;
-          };
-
           # CUDA versions
           inherit cudaMajorMinorPatchVersion cudaMajorMinorVersion cudaMajorVersion;
 
@@ -187,7 +179,7 @@ let
                   redistName
                   ;
               }
-            ) { } config.redists
+            ) { } cudaConfig.redists
           )
           # Common packages
           (
@@ -197,22 +189,25 @@ let
               directory = ./cuda-packages/common;
             }
           )
-          # Version-specific packages
+        ]
+        # CUDA 11-specific packages
+        ++ optionals (isCuda11 && cudaConfig.cuda11.packagesDirectory != null) [
           (
             finalCudaPackages: _:
-            optionalAttrs (isCuda11 && config.cuda11.packagesDirectory != null)
-              (packagesFromDirectoryRecursive {
-                inherit (finalCudaPackages) callPackage;
-                directory = config.cuda11.packagesDirectory;
-              })
+            packagesFromDirectoryRecursive {
+              inherit (finalCudaPackages) callPackage;
+              directory = cudaConfig.cuda11.packagesDirectory;
+            }
           )
+        ]
+        # CUDA 12-specific packages
+        ++ optionals (isCuda12 && cudaConfig.cuda12.packagesDirectory != null) [
           (
             finalCudaPackages: _:
-            optionalAttrs (isCuda12 && config.cuda12.packagesDirectory != null)
-              (packagesFromDirectoryRecursive {
-                inherit (finalCudaPackages) callPackage;
-                directory = config.cuda12.packagesDirectory;
-              })
+            packagesFromDirectoryRecursive {
+              inherit (finalCudaPackages) callPackage;
+              directory = cudaConfig.cuda12.packagesDirectory;
+            }
           )
         ]
         # User additions
@@ -226,6 +221,12 @@ in
   # This means that we clobber any changes to lib made by the user after this overlay is applied.
   lib = import ./lib { inherit (prev) lib; };
 
+  # For inspecting the results of the module system evaluation.
+  cudaConfig =
+    (evalModules {
+      modules = [ ./modules ] ++ final.cudaModules;
+    }).config;
+
   # For changing the manifests available.
   cudaModules = [ ];
 
@@ -233,8 +234,10 @@ in
   cudaPackagesExtensions = [ ];
 
   # Our package sets, configured for the compute capabilities in config.
-  cudaPackages_11 = packageSetBuilder config.cuda11.majorMinorPatchVersion;
-  cudaPackages_12 = packageSetBuilder config.cuda12.majorMinorPatchVersion;
+  cudaPackages_11 = warn "cudaPackages_11 is EOL and marked for removal" (
+    packageSetBuilder cudaConfig.cuda11.majorMinorPatchVersion
+  );
+  cudaPackages_12 = packageSetBuilder cudaConfig.cuda12.majorMinorPatchVersion;
   cudaPackages = final.cudaPackages_12;
 
   # Nixpkgs package sets matrixed by real architecture (e.g., `sm_90a`).
@@ -278,7 +281,7 @@ in
               }
             );
           }
-    ) (dontRecurseIntoAttrs { }) config.data.gpus;
+    ) (dontRecurseIntoAttrs { }) cudaConfig.data.gpus;
 
   # Package fixes
   openmpi = prev.openmpi.override (prevAttrs: {

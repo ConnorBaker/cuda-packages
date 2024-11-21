@@ -649,16 +649,4 @@ in
       ) gpus;
     in
     intersectLists allJetsonComputeCapabilities cudaCapabilities;
-  # TODO: Move to doc.
-  # jetsonTargets = {
-  #   description = "List of Jetson targets";
-  #   type = listOf lib.cuda.types.cudaCapability;
-  #   default =
-  #     let
-  #       allJetsonComputeCapabilities = concatMap (
-  #         gpu: optionals gpu.isJetson [ gpu.computeCapability ]
-  #       ) config.data.gpus;
-  #     in
-  #     intersectLists allJetsonComputeCapabilities config.cuda.capabilities;
-  # };
 }

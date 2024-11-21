@@ -463,7 +463,7 @@ in
         description = ''
           The host stdenv compiler to use when building CUDA code.
           This option is used to determine the version of the host compiler to use when building CUDA code.
-          The default is selected by using config.data.nvcc-compatibilities.
+          The default is selected by using cudaConfig.data.nvcc-compatibilities.
         '';
         default = null;
         type = nullOr package;

@@ -1,14 +1,14 @@
 {
   config,
-  cudaCapabilities ? (pkgs.config.cudaCapabilities or [ ]),
-  cudaForwardCompat ? (pkgs.config.cudaForwardCompat or true),
+  cudaConfig,
+  cudaCapabilities ? (config.cudaCapabilities or [ ]),
+  cudaForwardCompat ? (config.cudaForwardCompat or true),
   cudaMajorMinorVersion,
   lib,
-  pkgs,
   stdenv,
 }:
 let
-  inherit (config.data) gpus;
+  inherit (cudaConfig.data) gpus;
   inherit (lib)
     asserts
     attrsets

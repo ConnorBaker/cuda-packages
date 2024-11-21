@@ -1,5 +1,6 @@
 {
   config,
+  cudaConfig,
   cudaMajorMinorVersion,
   cudaMajorVersion,
   lib,
@@ -17,7 +18,7 @@
 # E.g. for cudaPackages_11_8 we use gcc11 with gcc12's libstdc++
 # Cf. https://github.com/NixOS/nixpkgs/pull/218265 for context
 let
-  nvccConfig = config."cuda${cudaMajorVersion}".nvcc;
+  nvccConfig = cudaConfig."cuda${cudaMajorVersion}".nvcc;
   cudaNamePrefix = "cuda${cudaMajorMinorVersion}";
   inherit (lib.customisation) extendDerivation;
   inherit (stdenvAdapters) useLibsFrom;
@@ -29,8 +30,7 @@ let
   defaultMkDerivationFromStdenv =
     stdenv:
     (import (path + "/pkgs/stdenv/generic/make-derivation.nix") {
-      inherit (pkgs) config;
-      inherit lib;
+      inherit config lib;
     } stdenv).mkDerivation;
 
   mkCudaStdenv =
@@ -61,7 +61,7 @@ let
   cudaHostStdenv =
     let
       defaultNvccHostCompilerMajorVersion =
-        config.data.nvccCompatibilities.${cudaMajorMinorVersion}.gcc.maxMajorVersion;
+        cudaConfig.data.nvccCompatibilities.${cudaMajorMinorVersion}.gcc.maxMajorVersion;
       defaultNvccHostStdenv =
         if nvccConfig.allowUnsupportedCompiler then
           pkgs.gccStdenv
