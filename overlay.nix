@@ -234,9 +234,7 @@ in
   cudaPackagesExtensions = [ ];
 
   # Our package sets, configured for the compute capabilities in config.
-  cudaPackages_11 = warn "cudaPackages_11 is EOL and marked for removal" (
-    packageSetBuilder cudaConfig.cuda11.majorMinorPatchVersion
-  );
+  cudaPackages_11 = warn "cudaPackages_11 is EOL and marked for removal" prev.cudaPackages_11;
   cudaPackages_12 = packageSetBuilder cudaConfig.cuda12.majorMinorPatchVersion;
   cudaPackages = final.cudaPackages_12;
 

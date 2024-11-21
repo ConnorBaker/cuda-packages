@@ -23,7 +23,6 @@
     let
       inherit (inputs.nixpkgs.lib.attrsets)
         genAttrs
-        getAttrs
         recurseIntoAttrs
         ;
       inherit (inputs.nixpkgs.lib.lists) optionals;
@@ -79,18 +78,14 @@
                       "sm_89"
                     ]
                     ++ optionals (pkgs.stdenv.hostPlatform.system == "aarch64-linux") [
-                      "sm_72"
                       "sm_87"
                     ]
                   )
                   (
                     realArchitecture:
-                    recurseIntoAttrs (
-                      getAttrs [
-                        "cudaPackages_11"
-                        "cudaPackages_12"
-                      ] pkgs.pkgsCuda.${realArchitecture}
-                    )
+                    recurseIntoAttrs {
+                      cudaPackages_12 = pkgs.pkgsCuda.${realArchitecture};
+                    }
                   );
             in
             flattenDrvTree (recurseIntoAttrs tree);
