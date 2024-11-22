@@ -72,11 +72,16 @@ let
       cudaPackagesFun =
         finalCudaPackages:
         recurseIntoAttrs {
+          pkgs = dontRecurseIntoAttrs final // {
+            __attrsFailEvaluation = true;
+          };
+
           cudaPackages = dontRecurseIntoAttrs finalCudaPackages // {
             __attrsFailEvaluation = true;
           };
 
-          pkgs = dontRecurseIntoAttrs final // {
+          # Introspection
+          cudaPackagesConfig = dontRecurseIntoAttrs cudaPackagesConfig // {
             __attrsFailEvaluation = true;
           };
 
@@ -173,7 +178,9 @@ in
   inherit lib;
 
   # For inspecting the results of the module system evaluation.
-  inherit cudaConfig;
+  cudaConfig = dontRecurseIntoAttrs cudaConfig // {
+    __attrsFailEvaluation = true;
+  };
 
   # For changing the manifests available.
   cudaModules = [ ];
