@@ -5,7 +5,6 @@ let
     cudaRealArch
     cudaVariant
     features
-    majorMinorPatchVersion
     manifest
     nvccConfig
     packageInfo
@@ -25,11 +24,11 @@ let
   inherit (lib.cuda.utils) mkOptions;
   inherit (lib.attrsets) attrNames;
   inherit (lib.lists) all;
+  inherit (lib.options) mkOption;
   inherit (lib.strings) concatStringsSep;
   inherit (lib.types)
     addCheck
     attrsOf
-    bool
     enum
     functionTo
     lazyAttrsOf
@@ -458,27 +457,13 @@ in
 
   # TODO: Docs
   nvccConfig = submodule {
-    options = mkOptions {
-      hostStdenv = {
-        description = ''
-          The host stdenv compiler to use when building CUDA code.
-          This option is used to determine the version of the host compiler to use when building CUDA code.
-          The default is selected by using cudaConfig.data.nvcc-compatibilities.
-        '';
-        default = null;
-        type = nullOr package;
-      };
-      allowUnsupportedCompiler = {
-        description = ''
-          Allow the use of an unsupported compiler when building CUDA code.
-          This option is used to determine whether or not to allow the use of an unsupported compiler when building CUDA code.
-          The default is false.
-          https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/#allow-unsupported-compiler-allow-unsupported-compiler
-          NOTE: This will likely break things in horrendous ways if you set this to true.
-        '';
-        default = false;
-        type = bool;
-      };
+    options.hostStdenv = mkOption {
+      description = ''
+        The host stdenv compiler to use when building CUDA code.
+        This option is used to determine the version of the host compiler to use when building CUDA code.
+      '';
+      default = null;
+      type = nullOr package;
     };
   };
 
@@ -493,21 +478,30 @@ in
         type = nvccConfig;
         default = { };
       };
-      majorMinorPatchVersion = {
-        description = ''
-          Three-component version of the CUDA versioned manifest to use.
-          This option is should not be changed unless extending the CUDA package set through extraCudaModules and you need
-          to use a different version of the CUDA versioned manifest.
-          NOTE: You must supply a versioned manifest of the same format as exists in this repo.
-        '';
-        type = majorMinorPatchVersion;
-      };
       packagesDirectory = {
         description = ''
           The path to a directory containing Nix expressions to add to the package set.
         '';
         type = nullOr path;
         default = null;
+      };
+      redists = {
+        description = ''
+          Maps redist name to version or redist arch and version to use.
+
+          In the case the value is a version, that version is used for all redist arches.
+
+          The versions must match the format of the corresponding versioned manifest for the redist.
+
+          If a redistributable is not present in this attribute set, it is not included in the package set.
+
+          If the version specified for a redistributable is not present in the corresponding versioned manifest, it is not included in the package set.
+        '';
+        type = attrs redistName (oneOf [
+          version
+          (attrs redistArch version)
+        ]);
+        default = { };
       };
     };
   };

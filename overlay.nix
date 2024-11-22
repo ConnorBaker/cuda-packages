@@ -1,14 +1,12 @@
 final: prev:
 let
-  inherit (final) lib cudaConfig;
-  inherit (lib.modules) evalModules;
+  lib = import ./lib { inherit (prev) lib; };
+  cudaConfig =
+    (evalModules {
+      modules = [ ./modules ] ++ final.cudaModules;
+    }).config;
 
-  inherit (builtins)
-    match
-    substring
-    throw
-    toJSON
-    ;
+  inherit (builtins) throw;
   inherit (lib.cuda.utils)
     buildRedistPackages
     getJetsonTargets
@@ -21,66 +19,32 @@ let
     versionNewer
     ;
   inherit (lib.attrsets)
-    attrNames
     dontRecurseIntoAttrs
     foldlAttrs
+    hasAttr
+    mapAttrs'
     optionalAttrs
     recurseIntoAttrs
     ;
   inherit (lib.customisation) makeScope;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
-  inherit (lib.lists)
-    foldl'
-    head
-    length
-    optionals
-    ;
+  inherit (lib.lists) foldl' optionals;
+  inherit (lib.modules) evalModules;
   inherit (lib.strings)
-    concatStringsSep
-    removePrefix
+    isString
+    replaceStrings
     versionAtLeast
     versionOlder
     ;
-  inherit (lib.trivial)
-    warn
-    throwIf
-    ;
+  inherit (lib.trivial) warn;
+  inherit (lib.upstreamable.trivial) addNameToFetchFromGitLikeArgs;
   inherit (lib.versions) major majorMinor;
 
   hasJetsonTarget =
     (getJetsonTargets cudaConfig.data.gpus (final.config.cudaCapabilities or [ ])) != [ ];
 
   hostRedistArch = getRedistArch hasJetsonTarget final.stdenv.hostPlatform.system;
-
-  addNameToFetchFromGitLikeArgs =
-    args:
-    if args ? name then
-      # Use `name` when provided.
-      args
-    else
-      let
-        inherit (args) owner repo rev;
-        revStrippedRefsTags = removePrefix "refs/tags/" rev;
-        isTag = revStrippedRefsTags != rev;
-        isHash = match "^[0-9a-f]{40}$" rev == [ ];
-        shortHash = substring 0 8 rev;
-      in
-      args
-      // {
-        name = concatStringsSep "-" [
-          owner
-          repo
-          (
-            if isTag then
-              revStrippedRefsTags
-            else if isHash then
-              shortHash
-            else
-              throw "Expected either a tag or a hash for the revision"
-          )
-        ];
-      };
 
   fetchFromGitHubAutoName = args: final.fetchFromGitHub (addNameToFetchFromGitLikeArgs args);
   fetchFromGitLabAutoName = args: final.fetchFromGitLab (addNameToFetchFromGitLikeArgs args);
@@ -100,11 +64,10 @@ let
       cudaBoundedExclusive = min: max: versionBoundedExclusive min max cudaMajorMinorPatchVersion;
       cudaBoundedInclusive = min: max: versionBoundedInclusive min max cudaMajorMinorPatchVersion;
 
-      isCuda11 = cudaMajorVersion == "11";
-      isCuda12 = cudaMajorVersion == "12";
-
       # Packaging-specific utilities.
       desiredCudaVariant = mkCudaVariant cudaMajorMinorPatchVersion;
+
+      cudaPackagesConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion};
 
       cudaPackagesFun =
         finalCudaPackages:
@@ -128,8 +91,6 @@ let
             cudaBoundedInclusive
             cudaNewer
             cudaOlder
-            isCuda11
-            isCuda12
             ;
 
           # Utility function for automatically naming fetchFromGitHub derivations with `name`.
@@ -152,35 +113,6 @@ let
             cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
             cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
           })
-          # Redistributable packages
-          (
-            finalCudaPackages: _:
-            foldlAttrs (
-              acc: redistName: redistConfig:
-              let
-                manifestVersions =
-                  if redistName == "cuda" then
-                    [ cudaMajorMinorPatchVersion ]
-                  else
-                    attrNames redistConfig.versionedManifests;
-                manifestVersion = head manifestVersions;
-              in
-              # TODO: This will prevent users adding their own redists.
-              throwIf (
-                length manifestVersions != 1
-              ) "Expected exactly one version for ${redistName} manifests (found ${toJSON manifestVersions})" acc
-              // buildRedistPackages {
-                inherit
-                  desiredCudaVariant
-                  finalCudaPackages
-                  hostRedistArch
-                  manifestVersion
-                  redistConfig
-                  redistName
-                  ;
-              }
-            ) { } cudaConfig.redists
-          )
           # Common packages
           (
             finalCudaPackages: _:
@@ -189,24 +121,45 @@ let
               directory = ./cuda-packages/common;
             }
           )
-        ]
-        # CUDA 11-specific packages
-        ++ optionals (isCuda11 && cudaConfig.cuda11.packagesDirectory != null) [
+          # Redistributable packages
+          # Fold over the redists specified in the cudaPackagesConfig
           (
             finalCudaPackages: _:
-            packagesFromDirectoryRecursive {
-              inherit (finalCudaPackages) callPackage;
-              directory = cudaConfig.cuda11.packagesDirectory;
-            }
+            foldlAttrs (
+              acc: redistName: versionOrRedistArchToVersion:
+              let
+                maybeVersion =
+                  # Check for same version used everywhere
+                  if isString versionOrRedistArchToVersion then
+                    versionOrRedistArchToVersion
+                  # Check for hostArch
+                  else if hasAttr hostRedistArch versionOrRedistArchToVersion then
+                    versionOrRedistArchToVersion.${hostRedistArch}
+                  # Default to being unavailable on the host
+                  else
+                    null;
+              in
+              acc
+              // optionalAttrs (maybeVersion != null) (buildRedistPackages {
+                inherit
+                  desiredCudaVariant
+                  finalCudaPackages
+                  hostRedistArch
+                  redistName
+                  ;
+                manifestVersion = maybeVersion;
+                redistConfig = cudaConfig.redists.${redistName};
+              })
+            ) { } cudaPackagesConfig.redists
           )
         ]
-        # CUDA 12-specific packages
-        ++ optionals (isCuda12 && cudaConfig.cuda12.packagesDirectory != null) [
+        # CUDA version-specific packages
+        ++ optionals (cudaPackagesConfig.packagesDirectory != null) [
           (
             finalCudaPackages: _:
             packagesFromDirectoryRecursive {
               inherit (finalCudaPackages) callPackage;
-              directory = cudaConfig.cuda12.packagesDirectory;
+              directory = cudaPackagesConfig.packagesDirectory;
             }
           )
         ]
@@ -215,30 +168,35 @@ let
     in
     makeScope final.newScope (extends (composeManyExtensions extensions) cudaPackagesFun);
 in
+# General configuration
 {
-  # Add our attribute sets to lib.
-  # TODO: Can't use final.lib here because we get infinite recursion.
-  # This means that we clobber any changes to lib made by the user after this overlay is applied.
-  lib = import ./lib { inherit (prev) lib; };
+  inherit lib;
 
   # For inspecting the results of the module system evaluation.
-  cudaConfig =
-    (evalModules {
-      modules = [ ./modules ] ++ final.cudaModules;
-    }).config;
+  inherit cudaConfig;
 
   # For changing the manifests available.
   cudaModules = [ ];
 
   # For adding packages in an ad-hoc manner.
   cudaPackagesExtensions = [ ];
+}
+# Package sets
+// {
+  # Alias
+  cudaPackages =
+    final.cudaPackagesVersions."cudaPackages_${
+      replaceStrings [ "." ] [ "_" ] cudaConfig.defaultCudaPackagesVersion
+    }";
 
-  # Our package sets, configured for the compute capabilities in config.
-  cudaPackages_11 = warn "cudaPackages_11 is EOL and marked for removal" prev.cudaPackages_11;
-  cudaPackages_12 = packageSetBuilder cudaConfig.cuda12.majorMinorPatchVersion;
-  cudaPackages = final.cudaPackages_12;
-
-  # Nixpkgs package sets matrixed by real architecture (e.g., `sm_90a`).
+  # We cannot add top-level attributes dependent on the fixed point, but we can add them within an attribute set!
+  cudaPackagesVersions = mapAttrs' (cudaMajorMinorVersion: _: {
+    name = "cudaPackages_${replaceStrings [ "." ] [ "_" ] cudaMajorMinorVersion}";
+    value = packageSetBuilder cudaMajorMinorVersion;
+  }) cudaConfig.cudaPackages;
+}
+# Nixpkgs package sets matrixed by real architecture (e.g., `sm_90a`).
+// {
   # TODO(@connorbaker): Only keeps GPUs which are supported by the current CUDA version.
   pkgsCuda =
     let
@@ -280,17 +238,18 @@ in
             );
           }
     ) (dontRecurseIntoAttrs { }) cudaConfig.data.gpus;
-
-  # Package fixes
-  openmpi = prev.openmpi.override (prevAttrs: {
+}
+# Package fixes
+// {
+  openmpi = prev.openmpi.override {
     # The configure flag openmpi takes expects cuda_cudart to be joined.
-    cudaPackages = prevAttrs.cudaPackages // {
+    cudaPackages = final.cudaPackages // {
       cuda_cudart = final.symlinkJoin {
         name = "cuda_cudart_joined";
         paths = map (
-          output: prevAttrs.cudaPackages.cuda_cudart.${output}
-        ) prevAttrs.cudaPackages.cuda_cudart.outputs;
+          output: final.cudaPackages.cuda_cudart.${output}
+        ) final.cudaPackages.cuda_cudart.outputs;
       };
     };
-  });
+  };
 }

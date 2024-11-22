@@ -9,12 +9,10 @@ let
   inherit (lib.cuda.utils) mkRedistConfig;
 in
 {
-  options = {
-    redists = mkOption {
-      description = "A mapping from redist name to redistConfig";
-      type = lib.cuda.types.redists;
-      default = { };
-    };
+  options.redists = mkOption {
+    description = "A mapping from redist name to redistConfig";
+    type = lib.cuda.types.redists;
+    default = { };
   };
   config.redists = foldlAttrs (
     acc: pathName: pathType:

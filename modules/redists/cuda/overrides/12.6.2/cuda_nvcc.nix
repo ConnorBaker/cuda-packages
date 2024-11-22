@@ -1,9 +1,7 @@
 {
   backendStdenv,
-  cudaConfig,
   cudaAtLeast,
   cudaOlder,
-  cudaMajorVersion,
   lib,
   setupCudaHook,
 }:
@@ -12,14 +10,6 @@ let
   inherit (lib.strings) concatStringsSep optionalString;
 in
 finalAttrs: prevAttrs: {
-  # TODO: This seems like a very dangerous option.
-  postPatch = optionalString cudaConfig."cuda${cudaMajorVersion}".nvcc.allowUnsupportedCompiler ''
-    substituteInPlace include/crt/host_config.h \
-      --replace-fail \
-        "#if !__NV_NO_HOST_COMPILER_CHECK" \
-        "#if 0"
-  '';
-
   # Patch the nvcc.profile.
   # Syntax:
   # - `=` for assignment,
