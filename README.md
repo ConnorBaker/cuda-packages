@@ -11,13 +11,19 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 - `cudaStdenv` sets `strictDeps=true` and `__structuredAttrs=true` _by default_. Packages must have a good reason to opt out (e.g., Python packaging has not been updated yet to support structured attributes: <https://github.com/NixOS/nixpkgs/pull/347194>).
 - `cudaStdenv` uses a name prefix for more descriptive store path names.
   - Prefix is available as `backendStdenv.cudaNamePrefix`.
+- Manifests and overrides are versioned
+  - This prevents conflicts when downstream consumers add their own manifests and overrides.
+- `noBrokenSymlinksHook` checks for broken or reflexive symlinks in your outputs, which are usually a sign of packaging gone wrong
+- `12.2.2` is kept around because it is the last version of CUDA 12 supported by Xavier through `cuda_compat`
+  - _DO NOT_ rely on it being around forever -- try to upgrade to newer hardware!
 
 ## Todo
 
-- Merging of submodules appears to not work :l
+- Move old entries in modules/data out of tree
+- Update `modules/gpus.nix` for Jetson devices (e.g., TX2 maxes out at 10.2, Xavier at 12.2 with `cuda_compat`)
 - Allow multiple versions of non-cuda-redist packages (e.g., CUDNN) to be installed at once?
-- Manifests and overrides are versioned
-  - This prevents conflicts when downstream consumers add their own manifests and overrides.
+- Allow devices to be in `pkgsCuda` if at least one CUDA package set version supports them?
+  - Hide the other releases?
 - A bunch of stuff (including docs)
 - Update the setup hooks to use the logging functionality introduced in newer versions of Nixpkgs's `setup.sh`.
 - Throw if trying to build for a capability newer than the CUDA package set can support.
