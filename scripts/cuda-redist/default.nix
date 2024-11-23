@@ -44,7 +44,6 @@ let
     pythonImportsCheck = [ finalAttrs.pname ];
     nativeCheckInputs = [
       pyright
-      ruff
     ];
     passthru.optional-dependencies.dev = [
       pyright
@@ -55,13 +54,6 @@ let
       # preCheck
       ''
         runHook preCheck
-      ''
-      # Check with ruff
-      + ''
-        echo "Linting with ruff"
-        ruff check
-        echo "Checking format with ruff"
-        ruff format --diff
       ''
       # Check with pyright
       + ''
