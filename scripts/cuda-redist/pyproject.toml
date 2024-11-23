@@ -35,7 +35,8 @@ ignore = [
   # Ignore functions with many arguments (I like currying)
   "PLR0913",
   # I usually put None as the first element of a union
-  "RUF036",
+  # TODO: Re-enable when bumping flake input
+  # "RUF036",
 ]
 
 [tool.pyright]
