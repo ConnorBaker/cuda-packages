@@ -31,17 +31,16 @@ class NixStoreEntry(PydanticObject, extra="allow", alias_generator=to_camel):
             [
                 "nix",
                 "build",
+                "--builders",
+                "''",
                 "--impure",
                 "--no-link",
                 "--json",
                 "--expr",
                 f"""
                 let
-                    nixpkgs = builtins.fetchTarball {{
-                        url = "https://github.com/NixOS/nixpkgs/archive/refs/tags/24.05.tar.gz";
-                        sha256 = "1lr1h35prqkd1mkmzriwlpvxcb34kmhc9dnr48gkm8hh089hifmx";
-                    }};
-                    pkgs = import nixpkgs {{ system = builtins.currentSystem; }};
+                    nixpkgs = builtins.getFlake "github:NixOS/nixpkgs/refs/tags/25.05-pre";
+                    pkgs = import nixpkgs.outPath {{ system = builtins.currentSystem; }};
                 in
                 pkgs.srcOnly {{
                     __structuredAttrs = true;
@@ -56,8 +55,13 @@ class NixStoreEntry(PydanticObject, extra="allow", alias_generator=to_camel):
                 """,
             ],
             capture_output=True,
-            check=True,
+            check=False,
         )
+        if result.returncode != 0:
+            LOGGER.error("nix build exited with code %d", result.returncode)
+            LOGGER.error("nix build stdout: %s", result.stdout.decode())
+            LOGGER.error("nix build stderr: %s", result.stderr.decode())
+            raise RuntimeError()
         result_blob = json.loads(result.stdout)
         store_path = Path(result_blob[0]["outputs"]["out"])
 

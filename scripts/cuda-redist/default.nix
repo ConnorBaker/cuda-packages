@@ -15,6 +15,7 @@
 }:
 let
   inherit (lib.fileset) toSource unions;
+  inherit (lib.strings) makeBinPath;
   inherit (lib.trivial) importTOML;
   pyprojectAttrs = importTOML ./pyproject.toml;
   finalAttrs = {
@@ -66,6 +67,16 @@ let
       + ''
         runHook postCheck
       '';
+    postInstall = ''
+      wrapProgram "$out/bin/update-custom-index" \
+        --prefix PATH : "${
+          makeBinPath [
+            cudaPackages.cuda_cuobjdump
+            nixVersions.latest
+            patchelf
+          ]
+        }"
+    '';
     meta = with lib; {
       inherit (pyprojectAttrs.project) description;
       homepage = pyprojectAttrs.project.urls.Homepage;
