@@ -32,12 +32,12 @@ in
 
   # Set defaults for our use.
   config = {
-    defaultCudaPackagesVersion = mkDefault "12.6.2";
-    cudaPackages."12.6.2" = {
-      packagesDirectory = mkDefault ../cuda-packages/12.6.2;
+    defaultCudaPackagesVersion = mkDefault "12.6.3";
+    cudaPackages."12.6.3" = {
+      packagesDirectory = mkDefault ../cuda-packages/12.6.3;
       redists = {
         cublasmp = "0.3.0";
-        cuda = "12.6.2";
+        cuda = "12.6.3";
         cudnn = "9.5.1";
         cudss = "0.3.0";
         cuquantum = "24.11.0";

@@ -406,7 +406,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-UGGwi5Wg6V2st9WY4PAcyF+4Eb9CbQvkvz8yzXJ3e+o="
+          "recursiveHash": "sha256-oGI3tHyg+Kdvl8lFqEEodq0qzk8CGM1tmipx3+NZG6o="
         }
       },
       "linux-sbsa": {
@@ -420,7 +420,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-y3jreeTI5mhZt6wq3IFkQNBl57pexGM5gzwaAn0JNCM="
+          "recursiveHash": "sha256-8TUw5A2ZIU+Pn5NHtf2mG9MoPoL4XL4ZofNgO1eUkeg="
         }
       },
       "linux-x86_64": {
@@ -434,7 +434,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-fKjwz21Os77P26m4ZXUlwotlWmVN9eFdBgxse60yPmo="
+          "recursiveHash": "sha256-5xV+Db5+13eA0SvaSfBrqpVaB3J4A3N/4usmEm26aL8="
         }
       }
     },
@@ -442,7 +442,7 @@
       "license": "CUDA Toolkit",
       "licensePath": "cuda_nvcc/LICENSE.txt",
       "name": "CUDA NVCC",
-      "version": "12.6.77"
+      "version": "12.6.85"
     }
   },
   "cuda_nvdisasm": {
@@ -625,7 +625,7 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-3tWyFKoeOQbZ+fSIOCBFOHbmg6FWQl/FtjxUteAc/t0="
+          "recursiveHash": "sha256-meCjh33pv27ljCnWJFMtfTnbPBgINXHxplJzQNX2gqM="
         }
       },
       "linux-sbsa": {
@@ -640,7 +640,7 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-3qTZaT2J9SXNI+uG2RogLYWIPF/3bKt/k4EaR2qPZL8="
+          "recursiveHash": "sha256-j3vgmgLHvi1KNd4uuWKT5VC4+rFDr5ev1yfogWQPHLg="
         }
       },
       "linux-x86_64": {
@@ -655,7 +655,7 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-B/HjS0Js+NnH0Pu651G97q756uaWyXPuptuM0oToBtA="
+          "recursiveHash": "sha256-a6nYIY1WNgcYlfEhbwX9YpY0HWJoGT8pob/cJ3Nlr4k="
         }
       }
     },
@@ -663,7 +663,7 @@
       "license": "CUDA Toolkit",
       "licensePath": "cuda_nvrtc/LICENSE.txt",
       "name": "CUDA NVRTC",
-      "version": "12.6.77"
+      "version": "12.6.85"
     }
   },
   "cuda_nvtx": {
@@ -861,7 +861,7 @@
               "lib"
             ]
           },
-          "recursiveHash": "sha256-VjLFC9CO9LlNU8aqvJed1CK02LKS7Ik3Iym8t8JCFfs="
+          "recursiveHash": "sha256-IcTXLT5jpi3iH/5PKzHcK5+Ks3sgneq0wwE+RrwHQWI="
         }
       },
       "linux-x86_64": {
@@ -875,7 +875,7 @@
               "lib"
             ]
           },
-          "recursiveHash": "sha256-drPxh1s5qxsiqPTGeIRnlrG/FT1KrbIFaKsAoVoMVwA="
+          "recursiveHash": "sha256-XUR9EDHvhla2zLxz56TndNKJo1G1ZM8uSoagH54RSfE="
         }
       }
     },
@@ -883,7 +883,7 @@
       "license": "NVIDIA Driver",
       "licensePath": "fabricmanager/LICENSE.txt",
       "name": "NVIDIA Fabric Manager",
-      "version": "560.35.03"
+      "version": "560.35.05"
     }
   },
   "imex": {
@@ -898,8 +898,8 @@
               "out"
             ]
           },
-          "recursiveHash": "sha256-+7YBgV009j7ueEyWNhGcXwEM5scPaEX6X0UfXnrA9ds=",
-          "relativePath": "imex/linux-sbsa/nvidia-imex-linux-sbsa-560.35.03-archive.tar.xz"
+          "recursiveHash": "sha256-7R9+Ou8TeI28op6TZtv1YBm/WnbkOzkaX6778ZzlKK8=",
+          "relativePath": "imex/linux-sbsa/nvidia-imex-linux-sbsa-560.35.05-archive.tar.xz"
         }
       },
       "linux-x86_64": {
@@ -912,8 +912,8 @@
               "out"
             ]
           },
-          "recursiveHash": "sha256-4mi6j+TI36OfGQWhAyLpMMkZuvGP4MhAqjhnbbj/8PQ=",
-          "relativePath": "imex/linux-x86_64/nvidia-imex-linux-x86_64-560.35.03-archive.tar.xz"
+          "recursiveHash": "sha256-ua159LvjeK7V5RAJ2+1Rm+KhFCfSBLEbJ8KWXFgGmeE=",
+          "relativePath": "imex/linux-x86_64/nvidia-imex-linux-x86_64-560.35.05-archive.tar.xz"
         }
       }
     },
@@ -921,7 +921,7 @@
       "license": "NVIDIA Proprietary",
       "licensePath": "imex/LICENSE.txt",
       "name": "Nvidia-Imex",
-      "version": "560.35.03"
+      "version": "560.35.05"
     }
   },
   "libcublas": {
@@ -941,7 +941,7 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-b8vkZl7JaIG7cecw3jAbYKWVGXlg2F+2k6aPypZbnCI="
+          "recursiveHash": "sha256-acOOWQ2z+uDPlc3JFXfNesK0k07eCEyRd/1l55m+ud0="
         }
       },
       "linux-sbsa": {
@@ -969,7 +969,7 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-191ZPc5AKPx7Fim76Tdob0XGsNvHRoeC5vYkZAYkxKE="
+          "recursiveHash": "sha256-e7A4z24qZ96TD8MjA2BTBKn4h7eg+AjU0DCa3eQo14k="
         }
       },
       "linux-x86_64": {
@@ -997,7 +997,7 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-Kw4B0cYVaErhYXS4OvxsEWApvMr+9uqUb4fbaztKolo="
+          "recursiveHash": "sha256-XcPLf/KJIc1h+GHQySqYylH/d7Qkhs81anGP10hFNcA="
         }
       }
     },
@@ -1005,7 +1005,7 @@
       "license": "CUDA Toolkit",
       "licensePath": "libcublas/LICENSE.txt",
       "name": "CUDA cuBLAS",
-      "version": "12.6.3.3"
+      "version": "12.6.4.1"
     }
   },
   "libcudla": {
@@ -1605,7 +1605,7 @@
               "lib"
             ]
           },
-          "recursiveHash": "sha256-CrWCICrHXLKcjNjoLNQUm1JNkOQ3IPX/9H9naDyYsAw="
+          "recursiveHash": "sha256-tE5iU7vKhGTjj5ZftkdNyeabJKDg4jgiM0oxN96tFNc="
         }
       },
       "linux-x86_64": {
@@ -1616,7 +1616,7 @@
               "lib"
             ]
           },
-          "recursiveHash": "sha256-b5cdjdCVJ4IvXt12z1bsJYPQtFMhtsNM+v+04Wn1aBg="
+          "recursiveHash": "sha256-VTJ8zxGGtTYoerAGcSMcI66Y1CUmc6YYZgZk6iQfg0g="
         }
       }
     },
@@ -1624,7 +1624,7 @@
       "license": "NVIDIA Driver",
       "licensePath": "libnvidia_nscq/LICENSE.txt",
       "name": "NVIDIA NSCQ API",
-      "version": "560.35.03"
+      "version": "560.35.05"
     }
   },
   "libnvjitlink": {
@@ -1641,7 +1641,7 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-EcLIkPH2gf/eURFYAPMzcvMg8SUZ+6n2U7FbfFqX/RM="
+          "recursiveHash": "sha256-1DGA6M8P2Lisz8YPtYFkvMJZu32vWxwYh9dZJz4/hNs="
         }
       },
       "linux-sbsa": {
@@ -1656,7 +1656,7 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-io3kMUH420uMe19ss/ZmlWmVQcLtClqK1ZvAS321kg4="
+          "recursiveHash": "sha256-nHR95n5KZDFNS56NNX3EOofkR3VCHhmYVzKGl0L0KBY="
         }
       },
       "linux-x86_64": {
@@ -1671,7 +1671,7 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-dr99WUar+vdGAN5eP8H8BqwmKrtbJTPwyWA9wF7+IQc="
+          "recursiveHash": "sha256-yf2J3GC4sAcKh9lO8v5QGc3OokkwdDrGFxKegZ9bCZI="
         }
       }
     },
@@ -1679,7 +1679,7 @@
       "license": "CUDA Toolkit",
       "licensePath": "libnvjitlink/LICENSE.txt",
       "name": "NVIDIA compiler library for JIT LTO functionality",
-      "version": "12.6.77"
+      "version": "12.6.85"
     }
   },
   "libnvjpeg": {
@@ -1792,7 +1792,7 @@
       "license": "NVIDIA",
       "licensePath": "libnvsdm/LICENSE.txt",
       "name": "LIBNVSDM",
-      "version": "560.35.03"
+      "version": "560.35.05"
     }
   },
   "nsight_compute": {
@@ -1878,7 +1878,7 @@
               "lib"
             ]
           },
-          "recursiveHash": "sha256-EY30NvvUY2HQTuhTj+XoKaF96fe03WCdzlo+31HFO7Y="
+          "recursiveHash": "sha256-KwZsn9/v0b0ZqfqDbDsPuawSlmlbAN5pVWv2QfC5PD8="
         }
       },
       "linux-x86_64": {
@@ -1890,7 +1890,7 @@
               "lib"
             ]
           },
-          "recursiveHash": "sha256-t81LAnjLvqRjP4o72GVQqjg0YuZyYCjygzo4xnALhYg="
+          "recursiveHash": "sha256-/QK1Mp6FckxTdGKPriMasMVCsUaRt1XGyIGEtAiJpSo="
         }
       }
     },
@@ -1898,7 +1898,7 @@
       "license": "NVIDIA Driver",
       "licensePath": "nvidia_driver/LICENSE.txt",
       "name": "NVIDIA Linux Driver",
-      "version": "560.35.03"
+      "version": "560.35.05"
     }
   },
   "nvidia_fs": {
