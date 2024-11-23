@@ -19,7 +19,6 @@ let
     versionNewer
     ;
   inherit (lib.attrsets)
-    attrNames
     dontRecurseIntoAttrs
     foldlAttrs
     hasAttr
@@ -30,7 +29,7 @@ let
   inherit (lib.customisation) makeScope;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
-  inherit (lib.lists) any foldl' optionals;
+  inherit (lib.lists) foldl' optionals;
   inherit (lib.modules) evalModules;
   inherit (lib.strings)
     isString
