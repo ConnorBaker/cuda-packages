@@ -19,6 +19,7 @@ let
     versionNewer
     ;
   inherit (lib.attrsets)
+    attrNames
     dontRecurseIntoAttrs
     foldlAttrs
     hasAttr
@@ -29,7 +30,7 @@ let
   inherit (lib.customisation) makeScope;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
-  inherit (lib.lists) foldl' optionals;
+  inherit (lib.lists) any foldl' optionals;
   inherit (lib.modules) evalModules;
   inherit (lib.strings)
     isString
@@ -203,48 +204,25 @@ in
   }) cudaConfig.cudaPackages;
 }
 # Nixpkgs package sets matrixed by real architecture (e.g., `sm_90a`).
+# TODO(@connorbaker): Yes, it is computationally expensive to call final.extend.
+# No, I can't think of a different way to force re-evaluation of the fixed point.
 // {
-  # TODO(@connorbaker): Only keeps GPUs which are supported by the current CUDA version.
-  pkgsCuda =
-    let
-      inherit (final.cudaPackages) cudaAtLeast cudaAtMost;
-      isAarch64Linux = final.stdenv.hostPlatform.system == "aarch64-linux";
-    in
-    foldl' (
-      acc:
-      {
-        computeCapability,
-        isJetson,
-        # TODO: Use versioned names (i.e., minCudaMajorMinorVersion)
-        minCudaVersion,
-        maxCudaVersion,
-        ...
-      }:
-      acc
-      //
-        optionalAttrs
-          (
-            # Lower bound must be satisfied
-            cudaAtLeast minCudaVersion
-            # Upper bound must be empty or satisfied
-            && (maxCudaVersion == null || cudaAtMost maxCudaVersion)
-            # Jetson targets are only included when final.stdenv.hostPlatform.system is aarch64-linux
-            && (isJetson -> isAarch64Linux)
-          )
-          {
-            # TODO(@connorbaker): Yes, this is computationally expensive.
-            # No, I can't think of a different way to force re-evaluation of the fixed point.
-            ${mkRealArchitecture computeCapability} = final.extend (
-              _: prev':
-              dontRecurseIntoAttrs {
-                __attrsFailEvaluation = true;
-                config = prev'.config // {
-                  cudaCapabilities = [ computeCapability ];
-                };
-              }
-            );
+  pkgsCuda = foldl' (
+    acc: gpu:
+    acc
+    // {
+      ${mkRealArchitecture gpu.computeCapability} = dontRecurseIntoAttrs (
+        final.extend (
+          _: prev': {
+            __attrsFailEvaluation = true;
+            config = prev'.config // {
+              cudaCapabilities = [ gpu.computeCapability ];
+            };
           }
-    ) (dontRecurseIntoAttrs { }) cudaConfig.data.gpus;
+        )
+      );
+    }
+  ) (dontRecurseIntoAttrs { }) cudaConfig.data.gpus;
 }
 # Upstreamable packages
 // packagesFromDirectoryRecursive {

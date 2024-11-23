@@ -119,7 +119,7 @@ in
         isJetson = true;
         minCudaVersion = "10.0";
         dontDefaultAfter = null;
-        maxCudaVersion = null;
+        maxCudaVersion = "10.2";
       }
       {
         # Quadro GP100, Tesla P100, DGX-1 (Generic Pascal)
@@ -147,7 +147,7 @@ in
         isJetson = true;
         minCudaVersion = "10.0";
         dontDefaultAfter = null;
-        maxCudaVersion = null;
+        maxCudaVersion = "10.2";
       }
       {
         # DGX-1 with Volta, Tesla V100, GTX 1180 (GV104), Titan V, Quadro GV100
@@ -165,7 +165,9 @@ in
         isJetson = true;
         minCudaVersion = "10.0";
         dontDefaultAfter = null;
-        maxCudaVersion = null;
+        # Note: without `cuda_compat`, maxCudaVersion is 11.8
+        # https://docs.nvidia.com/cuda/cuda-for-tegra-appnote/index.html#deployment-considerations-for-cuda-upgrade-package
+        maxCudaVersion = "12.2";
       }
       {
         # GTX/RTX Turing – GTX 1660 Ti, RTX 2060, RTX 2070, RTX 2080, Titan RTX, Quadro RTX 4000,
