@@ -78,18 +78,18 @@ let
   # For example, "Ampere" maps to [ "8.0" "8.6" "8.7" ].
   cudaArchNameToVersions = lists.groupBy' (versions: gpu: versions ++ [ gpu.computeCapability ]) [ ] (
     gpu: gpu.archName
-  ) supportedGpus;
+  ) gpus;
 
   # cudaComputeCapabilityToName :: AttrSet String String
   # Maps the version of a GPU architecture to the name of that architecture.
   # For example, "8.0" maps to "Ampere".
   cudaComputeCapabilityToName = builtins.listToAttrs (
-    lists.map (gpu: attrsets.nameValuePair gpu.computeCapability gpu.archName) supportedGpus
+    lists.map (gpu: attrsets.nameValuePair gpu.computeCapability gpu.archName) gpus
   );
 
   # cudaComputeCapabilityToIsJetson :: AttrSet String Boolean
   cudaComputeCapabilityToIsJetson = builtins.listToAttrs (
-    lists.map (attrs: attrsets.nameValuePair attrs.computeCapability attrs.isJetson) supportedGpus
+    lists.map (attrs: attrsets.nameValuePair attrs.computeCapability attrs.isJetson) gpus
   );
 
   # jetsonComputeCapabilities :: List String
