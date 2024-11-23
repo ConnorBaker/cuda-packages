@@ -198,9 +198,9 @@ in
     }";
 
   # We cannot add top-level attributes dependent on the fixed point, but we can add them within an attribute set!
-  cudaPackagesVersions = mapAttrs' (cudaMajorMinorVersion: _: {
-    name = "cudaPackages_${replaceStrings [ "." ] [ "_" ] cudaMajorMinorVersion}";
-    value = packageSetBuilder cudaMajorMinorVersion;
+  cudaPackagesVersions = mapAttrs' (cudaMajorMinorPatchVersion: _: {
+    name = "cudaPackages_${replaceStrings [ "." ] [ "_" ] cudaMajorMinorPatchVersion}";
+    value = packageSetBuilder cudaMajorMinorPatchVersion;
   }) cudaConfig.cudaPackages;
 }
 # Nixpkgs package sets matrixed by real architecture (e.g., `sm_90a`).
