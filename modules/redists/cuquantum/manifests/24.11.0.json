@@ -1,46 +1,6 @@
 {
   "cuquantum": {
     "packages": {
-      "linux-ppc64le": {
-        "cuda11": {
-          "features": {
-            "cudaArchitectures": [
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_90"
-            ],
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static"
-            ]
-          },
-          "recursiveHash": "sha256-GJbvkTUYFkrBPzItmBY9TzEbweG2W8cUqZiAhYBUJqc="
-        },
-        "cuda12": {
-          "features": {
-            "cudaArchitectures": [
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_90"
-            ],
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static"
-            ]
-          },
-          "recursiveHash": "sha256-cHr/zFRXm0tb3nx2dx0oafKqQMJRelOTFDeaZUPWn3s="
-        }
-      },
       "linux-sbsa": {
         "cuda11": {
           "features": {
@@ -59,7 +19,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-oYgBYgN4F8JJW5E6DdoffaktIXvqHf3cW9J9SXjBQiE="
+          "recursiveHash": "sha256-kvGQeFSkjPnpCz8eawtbWzphLyklygTNlbNie+OqdCY="
         },
         "cuda12": {
           "features": {
@@ -78,7 +38,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-gzNYunkA6qLrVj7Put0o8WEjaPkUPE6kbnxEKKCMWS8="
+          "recursiveHash": "sha256-sTKTl5iLppwFVNjbNsmpMdiE0blXo3/SOKn/XQwmChg="
         }
       },
       "linux-x86_64": {
@@ -99,7 +59,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-FPrmmOccmQynFKo5A49B5k6iGZBwgpTR6JEK/kREY7E="
+          "recursiveHash": "sha256-DT0efhL+37XMZPRVffH2gptWJuRT22nxGoRiPle7O+0="
         },
         "cuda12": {
           "features": {
@@ -118,7 +78,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-nNv/oon6QNMMX3kQ+7pJXzzagfwHx+p9nvq9Q7H2/e8="
+          "recursiveHash": "sha256-uRebtd5G7AAJj1zdHKB+F/wyHr/2lR6CcTWLAslTJq8="
         }
       }
     },
@@ -126,7 +86,7 @@
       "license": "cuQuantum",
       "licensePath": "cuquantum/LICENSE.txt",
       "name": "NVIDIA cuQuantum",
-      "version": "24.08.0.5"
+      "version": "24.11.0.21"
     }
   }
 }

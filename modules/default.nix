@@ -40,7 +40,7 @@ in
         cuda = "12.6.2";
         cudnn = "9.5.1";
         cudss = "0.3.0";
-        cuquantum = "24.08.0";
+        cuquantum = "24.11.0";
         cusolvermp = "0.5.1";
         cusparselt = "0.6.3";
         cutensor = "2.0.2.1";
