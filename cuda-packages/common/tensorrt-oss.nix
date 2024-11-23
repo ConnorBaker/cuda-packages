@@ -115,10 +115,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     + ''
       mkdir "$out/include/onnx"
       pushd "$out/include"
-      for file in NvOnnx*.h
-      do
-        ln -s "$PWD/$file" "$PWD/onnx/"
-      done
+      ln -srt "$out/include/onnx/" NvOnnx*.h
       popd
     '';
 

@@ -4,6 +4,7 @@
   cudaMajorMinorPatchVersion,
   cudaMajorMinorVersion,
   lib,
+  noBrokenSymlinksHook,
   path,
   pkgs,
   stdenv,
@@ -48,12 +49,18 @@ let
             # Default __structuredAttrs and strictDeps to true.
             __structuredAttrs = mkDerivationPrevAttrs.__structuredAttrs or true;
             strictDeps = mkDerivationPrevAttrs.strictDeps or true;
+
             # Name should be prefixed by cudaNamePrefix to create more descriptive path names.
             name =
               if mkDerivationPrevAttrs ? pname && mkDerivationPrevAttrs ? version then
                 "${cudaNamePrefix}-${mkDerivationPrevAttrs.pname}-${mkDerivationPrevAttrs.version}"
               else
                 "${cudaNamePrefix}-${mkDerivationPrevAttrs.name}";
+
+            # We add a hook to make sure we're not propagating broken symlinks.
+            propagatedBuildInputs = mkDerivationPrevAttrs.propagatedBuildInputs or [ ] ++ [
+              noBrokenSymlinksHook
+            ];
           });
       }
     );

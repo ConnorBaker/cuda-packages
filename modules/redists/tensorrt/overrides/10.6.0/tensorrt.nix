@@ -42,13 +42,19 @@ finalAttrs: prevAttrs: {
       ];
     in
     (prevAttrs.preInstall or "")
+    # Replace symlinks to bin and lib with the actual directories from targets.
     + optionalString (hostRedistArch != "unsupported") ''
-      # Replace symlinks to bin and lib with the actual directories from targets.
       for dir in bin lib; do
         # Only replace if the symlink exists.
         [[ -L "$dir" ]] || continue
         rm "$dir"
         mv "targets/${targetString}/$dir" "$dir"
+      done
+    ''
+    # Remove symlinks if they exist
+    + ''
+      for dir in include samples; do
+        [[ -L "targets/${targetString}/$dir" ]] && rm "targets/${targetString}/$dir"
       done
     '';
 
@@ -66,10 +72,7 @@ finalAttrs: prevAttrs: {
     + ''
       mkdir "$include/include/onnx"
       pushd "$include/include"
-      for file in NvOnnx*.h
-      do
-        ln -s "$PWD/$file" "$PWD/onnx/"
-      done
+      ln -srt "$include/include/onnx/" NvOnnx*.h
       popd
     '';
 

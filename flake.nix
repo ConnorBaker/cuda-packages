@@ -78,13 +78,17 @@
                       "sm_89"
                     ]
                     ++ optionals (pkgs.stdenv.hostPlatform.system == "aarch64-linux") [
+                      "sm_72"
                       "sm_87"
                     ]
                   )
                   (
                     realArchitecture:
                     recurseIntoAttrs {
-                      cudaPackages_12 = pkgs.pkgsCuda.${realArchitecture};
+                      # We set dontRecurseIntoAttrs on the device-matrixed package sets in our overlay to avoid paying
+                      # the cost of re-evaluating the Nixpkgs fixed-point, so for checks we need to use
+                      # recurseIntoAttrs to get flattenDrvTree to recurse into the package set.
+                      cudaPackages = recurseIntoAttrs pkgs.pkgsCuda.${realArchitecture}.cudaPackages;
                     }
                   );
             in

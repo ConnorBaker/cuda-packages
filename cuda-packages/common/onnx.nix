@@ -125,12 +125,9 @@ let
       # Symlink the protobuf files in the python package to the C++ include directory.
       # TODO: Should these only be available to the python package?
       + ''
-        pushd "$out/${python3.sitePackages}/onnx"
         echo "Symlinking protobuf files to $out/include/onnx"
-        for file in *.proto
-        do
-          ln -s "$PWD/$file" "$out/include/onnx/$file"
-        done
+        pushd "$out/${python3.sitePackages}/onnx"
+        ln -srt "$out/include/onnx/" *.proto
         popd
       '';
 

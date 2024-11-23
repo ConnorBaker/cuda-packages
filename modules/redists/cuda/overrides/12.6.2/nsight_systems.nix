@@ -49,6 +49,9 @@ let
 in
 {
   allowFHSReferences = true;
+
+  outputs = prevAttrs.outputs or [ ] ++ [ "doc" ];
+
   # An ad hoc replacement for
   # https://github.com/ConnorBaker/cuda-redist-find-features/issues/11
   env = prevAttrs.env or { } // {
@@ -116,14 +119,17 @@ in
       majorMinorPatchVersion = lib.cuda.utils.majorMinorPatch version;
     in
     prevAttrs.postInstall or ""
+    # Patch bin output
     + ''
-      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/host-linux-*' "''${!outputBin}"
-      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/target-linux-*' "''${!outputBin}"
-      substituteInPlace $bin/bin/nsys $bin/bin/nsys-ui \
-        --replace-fail 'nsight-systems-#VERSION_RSPLIT#' nsight-systems/${majorMinorPatchVersion}
-      for qtlib in $bin/nsight-systems/${majorMinorPatchVersion}/host-linux-x64/Plugins/*/libq*.so; do
-        qtdir=$(basename $(dirname $qtlib))
-        filename=$(basename $qtlib)
+      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/host-linux-*' "$bin"
+      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/target-linux-*' "$bin"
+      substituteInPlace "$bin/bin/nsys" "$bin/bin/nsys-ui" \
+        --replace-fail \
+          "nsight-systems-#VERSION_RSPLIT#" \
+          "nsight-systems/${majorMinorPatchVersion}"
+      for qtlib in "$bin/nsight-systems/${majorMinorPatchVersion}/host-linux-x64/Plugins"/*/libq*.so; do
+        qtdir="$(basename "$(dirname "$qtlib")")"
+        filename="$(basename "$qtlib")"
         for qtpkgdir in ${
           lib.concatMapStringsSep " " (pkg: pkg.outPath) [
             qtbase
@@ -132,10 +138,20 @@ in
             qtwayland
           ]
         }; do
-          if [ -e $qtpkgdir/lib/qt-6/plugins/$qtdir/$filename ]; then
-            ln -snf $qtpkgdir/lib/qt-6/plugins/$qtdir/$filename $qtlib
+          if [[ -e "$qtpkgdir/lib/qt-6/plugins/$qtdir/$filename" ]]; then
+            ln -snf "$qtpkgdir/lib/qt-6/plugins/$qtdir/$filename" "$qtlib"
           fi
         done
       done
+    ''
+    # Move docs to doc output
+    + ''
+      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/docs' "$doc"
+    ''
+    # Remove symlinks in default output. Do so by binary name, so we get an error from rmdir if the binary directory
+    # isn't empty.
+    + ''
+      rm "$out/nsight-systems/${majorMinorPatchVersion}/bin/"nsys*
+      rmdir "$out/nsight-systems/${majorMinorPatchVersion}/bin"
     '';
 }

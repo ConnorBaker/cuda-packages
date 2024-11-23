@@ -1,17 +1,16 @@
-# TODO(@connorbaker): Upstream this package.
 {
-  backendStdenv,
   cmake,
   cpuinfo,
   gtest,
   lib,
   ninja,
+  stdenv,
 }:
 let
   inherit (lib) licenses maintainers;
   inherit (lib.strings) cmakeBool;
 in
-backendStdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "clog";
   inherit (cpuinfo) version;
   src = "${cpuinfo.src}/deps/clog";

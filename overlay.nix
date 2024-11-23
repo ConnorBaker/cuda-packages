@@ -246,6 +246,11 @@ in
           }
     ) (dontRecurseIntoAttrs { }) cudaConfig.data.gpus;
 }
+# Upstreamable packages
+// packagesFromDirectoryRecursive {
+  inherit (final) callPackage;
+  directory = ./upstreamable-packages;
+}
 # Package fixes
 // {
   openmpi = prev.openmpi.override {

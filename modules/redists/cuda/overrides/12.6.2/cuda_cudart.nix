@@ -53,11 +53,8 @@ finalAttrs: prevAttrs: {
     # NOTE: Add symlinks inside $stubs/lib so autoPatchelfHook can find them -- it doesn't recurse into subdirectories.
     + optionalString (elem "stubs" finalAttrs.outputs) ''
       pushd "$stubs/lib/stubs"
-      [[ -f libcuda.so && ! -f libcuda.so.1 ]] && ln -s libcuda.so libcuda.so.1
-      for file in *
-      do
-        ln -s "$PWD/$file" "$PWD/../$file"
-      done
+      [[ -f libcuda.so && ! -f libcuda.so.1 ]] && ln -sr libcuda.so libcuda.so.1
+      ln -srt "$stubs/lib/" *.so *.so.*
       popd
     '';
 }

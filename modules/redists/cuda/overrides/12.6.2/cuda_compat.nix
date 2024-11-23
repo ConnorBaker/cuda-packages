@@ -26,22 +26,23 @@ prevAttrs: {
   # Set up symlinks for libraries and binaries.
   postInstall =
     prevAttrs.postInstall or ""
+    # Create relative symlinks to shared object files in out/lib
     + ''
-      pushd "$out/compat"
       mkdir -p "$out/lib"
-      for file in *.so *.so.*
-      do
-        ln -s "$file" "$out/lib/$file"
-      done
+      pushd "$out/compat"
+      ln -srt "$out/lib/" *.so *.so.*
       popd
     ''
+    # Create relative symlinks to executable files (not shared objects) in out/bin
     + optionalString (cudaAtLeast "12") ''
-      pushd "$out/compat"
       mkdir -p "$out/bin"
-      for file in *
-      do
-        [[ -x "$file" ]] && ln -s "$file" "$out/bin/$file"
-      done
-      popd
+      find \
+        "$out/compat" \
+        -mindepth 1 \
+        -maxdepth 1 \
+        -not -name "*.so" \
+        -not -name "*.so.*" \
+        -executable \
+        -exec ln -srt "$out/bin/" '{}' '+'
     '';
 }

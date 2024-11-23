@@ -77,7 +77,7 @@ buildPythonPackage {
   ];
 
   postInstall = ''
-    ln -s ${compyteSrc} $out/${python3.sitePackages}/pycuda/compyte
+    ln -s "${compyteSrc}" "$out/${python3.sitePackages}/pycuda/compyte"
   '';
 
   # Requires access to libcuda.so.1 which is provided by the driver
