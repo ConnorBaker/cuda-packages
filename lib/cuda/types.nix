@@ -32,6 +32,7 @@ let
     enum
     functionTo
     lazyAttrsOf
+    listOf
     nonEmptyListOf
     nonEmptyStr
     nullOr
@@ -478,12 +479,14 @@ in
         type = nvccConfig;
         default = { };
       };
-      packagesDirectory = {
+      packagesDirectories = {
         description = ''
-          The path to a directory containing Nix expressions to add to the package set.
+          Paths to directories containing Nix expressions to add to the package set.
+
+          Package names created from directories later in the list override packages earlier in the list.
         '';
-        type = nullOr path;
-        default = null;
+        type = listOf path;
+        default = [ ];
       };
       redists = {
         description = ''

@@ -29,7 +29,7 @@ let
   inherit (lib.customisation) makeScope;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
-  inherit (lib.lists) foldl' optionals;
+  inherit (lib.lists) foldl' map;
   inherit (lib.modules) evalModules;
   inherit (lib.strings)
     isString
@@ -118,14 +118,6 @@ let
             cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
             cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
           })
-          # Common packages
-          (
-            finalCudaPackages: _:
-            packagesFromDirectoryRecursive {
-              inherit (finalCudaPackages) callPackage;
-              directory = ./cuda-packages/common;
-            }
-          )
           # Redistributable packages
           # Fold over the redists specified in the cudaPackagesConfig
           (
@@ -159,15 +151,13 @@ let
           )
         ]
         # CUDA version-specific packages
-        ++ optionals (cudaPackagesConfig.packagesDirectory != null) [
-          (
-            finalCudaPackages: _:
-            packagesFromDirectoryRecursive {
-              inherit (finalCudaPackages) callPackage;
-              directory = cudaPackagesConfig.packagesDirectory;
-            }
-          )
-        ]
+        ++ map (
+          directory: finalCudaPackages: _:
+          packagesFromDirectoryRecursive {
+            inherit (finalCudaPackages) callPackage;
+            inherit directory;
+          }
+        ) cudaPackagesConfig.packagesDirectories
         # User additions
         ++ final.cudaPackagesExtensions;
     in
