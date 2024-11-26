@@ -193,6 +193,9 @@ let
     };
 in
 # When changing names or formats: pause, validate, and update the assert
+assert assertMsg (
+  gpus ? "7.5" && gpus ? "8.6"
+) "The following test requires both 7.5 and 8.6 be known GPUs";
 assert
   let
     expected = {
@@ -264,48 +267,51 @@ assert
     Actual: ${builtins.toJSON actualWrapped}
   '';
 # Check Jetson-only
+assert assertMsg (
+  gpus ? "7.2" && gpus ? "8.7"
+) "The following test requires both 7.2 and 8.7 be known GPUs";
 assert
   let
     expected = {
       cudaCapabilities = [
-        "6.2"
         "7.2"
+        "8.7"
       ];
       cudaForwardCompat = true;
 
       archNames = [
-        "Pascal"
         "Volta"
+        "Ampere"
       ];
       realArches = [
-        "sm_62"
         "sm_72"
+        "sm_87"
       ];
       virtualArches = [
-        "compute_62"
         "compute_72"
+        "compute_87"
       ];
       arches = [
-        "sm_62"
         "sm_72"
-        "compute_72"
+        "sm_87"
+        "compute_87"
       ];
 
       gencode = [
-        "-gencode=arch=compute_62,code=sm_62"
         "-gencode=arch=compute_72,code=sm_72"
-        "-gencode=arch=compute_72,code=compute_72"
+        "-gencode=arch=compute_87,code=sm_87"
+        "-gencode=arch=compute_87,code=compute_87"
       ];
-      gencodeString = "-gencode=arch=compute_62,code=sm_62 -gencode=arch=compute_72,code=sm_72 -gencode=arch=compute_72,code=compute_72";
+      gencodeString = "-gencode=arch=compute_72,code=sm_72 -gencode=arch=compute_87,code=sm_87 -gencode=arch=compute_87,code=compute_87";
 
-      cmakeCudaArchitecturesString = "62;72";
+      cmakeCudaArchitecturesString = "72;87";
 
       isJetsonBuild = true;
     };
     actual = formatCapabilities {
       cudaCapabilities = [
-        "6.2"
         "7.2"
+        "8.7"
       ];
     };
     actualWrapped = (builtins.tryEval (builtins.deepSeq actual actual)).value;
@@ -315,7 +321,7 @@ assert
     (hostPlatform.isAarch64 -> (expected == actualWrapped))
     ''
       Jetson devices can only be built with other Jetson devices.
-      Both 6.2 and 7.2 are Jetson devices.
+      Both 7.2 and 8.7 are Jetson devices.
       Expected: ${builtins.toJSON expected}
       Actual: ${builtins.toJSON actualWrapped}
     '';
