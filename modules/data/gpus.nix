@@ -15,37 +15,6 @@ in
     type = attrs lib.cuda.types.cudaCapability gpuInfo;
   };
   config.data.gpus = {
-    "3.0" = {
-      # GeForce 700, GT-730
-      archName = "Kepler";
-      isJetson = false;
-      minCudaMajorMinorVersion = "10.0";
-      dontDefaultAfterCudaMajorMinorVersion = "10.2";
-      maxCudaMajorMinorVersion = "10.2";
-    };
-    "3.2" = {
-      archName = "Kepler";
-      isJetson = false;
-      minCudaMajorMinorVersion = "10.0";
-      dontDefaultAfterCudaMajorMinorVersion = "10.2";
-      maxCudaMajorMinorVersion = "10.2";
-    };
-    "3.5" = {
-      # Tesla K40
-      archName = "Kepler";
-      isJetson = false;
-      minCudaMajorMinorVersion = "10.0";
-      dontDefaultAfterCudaMajorMinorVersion = "11.0";
-      maxCudaMajorMinorVersion = "11.8";
-    };
-    "3.7" = {
-      # Tesla K80
-      archName = "Kepler";
-      isJetson = false;
-      minCudaMajorMinorVersion = "10.0";
-      dontDefaultAfterCudaMajorMinorVersion = "11.0";
-      maxCudaMajorMinorVersion = "11.8";
-    };
     "5.0" = {
       # Tesla/Quadro M series
       archName = "Maxwell";
@@ -61,14 +30,6 @@ in
       minCudaMajorMinorVersion = "10.0";
       dontDefaultAfterCudaMajorMinorVersion = "11.0";
       maxCudaMajorMinorVersion = null;
-    };
-    "5.3" = {
-      # Tegra (Jetson) TX1 / Tegra X1, Drive CX, Drive PX, Jetson Nano
-      archName = "Maxwell";
-      isJetson = true;
-      minCudaMajorMinorVersion = "10.0";
-      dontDefaultAfterCudaMajorMinorVersion = null;
-      maxCudaMajorMinorVersion = "10.2";
     };
     "6.0" = {
       # Quadro GP100, Tesla P100, DGX-1 (Generic Pascal)
@@ -86,14 +47,6 @@ in
       minCudaMajorMinorVersion = "10.0";
       dontDefaultAfterCudaMajorMinorVersion = null;
       maxCudaMajorMinorVersion = null;
-    };
-    "6.2" = {
-      # Integrated GPU on the NVIDIA Drive PX2, Tegra (Jetson) TX2
-      archName = "Pascal";
-      isJetson = true;
-      minCudaMajorMinorVersion = "10.0";
-      dontDefaultAfterCudaMajorMinorVersion = null;
-      maxCudaMajorMinorVersion = "10.2";
     };
     "7.0" = {
       # DGX-1 with Volta, Tesla V100, GTX 1180 (GV104), Titan V, Quadro GV100
