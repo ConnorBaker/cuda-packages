@@ -249,6 +249,9 @@ assert
     Actual: ${builtins.toJSON actualWrapped}
   '';
 # Check mixed Jetson and non-Jetson devices
+assert assertMsg (
+  gpus ? "7.2" && gpus ? "7.5"
+) "The following test requires both 7.2 and 7.5 be known GPUs";
 assert
   let
     expected = false;
