@@ -401,9 +401,7 @@ in
     versionedOverrides :: OptionType
     ```
   */
-  #  NOTE: Trying to use a more expressive type than `raw` causes the automatic-argument detection we do to
-  # fail, as the `check` function for the type interferes with the functions in the `overrides` attribute
-  # set.
+  # NOTE: `raw` in our case is typically a path to a nix expression, but could be a callPackageOverrider
   versionedOverrides = attrs version (attrs packageName raw);
 
   # TODO: Better organize/alphabetize.

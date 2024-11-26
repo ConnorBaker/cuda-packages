@@ -24,10 +24,9 @@
     inputs:
     let
       inherit (inputs.nixpkgs.lib.attrsets)
-        genAttrs
+        optionalAttrs
         recurseIntoAttrs
         ;
-      inherit (inputs.nixpkgs.lib.lists) optionals;
       inherit (inputs.flake-parts.lib) mkFlake;
       lib = import ./lib { inherit (inputs.nixpkgs) lib; };
       inherit (lib.cuda.utils) flattenDrvTree;
@@ -71,30 +70,30 @@
             overlays = [ inputs.self.overlays.default ];
           };
 
-          checks =
-            let
-              tree =
-                genAttrs
-                  (
-                    [
-                      "sm_89"
-                    ]
-                    ++ optionals (pkgs.stdenv.hostPlatform.system == "aarch64-linux") [
-                      "sm_72"
-                      "sm_87"
-                    ]
-                  )
-                  (
-                    realArchitecture:
-                    recurseIntoAttrs {
-                      # We set dontRecurseIntoAttrs on the device-matrixed package sets in our overlay to avoid paying
-                      # the cost of re-evaluating the Nixpkgs fixed-point, so for checks we need to use
-                      # recurseIntoAttrs to get flattenDrvTree to recurse into the package set.
-                      cudaPackages = recurseIntoAttrs pkgs.pkgsCuda.${realArchitecture}.cudaPackages;
-                    }
-                  );
-            in
-            flattenDrvTree (recurseIntoAttrs tree);
+          checks = flattenDrvTree (recurseIntoAttrs {
+            pkgsCuda = recurseIntoAttrs (
+              {
+                # 8.9 supported by all versions of CUDA 12
+                sm_89 = recurseIntoAttrs {
+                  cudaPackages_12_2_2 = recurseIntoAttrs pkgs.pkgsCuda.sm_89.cudaPackages_12_2_2;
+                  cudaPackages_12_6_3 = recurseIntoAttrs pkgs.pkgsCuda.sm_89.cudaPackages_12_6_3;
+                };
+              }
+              // optionalAttrs (pkgs.stdenv.hostPlatform.system == "aarch64-linux") {
+                # Xavier (7.2) is only supported up to CUDA 12.2.2 by cuda-compat on JetPack 5.
+                # Unfortunately, NVIDIA isn't releasing support for Xavier on JetPack 6, so we're stuck.
+                sm_72 = recurseIntoAttrs {
+                  cudaPackages_12_2_2 = recurseIntoAttrs pkgs.pkgsCuda.sm_72.cudaPackages_12_2_2;
+                };
+                # Orin (8.7) is only supported up to CUDA 12.2.2 by cuda-compat on JetPack 5.
+                # Orin has a JetPack 6 release which allows it to run later versions of CUDA, but it has not yet been
+                # packaged by https://github.com/anduril/jetpack-nixos.
+                sm_87 = recurseIntoAttrs {
+                  cudaPackages_12_2_2 = recurseIntoAttrs pkgs.pkgsCuda.sm_87.cudaPackages_12_2_2;
+                };
+              }
+            );
+          });
 
           devShells = {
             inherit (config.packages) cuda-redist;

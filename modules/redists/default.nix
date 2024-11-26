@@ -3,10 +3,10 @@ let
   inherit (builtins) readDir;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets) foldlAttrs optionalAttrs mapAttrs;
-  inherit (lib.modules) mkDefault;
-  inherit (lib.options) mkOption;
   inherit (lib.cuda.types) redistName;
   inherit (lib.cuda.utils) mkRedistConfig;
+  inherit (lib.modules) mkDefault;
+  inherit (lib.options) mkOption;
 in
 {
   options.redists = mkOption {

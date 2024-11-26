@@ -34,7 +34,7 @@ prevAttrs: {
       popd
     ''
     # Create relative symlinks to executable files (not shared objects) in out/bin
-    + optionalString (cudaAtLeast "12") ''
+    + optionalString (cudaAtLeast "12.0") ''
       mkdir -p "$out/bin"
       find \
         "$out/compat" \

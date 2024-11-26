@@ -7,6 +7,14 @@ let
     }).config;
 
   inherit (builtins) throw;
+  inherit (lib.attrsets)
+    attrNames
+    dontRecurseIntoAttrs
+    hasAttr
+    mapAttrs'
+    mergeAttrsList
+    recurseIntoAttrs
+    ;
   inherit (lib.cuda.utils)
     buildRedistPackages
     getJetsonTargets
@@ -18,18 +26,15 @@ let
     versionBoundedInclusive
     versionNewer
     ;
-  inherit (lib.attrsets)
-    dontRecurseIntoAttrs
-    foldlAttrs
-    hasAttr
-    mapAttrs'
-    optionalAttrs
-    recurseIntoAttrs
-    ;
   inherit (lib.customisation) makeScope;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
-  inherit (lib.lists) foldl' map;
+  inherit (lib.lists)
+    concatMap
+    foldl'
+    map
+    optionals
+    ;
   inherit (lib.modules) evalModules;
   inherit (lib.strings)
     isString
@@ -71,73 +76,71 @@ let
 
       cudaPackagesFun =
         finalCudaPackages:
-        recurseIntoAttrs {
-          pkgs = dontRecurseIntoAttrs final // {
-            __attrsFailEvaluation = true;
-          };
+        mergeAttrsList (
+          [
+            # Core attributes which largely don't depend on packages
+            (recurseIntoAttrs {
+              pkgs = dontRecurseIntoAttrs final // {
+                __attrsFailEvaluation = true;
+              };
 
-          cudaPackages = dontRecurseIntoAttrs finalCudaPackages // {
-            __attrsFailEvaluation = true;
-          };
+              cudaPackages = dontRecurseIntoAttrs finalCudaPackages // {
+                __attrsFailEvaluation = true;
+              };
 
-          # Introspection
-          cudaPackagesConfig = dontRecurseIntoAttrs cudaPackagesConfig // {
-            __attrsFailEvaluation = true;
-          };
+              # Introspection
+              cudaPackagesConfig = dontRecurseIntoAttrs cudaPackagesConfig // {
+                __attrsFailEvaluation = true;
+              };
 
-          # CUDA versions
-          inherit cudaMajorMinorPatchVersion cudaMajorMinorVersion cudaMajorVersion;
+              # CUDA versions
+              inherit cudaMajorMinorPatchVersion cudaMajorMinorVersion cudaMajorVersion;
 
-          # CUDA version comparison utilities
-          inherit
-            cudaAtLeast
-            cudaAtMost
-            cudaBoundedExclusive
-            cudaBoundedInclusive
-            cudaNewer
-            cudaOlder
-            ;
+              # CUDA version comparison utilities
+              inherit
+                cudaAtLeast
+                cudaAtMost
+                cudaBoundedExclusive
+                cudaBoundedInclusive
+                cudaNewer
+                cudaOlder
+                ;
 
-          # Utility function for automatically naming fetchFromGitHub derivations with `name`.
-          fetchFromGitHub = fetchFromGitHubAutoName;
-          fetchFromGitLab = fetchFromGitLabAutoName;
+              # Aliases
+              cudaVersion = warn "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorVersion;
+              cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
+              cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
 
-          # Ensure protobuf is fixed to a specific version which is broadly compatible.
-          # TODO: Make conditional on not being cudaPackages_11-jetson, which supports older versions of software and
-          # will require an older protobuf.
-          # NOTE: This is currently blocked on onnxruntime:
-          # https://github.com/microsoft/onnxruntime/issues/21308
-          protobuf = final.protobuf_25;
-        };
+              # Utility function for automatically naming fetchFromGitHub derivations with `name`.
+              fetchFromGitHub = fetchFromGitHubAutoName;
+              fetchFromGitLab = fetchFromGitLabAutoName;
 
-      extensions =
-        [
-          # Aliases
-          (finalCudaPackages: _: {
-            cudaVersion = warn "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorVersion;
-            cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
-            cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
-          })
+              # Ensure protobuf is fixed to a specific version which is broadly compatible.
+              # TODO: Make conditional on not being cudaPackages_11-jetson, which supports older versions of software and
+              # will require an older protobuf.
+              # NOTE: This is currently blocked on onnxruntime:
+              # https://github.com/microsoft/onnxruntime/issues/21308
+              protobuf = final.protobuf_25;
+            })
+          ]
           # Redistributable packages
-          # Fold over the redists specified in the cudaPackagesConfig
-          (
-            finalCudaPackages: _:
-            foldlAttrs (
-              acc: redistName: versionOrRedistArchToVersion:
-              let
-                maybeVersion =
-                  # Check for same version used everywhere
-                  if isString versionOrRedistArchToVersion then
-                    versionOrRedistArchToVersion
-                  # Check for hostArch
-                  else if hasAttr hostRedistArch versionOrRedistArchToVersion then
-                    versionOrRedistArchToVersion.${hostRedistArch}
-                  # Default to being unavailable on the host
-                  else
-                    null;
-              in
-              acc
-              // optionalAttrs (maybeVersion != null) (buildRedistPackages {
+          ++ concatMap (
+            redistName:
+            let
+              versionOrRedistArchToVersion = cudaPackagesConfig.redists.${redistName};
+              maybeVersion =
+                # Check for same version used everywhere
+                if isString versionOrRedistArchToVersion then
+                  versionOrRedistArchToVersion
+                # Check for hostArch
+                else if hasAttr hostRedistArch versionOrRedistArchToVersion then
+                  versionOrRedistArchToVersion.${hostRedistArch}
+                # Default to being unavailable on the host
+                else
+                  null;
+            in
+            optionals (maybeVersion != null) [
+              (buildRedistPackages {
                 inherit
                   desiredCudaVariant
                   finalCudaPackages
@@ -147,21 +150,22 @@ let
                 manifestVersion = maybeVersion;
                 redistConfig = cudaConfig.redists.${redistName};
               })
-            ) { } cudaPackagesConfig.redists
-          )
-        ]
-        # CUDA version-specific packages
-        ++ map (
-          directory: finalCudaPackages: _:
-          packagesFromDirectoryRecursive {
-            inherit (finalCudaPackages) callPackage;
-            inherit directory;
-          }
-        ) cudaPackagesConfig.packagesDirectories
-        # User additions
-        ++ final.cudaPackagesExtensions;
+            ]
+          ) (attrNames cudaPackagesConfig.redists)
+          # CUDA version-specific packages
+          ++ map (
+            directory:
+            packagesFromDirectoryRecursive {
+              inherit (finalCudaPackages) callPackage;
+              inherit directory;
+            }
+          ) cudaPackagesConfig.packagesDirectories
+        );
     in
-    makeScope final.newScope (extends (composeManyExtensions extensions) cudaPackagesFun);
+    makeScope final.newScope (
+      # User additions are included through final.cudaPackagesExtensions
+      extends (composeManyExtensions final.cudaPackagesExtensions) cudaPackagesFun
+    );
 in
 # General configuration
 {
@@ -180,17 +184,29 @@ in
 }
 # Package sets
 // {
-  # Alias
-  cudaPackages =
-    final.cudaPackagesVersions."cudaPackages_${
-      replaceStrings [ "." ] [ "_" ] cudaConfig.defaultCudaPackagesVersion
-    }";
-
   # We cannot add top-level attributes dependent on the fixed point, but we can add them within an attribute set!
   cudaPackagesVersions = mapAttrs' (cudaMajorMinorPatchVersion: _: {
     name = "cudaPackages_${replaceStrings [ "." ] [ "_" ] cudaMajorMinorPatchVersion}";
     value = packageSetBuilder cudaMajorMinorPatchVersion;
   }) cudaConfig.cudaPackages;
+
+  # Aliases
+  # NOTE: No way to automate this as presence or absence of attributes depends on the fixed point, which causes
+  # infinite recursion.
+  inherit (final.cudaPackagesVersions)
+    cudaPackages_12_2_2
+    cudaPackages_12_6_3
+    ;
+
+  cudaPackages_12_2 = final.cudaPackages_12_2_2;
+  cudaPackages_12_6 = final.cudaPackages_12_6_3;
+
+  cudaPackages_12 = final.cudaPackages_12_6;
+
+  cudaPackages =
+    final.cudaPackagesVersions."cudaPackages_${
+      replaceStrings [ "." ] [ "_" ] cudaConfig.defaultCudaPackagesVersion
+    }";
 }
 # Nixpkgs package sets matrixed by real architecture (e.g., `sm_90a`).
 # TODO(@connorbaker): Yes, it is computationally expensive to call final.extend.

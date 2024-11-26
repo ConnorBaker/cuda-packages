@@ -37,7 +37,7 @@ in
       # https://docs.nvidia.com/cuda/cuda-for-tegra-appnote/index.html#deployment-considerations-for-cuda-upgrade-package
       "12.2.2" = {
         # TODO: are there changes required for 12.2.2?
-        packagesDirectories = [ ../cuda-packages/12.6.3 ];
+        packagesDirectories = [ ../cuda-packages/common ];
         redists = {
           cublasmp = "0.3.0";
           cuda = "12.2.2";
@@ -55,7 +55,7 @@ in
         };
       };
       "12.6.3" = {
-        packagesDirectories = [ ../cuda-packages/12.6.3 ];
+        packagesDirectories = [ ../cuda-packages/common ];
         redists = {
           cublasmp = "0.3.0";
           cuda = "12.6.3";

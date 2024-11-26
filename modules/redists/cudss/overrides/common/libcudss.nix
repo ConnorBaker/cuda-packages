@@ -7,12 +7,13 @@
 let
   inherit (builtins) placeholder;
   inherit (lib.lists) optionals;
+  inherit (lib.strings) optionalString;
 in
 prevAttrs: {
   buildInputs =
     prevAttrs.buildInputs or [ ]
     # TODO(@connorbaker): Are these required for 11.8?
-    ++ optionals (cudaAtLeast "12.6") [
+    ++ optionals (cudaAtLeast "12.0") [
       mpi
       nccl
     ];
@@ -20,7 +21,7 @@ prevAttrs: {
   # Update the CMake configurations
   postFixup =
     prevAttrs.postFixup or ""
-    + optionals (cudaAtLeast "12.6") (
+    + optionalString (cudaAtLeast "12.0") (
       # Enter the directory containing the CMake configurations
       ''
         pushd "$dev/lib/cmake/cudss"

@@ -1,23 +1,27 @@
 { lib }:
 let
   inherit (builtins) readDir;
+  inherit (lib.asserts) assertMsg;
+  inherit (lib.attrsets)
+    attrNames
+    filterAttrs
+    foldlAttrs
+    genAttrs
+    hasAttr
+    mapAttrs
+    mapAttrs'
+    optionalAttrs
+    ;
   inherit (lib.cuda.data) redistUrlPrefix;
   inherit (lib.cuda.utils)
     getLibPath
     mkRedistUrl
     mkRelativePath
     mkTensorRTUrl
+    mkVersionedManifests
+    mkVersionedOverrides
+    packageExprPathsFromDirectoryRecursive
     readDirIfExists
-    ;
-  inherit (lib.asserts) assertMsg;
-  inherit (lib.attrsets)
-    attrNames
-    filterAttrs
-    foldlAttrs
-    hasAttr
-    mapAttrs
-    mapAttrs'
-    optionalAttrs
     ;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.licenses) nvidiaCudaRedist;
@@ -97,45 +101,19 @@ in
     # Arguments
 
     path
-    : The path to the redistributable directory
+    : The path to the redistributable directory containing a `manifests` directory and (optionally) an `overrides`
+      directory.
   */
-  mkRedistConfig = path: {
-    versionedOverrides = mapAttrs (
-      pathName: pathType:
-      let
-        cursor = path + "/overrides/${pathName}";
-      in
-      assert assertMsg (
-        pathType == "directory"
-      ) "mkRedistConfig: expected a directory at ${cursor} but found ${pathType}";
-      assert assertMsg (version.check pathName)
-        "mkRedistConfig: expected directory name ${pathName} at ${cursor} to be a version";
-      packagesFromDirectoryRecursive {
-        # Function which loads the file as a Nix expression and ignores the second argument.
-        # NOTE: We don't actually want to callPackage these functions at this point, so we use builtins.import
-        # instead. We do, however, have to match the callPackage signature.
-        callPackage = path: _: path;
-        directory = cursor;
-      }
-    ) (readDirIfExists (path + "/overrides"));
-    versionedManifests = mapAttrs' (
-      pathName: pathType:
-      let
-        cursor = path + "/manifests/${pathName}";
-        fileName = removeSuffix ".json" pathName;
-      in
-      assert assertMsg (
-        pathType == "regular"
-      ) "mkRedistConfig: expected a file at ${cursor} but found ${pathType}";
-      assert assertMsg (hasSuffix ".json" pathName) "mkRedistConfig: expected a JSON file at ${cursor}";
-      assert assertMsg (version.check fileName)
-        "mkRedistConfig: expected file name ${fileName} at ${cursor} to be a version";
-      {
-        name = removeSuffix ".json" pathName;
-        value = importJSON cursor;
-      }
-    ) (readDir (path + "/manifests"));
-  };
+  mkRedistConfig =
+    path:
+    let
+      versionedManifests = mkVersionedManifests (path + "/manifests");
+      versions = attrNames versionedManifests;
+    in
+    {
+      inherit versionedManifests;
+      versionedOverrides = mkVersionedOverrides versions (path + "/overrides");
+    };
 
   /**
     Function to generate a URL for something in the redistributable tree.
@@ -251,6 +229,133 @@ in
       "machine-learning"
       relativePath
     ];
+
+  /**
+    Function to produce `versionedManifests`.
+
+    # Type
+
+    ```
+    mkVersionedManifests :: Directory -> VersionedManifests
+    ```
+
+    # Arguments
+
+    directory
+    : Path to directory containing manifests
+  */
+  mkVersionedManifests =
+    path:
+    mapAttrs' (
+      pathName: pathType:
+      let
+        cursor = path + "/${pathName}";
+        fileName = removeSuffix ".json" pathName;
+      in
+      assert assertMsg (
+        pathType == "regular"
+      ) "mkRedistConfig: expected a file at ${cursor} but found ${pathType}";
+      assert assertMsg (hasSuffix ".json" pathName) "mkRedistConfig: expected a JSON file at ${cursor}";
+      assert assertMsg (version.check fileName)
+        "mkRedistConfig: expected file name ${fileName} at ${cursor} to be a version";
+      {
+        name = removeSuffix ".json" pathName;
+        value = importJSON cursor;
+      }
+    ) (readDir path);
+
+  /**
+    Function to produce `versionedOverrides`.
+
+    # Type
+
+    ```
+    mkVersionedOverrides :: Directory -> VersionedOverrides
+    ```
+
+    # Arguments
+
+    versions
+    : Versions to populate with `common` in the case the directory contains only `common`
+
+    directory
+    : Path to directory containing overrides grouped by version.
+      May optionally contain a `common` directory which is shared between all versions, where overrides from a version
+      take priority.
+  */
+  mkVersionedOverrides =
+    versions: path:
+    let
+      overridesDir = readDirIfExists path;
+      # Special handling for `common`, which is shared with all versions.
+      common = optionalAttrs (overridesDir ? common) (
+        let
+          cursor = path + "/common";
+        in
+        assert assertMsg (
+          overridesDir.common == "directory"
+        ) "mkRedistConfig: expected a directory at ${cursor} but found ${overridesDir.common}";
+        packageExprPathsFromDirectoryRecursive cursor
+      );
+    in
+    genAttrs versions (
+      version:
+      let
+        cursor = path + "/${version}";
+        # If null, `pathType` indicates we should use only `common`.
+        pathType = overridesDir.${version} or null;
+        overrides = optionalAttrs (pathType != null) (packageExprPathsFromDirectoryRecursive cursor);
+      in
+      assert assertMsg (
+        pathType == null || pathType == "directory"
+      ) "mkRedistConfig: expected a directory at ${cursor} but found ${pathType}";
+      # NOTE: Overrides for the specific version take precedence over those in `common`.
+      common // overrides
+    );
+
+  /**
+    Much like `packagesFromDirectoryRecursive`, except instead of invoking `callPackage` on the leaves, this function
+    leaves them as paths.
+
+    # Type
+
+    ```
+    packageExprPathsFromDirectoryRecursive :: Directory -> Attrs
+    ```
+
+    # Arguments
+
+    directory
+    : The directory to recurse into
+  */
+  packageExprPathsFromDirectoryRecursive =
+    directory:
+    packagesFromDirectoryRecursive {
+      inherit directory;
+      callPackage = path: _: path;
+    };
+
+  /**
+    Much like `packagesFromDirectoryRecursive`, except instead of invoking `callPackage` on the leaves, this function
+    `import`s them.
+
+    # Type
+
+    ```
+    packageExprsFromDirectoryRecursive :: Directory -> Attrs
+    ```
+
+    # Arguments
+
+    directory
+    : The directory to recurse into
+  */
+  packageExprsFromDirectoryRecursive =
+    directory:
+    packagesFromDirectoryRecursive {
+      inherit directory;
+      callPackage = path: _: import path;
+    };
 
   # TODO: Alphabetize
 
