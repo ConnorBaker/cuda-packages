@@ -32,7 +32,6 @@ let
   inherit (lib.fixedPoints) composeManyExtensions extends;
   inherit (lib.lists)
     concatMap
-    foldl'
     map
     optionals
     ;
