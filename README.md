@@ -21,6 +21,7 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 
 - `cuda_compat` should only be used when the host driver is not equal to the version of the CUDA package set currently being used.
   - Would detecting that would be impure?
+- When requested capability is newer than what is supported by version of CUDA, emit PTX for forward compat?
 - Move old entries in modules/data out of tree
 - Update `modules/gpus.nix` for Jetson devices (e.g., TX2 maxes out at 10.2, Xavier at 12.2 with `cuda_compat`)
 - Allow multiple versions of non-cuda-redist packages (e.g., CUDNN) to be installed at once?

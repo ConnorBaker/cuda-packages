@@ -10,6 +10,7 @@ let
   inherit (lib.attrsets)
     attrNames
     dontRecurseIntoAttrs
+    foldlAttrs
     hasAttr
     mapAttrs'
     mergeAttrsList
@@ -212,16 +213,16 @@ in
 # TODO(@connorbaker): Yes, it is computationally expensive to call final.extend.
 # No, I can't think of a different way to force re-evaluation of the fixed point.
 // {
-  pkgsCuda = foldl' (
-    acc: gpu:
+  pkgsCuda = foldlAttrs (
+    acc: cudaCapability: _:
     acc
     // {
-      ${mkRealArchitecture gpu.computeCapability} = dontRecurseIntoAttrs (
+      ${mkRealArchitecture cudaCapability} = dontRecurseIntoAttrs (
         final.extend (
           _: prev': {
             __attrsFailEvaluation = true;
             config = prev'.config // {
-              cudaCapabilities = [ gpu.computeCapability ];
+              cudaCapabilities = [ cudaCapability ];
             };
           }
         )

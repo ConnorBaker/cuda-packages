@@ -4,6 +4,7 @@ let
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets)
     attrNames
+    attrValues
     filterAttrs
     foldlAttrs
     genAttrs
@@ -14,6 +15,7 @@ let
     ;
   inherit (lib.cuda.data) redistUrlPrefix;
   inherit (lib.cuda.utils)
+    dropDots
     getLibPath
     mkRedistUrl
     mkRelativePath
@@ -22,6 +24,7 @@ let
     mkVersionedOverrides
     packageExprPathsFromDirectoryRecursive
     readDirIfExists
+    versionAtMost
     ;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.licenses) nvidiaCudaRedist;
@@ -38,10 +41,12 @@ let
     ;
   inherit (lib.options) mkOption;
   inherit (lib.strings)
+    concatMapStringsSep
     concatStringsSep
     hasPrefix
     hasSuffix
     removeSuffix
+    versionAtLeast
     ;
   inherit (lib.trivial)
     const
@@ -664,6 +669,37 @@ in
       "unsupported";
 
   /**
+    Returns whether a GPU should be built by default for a particular CUDA version.
+
+    TODO:
+  */
+  gpuIsDefault =
+    cudaMajorMinorVersion: gpuInfo:
+    let
+      inherit (gpuInfo) dontDefaultAfterCudaMajorMinorVersion isJetson;
+      recentGpu =
+        dontDefaultAfterCudaMajorMinorVersion == null
+        || versionAtLeast dontDefaultAfterCudaMajorMinorVersion cudaMajorMinorVersion;
+    in
+    recentGpu && !isJetson;
+
+  /**
+    Returns whether a GPU is supported for a particular CUDA version.
+
+    TODO:
+  */
+  gpuIsSupported =
+    cudaMajorMinorVersion: gpuInfo:
+    let
+      inherit (gpuInfo) minCudaMajorMinorVersion maxCudaMajorMinorVersion;
+      lowerBoundSatisfied = versionAtLeast cudaMajorMinorVersion minCudaMajorMinorVersion;
+      upperBoundSatisfied =
+        (maxCudaMajorMinorVersion == null)
+        || (versionAtMost cudaMajorMinorVersion maxCudaMajorMinorVersion);
+    in
+    lowerBoundSatisfied && upperBoundSatisfied;
+
+  /**
     Generates a CUDA variant name from a version.
 
     # Example
@@ -741,17 +777,25 @@ in
       ))
     ];
 
-  mkRealArchitecture = cudaCapability: "sm_" + lib.cuda.utils.dropDots cudaCapability;
-  mkVirtualArchitecture = cudaCapability: "compute_" + lib.cuda.utils.dropDots cudaCapability;
+  # TODO: DOCS
+  mkCmakeCudaArchitecturesString = concatMapStringsSep ";" dropDots;
+  mkGencodeFlag =
+    targetRealArch: cudaCapability:
+    let
+      cap = dropDots cudaCapability;
+    in
+    "-gencode=arch=compute_${cap},code=${if targetRealArch then "sm" else "compute"}_${cap}";
+  mkRealArchitecture = cudaCapability: "sm_" + dropDots cudaCapability;
+  mkVirtualArchitecture = cudaCapability: "compute_" + dropDots cudaCapability;
 
   # This is used solely for utility functions getNixPlatform and getRedistArch which are needed before the flags
   # attribute set of values and functions is created in the package fixed-point.
   getJetsonTargets =
     gpus: cudaCapabilities:
     let
-      allJetsonComputeCapabilities = concatMap (
-        gpu: optionals gpu.isJetson [ gpu.computeCapability ]
-      ) gpus;
+      allJetsonComputeCapabilities = concatMap (gpu: optionals gpu.isJetson [ gpu.cudaCapability ]) (
+        attrValues gpus
+      );
     in
     intersectLists allJetsonComputeCapabilities cudaCapabilities;
 }

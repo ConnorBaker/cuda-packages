@@ -18,6 +18,6 @@ in
       List of CUDA major.minor.patch versions available across runfile installers and redist packages
     '';
     type = nonEmptyListOf lib.cuda.types.majorMinorPatchVersion;
-    default = attrNames config.redists.cuda.versionedManifests;
   };
+  config.data.cudaMajorMinorPatchVersions = attrNames config.redists.cuda.versionedManifests;
 }
