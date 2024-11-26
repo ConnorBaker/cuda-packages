@@ -92,6 +92,7 @@ let
               cudaPackagesConfig = dontRecurseIntoAttrs cudaPackagesConfig // {
                 __attrsFailEvaluation = true;
               };
+              inherit hostRedistArch;
 
               # CUDA versions
               inherit cudaMajorMinorPatchVersion cudaMajorMinorVersion cudaMajorVersion;

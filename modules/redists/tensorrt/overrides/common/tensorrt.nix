@@ -9,19 +9,14 @@
   stdenv,
 }:
 let
-  inherit (lib.cuda.utils) getRedistArch majorMinorPatch;
+  inherit (lib.cuda.utils) majorMinorPatch;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) optionals;
   inherit (lib.meta) getExe;
-  inherit (lib.strings) concatStringsSep optionalString;
-  hostRedistArch = getRedistArch (flags.jetsonTargets != [ ]) stdenv.hostPlatform.system;
+  inherit (lib.strings) concatStringsSep;
 in
 finalAttrs: prevAttrs: {
   allowFHSReferences = true;
-
-  badPlatformsConditions = prevAttrs.badPlatformsConditions // {
-    "Unsupported platform" = hostRedistArch == "unsupported";
-  };
 
   buildInputs =
     prevAttrs.buildInputs
@@ -43,7 +38,7 @@ finalAttrs: prevAttrs: {
     in
     (prevAttrs.preInstall or "")
     # Replace symlinks to bin and lib with the actual directories from targets.
-    + optionalString (hostRedistArch != "unsupported") ''
+    + ''
       for dir in bin lib; do
         # Only replace if the symlink exists.
         [[ -L "$dir" ]] || continue
@@ -83,7 +78,7 @@ finalAttrs: prevAttrs: {
     in
     (prevAttrs.postFixup or "")
     + ''
-      ${getExe patchelf} --add-needed libnvinfer.so \
+      "${getExe patchelf}" --add-needed libnvinfer.so \
         "$lib/lib/libnvinfer.so.${versionTriple}" \
         "$lib/lib/libnvinfer_plugin.so.${versionTriple}" \
         "$lib/lib/libnvinfer_builder_resource.so.${versionTriple}"

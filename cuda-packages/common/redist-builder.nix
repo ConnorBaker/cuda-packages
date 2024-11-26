@@ -7,13 +7,13 @@
   config,
   cudaMajorMinorVersion,
   flags,
+  hostRedistArch,
   lib,
   markForCudatoolkitRootHook,
 }:
 let
   inherit (lib)
     licenses
-    platforms
     sourceTypes
     teams
     ;
@@ -24,6 +24,7 @@ let
     findFirstIndex
     intersectLists
     optionals
+    tail
     unique
     ;
   inherit (lib.strings) concatMapStringsSep optionalString;
@@ -143,7 +144,7 @@ backendStdenv.mkDerivation (
     # NOTE: Use this when a broken condition means evaluation can fail!
     badPlatformsConditions = {
       "CUDA support is not enabled" = !config.cudaSupport;
-      "Platform is not supported" = finalAttrs.src == null;
+      "Platform is not supported" = finalAttrs.src == null || hostRedistArch == "unsupported";
     };
 
     # src :: null | Derivation
@@ -253,7 +254,7 @@ backendStdenv.mkDerivation (
       ''
       # Move the outputs into their respective outputs.
       + ''
-        ${concatMapStringsSep "\n" mkMoveToOutputCommand (builtins.tail finalAttrs.outputs)}
+        ${concatMapStringsSep "\n" mkMoveToOutputCommand (tail finalAttrs.outputs)}
       ''
       # Post-install hook
       + ''
@@ -308,7 +309,11 @@ backendStdenv.mkDerivation (
       description = "${releaseInfo.name}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";
       sourceProvenance = [ sourceTypes.binaryNativeCode ];
       broken = isBroken;
-      badPlatforms = optionals isBadPlatform platforms.all;
+      badPlatforms = optionals isBadPlatform (unique [
+        backendStdenv.buildPlatform.system
+        backendStdenv.hostPlatform.system
+        backendStdenv.targetPlatform.system
+      ]);
       license = licenses.unfree;
       maintainers = teams.cuda.members;
     };
