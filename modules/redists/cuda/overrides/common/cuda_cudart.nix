@@ -1,6 +1,7 @@
 {
   addDriverRunpath,
   cuda_cccl,
+  cuda_compat,
   cuda_nvcc,
   cudaAtLeast,
   flags,
@@ -8,24 +9,48 @@
 }:
 let
   inherit (lib.attrsets) getOutput;
-  inherit (lib.lists) elem optionals;
+  inherit (lib.lists) optionals;
   inherit (lib.strings) optionalString;
 in
-finalAttrs: prevAttrs: {
+prevAttrs: {
   # Include the static libraries as well since CMake needs them during the configure phase.
-  propagatedBuildOutputs =
-    prevAttrs.propagatedBuildOutputs
-    ++ [ "static" ]
-    # cuda_compat provides its own libcuda.so, so we need to make sure it's not shadowed.
-    ++ optionals (!flags.isJetsonBuild) [ "stubs" ];
+  propagatedBuildOutputs = prevAttrs.propagatedBuildOutputs ++ [
+    "static"
+    "stubs"
+  ];
 
-  # The libcuda stub's pkg-config doesn't follow the general pattern:
+  # When cuda_compat is available, propagate it.
+  # `cuda_compat` provides its own `libcuda.so`, but it requires driver libraries only available in the runtime.
+  # So, we always use the stubs provided by `cuda_cudart` and rely on `autoAddCudaCompatRunpath` to add `cuda_compat`'s
+  # `libcuda.so` to the RPATH of our libraries.
+  # Since the libraries in `cuda_compat` are all under the `compat` directory, we don't run into issues where there are
+  # multiple versions of `libcuda.so` in the environment.
+  # NOTE: `cuda_compat` can be disabled by setting the package to `null`. This is useful in cases where
+  # the host OS has a recent enough CUDA driver that the compatibility library isn't needed.
+  propagatedBuildInputs = optionals (flags.isJetsonBuild && cuda_compat == null) [ cuda_compat ];
+
   postPatch =
     prevAttrs.postPatch or ""
+    # Patch the `cudart` package config files so they reference lib
     + ''
       while IFS= read -r -d $'\0' path; do
+        echo "Patching $path"
         sed -i \
+          -e "s|^cudaroot\s*=.*\$||" \
+          -e "s|^libdir\s*=.*/lib\$|libdir=''${!outputLib:?}/lib|" \
+          -e "s|^includedir\s*=.*/include\$|includedir=''${!outputInclude:?}/include|" \
+          -e "s|^Libs\s*:\(.*\)\$|Libs: \1 -Wl,-rpath,${addDriverRunpath.driverLink}/lib|" \
+          "$path"
+      done < <(find -iname 'cudart-*.pc' -print0)
+    ''
+    # Patch the `cuda` package config files so they reference stubs
+    + ''
+      while IFS= read -r -d $'\0' path; do
+        echo "Patching $path"
+        sed -i \
+          -e "s|^cudaroot\s*=.*\$||" \
           -e "s|^libdir\s*=.*/lib\$|libdir=''${stubs:?}/lib/stubs|" \
+          -e "s|^includedir\s*=.*/include\$|includedir=''${!outputInclude:?}/include|" \
           -e "s|^Libs\s*:\(.*\)\$|Libs: \1 -Wl,-rpath,${addDriverRunpath.driverLink}/lib|" \
           "$path"
       done < <(find -iname 'cuda-*.pc' -print0)
@@ -34,24 +59,21 @@ finalAttrs: prevAttrs: {
   postInstall =
     prevAttrs.postInstall or ""
     # NOTE: We can't patch a single output with overrideAttrs, so we need to use nix-support.
-    # NOTE: Make sure to guard against the assert running when the package isn't available.
-    + optionalString finalAttrs.finalPackage.meta.available (
-      ''
-        mkdir -p "''${!outputInclude}/nix-support"
-      ''
-      # cuda_cudart.dev depends on crt/host_config.h, which is from cuda_nvcc.dev.
-      + optionalString cuda_nvcc.meta.available ''
-        printWords "${getOutput "include" cuda_nvcc}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
-      ''
-      # cuda_cuadrt.dev has include/cuda_fp16.h which requires cuda_cccl.dev's include/nv/target
-      + optionalString (cudaAtLeast "12.0") ''
-        printWords "${getOutput "include" cuda_cccl}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
-      ''
-    )
+    + ''
+      mkdir -p "''${!outputInclude}/nix-support"
+    ''
+    # cuda_cudart.dev depends on crt/host_config.h, which is from cuda_nvcc.dev.
+    + optionalString cuda_nvcc.meta.available ''
+      printWords "${getOutput "include" cuda_nvcc}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
+    ''
+    # cuda_cuadrt.dev has include/cuda_fp16.h which requires cuda_cccl.dev's include/nv/target
+    + optionalString (cudaAtLeast "12.0") ''
+      printWords "${getOutput "include" cuda_cccl}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
+    ''
     # Namelink may not be enough, add a soname.
     # Cf. https://gitlab.kitware.com/cmake/cmake/-/issues/25536
     # NOTE: Add symlinks inside $stubs/lib so autoPatchelfHook can find them -- it doesn't recurse into subdirectories.
-    + optionalString (elem "stubs" finalAttrs.outputs) ''
+    + ''
       pushd "$stubs/lib/stubs"
       [[ -f libcuda.so && ! -f libcuda.so.1 ]] && ln -sr libcuda.so libcuda.so.1
       ln -srt "$stubs/lib/" *.so *.so.*

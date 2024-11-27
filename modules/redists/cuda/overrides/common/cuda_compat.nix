@@ -1,11 +1,9 @@
 {
-  cudaAtLeast,
   flags,
   lib,
 }:
 let
   inherit (lib.lists) optionals;
-  inherit (lib.strings) optionalString;
 in
 prevAttrs: {
   allowFHSReferences = true;
@@ -23,26 +21,7 @@ prevAttrs: {
     "Trying to use cuda_compat on aarch64-linux targeting non-Jetson devices" = !flags.isJetsonBuild;
   };
 
-  # Set up symlinks for libraries and binaries.
-  postInstall =
-    prevAttrs.postInstall or ""
-    # Create relative symlinks to shared object files in out/lib
-    + ''
-      mkdir -p "$out/lib"
-      pushd "$out/compat"
-      ln -srt "$out/lib/" *.so *.so.*
-      popd
-    ''
-    # Create relative symlinks to executable files (not shared objects) in out/bin
-    + optionalString (cudaAtLeast "12.0") ''
-      mkdir -p "$out/bin"
-      find \
-        "$out/compat" \
-        -mindepth 1 \
-        -maxdepth 1 \
-        -not -name "*.so" \
-        -not -name "*.so.*" \
-        -executable \
-        -exec ln -srt "$out/bin/" '{}' '+'
-    '';
+  # NOTE: libraries are left in the `compat` directory by design: they require runtime driver libraries unavailable
+  # to us inside the sandbox. Instead, linking against `libcuda.so` is handled by the stubs provided by `cuda_cudart`,
+  # and the runtime path is set to our compatibility libraries by the `autoAddCudaCompatRunpath` hook.
 }

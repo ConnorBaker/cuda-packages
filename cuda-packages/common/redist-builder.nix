@@ -5,6 +5,7 @@
   autoPatchelfHook,
   backendStdenv,
   config,
+  cuda_compat,
   cudaMajorMinorVersion,
   flags,
   hostRedistArch,
@@ -195,7 +196,8 @@ backendStdenv.mkDerivation (
       # autoAddCudaCompatRunpath depends on cuda_compat and would cause
       # infinite recursion if applied to `cuda_compat` itself (beside the fact
       # that it doesn't make sense in the first place)
-      ++ optionals (finalAttrs.pname != "cuda_compat" && flags.isJetsonBuild) [
+      # NOTE: Setting `cuda_compat` to null allows disabling propagation of autoAddCudaCompatRunpath.
+      ++ optionals (finalAttrs.pname != "cuda_compat" && flags.isJetsonBuild && cuda_compat != null) [
         # autoAddCudaCompatRunpath must appear AFTER autoAddDriverRunpath.
         # See its documentation in ./setup-hooks/extension.nix.
         autoAddCudaCompatRunpath

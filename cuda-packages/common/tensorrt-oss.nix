@@ -2,12 +2,10 @@
 {
   backendStdenv,
   cmake,
-  cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
   cuda_profiler_api,
   cudaMajorMinorVersion,
-  cudaOlder,
   cudnn,
   fetchFromGitHub,
   flags,
@@ -18,7 +16,6 @@
 }:
 let
   inherit (lib.attrsets) getLib;
-  inherit (lib.lists) optionals;
   inherit (lib.strings)
     concatMapStringsSep
     cmakeBool

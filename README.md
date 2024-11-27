@@ -16,6 +16,7 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 - `noBrokenSymlinksHook` checks for broken or reflexive symlinks in your outputs, which are usually a sign of packaging gone wrong
 - `12.2.2` is kept around because it is the last version of CUDA 12 supported by Xavier through `cuda_compat`
   - _DO NOT_ rely on it being around forever -- try to upgrade to newer hardware!
+- `cuda_compat` can be disabled by setting the package to `null`. This is useful in cases where the host OS has a recent enough CUDA driver that the compatibility library isn't needed.
 
 ## Todo
 
