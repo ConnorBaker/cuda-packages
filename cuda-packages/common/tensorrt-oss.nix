@@ -13,7 +13,7 @@
   flags,
   lib,
   ninja,
-  protobuf,
+  protobuf_25,
   tensorrt,
 }:
 let
@@ -72,7 +72,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     (cmakePath "TRT_OUT_DIR" "$out")
     (cmakeFeature "CUDA_VERSION" cudaMajorMinorVersion)
     (cmakeFeature "CUDNN_VERSION" (majorMinor cudnn.version))
-    (cmakeFeature "PROTOBUF_VERSION" (majorMinor protobuf.version))
+    (cmakeFeature "PROTOBUF_VERSION" (majorMinor protobuf_25.version))
     (cmakeBool "BUILD_PARSERS" false) # Cannot build parsers at the same time as plugins and samples, and missing caffe protobuf so build fails.
     (cmakeBool "BUILD_PLUGINS" true)
     (cmakeBool "BUILD_SAMPLES" true)
@@ -85,17 +85,13 @@ backendStdenv.mkDerivation (finalAttrs: {
     ninja
   ];
 
-  buildInputs =
-    [
-      cuda_cudart
-      cuda_profiler_api
-      cudnn
-      protobuf
-      tensorrt
-    ]
-    ++ optionals (cudaOlder "12.0") [
-      cuda_cccl # cub/cub.cuh
-    ];
+  buildInputs = [
+    cuda_cudart
+    cuda_profiler_api
+    cudnn
+    protobuf_25
+    tensorrt
+  ];
 
   # For some reason, the two include directorires we need aren't copied to the output.
   # onnx-tensorrt requires it, so we copy it manually.

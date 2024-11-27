@@ -115,13 +115,6 @@ let
               # Utility function for automatically naming fetchFromGitHub derivations with `name`.
               fetchFromGitHub = fetchFromGitHubAutoName;
               fetchFromGitLab = fetchFromGitLabAutoName;
-
-              # Ensure protobuf is fixed to a specific version which is broadly compatible.
-              # TODO: Make conditional on not being cudaPackages_11-jetson, which supports older versions of software and
-              # will require an older protobuf.
-              # NOTE: This is currently blocked on onnxruntime:
-              # https://github.com/microsoft/onnxruntime/issues/21308
-              protobuf = final.protobuf_25;
             })
           ]
           # Redistributable packages

@@ -30,7 +30,7 @@
   onnxruntime, # For passthru.tests
   patchelf,
   pkg-config,
-  protobuf,
+  protobuf_25,
   python3,
   re2,
   tensorrt,
@@ -108,7 +108,7 @@ let
       cuda_nvcc
       patchelf
       pkg-config
-      protobuf
+      protobuf_25
       pybind11
       # python3
     ];
@@ -144,7 +144,7 @@ let
         nlohmann_json
         onnx
         onnx-tensorrt
-        protobuf
+        protobuf_25
         re2
         tensorrt
         zlib
@@ -297,7 +297,7 @@ let
             --cmake_extra_defines \
               ''${cmakeFlags[@]//-D/} \
               CMAKE_CUDA_COMPILER="${cuda_nvcc.bin}/bin/nvcc" \
-              Protobuf_LIBRARIES="${getLib protobuf}/lib/libprotobuf.so"
+              Protobuf_LIBRARIES="${getLib protobuf_25}/lib/libprotobuf.so"
 
         pushd "$NIX_BUILD_TOP/$sourceRoot/$cmakeBuildDir/Release"
       '';
