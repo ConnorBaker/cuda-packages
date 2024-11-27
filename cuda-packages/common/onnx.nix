@@ -5,7 +5,7 @@
   gtest,
   lib,
   patchelf,
-  protobuf,
+  protobuf_25,
   python3,
 }:
 let
@@ -57,7 +57,7 @@ let
 
     nativeBuildInputs = [
       abseil-cpp
-      protobuf
+      protobuf_25
       pybind11
     ];
 
@@ -69,7 +69,7 @@ let
 
     buildInputs = [
       abseil-cpp
-      protobuf
+      protobuf_25
     ];
 
     dependencies = [

@@ -5,7 +5,7 @@
   fetchFromGitHub,
   lib,
   onnx,
-  protobuf,
+  protobuf_25,
   pycuda,
   python3,
   tensorrt-python,
@@ -55,7 +55,7 @@ let
 
     nativeBuildInputs = [
       cuda_nvcc
-      protobuf
+      protobuf_25
     ];
 
     postPatch =
@@ -108,7 +108,7 @@ let
 
     buildInputs = [
       cuda_cudart
-      protobuf
+      protobuf_25
       tensorrt-oss
     ];
 
