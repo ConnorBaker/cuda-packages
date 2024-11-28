@@ -20,18 +20,22 @@ writeShellApplication {
     ]))
   ];
   text = ''
-    args=( 
-      --verbose
-      OnnxBackendRealModelTest
+    args=(
+      python3
+      "${onnx-tensorrt.test_script}/onnx_backend_test.py"
     )
 
     if (( $# != 0 ))
     then
-      args=( "$@" )
+      args+=( "$@" )
     else
+      args+=(
+        --verbose
+        OnnxBackendRealModelTest
+      )
       echo "Running with default arguments: ''${args[*]}" >&2
     fi
 
-    python3 "${onnx-tensorrt.test_script}/onnx_backend_test.py" "''${args[@]}"
+    "''${args[@]}"
   '';
 }

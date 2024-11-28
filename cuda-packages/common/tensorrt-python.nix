@@ -1,12 +1,12 @@
 {
   backendStdenv,
   cuda_cudart,
+  fetchFromGitHub,
   lib,
   onnx-tensorrt,
   python3,
   runCommand,
   tensorrt,
-  tensorrt-oss,
 }:
 let
   inherit (lib.lists) elemAt;
@@ -23,7 +23,7 @@ let
   pythonVersionComponents = splitVersion python3.version;
   pythonMajorVersion = elemAt pythonVersionComponents 0;
   pythonMinorVersion = elemAt pythonVersionComponents 1;
-  tensorRTMajorMinorPatchVersion = tensorrt-oss.version;
+  tensorRTMajorMinorPatchVersion = tensorrt.version;
 
   # This allows us to break a circular dependency on onnx-tensorrt, which requires tensorrt-python.
   # We only need the header files.
@@ -48,9 +48,17 @@ let
 
     pname = "tensorrt-python";
 
-    inherit (tensorrt-oss) version;
+    version = "10.6.0";
 
-    src = "${tensorrt-oss.src}/python";
+    src = fetchFromGitHub {
+      owner = "NVIDIA";
+      repo = "TensorRT";
+      rev = "refs/tags/v${finalAttrs.version}";
+      # NOTE: We supply our own Onnx and Protobuf, so we do not do a recursive clone.
+      hash = "sha256-nnzicyCjVqpAonIhx3u9yNnoJkZ0XXjJ8oxQH+wfrtE=";
+    };
+
+    sourceRoot = "NVIDIA-TensorRT-v${finalAttrs.version}/python";
 
     pyproject = true;
 
@@ -121,14 +129,21 @@ let
         cd ../packaging/bindings_wheel
       '';
 
+    dependencies = [ pybind11 ];
+
     buildInputs = [
       cuda_cudart
       onnx-tensorrt-headers
-      pybind11 # In buildInputs instead of dependencies so CMake can find it
       tensorrt
     ];
 
     doCheck = true;
+
+    # Copy the Python include directory to the output.
+    postInstall = ''
+      mkdir -p "$out/python"
+      cp -r "$NIX_BUILD_TOP/$sourceRoot/include" "$out/python/"
+    '';
 
     meta = with lib; {
       description = "Open Source Software (OSS) components of NVIDIA TensorRT";

@@ -1,6 +1,7 @@
 {
   backendStdenv,
   cudnn-frontend,
+  jq,
   lib,
   writeShellApplication,
 }:
@@ -13,17 +14,25 @@ writeShellApplication {
     strictDeps = true;
   };
   name = "${backendStdenv.cudaNamePrefix}-tests-cudnn-frontend-tests";
-  runtimeInputs = [ cudnn-frontend.tests ];
+  runtimeInputs = [
+    cudnn-frontend.tests
+    jq
+  ];
   text = ''
-    args=( --rng-seed=0 )
+    args=( "${getExe' cudnn-frontend.tests "tests"}" )
 
     if (( $# != 0 ))
     then
-      args=( "$@" )
+      args+=( "$@" )
+      "''${args[@]}"
     else
+      args+=(
+        --success
+        --rng-seed=0
+        --reporter=json
+      )
       echo "Running with default arguments: ''${args[*]}" >&2
+      "''${args[@]}" | jq
     fi
-
-    "${getExe' cudnn-frontend.tests "tests"}" "''${args[@]}"
   '';
 }

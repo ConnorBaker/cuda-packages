@@ -125,7 +125,6 @@ backendStdenv.mkDerivation (finalAttrs: {
 
   doCheck = true;
 
-  # TODO: Assert bin is empty.
   postInstall = optionalString finalAttrs.doCheck ''
     moveToOutput "bin/legacy_samples" "$legacy_samples"
     moveToOutput "bin/samples" "$samples"

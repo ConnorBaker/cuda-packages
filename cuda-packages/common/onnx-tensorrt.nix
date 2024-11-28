@@ -9,7 +9,7 @@
   pycuda,
   python3,
   tensorrt-python,
-  tensorrt-oss,
+  tensorrt,
 }:
 let
   inherit (lib.asserts) assertMsg;
@@ -109,7 +109,7 @@ let
     buildInputs = [
       cuda_cudart
       protobuf_25
-      tensorrt-oss
+      tensorrt
     ];
 
     propagatedBuildInputs = [ (getLib cuda_cudart) ];
@@ -166,6 +166,6 @@ assert assertMsg (
   finalAttrs.version == majorMinor finalAttrs.version
 ) "Version must have only two components";
 assert assertMsg (
-  finalAttrs.version == majorMinor tensorrt-oss.version
+  finalAttrs.version == majorMinor tensorrt.version
 ) "Version must match tensorrt-oss";
 buildPythonPackage finalAttrs

@@ -59,16 +59,20 @@ finalAttrs: prevAttrs: {
       "libnvdla_compiler.so"
     ];
 
-  # Create a symlink for the Onnx header files in include/onnx
-  # NOTE(@connorbaker): This is shared with the tensorrt-oss package, with the `out` output swapped with `include`.
-  # When updating one, check if the other should be updated.
   postInstall =
     (prevAttrs.postInstall or "")
+    # Create a symlink for the Onnx header files in include/onnx
+    # NOTE(@connorbaker): This is shared with the tensorrt-oss package, with the `out` output swapped with `include`.
+    # When updating one, check if the other should be updated.
     + ''
       mkdir "$include/include/onnx"
       pushd "$include/include"
       ln -srt "$include/include/onnx/" NvOnnx*.h
       popd
+    ''
+    # Move the python directory, which contains header files to the include output.
+    + ''
+      mv "$out/python" "$include/python"
     '';
 
   # Tell autoPatchelf about runtime dependencies.
