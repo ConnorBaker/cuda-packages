@@ -101,22 +101,25 @@ let
     # the build directory for the python build.
     # TODO: How does bash handle accessing `cmakeFlags` as an array when __structuredAttrs is not set?
     postConfigure = ''
+      nixLog "exporting cmakeFlags as CMAKE_ARGS"
       export CMAKE_ARGS="$cmakeFlags"
+      nixLog "returning to sourceRoot to install Python components"
       cd "$NIX_BUILD_TOP/$sourceRoot"
     '';
 
     postInstall =
       # After the python install is complete, re-enter the build directory to install the C++ components.
       ''
+        nixLog "returning to ''${cmakeBuildDir:?} directory to install C++ components"
         pushd "''${cmakeBuildDir:?}"
-        echo "Running CMake install for C++ components"
+        nixLog "running CMake install for C++ components"
         make install -j ''${NIX_BUILD_CORES:?}
         popd
       ''
       # Patch up the include directory to avoid allowing downstream consumers choose between onnx and onnx-ml, since that's an innate
       # part of the library we've produced.
       + ''
-        echo "Patching $out/include/onnx/onnx_pb.h"
+        nixLog "patching $out/include/onnx/onnx_pb.h"
         substituteInPlace "$out/include/onnx/onnx_pb.h" \
           --replace-fail \
             "#ifdef ONNX_ML" \
@@ -125,7 +128,7 @@ let
       # Symlink the protobuf files in the python package to the C++ include directory.
       # TODO: Should these only be available to the python package?
       + ''
-        echo "Symlinking protobuf files to $out/include/onnx"
+        nixLog "symlinking protobuf files to $out/include/onnx"
         pushd "$out/${python3.sitePackages}/onnx"
         ln -srt "$out/include/onnx/" *.proto
         popd
@@ -148,16 +151,18 @@ let
 
     preCheck =
       ''
-        echo "Running C++ tests"
+        nixLog "running C++ tests"
         "''${cmakeBuildDir:?}/onnx_gtests"
       ''
       # Fixups for pytest
       + ''
+        nixLog "setting HOME to a temporary directory for pytest"
         export HOME="$(mktemp --directory)"
         trap "rm -rf -- ''${HOME@Q}" EXIT
       ''
       # Detecting source dir as a python package confuses pytest and causes import errors
       + ''
+        nixLog "moving onnx/__init__.py to onnx/__init__.py.hidden"
         mv onnx/__init__.py onnx/__init__.py.hidden
       '';
 
@@ -165,6 +170,7 @@ let
 
     # Some libraries maintain a reference to /build/source, so we need to remove the reference.
     preFixup = ''
+      nixLog "patching shared libraries to remove references to build directory"
       find "$out" \
         -type f \
         -name '*.so' \

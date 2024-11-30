@@ -16,8 +16,15 @@ finalAttrs: prevAttrs: {
     prevAttrs.postInstall or ""
     + optionalString (elem "stubs" finalAttrs.outputs) ''
       pushd "$stubs/lib/stubs"
-      [[ -f libnvidia-ml.so && ! -f libnvidia-ml.so.1 ]] && ln -sr libnvidia-ml.so libnvidia-ml.so.1
-      [[ -f libnvidia-ml.a && ! -f libnvidia-ml.a.1 ]] && ln -sr libnvidia-ml.a libnvidia-ml.a.1
+      if [[ -f libnvidia-ml.so && ! -f libnvidia-ml.so.1 ]]; then
+        nixLog "creating versioned symlink for libnvidia-ml.so stub"
+        ln -sr libnvidia-ml.so libnvidia-ml.so.1
+      fi
+      if [[ -f libnvidia-ml.a && ! -f libnvidia-ml.a.1 ]]; then
+        nixLog "creating versioned symlink for libnvidia-ml.a stub"
+        ln -sr libnvidia-ml.a libnvidia-ml.a.1
+      fi
+      nixLog "creating symlinks for stubs in lib directory"
       ln -srt "$stubs/lib/" *.so *.so.*
       popd
     '';

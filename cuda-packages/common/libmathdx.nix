@@ -41,7 +41,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     "static"
   ];
 
-  # Update the sourceRoot
   preInstall = ''
     mkdir -p "$out"
     mv * "$out"

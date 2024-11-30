@@ -62,6 +62,7 @@ let
       # Ensure Onnx is found by CMake rather than using the vendored version.
       # https://github.com/onnx/onnx-tensorrt/blob/3775e499322eee17c837e27bff6d07af4261767a/CMakeLists.txt#L90
       ''
+        nixLog "patching CMakeLists.txt to use Nixpkgs' Onnx"
         substituteInPlace CMakeLists.txt \
           --replace-fail \
             "add_subdirectory(third_party/onnx EXCLUDE_FROM_ALL)" \
@@ -72,6 +73,7 @@ let
       # Patch `setup.py` to not rely on `onnx_tensorrt`.
       # TODO: Should use actual version given in `__init__.py` instead of hardcoding.
       + ''
+        nixLog "patching setup.py to remove onnx_tensorrt import"
         substituteInPlace setup.py \
           --replace-fail \
             "import onnx_tensorrt" \
@@ -83,6 +85,7 @@ let
       # Patch onnx_tensorrt/backend.py to load the path to libcudart.so directly so the end-user doesn't need to manually
       # add it to LD_LIBRARY_PATH.
       + ''
+        nixLog "patching backend.py to load libcudart.so from the correct path"
         substituteInPlace onnx_tensorrt/backend.py \
           --replace-fail \
             "LoadLibrary('libcudart.so')" \
@@ -95,8 +98,8 @@ let
       (cmakeFeature "ONNX_NAMESPACE" "onnx") # Should be the same as what we built Onnx with
     ];
 
-    # After CMake configuration finishes, return to the source directory to install the C++ components.
     postConfigure = ''
+      nixLog "returning to sourceRoot to install Python components"
       cd "$NIX_BUILD_TOP/$sourceRoot"
     '';
 
@@ -117,13 +120,15 @@ let
     postInstall =
       # After the python install is complete, re-enter the build directory to  install the C++ components.
       ''
+        nixLog "returning to ''${cmakeBuildDir:?} directory to install C++ components"
         pushd "''${cmakeBuildDir:?}"
-        echo "Running CMake install for C++ components"
+        nixLog "installing C++ components"
         make install -j ''${NIX_BUILD_CORES:?}
         popd
       ''
       # Install the header files to the include directory.
       + ''
+        nixLog "installing header files"
         mkdir -p "$out/include/onnx"
         install -Dm644 *.h *.hpp "$out/include/onnx"
       ''
@@ -133,12 +138,14 @@ let
       ''
       # Copy over the file we'll use for testing.
       + ''
+        nixLog "installing test script"
         mkdir -p "$test_script"
         install -Dm755 "$NIX_BUILD_TOP/$sourceRoot/onnx_backend_test.py" "$test_script/onnx_backend_test.py"
       ''
       # Patch our test file to skip tests that are known to fail.
       # These two tests fail with out of memory errors on a 4090.
       + ''
+        nixLog "patching test script to skip known failing tests"
         substituteInPlace "$test_script/onnx_backend_test.py" \
           --replace-fail \
             "backend_test.include(r'.*test_vgg19.*')" \

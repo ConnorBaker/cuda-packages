@@ -5,16 +5,18 @@
   libcublas,
   libcusolver,
 }:
+let
+  inherit (lib.attrsets) recursiveUpdate;
+  inherit (lib.cuda.utils) mkMissingPackagesBadPlatformsConditions;
+in
 prevAttrs: {
-  badPlatformsConditions =
-    prevAttrs.badPlatformsConditions
-    // lib.cuda.utils.mkMissingPackagesBadPlatformsConditions {
-      inherit libcal;
-    };
   buildInputs = prevAttrs.buildInputs or [ ] ++ [
     cuda_cudart
     libcal
     libcublas
     libcusolver
   ];
+  passthru = recursiveUpdate (prevAttrs.passthru or { }) {
+    badPlatformsConditions = mkMissingPackagesBadPlatformsConditions { inherit libcal; };
+  };
 }

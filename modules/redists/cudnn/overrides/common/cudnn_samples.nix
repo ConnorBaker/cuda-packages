@@ -18,11 +18,6 @@ in
   # Sources are nested in a directory with the same name as the package
   setSourceRoot = "sourceRoot=$(echo */src/cudnn_samples_v${cudnnSamplesMajorVersion}/)";
 
-  brokenConditions = prevAttrs.brokenConditions // {
-    "FreeImage is required as a subdirectory and @connorbaker has not yet patched the build to find it" =
-      true;
-  };
-
   nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
     cmake
     cuda_nvcc
@@ -32,4 +27,11 @@ in
     cuda_cudart
     cudnn
   ];
+
+  passthru = prevAttrs.passthru or { } // {
+    brokenConditions = prevAttrs.passthru.brokenConditions or { } // {
+      "FreeImage is required as a subdirectory and @connorbaker has not yet patched the build to find it" =
+        true;
+    };
+  };
 }

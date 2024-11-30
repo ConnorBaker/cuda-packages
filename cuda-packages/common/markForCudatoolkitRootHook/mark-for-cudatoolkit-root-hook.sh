@@ -1,25 +1,29 @@
 # shellcheck shell=bash
 
-((${hostOffset:?} == -1 && ${targetOffset:?} == 0)) || return 0
-
-echo "Sourcing mark-for-cudatoolkit-root-hook" >&2
-
-markForCUDAToolkit_ROOT() {
-  mkdir -p "${prefix:?}/nix-support"
-  local markerPath="$prefix/nix-support/include-in-cudatoolkit-root"
-
-  # Return early if the file already exists.
-  [[ -f $markerPath ]] && return 0
-
-  # Always create the file, even if it's empty, since setup-cuda-hook relies on its existence.
-  # However, only populate it if strictDeps is not set.
-  touch "$markerPath"
-
-  # Return early if strictDeps is set.
-  [[ -n ${strictDeps-} ]] && return 0
-
-  # Populate the file with the package name and output.
-  printWords "${pname:?}-${output:?}" >>"$markerPath"
-}
+# Only run the hook from nativeBuildInputs
+if ((${hostOffset:?} == -1 && ${targetOffset:?} == 0)); then
+  # shellcheck disable=SC1091
+  source @nixLogWithLevelAndFunctionNameHook@
+  nixLog "sourcing mark-for-cudatoolkit-root-hook.sh"
+else
+  return 0
+fi
 
 fixupOutputHooks+=(markForCUDAToolkit_ROOT)
+nixLog "added markForCUDAToolkit_ROOT to fixupOutputHooks"
+
+markForCUDAToolkit_ROOT() {
+  nixDebugLog "creating ${prefix:?}/nix-support if it doesn't exist"
+  mkdir -p "${prefix:?}/nix-support"
+  local -r markerFile="include-in-cudatoolkit-root"
+  local -r markerPath="$prefix/nix-support/$markerFile"
+
+  # Return early if the file already exists.
+  if [[ -f $markerPath ]]; then
+    nixDebugLog "output ${output:?} already marked for inclusion by setupCudaHook"
+    return 0
+  fi
+
+  nixLog "marking output ${output:?} for inclusion by setupCudaHook"
+  touch "$markerPath"
+}

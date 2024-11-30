@@ -70,6 +70,7 @@ finalAttrs: prevAttrs: {
       # Always move the nvvm directory to the bin output.
       ''
         moveToOutput "nvvm" "''${!outputBin}"
+        nixLog "moving nvvm/lib64 to nvvm/lib"
         mv "''${!outputBin}/nvvm/lib64" "''${!outputBin}/nvvm/lib"
       ''
       # Create a directory for our manual propagation.
@@ -84,15 +85,18 @@ finalAttrs: prevAttrs: {
       # setup hooks in `propagatedNativeBuildInputs` are not designed to affect the runtime or build environment of
       # dependencies; they are only meant to affect the build environment of the package that directly includes them.
       + ''
+        nixLog "adding setupCudaHook to $outputBin's propagatedBuildInputs"
         printWords "${setupCudaHook}" >> "''${!outputBin}/nix-support/propagated-build-inputs"
       ''
       # Add the dependency on backendStdenv.cc to the nvcc.profile and native-propagated-build-inputs.
       # NOTE: No need to add a dependency on `newNvvmDir` since it's already in the bin output.
       + ''
+        nixLog "adding backendStdenv.cc to $outputBin's propagatedBuildInputs"
         printWords "${backendStdenv.cc}" >> "''${!outputBin}/nix-support/native-propagated-build-inputs"
       ''
       # Unconditional patching to remove the use of $(_TARGET_SIZE_) since we don't use lib64 in Nixpkgs
       + ''
+        nixLog "removing $(_TARGET_SIZE_) from nvcc.profile"
         substituteInPlace "''${!outputBin}/bin/nvcc.profile" \
           --replace-fail \
             '$(_TARGET_SIZE_)' \
@@ -101,6 +105,7 @@ finalAttrs: prevAttrs: {
       # Unconditional patching to switch to the correct include paths.
       # NOTE: _TARGET_DIR_ appears to be used for the target architecture, which is relevant for cross-compilation.
       + ''
+        nixLog "patching nvcc.profile to use the correct include paths"
         substituteInPlace "''${!outputBin}/bin/nvcc.profile" \
           --replace-fail \
             '$(TOP)/$(_TARGET_DIR_)/include' \
@@ -108,6 +113,7 @@ finalAttrs: prevAttrs: {
       ''
       # Add the dependency on the include output to the nvcc.profile.
       + ''
+        nixLog "adding $outputInclude's include output to $outputBin's propagatedBuildInputs"
         printWords "''${!outputInclude}" >> "''${!outputBin}/nix-support/native-propagated-build-inputs"
       ''
       # Fixup the nvcc.profile to use the correct paths for the backend compiler and NVVM.
@@ -125,6 +131,7 @@ finalAttrs: prevAttrs: {
         # NOTE: In our replacement substitution, we use double quotes to allow for variable expansion.
         # NOTE: We use a trailing slash only on the NVVM directory replacement to prevent partial matches.
         ''
+          nixLog "patching nvcc.profile to use the correct NVVM paths"
           substituteInPlace "''${!outputBin}/bin/nvcc.profile" \
             --replace-fail \
               '${oldNvvmDir}/' \
@@ -133,6 +140,7 @@ finalAttrs: prevAttrs: {
         # Add the dependency on backendStdenv.cc and the new NVVM directories to the nvcc.profile.
         # NOTE: Escape the dollar sign in the variable expansion to prevent early expansion.
         + ''
+          nixLog "adding backendStdenv.cc and ${newNvvmDir} to nvcc.profile"
           cat << EOF >> "''${!outputBin}/bin/nvcc.profile"
 
           # Fix a compatible backend compiler

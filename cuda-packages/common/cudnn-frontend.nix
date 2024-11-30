@@ -59,9 +59,9 @@ backendStdenv.mkDerivation (finalAttrs: {
   ];
 
   postPatch =
-    # Patch the source to use our nlohmann_json.
     # nlohmann_json should be the only vendored dependency.
     ''
+      nixLog "patching source to use nlohmann_json from nixpkgs"
       rm -rf include/cudnn_frontend/thirdparty/nlohmann
       rmdir include/cudnn_frontend/thirdparty
       substituteInPlace include/cudnn_frontend_utils.h \
@@ -69,8 +69,8 @@ backendStdenv.mkDerivation (finalAttrs: {
           '#include "cudnn_frontend/thirdparty/nlohmann/json.hpp"' \
           '#include <nlohmann/json.hpp>'
     ''
-    # Link against forgotten libraries and add commands to install targets.
     + optionalString finalAttrs.doCheck ''
+      nixLog "patching CMakeLists.txt to link against forgotten libraries and install targets"
       echo >> ./CMakeLists.txt \
       "
       target_link_libraries(
@@ -115,10 +115,6 @@ backendStdenv.mkDerivation (finalAttrs: {
 
   enableParallelBuilding = true;
 
-  enableParallelChecking = true;
-
-  enableParallelInstalling = true;
-
   propagatedBuildInputs = [
     nlohmann_json
   ];
@@ -131,7 +127,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     moveToOutput "bin/tests" "$tests"
     if [[ -e "$out/bin" ]]
     then
-      echo "The bin directory in \$out should no longer exist."
+      nixErrorLog "The bin directory in \$out should no longer exist."
       exit 1
     fi
   '';

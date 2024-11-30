@@ -70,8 +70,8 @@ let
     ];
 
     postPatch =
-      # Patch the python CMakeLists.txt to use our supplied packages.
       ''
+        nixLog "patching CMakeLists.txt to use our supplied packages"
         substituteInPlace CMakeLists.txt \
         --replace-fail \
           'find_path(PYBIND11_DIR pybind11/pybind11.h HINTS ''${EXT_PATH} ''${WIN_EXTERNALS} PATH_SUFFIXES pybind11/include)' \
@@ -88,6 +88,7 @@ let
       + ''
         for file in $(find packaging -type f)
         do
+          nixLog "patching $file to include TensorRT version"
           substituteInPlace "$file" \
             --replace-quiet \
               '##TENSORRT_VERSION##' \
@@ -117,15 +118,17 @@ let
       # Before the Python build starts, build the C++ components with CMake. Since the CMake setup hook has placed us in
       # cmakeBuildDir, we don't need to change the dir.  
       ''
-        echo "Running CMake build for C++ components"
+        nixLog "running CMake build for C++ components"
         make all -j ''${NIX_BUILD_CORES:?}
       ''
       # Copy the build artifacts to packaging.
       + ''
+        nixLog "copying build artifacts to packaging"
         cp -r ./tensorrt ../packaging/bindings_wheel
       ''
       # Move to packaging, which contains setup.py, for the Python build.
       + ''
+        nixLog "moving to packaging for Python build"
         cd ../packaging/bindings_wheel
       '';
 
@@ -141,6 +144,7 @@ let
 
     # Copy the Python include directory to the output.
     postInstall = ''
+      nixLog "installing Python header files"
       mkdir -p "$out/python"
       cp -r "$NIX_BUILD_TOP/$sourceRoot/include" "$out/python/"
     '';

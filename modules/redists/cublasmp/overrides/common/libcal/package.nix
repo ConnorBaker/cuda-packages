@@ -22,5 +22,6 @@ finalAttrs: prevAttrs: {
     cat "${./set-ucc-config-file-hook.sh}" >> "$out/nix-support/setup-hook"
     substituteInPlace "$out/nix-support/setup-hook" \
       --replace-fail "@out@" "${placeholder "out"}"
+    nixLog "installed set-ucc-config-file-hook.sh"
   '';
 }

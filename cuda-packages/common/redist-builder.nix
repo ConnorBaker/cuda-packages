@@ -65,8 +65,8 @@ in
 backendStdenv.mkDerivation (
   finalAttrs:
   let
-    isBadPlatform = any id (attrValues finalAttrs.badPlatformsConditions);
-    isBroken = any id (attrValues finalAttrs.brokenConditions);
+    isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
+    isBroken = any id (attrValues finalAttrs.passthru.brokenConditions);
   in
   {
     # NOTE: Even though there's no actual buildPhase going on here, the derivations of the
@@ -93,61 +93,6 @@ backendStdenv.mkDerivation (
     # We have a separate output for include files; don't use the dev output.
     outputInclude = "include";
 
-    # Traversed in the order of the outputs speficied in outputs;
-    # entries are skipped if they don't exist in outputs.
-    outputToPatterns = {
-      bin = [ "bin" ];
-      dev = [
-        "share/pkgconfig"
-        "**/*.pc"
-        "**/*.cmake"
-      ];
-      include = [ "include" ];
-      lib = [
-        "lib"
-        "lib64"
-      ];
-      static = [ "**/*.a" ];
-      sample = [ "samples" ];
-      python = [ "**/*.whl" ];
-      stubs = [
-        "stubs"
-        "lib/stubs"
-      ];
-    };
-
-    # Useful for introspecting why something went wrong. Maps descriptions of why the derivation would be marked as
-    # broken on have badPlatforms include the current platform.
-
-    # brokenConditions :: AttrSet Bool
-    # Sets `meta.broken = true` if any of the conditions are true.
-    # Example: Broken on a specific version of CUDA or when a dependency has a specific version.
-    # NOTE: Do not use this when a broken condition means evaluation will fail! For example, if
-    # a package is missing and is required for the build -- that should go in badPlatformsConditions,
-    # because attempts to access attributes on the package will cause evaluation errors.
-    brokenConditions = {
-      # Unclear how this is handled by Nix internals.
-      "Duplicate entries in outputs" = finalAttrs.outputs != unique finalAttrs.outputs;
-      # Typically this results in the static output being empty, as all libraries are moved
-      # back to the lib output.
-      "lib output follows static output" =
-        let
-          libIndex = findFirstIndex (x: x == "lib") null finalAttrs.outputs;
-          staticIndex = findFirstIndex (x: x == "static") null finalAttrs.outputs;
-        in
-        libIndex != null && staticIndex != null && libIndex > staticIndex;
-    };
-
-    # badPlatformsConditions :: AttrSet Bool
-    # Sets `meta.badPlatforms = meta.platforms` if any of the conditions are true.
-    # Example: Broken on a specific architecture when some condition is met, like targeting Jetson or
-    # a required package missing.
-    # NOTE: Use this when a broken condition means evaluation can fail!
-    badPlatformsConditions = {
-      "CUDA support is not enabled" = !config.cudaSupport;
-      "Platform is not supported" = finalAttrs.src == null || hostRedistArch == "unsupported";
-    };
-
     # src :: null | Derivation
     inherit src;
 
@@ -157,6 +102,7 @@ backendStdenv.mkDerivation (
         for path in pkg-config pkgconfig; do
           [[ -d "$path" ]] || continue
           mkdir -p share/pkgconfig
+          nixLog "moving contents of $path to share/pkgconfig"
           mv "$path"/* share/pkgconfig/
           rmdir "$path"
         done
@@ -165,6 +111,7 @@ backendStdenv.mkDerivation (
       # NOTE: output* fall back to out if the corresponding output isn't defined.
       + ''
         for pc in share/pkgconfig/*.pc; do
+          nixLog "patching $pc"
           sed -i \
             -e "s|^cudaroot\s*=.*\$|cudaroot=''${!outputDev}|" \
             -e "s|^libdir\s*=.*/lib\$|libdir=''${!outputLib}/lib|" \
@@ -176,6 +123,7 @@ backendStdenv.mkDerivation (
       # E.g. cuda-11.8.pc -> cuda.pc
       + ''
         for pc in share/pkgconfig/*-"${cudaMajorMinorVersion}.pc"; do
+          nixLog "creating unversioned symlink for $pc"
           ln -s "$(basename "$pc")" "''${pc%-${cudaMajorMinorVersion}.pc}".pc
         done
       '';
@@ -227,7 +175,7 @@ backendStdenv.mkDerivation (
           output:
           let
             template = pattern: ''moveToOutput "${pattern}" "${"$" + output}"'';
-            patterns = finalAttrs.outputToPatterns.${output} or [ ];
+            patterns = finalAttrs.passthru.outputToPatterns.${output} or [ ];
           in
           concatMapStringsSep "\n" template patterns;
       in
@@ -239,12 +187,12 @@ backendStdenv.mkDerivation (
       + optionalString (libPath != null) ''
         full_lib_path="lib/${libPath}"
         if [[ ! -d "$full_lib_path" ]]; then
-          echo "${finalAttrs.pname}: '$full_lib_path' does not exist, only found:" >&2
-          find lib/ -mindepth 1 -maxdepth 1 >&2
-          echo "This release might not support your CUDA version" >&2
+          nixErrorLog "$full_lib_path does not exist"
+          nixErrorLog "only found the following in lib: $(find lib/ -mindepth 1 -maxdepth 1)"
+          nixErrorLog "this release might not support your CUDA version"
           exit 1
         fi
-        echo "Making libPath '$full_lib_path' the root of lib" >&2
+        nixLog "making $full_lib_path the root of lib"
         mv "$full_lib_path" lib_new
         rm -r lib
         mv lib_new lib
@@ -252,6 +200,7 @@ backendStdenv.mkDerivation (
       # Create the primary output, out, and move the other outputs into it.
       + ''
         mkdir -p "$out"
+        nixLog "moving tree to output out"
         mv * "$out"
       ''
       # Move the outputs into their respective outputs.
@@ -266,12 +215,11 @@ backendStdenv.mkDerivation (
     doInstallCheck = true;
     allowFHSReferences = false;
     postInstallCheck = ''
-      echo "Executing postInstallCheck"
-
       if [[ -z "''${allowFHSReferences-}" ]]; then
+        nixLog "Checking for FHS references"
         mapfile -t outputPaths < <(for o in $(getAllOutputNames); do echo "''${!o}"; done)
         if grep --max-count=5 --recursive --exclude=LICENSE /usr/ "''${outputPaths[@]}"; then
-          echo "Detected references to /usr" >&2
+          nixErrorLog "Detected references to /usr"
           exit 1
         fi
       fi
@@ -281,6 +229,7 @@ backendStdenv.mkDerivation (
     # _multioutPropagateDev() currently expects a space-separated string rather than an array.
     # Because it is a postFixup hook, we correct it in preFixup.
     preFixup = ''
+      nixLog "converting propagatedBuildOutputs to a space-separated string"
       export propagatedBuildOutputs="''${propagatedBuildOutputs[@]}"
     '';
 
@@ -299,13 +248,65 @@ backendStdenv.mkDerivation (
           # Skip out and dev outputs
           [[ "$output" == "out" ]] && continue
           # Propagate the other components to the out output
-          echo "Adding $output to out's propagated-build-inputs"
+          nixLog "adding output $output to output out's propagated-build-inputs"
           printWords "''${!output}" >> "$out/nix-support/propagated-build-inputs"
         done
       '';
 
-    # Make the CUDA-patched stdenv available
-    passthru.stdenv = backendStdenv;
+    passthru = {
+      # Traversed in the order of the outputs speficied in outputs;
+      # entries are skipped if they don't exist in outputs.
+      outputToPatterns = {
+        bin = [ "bin" ];
+        dev = [
+          "share/pkgconfig"
+          "**/*.pc"
+          "**/*.cmake"
+        ];
+        include = [ "include" ];
+        lib = [
+          "lib"
+          "lib64"
+        ];
+        static = [ "**/*.a" ];
+        sample = [ "samples" ];
+        python = [ "**/*.whl" ];
+        stubs = [
+          "stubs"
+          "lib/stubs"
+        ];
+      };
+
+      # Useful for introspecting why something went wrong. Maps descriptions of why the derivation would be marked as
+      # broken on have badPlatforms include the current platform.
+
+      # brokenConditions :: AttrSet Bool
+      # Sets `meta.broken = true` if any of the conditions are true.
+      # Example: Broken on a specific version of CUDA or when a dependency has a specific version.
+      # NOTE: Do not use this when a broken condition means evaluation will fail! For example, if
+      # a package is missing and is required for the build -- that should go in badPlatformsConditions,
+      # because attempts to access attributes on the package will cause evaluation errors.
+      brokenConditions = {
+        # Typically this results in the static output being empty, as all libraries are moved
+        # back to the lib output.
+        "lib output follows static output" =
+          let
+            libIndex = findFirstIndex (x: x == "lib") null finalAttrs.outputs;
+            staticIndex = findFirstIndex (x: x == "static") null finalAttrs.outputs;
+          in
+          libIndex != null && staticIndex != null && libIndex > staticIndex;
+      };
+
+      # badPlatformsConditions :: AttrSet Bool
+      # Sets `meta.badPlatforms = meta.platforms` if any of the conditions are true.
+      # Example: Broken on a specific architecture when some condition is met, like targeting Jetson or
+      # a required package missing.
+      # NOTE: Use this when a broken condition means evaluation can fail!
+      badPlatformsConditions = {
+        "CUDA support is not enabled" = !config.cudaSupport;
+        "Platform is not supported" = finalAttrs.src == null || hostRedistArch == "unsupported";
+      };
+    };
 
     meta = {
       description = "${releaseInfo.name}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";

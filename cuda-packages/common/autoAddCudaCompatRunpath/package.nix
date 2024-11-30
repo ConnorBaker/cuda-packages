@@ -6,24 +6,52 @@
 {
   autoFixElfFiles,
   backendStdenv,
+  config,
   cuda_compat,
   flags,
+  hostRedistArch,
   lib,
   makeSetupHook,
+  nixLogWithLevelAndFunctionNameHook,
 }:
-makeSetupHook {
-  name = "${backendStdenv.cudaNamePrefix}-auto-add-cuda-compat-runpath-hook";
-  propagatedBuildInputs = [ autoFixElfFiles ];
+let
+  inherit (lib.attrsets) attrValues;
+  inherit (lib.lists) any optionals;
+  inherit (lib.strings) optionalString;
+  inherit (lib.trivial) id;
 
-  substitutions = {
-    # Hotfix Ofborg evaluation
-    libcudaPath = if flags.isJetsonBuild then "${cuda_compat}/compat" else null;
-  };
+  isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
+  isBroken = any id (attrValues finalAttrs.passthru.brokenConditions);
 
-  meta = {
-    description = "Setup hook which propagates cuda-compat on Jetson devices";
-    broken = !flags.isJetsonBuild;
-    platforms = [ "aarch64-linux" ];
-    maintainers = lib.teams.cuda.members;
+  finalAttrs = {
+    name = "${backendStdenv.cudaNamePrefix}-auto-add-cuda-compat-runpath-hook";
+    propagatedBuildInputs = [
+      # Used in the setup hook
+      autoFixElfFiles
+      # We add a hook to replace the standard logging functions.
+      nixLogWithLevelAndFunctionNameHook
+    ];
+    substitutions = {
+      libcudaPath = optionalString (cuda_compat != null) "${cuda_compat}/compat";
+      nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
+    };
+    passthru = {
+      brokenConditions = {
+        "cuda_compat is disabled" = cuda_compat == null;
+        "not building for Jetson devices" = !flags.isJetsonBuild;
+      };
+      badPlatformsConditions = {
+        "CUDA support is not enabled" = !config.cudaSupport;
+        "Platform is not supported" = hostRedistArch == "unsupported";
+      };
+    };
+    meta = {
+      description = "Setup hook which propagates cuda-compat on Jetson devices";
+      broken = isBroken;
+      platforms = [ "aarch64-linux" ];
+      badPlatforms = optionals isBadPlatform finalAttrs.meta.platforms;
+      maintainers = lib.teams.cuda.members;
+    };
   };
-} ./auto-add-cuda-compat-runpath.sh
+in
+makeSetupHook finalAttrs ./auto-add-cuda-compat-runpath.sh

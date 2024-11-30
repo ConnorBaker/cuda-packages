@@ -76,6 +76,7 @@ let
     prePatch =
       # Patch build_dll.py to use our gencode flags rather than NVIDIA's very broad defaults.
       ''
+        nixLog "patching build_dll.py to use our gencode flags"
         substituteInPlace warp/build_dll.py \
           --replace-fail \
             'nvcc_opts = gencode_opts + [' \
@@ -84,6 +85,7 @@ let
       # Patch build_dll.py to use dynamic libraries rather than static ones.
       # NOTE: We do not patch the `nvptxcompiler_static` path because it is not available as a dynamic library.
       + ''
+        nixLog "patching build_dll.py to use dynamic libraries"
         substituteInPlace warp/build_dll.py \
           --replace-fail \
             '-lcudart_static' \
@@ -111,6 +113,7 @@ let
     # bootstraping Clang/LLVM.
     # NOTE: The `cuda_path` argument is the directory which contains `bin/nvcc`.
     preBuild = ''
+      nixLog "running build_lib.py to create components necessary to build the wheel"
       "${python3.pythonOnBuildForHost.interpreter}" build_lib.py \
         --cuda_path "${getBin cuda_nvcc}" \
         --libmathdx_path "${libmathdx}" \

@@ -3,6 +3,7 @@
   lib,
 }:
 let
+  inherit (lib.attrsets) recursiveUpdate;
   inherit (lib.lists) optionals;
 in
 prevAttrs: {
@@ -16,9 +17,11 @@ prevAttrs: {
       "libnvdla_runtime.so"
     ];
 
-  # `cuda_compat` only works on aarch64-linux, and only when building for Jetson devices.
-  badPlatformsConditions = prevAttrs.badPlatformsConditions // {
-    "Trying to use cuda_compat on aarch64-linux targeting non-Jetson devices" = !flags.isJetsonBuild;
+  passthru = recursiveUpdate (prevAttrs.passthru or { }) {
+    # `cuda_compat` only works on aarch64-linux, and only when building for Jetson devices.
+    badPlatformsConditions = {
+      "Trying to use cuda_compat on aarch64-linux targeting non-Jetson devices" = !flags.isJetsonBuild;
+    };
   };
 
   # NOTE: libraries are left in the `compat` directory by design: they require runtime driver libraries unavailable

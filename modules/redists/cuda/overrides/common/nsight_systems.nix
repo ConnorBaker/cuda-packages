@@ -123,6 +123,7 @@ in
     + ''
       moveToOutput 'nsight-systems/${majorMinorPatchVersion}/host-linux-*' "$bin"
       moveToOutput 'nsight-systems/${majorMinorPatchVersion}/target-linux-*' "$bin"
+      nixLog "patching nsight-systems wrapper scripts"
       substituteInPlace "$bin/bin/nsys" "$bin/bin/nsys-ui" \
         --replace-fail \
           "nsight-systems-#VERSION_RSPLIT#" \
@@ -139,6 +140,7 @@ in
           ]
         }; do
           if [[ -e "$qtpkgdir/lib/qt-6/plugins/$qtdir/$filename" ]]; then
+            nixLog "linking $qtpkgdir/lib/qt-6/plugins/$qtdir/$filename to $qtlib"
             ln -snf "$qtpkgdir/lib/qt-6/plugins/$qtdir/$filename" "$qtlib"
           fi
         done
@@ -151,6 +153,7 @@ in
     # Remove symlinks in default output. Do so by binary name, so we get an error from rmdir if the binary directory
     # isn't empty.
     + ''
+      nixLog "removing symlinks in default output"
       rm "$out/nsight-systems/${majorMinorPatchVersion}/bin/"nsys*
       rmdir "$out/nsight-systems/${majorMinorPatchVersion}/bin"
     '';

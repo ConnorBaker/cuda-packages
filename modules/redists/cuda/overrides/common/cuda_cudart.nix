@@ -27,14 +27,14 @@ prevAttrs: {
   # multiple versions of `libcuda.so` in the environment.
   # NOTE: `cuda_compat` can be disabled by setting the package to `null`. This is useful in cases where
   # the host OS has a recent enough CUDA driver that the compatibility library isn't needed.
-  propagatedBuildInputs = optionals (flags.isJetsonBuild && cuda_compat == null) [ cuda_compat ];
+  propagatedBuildInputs = optionals (flags.isJetsonBuild && cuda_compat != null) [ cuda_compat ];
 
   postPatch =
     prevAttrs.postPatch or ""
     # Patch the `cudart` package config files so they reference lib
     + ''
       while IFS= read -r -d $'\0' path; do
-        echo "Patching $path"
+        nixLog "patching $path"
         sed -i \
           -e "s|^cudaroot\s*=.*\$||" \
           -e "s|^libdir\s*=.*/lib\$|libdir=''${!outputLib:?}/lib|" \
@@ -46,7 +46,7 @@ prevAttrs: {
     # Patch the `cuda` package config files so they reference stubs
     + ''
       while IFS= read -r -d $'\0' path; do
-        echo "Patching $path"
+        nixLog "patching $path"
         sed -i \
           -e "s|^cudaroot\s*=.*\$||" \
           -e "s|^libdir\s*=.*/lib\$|libdir=''${stubs:?}/lib/stubs|" \
@@ -64,10 +64,12 @@ prevAttrs: {
     ''
     # cuda_cudart.dev depends on crt/host_config.h, which is from cuda_nvcc.dev.
     + optionalString cuda_nvcc.meta.available ''
+      nixLog "adding cuda_nvcc's include output to $outputInclude's propagatedBuildInputs"
       printWords "${getOutput "include" cuda_nvcc}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
     ''
     # cuda_cuadrt.dev has include/cuda_fp16.h which requires cuda_cccl.dev's include/nv/target
     + optionalString (cudaAtLeast "12.0") ''
+      nixLog "adding cuda_cccl's include output to $outputInclude's propagatedBuildInputs"
       printWords "${getOutput "include" cuda_cccl}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
     ''
     # Namelink may not be enough, add a soname.
@@ -75,7 +77,11 @@ prevAttrs: {
     # NOTE: Add symlinks inside $stubs/lib so autoPatchelfHook can find them -- it doesn't recurse into subdirectories.
     + ''
       pushd "$stubs/lib/stubs"
-      [[ -f libcuda.so && ! -f libcuda.so.1 ]] && ln -sr libcuda.so libcuda.so.1
+      if [[ -f libcuda.so && ! -f libcuda.so.1 ]]; then
+        nixLog "creating unversioned symlink for libcuda.so stub"
+        ln -sr libcuda.so libcuda.so.1
+      fi
+      nixLog "creating symlinks for stubs in lib directory"
       ln -srt "$stubs/lib/" *.so *.so.*
       popd
     '';

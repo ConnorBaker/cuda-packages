@@ -97,7 +97,7 @@
 
           devShells = {
             inherit (config.packages) cuda-redist;
-            default = config.devShells.cuda-redist;
+            default = config.treefmt.build.devShell;
           };
 
           legacyPackages = pkgs;

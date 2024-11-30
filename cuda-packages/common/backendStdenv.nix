@@ -4,6 +4,7 @@
   cudaMajorMinorPatchVersion,
   cudaMajorMinorVersion,
   lib,
+  nixLogWithLevelAndFunctionNameHook,
   noBrokenSymlinksHook,
   path,
   pkgs,
@@ -57,8 +58,10 @@ let
               else
                 "${cudaNamePrefix}-${mkDerivationPrevAttrs.name}";
 
-            # We add a hook to make sure we're not propagating broken symlinks.
             propagatedBuildInputs = mkDerivationPrevAttrs.propagatedBuildInputs or [ ] ++ [
+              # We add a hook to replace the standard logging functions.
+              nixLogWithLevelAndFunctionNameHook
+              # We add a hook to make sure we're not propagating broken symlinks.
               noBrokenSymlinksHook
             ];
           });

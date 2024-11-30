@@ -745,10 +745,14 @@ in
       libcublas,
       utils,
     }:
+    let
+      inherit (lib.attrsets) recursiveUpdate;
+      inherit (lib.cuda.utils) mkMissingPackagesBadPlatformsConditions;
+    in
     prevAttrs: {
-      badPlatformsConditions =
-        prevAttrs.badPlatformsConditions
-        // utils.mkMissingPackagesBadPlatformsConditions { inherit libcal; };
+      passthru = recursiveUpdate (prevAttrs.passthru or { }) {
+        badPlatformsConditions = mkMissingPackagesBadPlatformsConditions { inherit libcal; };
+      };
     }
     ```
 

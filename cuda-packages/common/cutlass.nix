@@ -56,6 +56,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     # Prepend some commands to the CUDA.cmake file so it can find the CUDA libraries using CMake's FindCUDAToolkit
     # module. These target names are used throughout the project; I (@connorbaker) did not choose them.
     ''
+      nixLog "patching CUDA.cmake to use FindCUDAToolkit"
       mv ./CUDA.cmake ./_CUDA_Append.cmake
       cat > ./_CUDA_Prepend.cmake <<'EOF'
       find_package(CUDAToolkit REQUIRED)

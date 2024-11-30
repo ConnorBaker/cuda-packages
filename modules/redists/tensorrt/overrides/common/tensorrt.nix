@@ -40,8 +40,8 @@ finalAttrs: prevAttrs: {
     # Replace symlinks to bin and lib with the actual directories from targets.
     + ''
       for dir in bin lib; do
-        # Only replace if the symlink exists.
         [[ -L "$dir" ]] || continue
+        nixLog "replacing symlink $dir with targets/${targetString}/$dir"
         rm "$dir"
         mv "targets/${targetString}/$dir" "$dir"
       done
@@ -49,7 +49,10 @@ finalAttrs: prevAttrs: {
     # Remove symlinks if they exist
     + ''
       for dir in include samples; do
-        [[ -L "targets/${targetString}/$dir" ]] && rm "targets/${targetString}/$dir"
+        if [[ -L "targets/${targetString}/$dir" ]]; then
+          nixLog "removing symlink targets/${targetString}/$dir"
+          rm "targets/${targetString}/$dir"
+        fi
       done
     '';
 
@@ -67,11 +70,13 @@ finalAttrs: prevAttrs: {
     + ''
       mkdir "$include/include/onnx"
       pushd "$include/include"
+      nixLog "creating symlinks for Onnx header files"
       ln -srt "$include/include/onnx/" NvOnnx*.h
       popd
     ''
     # Move the python directory, which contains header files to the include output.
     + ''
+      nixLog "moving python directory to include output"
       mv "$out/python" "$include/python"
     '';
 

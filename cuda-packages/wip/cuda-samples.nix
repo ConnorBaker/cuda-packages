@@ -63,22 +63,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     inherit hash;
   };
 
-  # brokenConditions :: AttrSet Bool
-  # Sets `meta.broken = true` if any of the conditions are true.
-  # Example: Broken on a specific version of CUDA or when a dependency has a specific version.
-  brokenConditions = {
-    "CUDA version is unsupported" = hash == misc.fakeHash;
-  };
-
-  # badPlatformsConditions :: AttrSet Bool
-  # Sets `meta.badPlatforms = meta.platforms` if any of the conditions are true.
-  # Example: Broken on a specific architecture when some condition is met (like targeting Jetson).
-  badPlatformsConditions = {
-    # Samples are built around the CUDA Toolkit, which is not available for
-    # aarch64. Check for both CUDA version and platform.
-    "Platform is unsupported" = !hostPlatform.isx86_64;
-  };
-
   nativeBuildInputs =
     [
       autoAddDriverRunpath
@@ -120,16 +104,36 @@ backendStdenv.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
+  passthru = {
+    # brokenConditions :: AttrSet Bool
+    # Sets `meta.broken = true` if any of the conditions are true.
+    # Example: Broken on a specific version of CUDA or when a dependency has a specific version.
+    brokenConditions = {
+      "CUDA version is unsupported" = hash == misc.fakeHash;
+    };
+
+    # badPlatformsConditions :: AttrSet Bool
+    # Sets `meta.badPlatforms = meta.platforms` if any of the conditions are true.
+    # Example: Broken on a specific architecture when some condition is met (like targeting Jetson).
+    badPlatformsConditions = {
+      # Samples are built around the CUDA Toolkit, which is not available for
+      # aarch64. Check for both CUDA version and platform.
+      "Platform is unsupported" = !hostPlatform.isx86_64;
+    };
+  };
+
   meta = {
     description = "Samples for CUDA Developers which demonstrates features in CUDA Toolkit";
     # CUDA itself is proprietary, but these sample apps are not.
     license = lib.licenses.bsd3;
     maintainers = with lib.maintainers; [ obsidian-systems-maintenance ] ++ lib.teams.cuda.members;
-    broken = lists.any trivial.id (attrsets.attrValues finalAttrs.brokenConditions);
+    broken = lists.any trivial.id (attrsets.attrValues finalAttrs.passthru.brokenConditions);
     platforms = [ "x86_64-linux" ];
     badPlatforms =
       let
-        isBadPlatform = lists.any trivial.id (attrsets.attrValues finalAttrs.badPlatformsConditions);
+        isBadPlatform = lists.any trivial.id (
+          attrsets.attrValues finalAttrs.passthru.badPlatformsConditions
+        );
       in
       lists.optionals isBadPlatform finalAttrs.meta.platforms;
   };

@@ -1,10 +1,7 @@
 # shellcheck shell=bash
-# symlinks are often created in postFixup
-# don't use fixupOutputHooks, it is before postFixup
-postFixupHooks+=(_noBrokenSymlinksInAllOutputs)
 
-_noBrokenSymlinks() {
-  local output="${1:?}"
+noBrokenSymlinks() {
+  local -r output="${1:?}"
   local path
   local pathParent
   local symlinkTarget
@@ -15,11 +12,10 @@ _noBrokenSymlinks() {
   # TODO(@connorbaker): This hook doesn't check for cycles in symlinks.
 
   if [[ ! -e $output ]]; then
-    nixInfoLog "noBrokenSymlinks: skipping non-existent output $output"
+    nixWarnLog "skipping non-existent output $output"
     return 0
-  else
-    nixInfoLog "noBrokenSymlinks: running on $output"
   fi
+  nixLog "running on $output"
 
   # NOTE: path is absolute because we're running `find` against an absolute path (`output`).
   while IFS= read -r -d $'\0' path; do
@@ -28,22 +24,22 @@ _noBrokenSymlinks() {
 
     # Canonicalize symlinkTarget to an absolute path.
     if [[ $symlinkTarget == /* ]]; then
-      nixInfoLog "noBrokenSymlinks: symlink $path points to absolute target $symlinkTarget"
+      nixInfoLog "symlink $path points to absolute target $symlinkTarget"
     else
-      nixInfoLog "noBrokenSymlinks: symlink $path points to relative target $symlinkTarget"
+      nixInfoLog "symlink $path points to relative target $symlinkTarget"
       symlinkTarget="$pathParent/$symlinkTarget"
 
       # Check to make sure the interpolated target doesn't escape the store path of `output`.
       # If it does, Nix probably won't be able to resolve or track dependencies.
       if [[ $symlinkTarget != "$output" && $symlinkTarget != "$output"/* ]]; then
-        nixErrorLog "noBrokenSymlinks: symlink $path points to target $symlinkTarget, which escapes the current store path $output"
+        nixErrorLog "symlink $path points to target $symlinkTarget, which escapes the current store path $output"
         return 1
       fi
     fi
 
     if [[ ! -e $symlinkTarget ]]; then
       # symlinkTarget does not exist
-      errorMessage="noBrokenSymlinks: the symlink $path points to a missing target $symlinkTarget"
+      errorMessage="the symlink $path points to a missing target $symlinkTarget"
       if [[ -z ${allowBrokenSymlinks-} ]]; then
         nixErrorLog "$errorMessage"
         numBrokenSymlinks+=1
@@ -53,7 +49,7 @@ _noBrokenSymlinks() {
 
     elif [[ $path == "$symlinkTarget" ]]; then
       # symlinkTarget is exists and is reflexive
-      errorMessage="noBrokenSymlinks: the symlink $path is reflexive $symlinkTarget"
+      errorMessage="the symlink $path is reflexive $symlinkTarget"
       if [[ -z ${allowReflexiveSymlinks-} ]]; then
         nixErrorLog "$errorMessage"
         numReflexiveSymlinks+=1
@@ -63,20 +59,27 @@ _noBrokenSymlinks() {
 
     else
       # symlinkTarget exists and is irreflexive
-      nixInfoLog "noBrokenSymlinks: the symlink $path is irreflexive and points to a target which exists"
+      nixInfoLog "the symlink $path is irreflexive and points to a target which exists"
     fi
   done < <(find "$output" -type l -print0)
 
   if ((numBrokenSymlinks > 0 || numReflexiveSymlinks > 0)); then
-    nixErrorLog "noBrokenSymlinks: found $numBrokenSymlinks broken symlinks and $numReflexiveSymlinks reflexive symlinks"
+    nixErrorLog "found $numBrokenSymlinks broken symlinks and $numReflexiveSymlinks reflexive symlinks"
     return 1
-  else
-    return 0
   fi
+  return 0
 }
 
-_noBrokenSymlinksInAllOutputs() {
+noBrokenSymlinksInAllOutputs() {
   for output in $(getAllOutputNames); do
-    _noBrokenSymlinks "${!output}"
+    noBrokenSymlinks "${!output}"
   done
 }
+
+# shellcheck disable=SC1091
+source @nixLogWithLevelAndFunctionNameHook@
+
+# symlinks are often created in postFixup
+# don't use fixupOutputHooks, it is before postFixup
+postFixupHooks+=(noBrokenSymlinksInAllOutputs)
+nixLog "added noBrokenSymlinksInAllOutputs to postFixupHooks"
