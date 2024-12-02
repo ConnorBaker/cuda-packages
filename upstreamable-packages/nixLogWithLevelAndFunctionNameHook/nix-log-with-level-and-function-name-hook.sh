@@ -34,7 +34,7 @@ nixLogWithLevel() {
   6) logLevel=DEBUG ;;
   7) logLevel=VOMIT ;;
   *)
-    echo "Invalid log level: ${1:?}" >&2
+    echo "nixLogWithLevel: called with invalid log level: ${1:?}" >&"$NIX_LOG_FD"
     return 1
     ;;
   esac
