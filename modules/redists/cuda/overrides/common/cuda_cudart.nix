@@ -78,7 +78,7 @@ prevAttrs: {
     + ''
       pushd "$stubs/lib/stubs"
       if [[ -f libcuda.so && ! -f libcuda.so.1 ]]; then
-        nixLog "creating unversioned symlink for libcuda.so stub"
+        nixLog "creating versioned symlink for libcuda.so stub"
         ln -sr libcuda.so libcuda.so.1
       fi
       nixLog "creating symlinks for stubs in lib directory"
