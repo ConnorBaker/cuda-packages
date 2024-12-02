@@ -217,9 +217,9 @@ backendStdenv.mkDerivation (
     postInstallCheck = ''
       if [[ -z "''${allowFHSReferences-}" ]]; then
         nixLog "Checking for FHS references"
-        mapfile -t outputPaths < <(for o in $(getAllOutputNames); do echo "''${!o}"; done)
-        if grep --max-count=5 --recursive --exclude=LICENSE /usr/ "''${outputPaths[@]}"; then
-          nixErrorLog "Detected references to /usr"
+        firstMatches="$(grep --max-count=5 --recursive --exclude=LICENSE /usr/ "''${outputPaths[@]}")" || true
+        if [[ -n "$firstMatches" ]]; then
+          nixErrorLog "Detected the references to /usr: $firstMatches"
           exit 1
         fi
       fi
