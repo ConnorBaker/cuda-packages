@@ -62,9 +62,7 @@ backendStdenv.mkDerivation (finalAttrs: {
   cudaEnableCmakeFindCudaToolkitSupport = true;
 
   cmakeFlags = [
-    (cmakeFeature "TRT_PLATFORM_ID" (
-      if backendStdenv.hostPlatform.isAarch then "aarch64" else "x86_64"
-    ))
+    (cmakeFeature "TRT_PLATFORM_ID" backendStdenv.hostPlatform.parsed.cpu.name)
     (cmakePath "TRT_LIB_DIR" "${getLib tensorrt}")
     (cmakePath "TRT_OUT_DIR" "$out")
     (cmakeFeature "CUDA_VERSION" cudaMajorMinorVersion)

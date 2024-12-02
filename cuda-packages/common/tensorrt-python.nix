@@ -86,8 +86,7 @@ let
       # Patch files in packaging
       # Largely taken from https://github.com/NVIDIA/TensorRT/blob/08ad45bf3df848e722dfdc7d01474b5ba2eff7e9/python/build.sh.
       + ''
-        for file in $(find packaging -type f)
-        do
+        for file in $(find packaging -type f); do
           nixLog "patching $file to include TensorRT version"
           substituteInPlace "$file" \
             --replace-quiet \
@@ -111,7 +110,7 @@ let
       (cmakeFeature "EXT_PATH" "/dev/null") # Must be set, too lazy to patch around it
       (cmakeFeature "PYTHON_MAJOR_VERSION" pythonMajorVersion)
       (cmakeFeature "PYTHON_MINOR_VERSION" pythonMinorVersion)
-      (cmakeFeature "TARGET" (if backendStdenv.hostPlatform.isAarch then "aarch64" else "x86_64"))
+      (cmakeFeature "TARGET" backendStdenv.hostPlatform.parsed.cpu.name)
     ];
 
     preBuild =
