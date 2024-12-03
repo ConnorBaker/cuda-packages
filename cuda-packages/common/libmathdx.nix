@@ -5,6 +5,7 @@
 }:
 let
   inherit (lib.strings) concatStringsSep;
+  inherit (lib.trivial) mapNullable;
   baseURL = "https://developer.download.nvidia.com/compute/cublasdx/redist/cublasdx";
 in
 # NOTE(@connorbaker): The docs are a large portion of headers tarball. They're also duplicated in
@@ -27,12 +28,18 @@ backendStdenv.mkDerivation (finalAttrs: {
         backendStdenv.hostPlatform.parsed.cpu.name
         finalAttrs.version
       ];
+      hashes = {
+        aarch64-linux = "sha256-6Xcknpj5HU6eLPzjEyV4NXavgF28nN9epesS/+5Dq7o=";
+        x86_64-linux = "sha256-7BoghYBo19NgmjYoGA1VkeWciSf8B5jOddKRi9/rlBg=";
+      };
     in
-    fetchzip {
-      inherit name;
-      url = "${baseURL}/${name}.tar.gz";
-      hash = "sha256-7BoghYBo19NgmjYoGA1VkeWciSf8B5jOddKRi9/rlBg=";
-    };
+    mapNullable (
+      hash:
+      fetchzip {
+        inherit hash name;
+        url = "${baseURL}/${name}.tar.gz";
+      }
+    ) (hashes.${backendStdenv.hostPlatform.system} or null);
 
   # Everything else should be kept in the same output. While there are some shared libraries, I'm not familiar enough
   # with the project to know how they're used or if it's safe to split them out/change the directory structures.
