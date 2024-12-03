@@ -12,6 +12,7 @@ let
     mapAttrs
     mapAttrs'
     optionalAttrs
+    recursiveUpdate
     ;
   inherit (lib.cuda.data) redistUrlPrefix;
   inherit (lib.cuda.utils)
@@ -425,6 +426,11 @@ in
           in
           hasAttr "None" packageVariants || hasAttr desiredCudaVariant packageVariants
         ) (attrNames packages);
+        isRedistArchSbsaExplicitlySupported = elem "linux-sbsa" supportedRedistArchs;
+        isRedistArchAarch64ExplicitlySupported = elem "linux-aarch64" supportedRedistArchs;
+        isNixHostPlatformSystemAarch64 =
+          finalCudaPackages.backendStdenv.hostPlatform.system == "aarch64-linux";
+        inherit (finalCudaPackages.flags) isJetsonBuild;
         supportedNixPlatforms = unique (concatMap lib.cuda.utils.getNixPlatforms supportedRedistArchs);
 
         # NOTE: We must check for compatibility with the redistributable architecture, not the Nix platform,
@@ -490,6 +496,14 @@ in
               pkg.overrideAttrs (prevAttrs: {
                 src = if nixPlatformIsSupported then prevAttrs.src else null;
                 outputs = if nixPlatformIsSupported then prevAttrs.outputs else [ "out" ];
+                passthru = recursiveUpdate (prevAttrs.passthru or { }) {
+                  badPlatformsConditions = optionalAttrs isNixHostPlatformSystemAarch64 {
+                    "aarch64-linux support is limited to linux-sbsa (server ARM devices) which is not the current target" =
+                      isRedistArchSbsaExplicitlySupported && !isRedistArchAarch64ExplicitlySupported && isJetsonBuild;
+                    "aarch64-linux support is limited to linux-aarch64 (Jetson devices) which is not the current target" =
+                      !isRedistArchSbsaExplicitlySupported && isRedistArchAarch64ExplicitlySupported && !isJetsonBuild;
+                  };
+                };
                 meta = prevAttrs.meta // {
                   platforms = supportedNixPlatforms;
                   license = nvidiaCudaRedist // {
