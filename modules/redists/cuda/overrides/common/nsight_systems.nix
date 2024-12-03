@@ -71,10 +71,9 @@ in
     prevAttrs.postPatch or ""
     + ''
       for path in $rmPatterns; do
+        nixLog "deleting files matching $path"
         rm -r "$path"
       done
-    ''
-    + ''
       patchShebangs nsight-systems
     '';
 

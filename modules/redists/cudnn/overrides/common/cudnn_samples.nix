@@ -6,6 +6,7 @@
   lib,
 }:
 let
+  inherit (lib.attrsets) recursiveUpdate;
   inherit (lib.versions) major;
 in
 prevAttrs:
@@ -28,8 +29,8 @@ in
     cudnn
   ];
 
-  passthru = prevAttrs.passthru or { } // {
-    brokenConditions = prevAttrs.passthru.brokenConditions or { } // {
+  passthru = recursiveUpdate (prevAttrs.passthru or { }) {
+    brokenConditions = {
       "FreeImage is required as a subdirectory and @connorbaker has not yet patched the build to find it" =
         true;
     };
