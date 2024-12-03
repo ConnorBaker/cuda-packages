@@ -6,6 +6,6 @@ prevAttrs: {
   autoPatchelfIgnoreMissingDeps =
     prevAttrs.autoPatchelfIgnoreMissingDeps or [ ]
     ++ optionals flags.isJetsonBuild [
-      "libnvdla_runtime.so"
+      "libnvcudla.so"
     ];
 }
