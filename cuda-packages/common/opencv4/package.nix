@@ -262,7 +262,7 @@ let
       ln -s "${src}" "${dst}/${md5}-${name}"
     '';
 
-  withOpenblas = (enableBlas && blas.provider.pname == "openblas");
+  withOpenblas = enableBlas && blas.provider.pname == "openblas";
   #multithreaded openblas conflicts with opencv multithreading, which manifest itself in hung tests
   #https://github.com/OpenMathLib/OpenBLAS/wiki/Faq/4bded95e8dc8aadc70ce65267d1093ca7bdefc4c#multi-threaded
   openblas_ = blas.provider.override { singleThreaded = true; };
