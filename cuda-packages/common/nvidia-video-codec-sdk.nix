@@ -13,7 +13,8 @@ backendStdenv.mkDerivation (finalAttrs: {
   __structuredAttrs = true;
   strictDeps = true;
 
-  pname = "video_codec_sdk";
+  # Name of downloaded file is upper-case for some reason.
+  pname = "Video_Codec_SDK";
   version = "12.2.72";
 
   src = requireFile {
