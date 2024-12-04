@@ -78,13 +78,13 @@ let
     pname = "onnxruntime";
 
     # NOTE: Using newer version because nsync has been removed from the build system
-    version = "1.20.0-unstable-2024-11-14";
+    version = "1.20.1-unstable-2024-12-03";
 
     src = fetchFromGitHub {
       owner = "microsoft";
       repo = "onnxruntime";
-      rev = "bbe7c8773837aa7573e202aefd2c633a06be2c23";
-      hash = "sha256-gV0UyHkl8b9kE+s3FuuFYQ9hjXcWC5iLT6dcYKKLLJ8=";
+      rev = "9b9f881475a12991d0abba0095c26dad8a4de5e9";
+      hash = "sha256-exXR7TmyzlBnM2njwkIvZ7Iko+ZF8vx6qrm8EYJwd+I=";
       fetchSubmodules = true;
     };
 

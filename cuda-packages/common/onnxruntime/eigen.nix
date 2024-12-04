@@ -13,7 +13,7 @@ fetchFromGitLab {
   hash = "sha256-uQ1YYV3ojbMVfHdqjXRyUymRPjJZV3WHT36PTxPRius=";
   meta.broken =
     let
-      versionDoesntMatchExpected = onnxruntime.version != "1.20.0-unstable-2024-11-14";
+      versionDoesntMatchExpected = onnxruntime.version != "1.20.1-unstable-2024-12-03";
     in
     warnIf versionDoesntMatchExpected
       # https://github.com/microsoft/onnxruntime/blob/c4fb724e810bb496165b9015c77f402727392933/cmake/deps.txt
