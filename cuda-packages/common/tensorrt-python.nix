@@ -48,21 +48,22 @@ let
 
     pname = "tensorrt-python";
 
-    version = "10.6.0";
+    version = "10.7.0-unstable-2024-12-03";
 
+    # Switch back to the main repo after https://github.com/NVIDIA/TensorRT/pull/4267 is merged.
     src = fetchFromGitHub {
-      owner = "NVIDIA";
+      owner = "kevinch-nv";
       repo = "TensorRT";
-      rev = "refs/tags/v${finalAttrs.version}";
+      rev = "e9af47025a16be659f4c2d246f1d9def47e84517";
       # NOTE: We supply our own Onnx and Protobuf, so we do not do a recursive clone.
-      hash = "sha256-nnzicyCjVqpAonIhx3u9yNnoJkZ0XXjJ8oxQH+wfrtE=";
+      hash = "sha256-BQx5sH109fha6N6K2q3+9XsluHihLrNQAVITDLAfLIA=";
     };
 
-    sourceRoot = "NVIDIA-TensorRT-v${finalAttrs.version}/python";
+    sourceRoot = "${finalAttrs.src.name}/python";
 
     pyproject = true;
 
-    # NOTE: The project, as of 10.6, does not use ninja for the Python portion.
+    # NOTE: The project, as of 10.7, does not use ninja for the Python portion.
     build-system = [
       cmake
       setuptools
