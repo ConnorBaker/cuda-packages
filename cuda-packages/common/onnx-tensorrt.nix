@@ -30,13 +30,13 @@ let
     stdenv = backendStdenv;
 
     pname = "onnx-tensorrt";
-    version = "10.6";
+    version = "10.7";
 
     src = fetchFromGitHub {
       owner = "onnx";
       repo = "onnx-tensorrt";
       rev = "refs/tags/release/${finalAttrs.version}-GA";
-      hash = "sha256-mhOzSeysMIC5KmHupuOz1sZsaP/Zv81ucx193njkU20=";
+      hash = "sha256-1Y5jELqVkRkjeiEbF7GrPqAGZMu7U8JgmM3ZQbsG304=";
     };
 
     outputs = [
