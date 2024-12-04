@@ -48,7 +48,7 @@ in
           cusparselt = "0.6.3";
           cutensor = "2.0.2.1";
           nppplus = "0.9.0";
-          nvjpeg2000 = "0.8.0";
+          nvjpeg2000 = "0.8.1";
           nvpl = "24.7";
           nvtiff = "0.4.0";
           tensorrt = "10.6.0";
@@ -66,7 +66,7 @@ in
           cusparselt = "0.6.3";
           cutensor = "2.0.2.1";
           nppplus = "0.9.0";
-          nvjpeg2000 = "0.8.0";
+          nvjpeg2000 = "0.8.1";
           nvpl = "24.7";
           nvtiff = "0.4.0";
           tensorrt = "10.6.0";
