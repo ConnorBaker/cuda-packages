@@ -41,7 +41,7 @@ in
         redists = {
           cublasmp = "0.3.0";
           cuda = "12.2.2";
-          cudnn = "9.5.1";
+          cudnn = "9.6.0";
           cudss = "0.3.0";
           cuquantum = "24.11.0";
           cusolvermp = "0.5.1";
@@ -59,7 +59,7 @@ in
         redists = {
           cublasmp = "0.3.0";
           cuda = "12.6.3";
-          cudnn = "9.5.1";
+          cudnn = "9.6.0";
           cudss = "0.3.0";
           cuquantum = "24.11.0";
           cusolvermp = "0.5.1";
