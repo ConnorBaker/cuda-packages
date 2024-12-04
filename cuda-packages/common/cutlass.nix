@@ -32,13 +32,13 @@ assert assertMsg (!enableTools) "enableTools is not yet implemented";
 backendStdenv.mkDerivation (finalAttrs: {
   pname = "cutlass";
   # They didn't cut a 3.6.0 release...
-  version = "3.6.0-unstable-2024-11-18";
+  version = "3.6.0-unstable-2024-12-03";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "cutlass";
-    rev = "b0e09d7cd371eded41f7c1e057caf1593c27ba55";
-    hash = "sha256-vJPjeYd/iVQTo9sRubBQcfxejDwmqi48foLsEWp9mbg=";
+    rev = "80243e0b8c644f281e2beb0c20fe78cf7b267061";
+    hash = "sha256-zBYgX9WcSdOjyuzDqULe4pOFv9QLqSlK7kF2IwKb1ng=";
   };
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a
