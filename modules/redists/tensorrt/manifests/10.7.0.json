@@ -20,8 +20,8 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-Q8sfXsoIZ0ZFM/YVnL6nqypSERjG6ZuMlKFQQUbjS70=",
-          "relativePath": "tensorrt/10.6.0/tars/TensorRT-10.6.0.26.l4t.aarch64-gnu.cuda-12.6.tar.gz"
+          "recursiveHash": "sha256-CjcnyJ0f4vNcr7gMAhiJMtF6I64G4juRD1xGqJmZvx0=",
+          "relativePath": "tensorrt/10.7.0/tars/TensorRT-10.7.0.23.l4t.aarch64-gnu.cuda-12.6.tar.gz"
         }
       },
       "linux-sbsa": {
@@ -47,36 +47,11 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-/I2zanRa2ziyc0inHQzeJmwy+K5JaAhxpNrcV32X6RI=",
-          "relativePath": "tensorrt/10.6.0/tars/TensorRT-10.6.0.26.Ubuntu-24.04.aarch64-gnu.cuda-12.6.tar.gz"
+          "recursiveHash": "sha256-klRU6flvw7ULdZ/3fMcklOATRXnDUlXLvS9LhNGsltI=",
+          "relativePath": "tensorrt/10.7.0/tars/TensorRT-10.7.0.23.Linux.aarch64-gnu.cuda-12.6.tar.gz"
         }
       },
       "linux-x86_64": {
-        "cuda11": {
-          "features": {
-            "cudaArchitectures": [
-              "sm_52",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
-            "outputs": [
-              "out",
-              "bin",
-              "dev",
-              "include",
-              "lib",
-              "python",
-              "sample",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-mN7TOfdOq4BbKAhdYDvbqo3elz8DrsVWCzbfZpgKKGI=",
-          "relativePath": "tensorrt/10.6.0/tars/TensorRT-10.6.0.26.Linux.x86_64-gnu.cuda-11.8.tar.gz"
-        },
         "cuda12": {
           "features": {
             "cudaArchitectures": [
@@ -99,15 +74,15 @@
               "stubs"
             ]
           },
-          "recursiveHash": "sha256-2laEH6J3TRAHb6fFDhxyM/fY7m76FGWP3cLvSWUTZEg=",
-          "relativePath": "tensorrt/10.6.0/tars/TensorRT-10.6.0.26.Linux.x86_64-gnu.cuda-12.6.tar.gz"
+          "recursiveHash": "sha256-+q3eVGUTJotUguOnjd/48N9aEPKT2OEZgYr+MdS82YU=",
+          "relativePath": "tensorrt/10.7.0/tars/TensorRT-10.7.0.23.Linux.x86_64-gnu.cuda-12.6.tar.gz"
         }
       }
     },
     "releaseInfo": {
       "license": "TensorRT",
       "name": "NVIDIA TensorRT",
-      "version": "10.6.0.26"
+      "version": "10.7.0.23"
     }
   }
 }

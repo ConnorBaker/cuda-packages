@@ -20,10 +20,13 @@ mkRelativePath() {
   linux-aarch64) archiveDir="tars" && archiveExtension="tar.gz" && osName="l4t" && platformName="aarch64-gnu" ;;
   linux-sbsa)
     archiveDir="tars" && archiveExtension="tar.gz" && platformName="aarch64-gnu"
-    # 10.0-10.3 use Ubuntu 22.40, 10.4+ use Ubuntu 24.04
+    # 10.0-10.3 use Ubuntu 22.40
+    # 10.4-10.6 use Ubuntu 24.04
+    # 10.7+ use Linux
     case "$tensorrtMinorVersion" in
     0 | 1 | 2 | 3) osName="Ubuntu-22.04" ;;
-    *) osName="Ubuntu-24.04" ;;
+    4 | 5 | 6) osName="Ubuntu-24.04" ;;
+    *) osName="Linux" ;;
     esac
     ;;
   linux-x86_64) archiveDir="tars" && archiveExtension="tar.gz" && osName="Linux" && platformName="x86_64-gnu" ;;

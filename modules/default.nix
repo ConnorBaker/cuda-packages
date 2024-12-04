@@ -51,7 +51,7 @@ in
           nvjpeg2000 = "0.8.1";
           nvpl = "24.7";
           nvtiff = "0.4.0";
-          tensorrt = "10.6.0";
+          tensorrt = "10.7.0";
         };
       };
       "12.6.3" = {
@@ -69,7 +69,7 @@ in
           nvjpeg2000 = "0.8.1";
           nvpl = "24.7";
           nvtiff = "0.4.0";
-          tensorrt = "10.6.0";
+          tensorrt = "10.7.0";
         };
       };
     };
