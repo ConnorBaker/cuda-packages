@@ -42,7 +42,7 @@ def mk_relative_path(
     package_name: PackageName,
     platform: RedistPlatform,
     version: Version,
-    cuda_variant: None | CudaVariant,
+    cuda_variant: CudaVariant | None,
 ) -> Path:
     return (
         Path(package_name)

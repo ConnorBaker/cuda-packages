@@ -14,5 +14,5 @@ class FeatureCudaVersionsInLib(PydanticSequence[Version]):
 
     @classmethod
     def of(cls, store_path: Path) -> Self:
-        paths: None | Sequence[Path] = CudaVersionsInLibDetector().find(store_path)
+        paths: Sequence[Path] | None = CudaVersionsInLibDetector().find(store_path)
         return cls([path.as_posix() for path in paths or []])

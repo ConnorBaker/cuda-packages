@@ -60,9 +60,9 @@ class GroupableFeatureDetector(FeatureDetector[Sequence[RichlyComparable] | Mapp
             )
         )
 
-    def find(self, store_path: Path) -> None | Sequence[RichlyComparable] | Mapping[str, Sequence[RichlyComparable]]:
+    def find(self, store_path: Path) -> Sequence[RichlyComparable] | Mapping[str, Sequence[RichlyComparable]] | None:
         # Ensure that store_path is a directory which exists and is non-empty.
-        absolute_dir: None | Path = DirDetector(self.dir).find(store_path)
+        absolute_dir: Path | None = DirDetector(self.dir).find(store_path)
         if absolute_dir is None:
             return None
 

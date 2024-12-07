@@ -34,9 +34,6 @@ select = ["F", "E", "W", "I", "PL", "FURB", "LOG", "RUF", "G", "TID"]
 ignore = [
   # Ignore functions with many arguments (I like currying)
   "PLR0913",
-  # I usually put None as the first element of a union
-  # TODO: Re-enable when bumping flake input
-  # "RUF036",
 ]
 
 [tool.pyright]

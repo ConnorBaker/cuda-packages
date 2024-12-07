@@ -45,7 +45,7 @@ def get_redist_names(maybe_redist_name: str) -> Sequence[RedistName]:
 def get_version_map(
     redist_names: Sequence[RedistName],
     maybe_version: str,
-    maybe_tensorrt_manifest_dir: None | Path,
+    maybe_tensorrt_manifest_dir: Path | None,
 ) -> Mapping[RedistName, Sequence[Version]]:
     if maybe_version == "all":
         LOGGER.info("Using all versions")

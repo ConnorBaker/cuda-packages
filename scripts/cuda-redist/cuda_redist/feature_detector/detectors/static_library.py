@@ -22,7 +22,7 @@ class StaticLibraryDetector(FeatureDetector[Sequence[Path]]):
     """
 
     @override
-    def find(self, store_path: Path) -> None | Sequence[Path]:
+    def find(self, store_path: Path) -> Sequence[Path] | None:
         """
         Finds paths of static libraries under `lib` within the given Nix store path.
         """

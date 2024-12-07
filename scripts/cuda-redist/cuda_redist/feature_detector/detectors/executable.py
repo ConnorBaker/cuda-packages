@@ -31,7 +31,7 @@ class ExecutableDetector(FeatureDetector[Sequence[Path]]):
         return file.suffix in {".bat", ".dll", ".exe"}
 
     @override
-    def find(self, store_path: Path) -> None | Sequence[Path]:
+    def find(self, store_path: Path) -> Sequence[Path] | None:
         """
         Finds paths of executables under `bin` within the given Nix store path.
         """

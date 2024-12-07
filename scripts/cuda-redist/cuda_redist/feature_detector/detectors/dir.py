@@ -27,7 +27,7 @@ class DirDetector(FeatureDetector[Path]):
     dir: Path
 
     @override
-    def find(self, store_path: Path) -> None | Path:
+    def find(self, store_path: Path) -> Path | None:
         """
         Finds the path to a non-empty directory within the given Nix store path.
         """

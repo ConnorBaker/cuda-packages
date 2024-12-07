@@ -55,10 +55,13 @@ backendStdenv.mkDerivation (finalAttrs: {
     (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
   ];
 
-  buildInputs = [
-    cuda_cudart
-    ucx
-  ] ++ optionals gdrcopy.meta.available [ gdrcopy ] ++ optionals nccl.meta.available [ nccl ];
+  buildInputs =
+    [
+      cuda_cudart
+      ucx
+    ]
+    ++ optionals gdrcopy.meta.available [ gdrcopy ]
+    ++ optionals nccl.meta.available [ nccl ];
 
   enableParallelBuilding = true;
 

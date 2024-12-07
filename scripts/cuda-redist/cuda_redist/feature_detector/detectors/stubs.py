@@ -22,7 +22,7 @@ class StubsDetector(FeatureDetector[Sequence[Path]]):
     """
 
     @override
-    def find(self, store_path: Path) -> None | Sequence[Path]:
+    def find(self, store_path: Path) -> Sequence[Path] | None:
         """
         Finds paths of stub libraries under `lib` or `stubs` within the given Nix store path.
         """

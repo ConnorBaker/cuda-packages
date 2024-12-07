@@ -13,7 +13,7 @@ FeatureCudaArchitecturesTA: Final[TypeAdapter[FeatureCudaArchitectures]] = Pydan
 
 
 def mkFeatureCudaArchitectures(store_path: Path) -> FeatureCudaArchitectures:
-    ret: None | Sequence[CudaRealArch] | Mapping[str, Sequence[CudaRealArch]] = CudaArchitecturesDetector().find(
+    ret: Sequence[CudaRealArch] | Mapping[str, Sequence[CudaRealArch]] | None = CudaArchitecturesDetector().find(
         store_path
     )
     return FeatureCudaArchitecturesTA.validate_python(ret or [])

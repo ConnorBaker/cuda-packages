@@ -8,7 +8,7 @@ from cuda_redist.logger import get_logger
 logger: Final[Logger] = get_logger(__name__)
 
 
-def cache_hit_ratio(hits: int, misses: int, _maxsize: None | int, _currsize: int) -> float:
+def cache_hit_ratio(hits: int, misses: int, _maxsize: int | None, _currsize: int) -> float:
     calls = hits + misses
     return hits / calls if calls else 0.0
 

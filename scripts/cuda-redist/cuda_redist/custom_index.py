@@ -37,8 +37,8 @@ class CustomPackageFeatures(PydanticObject):
     Features of a package in the manifest.
     """
 
-    cuda_architectures: None | FeatureCudaArchitectures
-    cuda_versions_in_lib: None | FeatureCudaVersionsInLib
+    cuda_architectures: FeatureCudaArchitectures | None
+    cuda_versions_in_lib: FeatureCudaVersionsInLib | None
     outputs: FeatureOutputs
 
     @classmethod
@@ -72,7 +72,7 @@ class CustomPackageInfo(PydanticObject):
 
     recursive_hash: SriHash
     features: CustomPackageFeatures
-    relative_path: None | Path = None
+    relative_path: Path | None = None
 
     @classmethod
     def mk(
@@ -112,9 +112,9 @@ class CustomReleaseInfo(PydanticObject):
     Top-level values in the manifest from keys not prefixed with release_, augmented with the package_name.
     """
 
-    license_path: None | Path = None
-    license: None | str = None
-    name: None | str = None
+    license_path: Path | None = None
+    license: str | None = None
+    name: str | None = None
     version: Version
 
     @classmethod
@@ -131,7 +131,7 @@ class CustomReleaseInfo(PydanticObject):
         })
 
 
-class CustomPackageVariants(PydanticMapping[None | CudaVariant, CustomPackageInfo]):
+class CustomPackageVariants(PydanticMapping[CudaVariant | None, CustomPackageInfo]):
     @classmethod
     def mk(
         cls: type[Self],
@@ -152,7 +152,7 @@ class CustomPackageVariants(PydanticMapping[None | CudaVariant, CustomPackageInf
         else:
             obj = package_or_cuda_variants_to_packages
 
-        infos: dict[None | CudaVariant, CustomPackageInfo] = {}
+        infos: dict[CudaVariant | None, CustomPackageInfo] = {}
         for cuda_variant_name, nvidia_package in obj.items():
             package_info: CustomPackageInfo = CustomPackageInfo.mk(
                 redist_name,
@@ -236,9 +236,7 @@ class CustomIndex(PydanticMapping[RedistName, CustomVersionedManifests]):
             mode="json",
         ).items():
             for version, custom_manifest in versioned_custom_manifests.items():
-                output_path: Path = (
-                    Path(".") / "modules" / "redists" / redist_name / "manifests" / f"{version}.json"
-                )
+                output_path: Path = Path(".") / "modules" / "redists" / redist_name / "manifests" / f"{version}.json"
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 with output_path.open(mode="w", encoding="utf-8") as file:
                     json.dump(

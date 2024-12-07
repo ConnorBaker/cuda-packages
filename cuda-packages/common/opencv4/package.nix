@@ -118,7 +118,7 @@ let
   # cuda12.6-opencv> CMake Warning at opencv_contrib/cudacodec/CMakeLists.txt:26 (message):
   # cuda12.6-opencv>   cudacodec::VideoReader requires Nvidia Video Codec SDK.  Please resolve
   # cuda12.6-opencv>   dependency or disable WITH_NVCUVID=OFF
-  # cuda12.6-opencv> 
+  # cuda12.6-opencv>
   # cuda12.6-opencv> CMake Warning at opencv_contrib/cudacodec/CMakeLists.txt:30 (message):
   # cuda12.6-opencv>   cudacodec::VideoWriter requires Nvidia Video Codec SDK.  Please resolve
   # cuda12.6-opencv>   dependency or disable WITH_NVCUVENC=OFF

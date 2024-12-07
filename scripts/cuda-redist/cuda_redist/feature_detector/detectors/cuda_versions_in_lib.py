@@ -22,7 +22,7 @@ class CudaVersionsInLibDetector(FeatureDetector[Sequence[Path]]):
     """
 
     @override
-    def find(self, store_path: Path) -> None | Sequence[Path]:
+    def find(self, store_path: Path) -> Sequence[Path] | None:
         """
         Finds paths of non-empty directories under `lib` with the names of CUDA versions.
         """

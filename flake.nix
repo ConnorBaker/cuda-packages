@@ -4,9 +4,7 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
       url = "github:hercules-ci/flake-parts";
     };
-    # Use the commit which unbreaks CURL until a release is cut with this:
-    # https://github.com/NixOS/nixpkgs/commit/fedcf60ab5d92acee4a205613ef61c318cd69f5b
-    nixpkgs.url = "github:NixOS/nixpkgs/7a56cc79c6514a5a6ea283745d6f1bf0f8c8166f";
+    nixpkgs.url = "github:NixOS/nixpkgs";
     git-hooks-nix = {
       inputs = {
         nixpkgs-stable.follows = "nixpkgs";

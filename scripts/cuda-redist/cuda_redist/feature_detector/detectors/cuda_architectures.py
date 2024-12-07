@@ -75,7 +75,7 @@ class CudaArchitecturesDetector(GroupableFeatureDetector[CudaRealArch]):
         return path.suffix == ".so"
 
     @override
-    def find(self, store_path: Path) -> None | Sequence[CudaRealArch] | Mapping[str, Sequence[CudaRealArch]]:
+    def find(self, store_path: Path) -> Sequence[CudaRealArch] | Mapping[str, Sequence[CudaRealArch]] | None:
         logger.debug("Getting supported CUDA architectures for %s...", store_path)
         start_time = time.time()
         ret = super().find(store_path)

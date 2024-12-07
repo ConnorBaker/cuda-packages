@@ -14,7 +14,7 @@ class FeatureDetector(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def find(self, store_path: Path) -> None | T:
+    def find(self, store_path: Path) -> T | None:
         raise NotImplementedError
 
     def detect(self, store_path: Path) -> bool:

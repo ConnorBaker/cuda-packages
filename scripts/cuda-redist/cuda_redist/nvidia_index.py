@@ -75,7 +75,7 @@ class NvidiaReleaseCommon(PydanticObject):
     name: Annotated[str, Field(description="Full name and description of the release.")]
     license: Annotated[str, Field(description="License under which the release is distributed.")]
     license_path: Annotated[
-        None | Path,
+        Path | None,
         Field(description="Relative path to the license file.", default=None),
     ]
     version: Annotated[Version, Field(description="Version of the release.")]
@@ -181,9 +181,9 @@ class NvidiaManifest(PydanticObject):
     ]
 
     release_date: Annotated[Date, Field(description="Date of the manifest.")]
-    release_label: Annotated[None | Version, Field(description="Label of the manifest.", default=None)]
+    release_label: Annotated[Version | None, Field(description="Label of the manifest.", default=None)]
     release_product: Annotated[
-        None | RedistName | str,  # NOTE: This should be RedistName, but cublasmp 0.1.0 release does not conform
+        RedistName | str | None,  # NOTE: This should be RedistName, but cublasmp 0.1.0 release does not conform
         Field(
             description="Product name of the manifest.",
             default=None,
@@ -208,7 +208,7 @@ class NvidiaManifest(PydanticObject):
         return self.__pydantic_extra__
 
     @staticmethod
-    def is_ignored(redist_name: RedistName, version: Version) -> None | str:
+    def is_ignored(redist_name: RedistName, version: Version) -> str | None:
         """Return a reason to ignore the manifest, or None if it should not be ignored."""
         match redist_name:
             # These CUDA manifests are old enough that they don't conform to the same structure as the newer ones.
@@ -237,7 +237,7 @@ class NvidiaManifest(PydanticObject):
     #             return 3
 
     @staticmethod
-    def get_versions(redist_name: RedistName, tensorrt_manifest_dir: None | Path = None) -> Sequence[Version]:
+    def get_versions(redist_name: RedistName, tensorrt_manifest_dir: Path | None = None) -> Sequence[Version]:
         LOGGER.info("Getting versions for %s", redist_name)
         regex_pattern = re.compile(
             r"""
@@ -288,7 +288,7 @@ class NvidiaManifest(PydanticObject):
 
     @staticmethod
     def get_from_web_as_bytes(
-        redist_name: RedistName, version: Version, tensorrt_manifest_dir: None | Path = None
+        redist_name: RedistName, version: Version, tensorrt_manifest_dir: Path | None = None
     ) -> bytes:
         LOGGER.info("Getting manifest for %s %s", redist_name, version)
         match redist_name:
@@ -301,7 +301,7 @@ class NvidiaManifest(PydanticObject):
 
     @classmethod
     def get_from_web(
-        cls: type[Self], redist_name: RedistName, version: Version, tensorrt_manifest_dir: None | Path = None
+        cls: type[Self], redist_name: RedistName, version: Version, tensorrt_manifest_dir: Path | None = None
     ) -> Self:
         return cls.model_validate_json(cls.get_from_web_as_bytes(redist_name, version, tensorrt_manifest_dir))
 
@@ -311,7 +311,7 @@ class NvidiaIndex(PydanticMapping[RedistName, NvidiaVersionedManifests]):
     def get_from_disk(
         cls: type[Self],
         manifests_dir: Path,
-        redist_names: None | Sequence[RedistName] = None,
+        redist_names: Sequence[RedistName] | None = None,
         version: Literal["all", "latest"] | Version = "all",
     ) -> Self:
         """

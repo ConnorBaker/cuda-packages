@@ -103,7 +103,7 @@ let
 
     preBuild =
       # Before the Python build starts, build the C++ components with CMake. Since the CMake setup hook has placed us in
-      # cmakeBuildDir, we don't need to change the dir.  
+      # cmakeBuildDir, we don't need to change the dir.
       ''
         echo "Running CMake build for C++ components"
         make all -j ''${NIX_BUILD_CORES:?}

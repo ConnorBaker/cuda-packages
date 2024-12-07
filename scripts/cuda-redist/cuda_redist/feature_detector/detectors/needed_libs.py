@@ -68,7 +68,7 @@ class NeededLibsDetector(GroupableFeatureDetector[LibSoName]):
         return path.suffix == ".so"
 
     @override
-    def find(self, store_path: Path) -> None | Sequence[LibSoName] | Mapping[str, Sequence[LibSoName]]:
+    def find(self, store_path: Path) -> Sequence[LibSoName] | Mapping[str, Sequence[LibSoName]] | None:
         logger.debug("Getting needed libs for %s...", store_path)
         start_time = time.time()
         ret = super().find(store_path)
