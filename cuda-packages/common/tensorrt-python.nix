@@ -48,15 +48,14 @@ let
 
     pname = "tensorrt-python";
 
-    version = "10.7.0-unstable-2024-12-03";
+    version = "10.7.0";
 
-    # Switch back to the main repo after https://github.com/NVIDIA/TensorRT/pull/4267 is merged.
     src = fetchFromGitHub {
-      owner = "kevinch-nv";
+      owner = "NVIDIA";
       repo = "TensorRT";
-      rev = "e9af47025a16be659f4c2d246f1d9def47e84517";
+      rev = "17003e43da9858f574e3a4a1d795fcf218862fe3";
       # NOTE: We supply our own Onnx and Protobuf, so we do not do a recursive clone.
-      hash = "sha256-BQx5sH109fha6N6K2q3+9XsluHihLrNQAVITDLAfLIA=";
+      hash = "sha256-sbp61GverIWrHKvJV+oO9TctFTO4WUmH0oInZIwqF/s=";
     };
 
     sourceRoot = "${finalAttrs.src.name}/python";
