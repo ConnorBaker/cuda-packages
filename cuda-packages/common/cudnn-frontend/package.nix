@@ -69,33 +69,12 @@ backendStdenv.mkDerivation (finalAttrs: {
           '#include "cudnn_frontend/thirdparty/nlohmann/json.hpp"' \
           '#include <nlohmann/json.hpp>'
     ''
-    + optionalString finalAttrs.doCheck ''
-      nixLog "patching CMakeLists.txt to link against forgotten libraries and install targets"
-      echo >> ./CMakeLists.txt \
-      "
-      target_link_libraries(
-        legacy_samples PRIVATE
-        CUDA::cublasLt
-        CUDA::nvrtc
-      )
-
-      target_link_libraries(
-        samples PRIVATE
-        CUDA::cublasLt
-        CUDA::nvrtc
-      )
-
-      target_link_libraries(
-        tests
-        CUDA::cublasLt
-        CUDA::nvrtc
-      )
-
-      install(
-        TARGETS legacy_samples samples tests
-        DESTINATION ''${CMAKE_INSTALL_BINDIR}
-      )
-      "
+    # Use our own CMakeLists.txt and add a config to make the include files discoverable
+    + ''
+      nixLog "replacing CMakeLists.txt to link against forgotten libraries and install targets"
+      rm ./CMakeLists.txt
+      install -Dm644 "${./CMakeLists.txt}" ./CMakeLists.txt
+      install -Dm644 "${./cudnn_frontend-config.cmake.in}" ./cudnn_frontend-config.cmake.in
     '';
 
   cmakeFlags = [
