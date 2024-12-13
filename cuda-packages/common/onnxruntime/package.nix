@@ -179,17 +179,9 @@ let
             'set(onnxparser_link_libs nvonnxparser_static)' \
             'set(onnxparser_link_libs nvonnxparser)'
       ''
-      # cudnn_frontend doesn't provide a library
-      # https://github.com/microsoft/onnxruntime/issues/22855
+      # Update cudnn_frontend to use our Nixpkgs-provided copy
       + ''
-        substituteInPlace cmake/onnxruntime_providers_cuda.cmake \
-          --replace-fail \
-            'target_link_libraries(''${target} PRIVATE CUDA::cublasLt CUDA::cublas CUDNN::cudnn_all cudnn_frontend ' \
-            'target_link_libraries(''${target} PRIVATE CUDA::cublasLt CUDA::cublas CUDNN::cudnn_all '
-        substituteInPlace cmake/onnxruntime_unittests.cmake \
-          --replace-fail \
-            'target_link_libraries(''${_UT_TARGET} PRIVATE cudnn_frontend)' \
-            ""
+        echo "find_package(cudnn_frontend REQUIRED)" > cmake/external/cudnn_frontend.cmake
       ''
       # Disable failing tests.
       # TODO: Is this on all platforms, or just x86_64-linux?
@@ -272,6 +264,7 @@ let
       # TODO: Why do we need to pass Protobuf_LIBRARIES explicitly?
       # --clean \
       # NOTE: Removed `--test`.
+      # TODO: --use_tensorrt_oss_parser doesn't seem to work; just uses the parsers found in tensorrt_home?
       + ''
         python3 "$NIX_BUILD_TOP/$sourceRoot/tools/ci_build/build.py" \
             --build_dir "''${cmakeBuildDir:?}" \
@@ -292,7 +285,6 @@ let
             --cudnn_home "${getLib cudnn}" \
             --use_tensorrt \
             --tensorrt_home "${getLib tensorrt}" \
-            --use_tensorrt_oss_parser \
             --use_full_protobuf \
             --cmake_extra_defines \
               ''${cmakeFlags[@]//-D/} \
