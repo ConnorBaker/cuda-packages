@@ -15,7 +15,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-xjL46pjU0T0b0zCkBc53iNSZQjOESfVPowUPb+gNHO8="
+          "recursiveHash": "sha256-mR3rF0qnHCnT4/YMGWld1oX3xycO5RLf/2y6Cillqyg="
         }
       },
       "linux-sbsa": {
@@ -37,7 +37,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-Be5j4kUmy12rrHpHsHmfkP9DWkknVIpJfiu05JhKuMg="
+          "recursiveHash": "sha256-1vntHROB+mWSJ5T3HK/UKWhdX45xKIZJ7NFfv3yzlcI="
         }
       },
       "linux-x86_64": {
@@ -59,7 +59,7 @@
               "static"
             ]
           },
-          "recursiveHash": "sha256-3IlN6ZBjU/dKSOKJ1X0A163lTTDDENnOYl/3oqtFFmg="
+          "recursiveHash": "sha256-ZYbeW1eiAvwB6q/jYjWlSAyJX97lbXDAq2OM6RlIk5g="
         }
       }
     },
@@ -67,7 +67,7 @@
       "license": "cuDSS library",
       "licensePath": "libcudss/LICENSE.txt",
       "name": "NVIDIA cuDSS library",
-      "version": "0.3.0.9"
+      "version": "0.4.0.2"
     }
   }
 }

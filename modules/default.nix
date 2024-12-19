@@ -42,7 +42,7 @@ in
           cublasmp = "0.3.1";
           cuda = "12.2.2";
           cudnn = "9.6.0";
-          cudss = "0.3.0";
+          cudss = "0.4.0";
           cuquantum = "24.11.0";
           cusolvermp = "0.5.1";
           cusparselt = "0.6.3";
@@ -60,7 +60,7 @@ in
           cublasmp = "0.3.1";
           cuda = "12.6.3";
           cudnn = "9.6.0";
-          cudss = "0.3.0";
+          cudss = "0.4.0";
           cuquantum = "24.11.0";
           cusolvermp = "0.5.1";
           cusparselt = "0.6.3";

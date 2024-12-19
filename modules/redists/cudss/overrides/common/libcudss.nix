@@ -1,27 +1,29 @@
 {
-  cudaAtLeast,
   lib,
+  libcublas,
   mpi,
   nccl,
 }:
 let
   inherit (builtins) placeholder;
   inherit (lib.lists) optionals;
-  inherit (lib.strings) optionalString;
+  inherit (lib.strings) optionalString versionAtLeast versionOlder;
 in
-prevAttrs: {
+finalAttrs: prevAttrs: {
   buildInputs =
     prevAttrs.buildInputs or [ ]
-    # TODO(@connorbaker): Are these required for 11.8?
-    ++ optionals (cudaAtLeast "12.0") [
+    ++ optionals (versionAtLeast finalAttrs.version "0.3") [
       mpi
       nccl
+    ]
+    ++ optionals (versionAtLeast finalAttrs.version "0.4") [
+      libcublas
     ];
 
   # Update the CMake configurations
   postFixup =
     prevAttrs.postFixup or ""
-    + optionalString (cudaAtLeast "12.0") (
+    + optionalString (versionOlder finalAttrs.version "0.4") (
       # Enter the directory containing the CMake configurations
       ''
         pushd "$dev/lib/cmake/cudss"
