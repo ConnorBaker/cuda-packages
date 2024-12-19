@@ -52,7 +52,7 @@
               "lib"
             ]
           },
-          "recursiveHash": "sha256-C+qp/etbzt/n/ANudguFxqlee6nnCVMPvK7zVjZ04YA="
+          "recursiveHash": "sha256-2JXWa1aftiYpxP/BmMFx/XBk1dp28R/T7b7418Lo4cM="
         }
       },
       "linux-x86_64": {
@@ -70,7 +70,7 @@
               "lib"
             ]
           },
-          "recursiveHash": "sha256-weByw+puHaejzgDbIQwOt+QrJx76lr9TQnPfedB90LM="
+          "recursiveHash": "sha256-hw4Ahjkf+0ZlX+IGUTaqEBb8Vg6nTaWUMw7Xn98X1Gw="
         }
       }
     },
@@ -78,7 +78,7 @@
       "license": "cuBLASMp library",
       "licensePath": "libcublasmp/LICENSE.txt",
       "name": "NVIDIA cuBLASMp library",
-      "version": "0.3.0.620"
+      "version": "0.3.1.663"
     }
   }
 }

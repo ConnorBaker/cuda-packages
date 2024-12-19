@@ -39,7 +39,7 @@ in
         # TODO: are there changes required for 12.2.2?
         packagesDirectories = [ ../cuda-packages/common ];
         redists = {
-          cublasmp = "0.3.0";
+          cublasmp = "0.3.1";
           cuda = "12.2.2";
           cudnn = "9.6.0";
           cudss = "0.3.0";
@@ -57,7 +57,7 @@ in
       "12.6.3" = {
         packagesDirectories = [ ../cuda-packages/common ];
         redists = {
-          cublasmp = "0.3.0";
+          cublasmp = "0.3.1";
           cuda = "12.6.3";
           cudnn = "9.6.0";
           cudss = "0.3.0";
