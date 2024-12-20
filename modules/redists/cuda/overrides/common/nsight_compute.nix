@@ -4,6 +4,7 @@
   fetchpatch,
   fetchzip,
   gst_all_1,
+  hostRedistArch,
   lib,
   libtiff,
   qt6Packages,
@@ -120,4 +121,32 @@ in
       (getOutput "stubs" cuda_cudart)
       gst-plugins-base
     ];
+  # We don't have the means to ensure autoPatchelf finds the correct library from the correct package set
+  # when trying to patch cross-platform libs, so we ensure the only hosts/targets available have the same architecture.
+  postInstall =
+    prevAttrs.postInstall or ""
+    + ''
+      for kind in host target; do
+        pushd "$out/$kind"
+        nixLog "removing unsupported ''${kind}s for host redist arch ${hostRedistArch}"
+        for dir in *; do
+          case "${hostRedistArch}" in
+          linux-aarch64|linux-sbsa)
+            case "$dir" in
+            linux-*-a64) nixLog "keeping $dir";;
+            *) nixLog "removing $dir" && rm -r "$dir";;
+            esac
+            ;;
+          linux-x86_64)
+            case "$dir" in
+            linux-*-x64|target-linux-x64) nixLog "keeping $dir";;
+            *) nixLog "removing $dir" && rm -r "$dir";;
+            esac
+            ;;
+          *) nixLogError "unknown host redist arch: ${hostRedistArch}" && exit 1;;
+          esac
+        done
+        popd
+      done
+    '';
 }
