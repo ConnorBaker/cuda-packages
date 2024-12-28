@@ -1,9 +1,9 @@
 {
-  backendStdenv,
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
   cudaAtLeast,
+  cudaStdenv,
   fetchFromGitHub,
   flags,
   lib,
@@ -20,7 +20,7 @@ let
     ;
   inherit (lib.lists) optionals;
 in
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "nccl";
   version = "2.23.4-1";
 

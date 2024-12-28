@@ -3,23 +3,26 @@ let
   lib = import ./lib { inherit (prev) lib; };
   cudaConfig =
     (evalModules {
-      modules = [ ./modules ] ++ final.cudaModules;
+      modules = [
+        ./modules
+        {
+          cudaCapabilities = final.config.cudaCapabilities or [ ];
+          cudaForwardCompat = final.config.cudaForwardCompat or true;
+          hostNixSystem = final.stdenv.hostPlatform.system;
+        }
+      ] ++ final.cudaModules;
     }).config;
 
   inherit (builtins) throw;
   inherit (lib.attrsets)
     attrNames
     dontRecurseIntoAttrs
-    foldlAttrs
-    hasAttr
     mapAttrs'
     mergeAttrsList
     recurseIntoAttrs
     ;
   inherit (lib.cuda.utils)
     buildRedistPackages
-    getJetsonTargets
-    getRedistArch
     mkCudaVariant
     mkRealArchitecture
     versionAtMost
@@ -30,14 +33,9 @@ let
   inherit (lib.customisation) makeScope;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
-  inherit (lib.lists)
-    concatMap
-    map
-    optionals
-    ;
+  inherit (lib.lists) map;
   inherit (lib.modules) evalModules;
   inherit (lib.strings)
-    isString
     replaceStrings
     versionAtLeast
     versionOlder
@@ -46,10 +44,7 @@ let
   inherit (lib.upstreamable.trivial) addNameToFetchFromGitLikeArgs;
   inherit (lib.versions) major majorMinor;
 
-  hasJetsonTarget =
-    (getJetsonTargets cudaConfig.data.gpus (final.config.cudaCapabilities or [ ])) != [ ];
-
-  hostRedistArch = getRedistArch hasJetsonTarget final.stdenv.hostPlatform.system;
+  inherit (cudaConfig) hostRedistArch;
 
   fetchFromGitHubAutoName = args: final.fetchFromGitHub (addNameToFetchFromGitLikeArgs args);
   fetchFromGitLabAutoName = args: final.fetchFromGitLab (addNameToFetchFromGitLikeArgs args);
@@ -92,7 +87,6 @@ let
               cudaPackagesConfig = dontRecurseIntoAttrs cudaPackagesConfig // {
                 __attrsFailEvaluation = true;
               };
-              inherit hostRedistArch;
 
               # CUDA versions
               inherit cudaMajorMinorPatchVersion cudaMajorMinorVersion cudaMajorVersion;
@@ -108,6 +102,7 @@ let
                 ;
 
               # Aliases
+              backendStdenv = warn "cudaPackages.backendStdenv has been renamed, use cudaPackages.cudaStdenv instead" finalCudaPackages.cudaStdenv;
               cudaVersion = warn "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorVersion;
               cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
               cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
@@ -118,33 +113,18 @@ let
             })
           ]
           # Redistributable packages
-          ++ concatMap (
+          ++ map (
             redistName:
-            let
-              versionOrRedistArchToVersion = cudaPackagesConfig.redists.${redistName};
-              maybeVersion =
-                # Check for same version used everywhere
-                if isString versionOrRedistArchToVersion then
-                  versionOrRedistArchToVersion
-                # Check for hostArch
-                else if hasAttr hostRedistArch versionOrRedistArchToVersion then
-                  versionOrRedistArchToVersion.${hostRedistArch}
-                # Default to being unavailable on the host
-                else
-                  null;
-            in
-            optionals (maybeVersion != null) [
-              (buildRedistPackages {
-                inherit
-                  desiredCudaVariant
-                  finalCudaPackages
-                  hostRedistArch
-                  redistName
-                  ;
-                manifestVersion = maybeVersion;
-                redistConfig = cudaConfig.redists.${redistName};
-              })
-            ]
+            buildRedistPackages {
+              inherit
+                desiredCudaVariant
+                finalCudaPackages
+                hostRedistArch
+                redistName
+                ;
+              manifestVersion = cudaPackagesConfig.redists.${redistName};
+              redistConfig = cudaConfig.redists.${redistName};
+            }
           ) (attrNames cudaPackagesConfig.redists)
           # CUDA version-specific packages
           ++ map (
@@ -206,22 +186,19 @@ in
 # TODO(@connorbaker): Yes, it is computationally expensive to call final.extend.
 # No, I can't think of a different way to force re-evaluation of the fixed point.
 // {
-  pkgsCuda = foldlAttrs (
-    acc: cudaCapability: _:
-    acc
-    // {
-      ${mkRealArchitecture cudaCapability} = dontRecurseIntoAttrs (
-        final.extend (
-          _: prev': {
-            __attrsFailEvaluation = true;
-            config = prev'.config // {
-              cudaCapabilities = [ cudaCapability ];
-            };
-          }
-        )
-      );
-    }
-  ) (dontRecurseIntoAttrs { }) cudaConfig.data.gpus;
+  pkgsCuda = mapAttrs' (cudaCapability: _: {
+    name = mkRealArchitecture cudaCapability;
+    value = dontRecurseIntoAttrs (
+      final.extend (
+        _: prev': {
+          __attrsFailEvaluation = true;
+          config = prev'.config // {
+            cudaCapabilities = [ cudaCapability ];
+          };
+        }
+      )
+    );
+  }) cudaConfig.data.gpus;
 }
 # Upstreamable packages
 // packagesFromDirectoryRecursive {

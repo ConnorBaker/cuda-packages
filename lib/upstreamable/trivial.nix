@@ -20,7 +20,7 @@ in
       let
         inherit (args) owner repo rev;
         revStrippedRefsTags = removePrefix "refs/tags/" rev;
-        isTag = revStrippedRefsTags != rev;
+        tagInRev = revStrippedRefsTags != rev;
         isHash = match "^[0-9a-f]{40}$" rev == [ ];
         shortHash = substring 0 8 rev;
       in
@@ -30,7 +30,11 @@ in
           owner
           repo
           (
-            if isTag then
+            # If tag is precedent that takes precedence.
+            if args.tag or null != null then
+              args.tag
+            # If there's no tag, then rev *must* exist.
+            else if tagInRev then
               revStrippedRefsTags
             else if isHash then
               shortHash

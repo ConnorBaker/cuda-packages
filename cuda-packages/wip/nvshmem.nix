@@ -1,15 +1,15 @@
 {
-  backendStdenv,
   cmake,
   cuda_cudart,
   cuda_nvcc,
-  flags,
+  cudaStdenv,
   fetchzip,
+  flags,
   gdrcopy,
   lib,
   mpi,
-  pkg-config,
   nccl,
+  pkg-config,
   ucx,
 }:
 let
@@ -23,7 +23,7 @@ let
   # TODO: Add to cuda-lib or upstream.
   cmakePath = cmakeOptionType "PATH";
 in
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "nvshmem";
   version = "3.0.6";
 

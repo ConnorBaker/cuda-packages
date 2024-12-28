@@ -1,22 +1,22 @@
 {
   addDriverRunpath,
   autoAddDriverRunpath,
-  backendStdenv,
   cmake,
+  cpm-cmake,
   cuda_cccl,
   cuda_cudart,
   cuda_cupti,
-  cpm-cmake,
   cuda_nvcc,
   cuda_nvml_dev,
+  cudaStdenv,
   fetchFromGitHub,
   fetchurl,
-  git,
   flags,
   fmt,
+  git,
   gitUpdater,
-  writeTextFile,
   lib,
+  writeTextFile,
 }:
 let
   inherit (lib.lists) optionals;
@@ -34,7 +34,7 @@ let
     "nvbench.test.cmake.test_export.install_tree"
   ];
 in
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "nvbench";
   version = "0-unstable-2024-11-15";
 

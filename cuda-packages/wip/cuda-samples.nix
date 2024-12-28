@@ -1,14 +1,14 @@
 # TODO(@connorbaker): Cleanup.
 {
   autoAddDriverRunpath,
-  backendStdenv,
   cmake,
-  flags,
-  cudatoolkit,
-  cudaMajorMinorVersion,
   cudaMajorMinorPatchVersion,
+  cudaMajorMinorVersion,
+  cudaStdenv,
+  cudatoolkit,
   fetchFromGitHub,
   fetchpatch,
+  flags,
   freeimage,
   glfw3,
   lib,
@@ -52,7 +52,7 @@ let
     cudaVersionToHash.${cudaMajorMinorPatchVersion} or cudaVersionToHash.${cudaMajorMinorVersion}
       or misc.fakeHash;
 in
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "cuda-samples";
   version = cudaMajorMinorPatchVersion;
 

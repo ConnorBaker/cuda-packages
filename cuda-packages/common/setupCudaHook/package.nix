@@ -1,15 +1,16 @@
 # Currently propagated by cuda_nvcc or cudatoolkit, rather than used directly
 {
-  backendStdenv,
   config,
+  cudaConfig,
+  cudaStdenv,
   flags,
-  hostRedistArch,
   lib,
   makeSetupHook,
   nixLogWithLevelAndFunctionNameHook,
 }:
 let
-  inherit (backendStdenv) cc cudaNamePrefix;
+  inherit (cudaStdenv) cc cudaNamePrefix;
+  inherit (cudaConfig) hostRedistArch;
   inherit (flags) cmakeCudaArchitecturesString;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;

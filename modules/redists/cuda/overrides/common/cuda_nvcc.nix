@@ -1,7 +1,7 @@
 {
-  backendStdenv,
   cudaAtLeast,
   cudaOlder,
+  cudaStdenv,
   lib,
   setupCudaHook,
 }:
@@ -88,11 +88,11 @@ finalAttrs: prevAttrs: {
         nixLog "adding setupCudaHook to $outputBin's propagatedBuildInputs"
         printWords "${setupCudaHook}" >> "''${!outputBin}/nix-support/propagated-build-inputs"
       ''
-      # Add the dependency on backendStdenv.cc to the nvcc.profile and native-propagated-build-inputs.
+      # Add the dependency on cudaStdenv.cc to the nvcc.profile and native-propagated-build-inputs.
       # NOTE: No need to add a dependency on `newNvvmDir` since it's already in the bin output.
       + ''
-        nixLog "adding backendStdenv.cc to $outputBin's propagatedBuildInputs"
-        printWords "${backendStdenv.cc}" >> "''${!outputBin}/nix-support/native-propagated-build-inputs"
+        nixLog "adding cudaStdenv.cc to $outputBin's propagatedBuildInputs"
+        printWords "${cudaStdenv.cc}" >> "''${!outputBin}/nix-support/native-propagated-build-inputs"
       ''
       # Unconditional patching to remove the use of $(_TARGET_SIZE_) since we don't use lib64 in Nixpkgs
       + ''
@@ -137,14 +137,14 @@ finalAttrs: prevAttrs: {
               '${oldNvvmDir}/' \
               "${newNvvmDir}/"
         ''
-        # Add the dependency on backendStdenv.cc and the new NVVM directories to the nvcc.profile.
+        # Add the dependency on cudaStdenv.cc and the new NVVM directories to the nvcc.profile.
         # NOTE: Escape the dollar sign in the variable expansion to prevent early expansion.
         + ''
-          nixLog "adding backendStdenv.cc and ${newNvvmDir} to nvcc.profile"
+          nixLog "adding cudaStdenv.cc and ${newNvvmDir} to nvcc.profile"
           cat << EOF >> "''${!outputBin}/bin/nvcc.profile"
 
           # Fix a compatible backend compiler
-          PATH += "${backendStdenv.cc}/bin":
+          PATH += "${cudaStdenv.cc}/bin":
 
           # Expose the split-out nvvm
           LIBRARIES =+ \$(_SPACE_) "-L${newNvvmDir}/lib"

@@ -2,7 +2,9 @@
 
 Packages which are not created by the redistributable builder.
 
-## backendStdenv
+## cudaStdenv
+
+TODO(@connorbaker): Revisit this; we don't currently use mold.
 
 We have our own `stdenv` for two reasons:
 

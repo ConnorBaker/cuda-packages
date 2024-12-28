@@ -1,6 +1,6 @@
 {
   autoAddDriverRunpath,
-  backendStdenv,
+  cudaStdenv,
   catch2_3,
   cmake,
   cuda_cudart,
@@ -24,7 +24,7 @@ let
 in
 
 # TODO(@connorbaker): This should be a hybrid C++/Python package.
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "cudnn-frontend";
   version = "1.8.0";
 

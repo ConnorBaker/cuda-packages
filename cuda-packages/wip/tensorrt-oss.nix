@@ -1,11 +1,11 @@
 # TODO(@connorbaker): Package samples as test cases, and make a bin output for tools.
 {
-  backendStdenv,
   cmake,
   cuda_cudart,
   cuda_nvcc,
   cuda_profiler_api,
   cudaMajorMinorVersion,
+  cudaStdenv,
   cudnn,
   fetchFromGitHub,
   flags,
@@ -29,7 +29,7 @@ let
   inherit (flags) cudaCapabilities;
   inherit (lib.cuda.utils) dropDots;
 in
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "tensorrt-oss";
   version = "10.6.0";
 
@@ -56,13 +56,13 @@ backendStdenv.mkDerivation (finalAttrs: {
   # NOTE: NVIDIA's CMake file looks for the C++ compiler through the environment variable and expects a full path.
   # https://github.com/NVIDIA/TensorRT/blob/08ad45bf3df848e722dfdc7d01474b5ba2eff7e9/CMakeLists.txt#L62-L64
   preConfigure = ''
-    export CXX="${backendStdenv.cc}/bin/${backendStdenv.cc.targetPrefix}c++"
+    export CXX="${cudaStdenv.cc}/bin/${cudaStdenv.cc.targetPrefix}c++"
   '';
 
   cudaEnableCmakeFindCudaToolkitSupport = true;
 
   cmakeFlags = [
-    (cmakeFeature "TRT_PLATFORM_ID" backendStdenv.hostPlatform.parsed.cpu.name)
+    (cmakeFeature "TRT_PLATFORM_ID" cudaStdenv.hostPlatform.parsed.cpu.name)
     (cmakePath "TRT_LIB_DIR" "${getLib tensorrt}")
     (cmakePath "TRT_OUT_DIR" "$out")
     (cmakeFeature "CUDA_VERSION" cudaMajorMinorVersion)

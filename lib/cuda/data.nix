@@ -43,7 +43,7 @@
   ];
 
   /**
-    The prefix of the URL for redistributable files
+    The prefix of the URL for redistributable files.
 
     # Type
 

@@ -3,16 +3,17 @@
   autoAddCudaCompatRunpath,
   autoAddDriverRunpath,
   autoPatchelfHook,
-  backendStdenv,
   config,
   cuda_compat,
+  cudaConfig,
   cudaMajorMinorVersion,
+  cudaStdenv,
   flags,
-  hostRedistArch,
   lib,
   markForCudatoolkitRootHook,
 }:
 let
+  inherit (cudaConfig) hostRedistArch;
   inherit (lib)
     licenses
     sourceTypes
@@ -62,7 +63,7 @@ let
   # As such, the order of the output is dictated by the order of the second list.
   componentOutputs = intersectLists packageInfo.features.outputs possibleOutputs;
 in
-backendStdenv.mkDerivation (
+cudaStdenv.mkDerivation (
   finalAttrs:
   let
     isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
@@ -158,7 +159,7 @@ backendStdenv.mkDerivation (
       # NB: We don't actually know if this is the right thing to do
       # NOTE: Not all packages actually need this, but it's easier to just add it than create overrides for nearly all
       # of them.
-      backendStdenv.cudaHostStdenv.cc.cc.lib
+      cudaStdenv.cudaHostStdenv.cc.cc.lib
     ];
 
     # Picked up by autoPatchelf
@@ -313,9 +314,9 @@ backendStdenv.mkDerivation (
       sourceProvenance = [ sourceTypes.binaryNativeCode ];
       broken = isBroken;
       badPlatforms = optionals isBadPlatform (unique [
-        backendStdenv.buildPlatform.system
-        backendStdenv.hostPlatform.system
-        backendStdenv.targetPlatform.system
+        cudaStdenv.buildPlatform.system
+        cudaStdenv.hostPlatform.system
+        cudaStdenv.targetPlatform.system
       ]);
       license = licenses.unfree;
       maintainers = teams.cuda.members;

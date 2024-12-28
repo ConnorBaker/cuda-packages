@@ -1,6 +1,12 @@
 { lib, ... }:
 let
-  inherit (lib.cuda.utils) mkOptions;
+  inherit (lib.cuda.types)
+    attrs
+    majorMinorVersion
+    majorVersion
+    nvccHostCompiler
+    ;
+  inherit (lib.cuda.utils) mkOptionsModule;
   inherit (lib.options) mkOption;
   inherit (lib.types) submodule;
 in
@@ -21,19 +27,19 @@ in
       E.g.: CUDA 12.2.1 maxxed out with support for Clang 15.0; 12.2.2 added support for Clang 16.0.
       NOTE: Because all platforms NVIDIA supports use GCC and Clang, we omit the architectures here.
     '';
-    type = lib.cuda.types.attrs lib.cuda.types.majorMinorVersion (
-      lib.cuda.types.attrs lib.cuda.types.nvccHostCompiler (submodule {
-        options = mkOptions {
+    type = attrs majorMinorVersion (
+      attrs nvccHostCompiler (
+        submodule (mkOptionsModule {
           maxMajorVersion = {
             description = "The maximum major version of a compiler supported by the NVCC available with this CUDA version.";
-            type = lib.cuda.types.majorVersion;
+            type = majorVersion;
           };
           minMajorVersion = {
             description = "The minimum major version of a compiler supported by the NVCC available with this CUDA version.";
-            type = lib.cuda.types.majorVersion;
+            type = majorVersion;
           };
-        };
-      })
+        })
+      )
     );
   };
   config.data.nvccCompatibilities = {

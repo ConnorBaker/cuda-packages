@@ -1,10 +1,10 @@
 {
   addDriverRunpath,
-  backendStdenv,
   cmake,
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
+  cudaStdenv,
   cudnn,
   cutlass,
   fetchFromGitHub,
@@ -29,7 +29,7 @@ in
 # TODO: This can also be packaged for Python!
 # TODO: Tests.
 assert assertMsg (!enableTools) "enableTools is not yet implemented";
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "cutlass";
   # They didn't cut a 3.6.0 release...
   version = "3.6.0-unstable-2024-12-03";

@@ -11,7 +11,7 @@
   stdenv,
   stdenvAdapters,
 }:
-# Exposed as cudaPackages.backendStdenv.
+# Exposed as cudaPackages.cudaStdenv.
 # This is what nvcc uses as a backend,
 # and it has to be an officially supported one (e.g. gcc11 for cuda11).
 #
@@ -83,6 +83,7 @@ let
   passthruExtra = {
     inherit cudaHostStdenv;
     inherit cudaNamePrefix;
+    inherit (cudaConfig) hostRedistArch;
   };
 
   assertCondition = true;

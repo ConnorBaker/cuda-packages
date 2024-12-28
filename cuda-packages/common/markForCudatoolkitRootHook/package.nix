@@ -1,15 +1,15 @@
 # Internal hook, used by cudatoolkit and cuda redist packages
 # to accommodate automatic CUDAToolkit_ROOT construction
 {
-  backendStdenv,
+  cudaStdenv,
   config,
-  hostRedistArch,
+  cudaConfig,
   lib,
   makeSetupHook,
   nixLogWithLevelAndFunctionNameHook,
 }:
 let
-
+  inherit (cudaConfig) hostRedistArch;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id;
@@ -17,7 +17,7 @@ let
   isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
 
   finalAttrs = {
-    name = "${backendStdenv.cudaNamePrefix}-mark-for-cudatoolkit-root-hook";
+    name = "${cudaStdenv.cudaNamePrefix}-mark-for-cudatoolkit-root-hook";
     propagatedBuildInputs = [
       # We add a hook to replace the standard logging functions.
       nixLogWithLevelAndFunctionNameHook

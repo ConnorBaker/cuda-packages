@@ -1,6 +1,6 @@
 {
-  backendStdenv,
   cuda_cudart,
+  cudaStdenv,
   onnx-tensorrt,
   python3,
   writeShellApplication,
@@ -10,7 +10,7 @@ writeShellApplication {
     __structuredAttrs = true;
     strictDeps = true;
   };
-  name = "${backendStdenv.cudaNamePrefix}-tests-onnx-tensorrt-short";
+  name = "${cudaStdenv.cudaNamePrefix}-tests-onnx-tensorrt-short";
   runtimeInputs = [
     cuda_cudart
     (python3.withPackages (ps: [
@@ -36,6 +36,7 @@ writeShellApplication {
       echo "Running with default arguments: ''${args[*]}" >&2
     fi
 
+    chmod -R +w "$HOME/.onnx"
     "''${args[@]}"
   '';
 }

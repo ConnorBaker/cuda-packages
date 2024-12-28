@@ -1,10 +1,10 @@
 {
   cuda_cudart,
+  cudaConfig,
   e2fsprogs,
   fetchpatch,
   fetchzip,
   gst_all_1,
-  hostRedistArch,
   lib,
   libtiff,
   qt6Packages,
@@ -12,6 +12,7 @@
   ucx,
 }:
 let
+  inherit (cudaConfig) hostRedistArch;
   inherit (lib.attrsets) getBin getOutput;
   inherit (lib.lists) optionals;
   inherit (lib.strings) versionAtLeast;

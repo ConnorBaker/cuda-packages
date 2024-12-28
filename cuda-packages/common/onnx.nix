@@ -1,6 +1,6 @@
 {
   abseil-cpp,
-  backendStdenv,
+  cudaStdenv,
   fetchFromGitHub,
   gtest,
   lib,
@@ -33,7 +33,7 @@ let
     # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
     # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
     __structuredAttrs = false;
-    stdenv = backendStdenv;
+    stdenv = cudaStdenv;
 
     pname = "onnx";
 

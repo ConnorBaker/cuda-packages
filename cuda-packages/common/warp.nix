@@ -1,17 +1,17 @@
 {
   autoAddDriverRunpath,
-  backendStdenv,
+  cmake,
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
-  cmake,
-  ninja,
+  cudaStdenv,
   fetchFromGitHub,
   flags,
   lib,
   libmathdx,
   libnvjitlink,
   llvmPackages_19,
+  ninja,
   python3,
 }:
 let
@@ -42,7 +42,7 @@ let
     # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
     # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
     __structuredAttrs = false;
-    stdenv = backendStdenv;
+    stdenv = cudaStdenv;
 
     pname = "warp";
 

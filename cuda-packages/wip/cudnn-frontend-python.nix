@@ -1,12 +1,12 @@
 {
   addDriverRunpath,
-  backendStdenv,
   cuda_cccl,
   cuda_cudart,
-  cudnn,
-  cudnn-frontend,
   cuda_nvcc,
   cudaAtLeast,
+  cudaStdenv,
+  cudnn-frontend,
+  cudnn,
   fetchFromGitHub,
   flags,
   lib,
@@ -49,7 +49,7 @@ let
     # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
     # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
     __structuredAttrs = false;
-    stdenv = backendStdenv;
+    stdenv = cudaStdenv;
 
     pname = "cudnn-frontend";
     version = "1.8.0";

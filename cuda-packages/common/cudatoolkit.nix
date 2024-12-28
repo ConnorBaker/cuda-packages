@@ -1,9 +1,5 @@
 # TODO(@connorbaker): Cleanup.
 {
-  lib,
-  symlinkJoin,
-  backendStdenv,
-  cudaMajorMinorVersion,
   cuda_cccl,
   cuda_cudart,
   cuda_cuobjdump,
@@ -18,16 +14,20 @@
   cuda_nvtx,
   cuda_profiler_api,
   cuda_sanitizer_api,
+  cudaMajorMinorVersion,
+  cudaStdenv,
+  lib,
   libcublas,
   libcufft,
   libcurand,
   libcusolver,
   libcusparse,
   libnpp,
+  symlinkJoin,
 }:
 
 let
-  inherit (backendStdenv) cudaNamePrefix;
+  inherit (cudaStdenv) cudaNamePrefix;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) concatMap filter map;
   inherit (lib.trivial) pipe;
@@ -70,7 +70,7 @@ symlinkJoin rec {
   paths = concatMap getAllOutputs allPackages;
 
   passthru = {
-    cc = lib.warn "cudaPackages.cudatoolkit is deprecated, refer to the manual and use splayed packages instead" backendStdenv.cc;
+    cc = lib.warn "cudaPackages.cudatoolkit is deprecated, refer to the manual and use splayed packages instead" cudaStdenv.cc;
     lib = symlinkJoin {
       inherit name;
       paths = map getLib allPackages;

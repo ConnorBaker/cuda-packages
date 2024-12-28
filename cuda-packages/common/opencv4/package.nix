@@ -1,5 +1,5 @@
 {
-  backendStdenv,
+  cudaStdenv,
   blas,
   boost,
   buildPackages,
@@ -91,7 +91,7 @@
 }:
 
 let
-  inherit (backendStdenv) buildPlatform hostPlatform;
+  inherit (cudaStdenv) buildPlatform hostPlatform;
   inherit (flags) cmakeCudaArchitecturesString cudaCapabilities;
   inherit (lib.attrsets) mapAttrsToList optionalAttrs;
   inherit (lib.lists) last optionals;
@@ -257,7 +257,7 @@ let
   #https://github.com/OpenMathLib/OpenBLAS/wiki/Faq/4bded95e8dc8aadc70ce65267d1093ca7bdefc4c#multi-threaded
   openblas_ = blas.provider.override { singleThreaded = true; };
 in
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "opencv";
 
   version = "4.10.0";
@@ -484,7 +484,7 @@ backendStdenv.mkDerivation (finalAttrs: {
       # LTO options
       (cmakeBool "ENABLE_LTO" enableLto)
       # Only clang supports thin LTO
-      (cmakeBool "ENABLE_THIN_LTO" (enableLto && backendStdenv.cc.isClang))
+      (cmakeBool "ENABLE_THIN_LTO" (enableLto && cudaStdenv.cc.isClang))
 
       (cmakeBool "CUDA_FAST_MATH" true)
       (cmakeFeature "CUDA_NVCC_FLAGS" "--expt-relaxed-constexpr")

@@ -1,7 +1,7 @@
 {
   abseil-cpp,
   addDriverRunpath,
-  backendStdenv,
+  cudaStdenv,
   callPackage,
   clog,
   cpuinfo,
@@ -47,7 +47,7 @@ let
     optionalString
     ;
   inherit (lib.trivial) const flip;
-  inherit (backendStdenv.cc) isClang;
+  inherit (cudaStdenv.cc) isClang;
   inherit (python3.pkgs)
     buildPythonPackage
     cmake
@@ -58,7 +58,7 @@ let
     setuptools
     ;
 
-  isAarch64Linux = backendStdenv.hostPlatform.system == "aarch64-linux";
+  isAarch64Linux = cudaStdenv.hostPlatform.system == "aarch64-linux";
 
   vendored = mapAttrs (const (flip callPackage { })) {
     eigen = ./eigen.nix;
@@ -73,7 +73,7 @@ let
     # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
     # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
     __structuredAttrs = false;
-    stdenv = backendStdenv;
+    stdenv = cudaStdenv;
 
     pname = "onnxruntime";
 

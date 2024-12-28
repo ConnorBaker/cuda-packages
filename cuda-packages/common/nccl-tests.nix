@@ -2,12 +2,12 @@
 # the names of dependencies from that package set directly to avoid evaluation errors
 # in the case redistributable packages are not available.
 {
-  backendStdenv,
   config,
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
   cudaAtLeast,
+  cudaStdenv,
   fetchFromGitHub,
   gitUpdater,
   lib,
@@ -20,7 +20,7 @@ let
   inherit (lib.attrsets) getBin;
   inherit (lib.lists) optionals;
 in
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "nccl-tests";
   version = "2.13.11";
 

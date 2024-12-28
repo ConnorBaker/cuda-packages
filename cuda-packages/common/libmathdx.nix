@@ -1,5 +1,5 @@
 {
-  backendStdenv,
+  cudaStdenv,
   fetchzip,
   lib,
 }:
@@ -16,7 +16,7 @@ in
 #   url = "${baseURL}/nvidia-mathdx-24.08.0.tar.gz";
 #   hash = "sha256-nSzDzjSH8yfL0r67AbwJ47aBz59Ib4e/sgyNtI7zg4M=";
 # };
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "libmathdx";
   version = "0.1.0";
 
@@ -25,7 +25,7 @@ backendStdenv.mkDerivation (finalAttrs: {
       name = concatStringsSep "-" [
         finalAttrs.pname
         "Linux"
-        backendStdenv.hostPlatform.parsed.cpu.name
+        cudaStdenv.hostPlatform.parsed.cpu.name
         finalAttrs.version
       ];
       hashes = {
@@ -39,7 +39,7 @@ backendStdenv.mkDerivation (finalAttrs: {
         inherit hash name;
         url = "${baseURL}/${name}.tar.gz";
       }
-    ) (hashes.${backendStdenv.hostPlatform.system} or null);
+    ) (hashes.${cudaStdenv.hostPlatform.system} or null);
 
   # Everything else should be kept in the same output. While there are some shared libraries, I'm not familiar enough
   # with the project to know how they're used or if it's safe to split them out/change the directory structures.

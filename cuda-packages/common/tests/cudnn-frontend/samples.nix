@@ -1,5 +1,5 @@
 {
-  backendStdenv,
+  cudaStdenv,
   cudnn-frontend,
   jq,
   lib,
@@ -13,7 +13,7 @@ writeShellApplication {
     __structuredAttrs = true;
     strictDeps = true;
   };
-  name = "${backendStdenv.cudaNamePrefix}-tests-cudnn-frontend-samples";
+  name = "${cudaStdenv.cudaNamePrefix}-tests-cudnn-frontend-samples";
   runtimeInputs = [
     cudnn-frontend.samples
     jq

@@ -5,6 +5,7 @@
 }:
 let
   inherit (lib.attrsets) attrNames;
+  inherit (lib.cuda.types) majorMinorPatchVersion;
   inherit (lib.options) mkOption;
   inherit (lib.types) nonEmptyListOf;
 in
@@ -17,7 +18,7 @@ in
     description = ''
       List of CUDA major.minor.patch versions available across runfile installers and redist packages
     '';
-    type = nonEmptyListOf lib.cuda.types.majorMinorPatchVersion;
+    type = nonEmptyListOf majorMinorPatchVersion;
   };
   config.data.cudaMajorMinorPatchVersions = attrNames config.redists.cuda.versionedManifests;
 }

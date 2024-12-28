@@ -1,6 +1,6 @@
 { lib, ... }:
 let
-  inherit (lib.cuda.types) attrs gpuInfo;
+  inherit (lib.cuda.types) attrs cudaCapability gpuInfo;
   inherit (lib.options) mkOption;
 in
 {
@@ -12,7 +12,7 @@ in
       Without your work, this would have been much more difficult.
       https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
     '';
-    type = attrs lib.cuda.types.cudaCapability gpuInfo;
+    type = attrs cudaCapability gpuInfo;
   };
   config.data.gpus = {
     "5.0" = {

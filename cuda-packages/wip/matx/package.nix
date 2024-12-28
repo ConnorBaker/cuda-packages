@@ -3,26 +3,26 @@
 # in the case redistributable packages are not available.
 {
   # autoAddDriverRunpath,
-  backendStdenv,
   callPackage,
   cmake,
   cpm-cmake,
   cuda_cudart,
   cuda_nvcc,
   cudaOlder,
-  fmt,
+  cudaStdenv,
   cuquantum,
   cutlass,
   fetchFromGitHub,
   flags,
+  fmt,
   gitUpdater,
   gtest,
   lib,
   libcublas,
-  libcutensor,
-  libcurand,
   libcufft,
+  libcurand,
   libcusolver,
+  libcutensor,
   ninja,
   python3,
   which,
@@ -42,7 +42,7 @@ let
   nvbench = callPackage ./nvbench.nix { };
 
 in
-backendStdenv.mkDerivation (finalAttrs: {
+cudaStdenv.mkDerivation (finalAttrs: {
   pname = "MatX";
   version = "0.9.0-unstable-2024-11-15";
 

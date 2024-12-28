@@ -1,10 +1,10 @@
 {
-  backendStdenv,
   cmake,
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
   cudaAtLeast,
+  cudaStdenv,
   lib,
   libcublas,
 }:
@@ -13,7 +13,7 @@ let
   inherit (lib.lists) optionals;
   inherit (lib.strings) cmakeBool;
 in
-backendStdenv.mkDerivation {
+cudaStdenv.mkDerivation {
   pname = "saxpy";
   version = "unstable-2023-07-11";
 

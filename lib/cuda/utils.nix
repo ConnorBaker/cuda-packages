@@ -18,6 +18,7 @@ let
   inherit (lib.cuda.utils)
     dropDots
     getLibPath
+    mkOptions
     mkRedistUrl
     mkRelativePath
     mkTensorRTUrl
@@ -94,6 +95,23 @@ in
     : The attribute set to map over
   */
   mkOptions = mapAttrs (const mkOption);
+
+  /**
+    Creates an options module from an attribute set of options by mapping `mkOption` over the values of the attribute
+    set.
+
+    # Type
+
+    ```
+    mkOptionsModule :: AttrSet -> AttrSet
+    ```
+
+    # Arguments
+
+    attrs
+    : An attribute set
+  */
+  mkOptionsModule = attrs: { options = mkOptions attrs; };
 
   /**
     Helper function to build a `redistConfig`.
@@ -429,7 +447,7 @@ in
         isRedistArchSbsaExplicitlySupported = elem "linux-sbsa" supportedRedistArchs;
         isRedistArchAarch64ExplicitlySupported = elem "linux-aarch64" supportedRedistArchs;
         isNixHostPlatformSystemAarch64 =
-          finalCudaPackages.backendStdenv.hostPlatform.system == "aarch64-linux";
+          finalCudaPackages.cudaStdenv.hostPlatform.system == "aarch64-linux";
         inherit (finalCudaPackages.flags) isJetsonBuild;
         supportedNixPlatforms = unique (concatMap lib.cuda.utils.getNixPlatforms supportedRedistArchs);
 
@@ -603,26 +621,23 @@ in
     : The NVIDIA redistributable architecture
   */
   getNixPlatforms =
-    redistArch:
-    if redistArch == "linux-sbsa" then
-      [ "aarch64-linux" ]
-    else if redistArch == "linux-aarch64" then
-      [ "aarch64-linux" ]
-    else if redistArch == "linux-x86_64" then
-      [ "x86_64-linux" ]
-    else if redistArch == "linux-ppc64le" then
-      [ "powerpc64le-linux" ]
-    else if redistArch == "windows-x86_64" then
-      [ "x86_64-windows" ]
-    else if redistArch == "source" then
-      [
-        "aarch64-linux"
-        "powerpc64le-linux"
-        "x86_64-linux"
-        "x86_64-windows"
-      ]
-    else
-      [ "unsupported" ];
+    # NOTE: Attribute name lookup is logarithmic, while if-then-else is linear.
+    let
+      attrs = {
+        linux-sbsa = [ "aarch64-linux" ];
+        linux-aarch64 = [ "aarch64-linux" ];
+        linux-x86_64 = [ "x86_64-linux" ];
+        linux-ppc64le = [ "powerpc64le-linux" ];
+        source = [
+          "aarch64-linux"
+          "powerpc64le-linux"
+          "x86_64-linux"
+          "x86_64-windows"
+        ];
+        windows-x86_64 = [ "x86_64-windows" ];
+      };
+    in
+    redistArch: attrs.${redistArch} or [ "unsupported" ];
 
   /**
     Function to map Nix system to NVIDIA redist arch
@@ -668,19 +683,20 @@ in
     : The Nix system
   */
   getRedistArch =
-    isJetsonBuild: nixSystem:
-    if isJetsonBuild then
-      if nixSystem == "aarch64-linux" then "linux-aarch64" else "unsupported"
-    else if nixSystem == "aarch64-linux" then
-      "linux-sbsa"
-    else if nixSystem == "x86_64-linux" then
-      "linux-x86_64"
-    else if nixSystem == "powerpc64le-linux" then
-      "linux-ppc64le"
-    else if nixSystem == "x86_64-windows" then
-      "windows-x86_64"
-    else
-      "unsupported";
+    let
+      attrs = {
+        x86_64-linux = "linux-x86_64";
+        powerpc64le-linux = "linux-ppc64le";
+        x86_64-windows = "windows-x86_64";
+      };
+    in
+    isJetsonBuild:
+    let
+      attrs' = attrs // {
+        aarch64-linux = if isJetsonBuild then "linux-aarch64" else "linux-sbsa";
+      };
+    in
+    nixSystem: attrs'.${nixSystem} or "unsupported";
 
   /**
     Returns whether a GPU should be built by default for a particular CUDA version.
@@ -781,19 +797,17 @@ in
     attrs
     : The attributes to check for null
   */
-  mkMissingPackagesBadPlatformsConditions =
-    attrs:
-    pipe attrs [
-      # Take the attributes that are null.
-      (filterAttrs (_: value: value == null))
-      # Map them to a set of badPlatformsConditions.
-      (mapAttrs' (
-        name: value: {
-          name = "Required package ${name} is missing";
-          value = true;
-        }
-      ))
-    ];
+  mkMissingPackagesBadPlatformsConditions = flip pipe [
+    # Take the attributes that are null.
+    (filterAttrs (_: value: value == null))
+    # Map them to a set of badPlatformsConditions.
+    (mapAttrs' (
+      name: value: {
+        name = "Required package ${name} is missing";
+        value = true;
+      }
+    ))
+  ];
 
   # TODO: DOCS
   mkCmakeCudaArchitecturesString = concatMapStringsSep ";" dropDots;
