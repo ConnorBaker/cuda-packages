@@ -128,8 +128,12 @@ in
     prevAttrs.postInstall or ""
     + ''
       for kind in host target; do
-        pushd "$out/$kind"
         nixLog "removing unsupported ''${kind}s for host redist arch ${hostRedistArch}"
+        if [[ ! -d "$out/$kind" ]]; then
+          nixLog "directory $out/$kind does not exist, skipping"
+          continue
+        fi
+        pushd "$out/$kind"
         for dir in *; do
           case "${hostRedistArch}" in
           linux-aarch64|linux-sbsa)
