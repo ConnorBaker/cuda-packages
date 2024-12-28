@@ -9,7 +9,7 @@ in
 fetchFromGitHub {
   owner = "google";
   repo = "flatbuffers";
-  rev = "refs/tags/v23.5.26";
+  tag = "v23.5.26";
   hash = "sha256-e+dNPNbCHYDXUS/W+hMqf/37fhVgEGzId6rhP3cToTE=";
   meta.broken =
     let

@@ -23,7 +23,7 @@ cudaStdenv.mkDerivation (finalAttrs: {
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "gdrcopy";
-    rev = "refs/tags/v${finalAttrs.version}";
+    tag = "v${finalAttrs.version}";
     hash = "sha256-digpn+f08GKYF94hCOl4k9hbvEqHbCVYC5YJdz8SwSU=";
   };
 

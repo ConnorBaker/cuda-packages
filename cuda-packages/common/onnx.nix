@@ -42,7 +42,7 @@ let
     src = fetchFromGitHub {
       owner = "onnx";
       repo = "onnx";
-      rev = "refs/tags/v${finalAttrs.version}";
+      tag = "v${finalAttrs.version}";
       hash = "sha256-9oORW0YlQ6SphqfbjcYb0dTlHc+1gzy9quH/Lj6By8Q=";
     };
 

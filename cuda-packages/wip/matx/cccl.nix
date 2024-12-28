@@ -9,7 +9,7 @@ in
 fetchFromGitHub {
   owner = "NVIDIA";
   repo = "cccl";
-  rev = "refs/tags/v2.7.0-rc2";
+  tag = "v2.7.0-rc2";
   hash = "sha256-BgVE9DpGG+vIc3SfAv826z3dZiKxl2uGqhj47hp3SVM=";
   meta.broken =
     let

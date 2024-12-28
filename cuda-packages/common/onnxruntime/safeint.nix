@@ -9,7 +9,7 @@ in
 fetchFromGitHub {
   owner = "dcleblanc";
   repo = "safeint";
-  rev = "refs/tags/3.0.28";
+  tag = "3.0.28";
   hash = "sha256-pjwjrqq6dfiVsXIhbBtbolhiysiFlFTnx5XcX77f+C0=";
   meta.broken =
     let

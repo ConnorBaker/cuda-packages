@@ -5,6 +5,6 @@
 fetchFromGitHub {
   owner = "opencv";
   repo = "opencv_extra";
-  rev = "refs/tags/${opencv4.version}";
+  tag = opencv4.version;
   hash = "";
 }

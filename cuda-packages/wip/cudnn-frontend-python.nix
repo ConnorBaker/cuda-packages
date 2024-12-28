@@ -41,7 +41,7 @@ let
   dlpack = fetchFromGitHub {
     owner = "dmlc";
     repo = "dlpack";
-    rev = "refs/tags/v0.8";
+    tag = "v0.8";
     hash = "sha256-IcfCoz3PfDdRetikc2MZM1sJFOyRgKonWMk21HPbrso=";
   };
 
@@ -57,7 +57,7 @@ let
     src = fetchFromGitHub {
       owner = "NVIDIA";
       repo = "cudnn-frontend";
-      rev = "refs/tags/v${finalAttrs.version}";
+      tag = "v${finalAttrs.version}";
       hash = "sha256-hKqIWGxVco1qkKxDZjc+pUisIcYJwFjZobJZg1WgDvY=";
     };
 

@@ -35,7 +35,7 @@ let
     src = fetchFromGitHub {
       owner = "onnx";
       repo = "onnx-tensorrt";
-      rev = "refs/tags/release/${finalAttrs.version}-GA";
+      tag = "release/${finalAttrs.version}-GA";
       hash = "sha256-1Y5jELqVkRkjeiEbF7GrPqAGZMu7U8JgmM3ZQbsG304=";
     };
 
