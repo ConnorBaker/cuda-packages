@@ -39,7 +39,10 @@ finalAttrs: prevAttrs: {
       substituteInPlace cudss-config.cmake \
         --replace-fail \
          'get_filename_component(PACKAGE_PREFIX_DIR "''${CMAKE_CURRENT_LIST_DIR}/../../../../" ABSOLUTE)' \
-         'set(_cudss_search_prefix "${placeholder "dev"}/lib;${placeholder "lib"}/lib;${placeholder "include"}/include")'
+         'set(_cudss_search_prefix "${placeholder "dev"}/lib;${placeholder "lib"}/lib;${placeholder "include"}/include")' \
+        --replace-fail \
+          'file(REAL_PATH "../../" _cudss_search_prefix BASE_DIRECTORY "''${_cudss_cmake_config_realpath}")' \
+          ""
     ''
     # NOTE: Only the pre-0.4 release includes the line about the static library.
     + optionalString (versionOlder finalAttrs.version "0.4") ''
