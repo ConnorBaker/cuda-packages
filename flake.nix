@@ -23,8 +23,8 @@
     let
       inherit (inputs.flake-parts.lib) mkFlake;
       lib = import ./lib { inherit (inputs.nixpkgs) lib; };
-      inherit (lib.attrsets) optionalAttrs recurseIntoAttrs;
-      inherit (lib.upstreamable.attrsets) mkHydraJobs;
+      inherit (lib.attrsets) optionalAttrs;
+      inherit (lib.upstreamable.attrsets) mkHydraJobsRecurseByDefault;
     in
     mkFlake { inherit inputs; } {
       systems = [
@@ -79,37 +79,28 @@
             cuda-redist = pkgs.python311Packages.callPackage ./scripts/cuda-redist { };
           };
 
-          hydraJobs = mkHydraJobs (recurseIntoAttrs {
+          hydraJobs = mkHydraJobsRecurseByDefault {
             pkgsCuda =
-              recurseIntoAttrs {
+              {
                 # 8.9 supported by all versions of CUDA 12
-                sm_89 = recurseIntoAttrs {
-                  cudaPackages_12_2_2 = pkgs.pkgsCuda.sm_89.cudaPackages_12_2_2 // {
-                    tests = recurseIntoAttrs pkgs.pkgsCuda.sm_89.cudaPackages_12_2_2.tests;
-                  };
-                  cudaPackages_12_6_3 = pkgs.pkgsCuda.sm_89.cudaPackages_12_6_3 // {
-                    tests = recurseIntoAttrs pkgs.pkgsCuda.sm_89.cudaPackages_12_6_3.tests;
-                  };
+                sm_89 = {
+                  inherit (pkgs.pkgsCuda.sm_89) cudaPackages_12_2_2 cudaPackages_12_6_3;
                 };
               }
               // optionalAttrs (pkgs.stdenv.hostPlatform.system == "aarch64-linux") {
                 # Xavier (7.2) is only supported up to CUDA 12.2.2 by cuda-compat on JetPack 5.
                 # Unfortunately, NVIDIA isn't releasing support for Xavier on JetPack 6, so we're stuck.
-                sm_72 = recurseIntoAttrs {
-                  cudaPackages_12_2_2 = pkgs.pkgsCuda.sm_72.cudaPackages_12_2_2 // {
-                    tests = recurseIntoAttrs pkgs.pkgsCuda.sm_72.cudaPackages_12_2_2.tests;
-                  };
+                sm_72 = {
+                  inherit (pkgs.pkgsCuda.sm_72) cudaPackages_12_2_2;
                 };
                 # Orin (8.7) is only supported up to CUDA 12.2.2 by cuda-compat on JetPack 5.
                 # Orin has a JetPack 6 release which allows it to run later versions of CUDA, but it has not yet been
                 # packaged by https://github.com/anduril/jetpack-nixos.
-                sm_87 = recurseIntoAttrs {
-                  cudaPackages_12_2_2 = pkgs.pkgsCuda.sm_87.cudaPackages_12_2_2 // {
-                    tests = recurseIntoAttrs pkgs.pkgsCuda.sm_87.cudaPackages_12_2_2.tests;
-                  };
+                sm_87 = {
+                  inherit (pkgs.pkgsCuda.sm_87) cudaPackages_12_2_2;
                 };
               };
-          });
+          };
 
           pre-commit.settings.hooks =
             let
