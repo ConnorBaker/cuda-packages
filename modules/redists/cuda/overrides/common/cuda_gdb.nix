@@ -36,10 +36,14 @@ prevAttrs: {
     # Remove binaries requiring Python3 versions we do not have
     + optionalString (cudaAtLeast "12.5") ''
       pushd "''${!outputBin}/bin"
-      nixLog "removing cuda-gdb-python*-tui binaries for Python 3 versions we do not have"
-      mv "cuda-gdb-python${python3MajorMinorVersion}-tui" ../
-      rm -f cuda-gdb-python*-tui
-      mv "../cuda-gdb-python${python3MajorMinorVersion}-tui" . 
+      nixLog "removing cuda-gdb-python*-tui binaries for Python 3 versions other than ${python3MajorMinorVersion}"
+      for pygdb in cuda-gdb-python*-tui; do
+        if [[ "$pygdb" == "cuda-gdb-python${python3MajorMinorVersion}-tui" ]]; then
+          continue
+        fi
+        nixLog "removing $pygdb"
+        rm -rf "$pygdb"
+      done
       popd
     '';
 
