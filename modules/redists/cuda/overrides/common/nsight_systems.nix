@@ -138,9 +138,9 @@ in
             qtwayland
           ]
         }; do
-          if [[ -e "$qtpkgdir/lib/qt-6/plugins/$qtdir/$filename" ]]; then
-            nixLog "linking $qtpkgdir/lib/qt-6/plugins/$qtdir/$filename to $qtlib"
-            ln -snf "$qtpkgdir/lib/qt-6/plugins/$qtdir/$filename" "$qtlib"
+          if [[ -e "$qtpkgdir/${qtbase.qtPluginPrefix}/$qtdir/$filename" ]]; then
+            nixLog "linking $qtpkgdir/${qtbase.qtPluginPrefix}/$qtdir/$filename to $qtlib"
+            ln -snf "$qtpkgdir/${qtbase.qtPluginPrefix}/$qtdir/$filename" "$qtlib"
           fi
         done
       done
