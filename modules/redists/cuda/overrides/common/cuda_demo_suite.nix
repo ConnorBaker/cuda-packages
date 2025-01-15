@@ -1,8 +1,9 @@
 {
+  freeglut ? null,
   libcufft,
   libcurand,
   libGLU,
-  libglut,
+  libglut ? null,
   libglvnd,
   mesa,
 }:
@@ -11,7 +12,9 @@ prevAttrs: {
     libcufft
     libcurand
     libGLU
-    libglut
+    # TODO(@connorbaker): After we no longer support Nixpkgs pre https://github.com/NixOS/nixpkgs/pull/321800/files,
+    # we can move entirely to libglut.
+    (if libglut != null then libglut else freeglut)
     libglvnd
     mesa
   ];

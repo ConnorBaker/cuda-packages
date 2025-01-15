@@ -4,6 +4,7 @@ let
     match
     pathExists
     readDir
+    removeAttrs
     substring
     ;
   inherit (lib.attrsets) optionalAttrs;
@@ -12,6 +13,10 @@ in
 {
   # TODO: Document.
   addNameToFetchFromGitLikeArgs =
+    fetcher:
+    let
+      fetcherSupportsTagArg = fetcher.__functionArgs ? tag;
+    in
     args:
     if args ? name then
       # Use `name` when provided.
@@ -19,18 +24,32 @@ in
     else
       let
         inherit (args) owner repo rev;
+        hasTagArg = args ? tag;
         revStrippedRefsTags = removePrefix "refs/tags/" rev;
         tagInRev = revStrippedRefsTags != rev;
         isHash = match "^[0-9a-f]{40}$" rev == [ ];
         shortHash = substring 0 8 rev;
+
+        # If the fetcher doesn't support a `tag` argument, remove it and populate rev.
+        supportOldTaglessArgs =
+          if (!fetcherSupportsTagArg && hasTagArg) then
+            removeAttrs args [ "tag" ]
+            // optionalAttrs (!fetcherSupportsTagArg && hasTagArg) {
+              rev =
+                # Exactly one of tag or rev must be supplied.
+                assert args.rev or null == null;
+                "refs/tags/${args.tag}";
+            }
+          else
+            args;
       in
-      args
+      supportOldTaglessArgs
       // {
         name = concatStringsSep "-" [
           owner
           repo
           (
-            # If tag is precedent that takes precedence.
+            # If tag is present that takes precedence.
             if args.tag or null != null then
               args.tag
             # If there's no tag, then rev *must* exist.

@@ -46,8 +46,10 @@ let
 
   inherit (cudaConfig) hostRedistArch;
 
-  fetchFromGitHubAutoName = args: final.fetchFromGitHub (addNameToFetchFromGitLikeArgs args);
-  fetchFromGitLabAutoName = args: final.fetchFromGitLab (addNameToFetchFromGitLikeArgs args);
+  fetchFromGitHubAutoName =
+    args: final.fetchFromGitHub (addNameToFetchFromGitLikeArgs final.fetchFromGitHub args);
+  fetchFromGitLabAutoName =
+    args: final.fetchFromGitLab (addNameToFetchFromGitLikeArgs final.fetchFromGitLab args);
 
   packageSetBuilder =
     cudaMajorMinorPatchVersion:

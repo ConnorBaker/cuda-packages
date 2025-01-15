@@ -18,10 +18,8 @@ let
   inherit (lib.cuda.utils) mkOptionsModule;
   inherit (lib.attrsets) attrNames;
   inherit (lib.lists) all;
-  inherit (lib.modules) importApply;
   inherit (lib.types)
     addCheck
-    attrsWith
     enum
     functionTo
     lazyAttrsOf
@@ -30,6 +28,19 @@ let
     strMatching
     submodule
     ;
+
+  # TODO(@connorbaker): Once we no longer need to support older versions of Nixpkgs, we can use lib.importApply.
+  importApply =
+    if lib.modules ? importApply then
+      let
+        inherit (lib.modules) importApply;
+      in
+      importApply
+    else
+      let
+        inherit (lib.modules) setDefaultModuleLocation;
+      in
+      modulePath: staticArg: setDefaultModuleLocation modulePath (import modulePath staticArg);
 
   mkOptionsModuleIntoOptionType = path: submodule (importApply path { inherit lib; });
 in
@@ -63,12 +74,22 @@ in
     : The option type of the values of the attribute set
   */
   attrs =
-    nameType: valueType:
-    addCheck (attrsWith {
-      elemType = valueType;
-      lazy = false;
-      placeholder = nameType.name;
-    }) (attrs: all nameType.check (attrNames attrs));
+    # TODO(@connorbaker): Once we no longer need to support older versions of Nixpkgs, we can use lib.attrsWith.
+    if lib.types ? attrsWith then
+      let
+        inherit (lib.types) attrsWith;
+      in
+      nameType: valueType:
+      addCheck (attrsWith {
+        elemType = valueType;
+        lazy = false;
+        placeholder = nameType.name;
+      }) (attrs: all nameType.check (attrNames attrs))
+    else
+      let
+        inherit (lib.types) attrsOf;
+      in
+      nameType: valueType: addCheck (attrsOf valueType) (attrs: all nameType.check (attrNames attrs));
 
   /**
     The option type of a CUDA variant.

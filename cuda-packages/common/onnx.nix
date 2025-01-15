@@ -22,12 +22,13 @@ let
     numpy
     parameterized
     pillow
-    protobuf5
     pybind11
     pytestCheckHook
     setuptools
     tabulate
     ;
+
+  pythonProtobuf = python3.pkgs.protobuf5 or python3.pkgs.protobuf;
 
   finalAttrs = {
     # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
@@ -51,7 +52,7 @@ let
     # NOTE: The project can not take advantage of ninja (as of 1.17.0).
     build-system = [
       cmake
-      protobuf5
+      pythonProtobuf
       setuptools
     ];
 
@@ -75,7 +76,7 @@ let
     dependencies = [
       abseil-cpp
       numpy
-      protobuf5
+      pythonProtobuf
     ];
 
     # Declared in setup.py

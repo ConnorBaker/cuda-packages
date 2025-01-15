@@ -10,7 +10,7 @@
   lib,
   libmathdx,
   libnvjitlink,
-  llvmPackages_19,
+  llvmPackages,
   ninja,
   python3,
 }:
@@ -69,7 +69,7 @@ let
       autoAddDriverRunpath
       cuda_nvcc
       cmake
-      llvmPackages_19.llvm.monorepoSrc
+      llvmPackages.llvm.monorepoSrc
       ninja
     ];
 
@@ -118,7 +118,7 @@ let
         --cuda_path "${getBin cuda_nvcc}" \
         --libmathdx_path "${libmathdx}" \
         --build_llvm \
-        --llvm_source_path "${llvmPackages_19.llvm.monorepoSrc}"
+        --llvm_source_path "${llvmPackages.llvm.monorepoSrc}"
     '';
 
     dependencies = [
