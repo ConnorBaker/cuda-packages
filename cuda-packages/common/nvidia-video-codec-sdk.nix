@@ -87,6 +87,7 @@ cudaStdenv.mkDerivation (finalAttrs: {
       "aarch64-linux"
       "x86_64-linux"
     ];
+    hydraPlatforms = [ ];
     maintainers = (with maintainers; [ connorbaker ]) ++ teams.cuda.members;
   };
 })
