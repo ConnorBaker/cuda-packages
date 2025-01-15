@@ -28,7 +28,7 @@
   enableJPEG ? true,
   enableJPEG2000 ? true,
   enableLto ? false, # Broken currently
-  enableNvidiaVideoCodecSdk ? true, # NOTE: requires manual download
+  enableNvidiaVideoCodecSdk ? false, # NOTE: requires manual download
   enableOvis ? false,
   enablePNG ? true,
   enablePython ? true,
@@ -349,10 +349,12 @@ cudaStdenv.mkDerivation (finalAttrs: {
       libcufft # cufft.h
       libnpp # npp.h
       nvidia-optical-flow-sdk
-      nvidia-video-codec-sdk
       pcre2
       protobuf_25
       zlib
+    ]
+    ++ optionals enableNvidiaVideoCodecSdk [
+      nvidia-video-codec-sdk
     ]
     ++ optionals enableCudnn [
       cudnn # cudnn.h
