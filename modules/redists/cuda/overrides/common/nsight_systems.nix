@@ -2,7 +2,6 @@
   boost178,
   cuda_cudart,
   cuda_nvml_dev,
-  cudaStdenv,
   e2fsprogs,
   fetchpatch,
   fetchzip,

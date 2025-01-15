@@ -1,5 +1,4 @@
 {
-  lib,
   libcublas,
   mpi,
   nccl,
@@ -7,7 +6,7 @@
 let
   inherit (builtins) placeholder;
 in
-finalAttrs: prevAttrs: {
+prevAttrs: {
   buildInputs = prevAttrs.buildInputs or [ ] ++ [
     libcublas
     mpi
