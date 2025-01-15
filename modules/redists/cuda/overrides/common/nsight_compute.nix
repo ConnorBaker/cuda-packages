@@ -1,6 +1,7 @@
 {
   cuda_cudart,
   cudaConfig,
+  cudaPackages,
   cudaStdenv,
   dbus,
   e2fsprogs,
@@ -113,6 +114,7 @@ finalAttrs: prevAttrs: {
     prevAttrs.buildInputs
     ++ [
       (getOutput "stubs" cuda_cudart)
+      (ucx.override { inherit cudaPackages; })
       dbus.lib
       e2fsprogs
       fontconfig
@@ -122,7 +124,6 @@ finalAttrs: prevAttrs: {
       nspr
       nss
       rdma-core
-      ucx
       xcb-util-cursor
       # xorg
       libxcb

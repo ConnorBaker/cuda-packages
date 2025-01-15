@@ -2,6 +2,7 @@
   boost178,
   cuda_cudart,
   cuda_nvml_dev,
+  cudaPackages,
   e2fsprogs,
   fetchpatch,
   fetchzip,
@@ -166,6 +167,7 @@ in
   buildInputs =
     prevAttrs.buildInputs
     ++ [
+      (ucx.override { inherit cudaPackages; })
       boost178
       cuda_cudart
       e2fsprogs
@@ -189,7 +191,6 @@ in
       qtwayland
       qtwebengine
       rdma-core
-      ucx
       wayland
     ]
     ++ optionals (versionAtLeast version "2024") [
