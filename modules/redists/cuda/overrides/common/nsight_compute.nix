@@ -1,23 +1,54 @@
 {
   cuda_cudart,
   cudaConfig,
+  cudaStdenv,
+  dbus,
   e2fsprogs,
   fetchpatch,
   fetchzip,
+  fontconfig,
   gst_all_1,
+  kdePackages,
   lib,
+  libssh,
   libtiff,
+  libxkbcommon,
+  nspr,
+  nss,
   qt6Packages,
   rdma-core,
   ucx,
+  xcb-util-cursor,
+  xorg,
 }:
 let
   inherit (cudaConfig) hostRedistArch;
-  inherit (lib.attrsets) getBin getOutput;
+  inherit (lib.attrsets) getOutput optionalAttrs;
   inherit (lib.lists) optionals;
-  inherit (lib.strings) versionAtLeast;
-  inherit (gst_all_1) gst-plugins-base;
-  inherit (qt6Packages) qtwayland qtwebview wrapQtAppsHook;
+  inherit (lib.strings) optionalString;
+  inherit (gst_all_1)
+    gst-plugins-base
+    gstreamer
+    ;
+  inherit (qt6Packages)
+    qtpositioning
+    qtwebengine
+    ;
+  inherit (xorg)
+    libxcb
+    libXcomposite
+    libXcursor
+    libXdamage
+    libxkbfile
+    libXrandr
+    libxshmfence
+    libXtst
+    xcbutilimage
+    xcbutilkeysyms
+    xcbutilrenderutil
+    xcbutilwm
+    ;
+
   # Most of this is taken directly from
   # https://github.com/NixOS/nixpkgs/blob/ea4c80b39be4c09702b0cb3b42eab59e2ba4f24b/pkgs/development/libraries/libtiff/default.nix
   libtiff_4_5 = libtiff.overrideAttrs (
@@ -101,39 +132,40 @@ let
     }
   );
 in
-finalAttrs: prevAttrs:
-let
-  inherit (finalAttrs) version;
-in
-{
+finalAttrs: prevAttrs: {
   allowFHSReferences = true;
-  nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ wrapQtAppsHook ];
-  buildInputs =
-    prevAttrs.buildInputs
-    ++ [ qtwebview ]
-    ++ optionals (versionAtLeast version "2022.4") [
-      (getBin qtwayland)
-      e2fsprogs
-      libtiff_4_5
-      rdma-core
-      ucx
-    ]
-    ++ optionals (versionAtLeast version "2023.1") [
-      (getOutput "stubs" cuda_cudart)
-      gst-plugins-base
-    ];
-  # We don't have the means to ensure autoPatchelf finds the correct library from the correct package set
-  # when trying to patch cross-platform libs, so we ensure the only hosts/targets available have the same architecture.
-  postInstall =
-    prevAttrs.postInstall or ""
+
+  outputs = [
+    "out"
+    "doc"
+  ];
+
+  # NOTE: While you can try to replace the vendored libs, I (@connorbaker) would strongly recommend against it.
+  # Nixpkgs provides newer to much newer versions of the libraries NVIDIA builds against.
+  # You'll get hard errors to debug about GLIBC and Qt and other nightmarish things.
+  # My advice? Provide it with Xorg and get out of its way.
+  # If you do try to go that route, note that (at the time of this writing) Qt setup hooks don't play well with
+  # structuredAttrs or multiple outputs.
+
+  postUnpack =
+    prevAttrs.postUnpack or ""
+    + optionalString (finalAttrs.version == "2023.2.2.3") ''
+      nixLog "Moving subdirectories of nsight-compute to $sourceRoot"
+      mv "''${sourceRoot:?}/nsight-compute/2023.2.2/"* "''${sourceRoot:?}/"
+      nixLog "Removing directory nsight-compute"
+      rmdir "''${sourceRoot:?}/nsight-compute/2023.2.2" "''${sourceRoot:?}/nsight-compute"
+    '';
+
+  postPatch =
+    prevAttrs.postPatch or ""
     + ''
       for kind in host target; do
         nixLog "removing unsupported ''${kind}s for host redist arch ${hostRedistArch}"
-        if [[ ! -d "$out/$kind" ]]; then
-          nixLog "directory $out/$kind does not exist, skipping"
+        if [[ ! -d "$kind" ]]; then
+          nixLog "directory $kind does not exist, skipping"
           continue
         fi
-        pushd "$out/$kind"
+        pushd "$kind"
         for dir in *; do
           case "${hostRedistArch}" in
           linux-aarch64|linux-sbsa)
@@ -153,5 +185,75 @@ in
         done
         popd
       done
+
+      patchShebangs .
+
+      nixLog "removing vendored Mesa components"
+      rm -rf host/*/Mesa
     '';
+
+  dontWrapQtApps = true;
+
+  buildInputs =
+    prevAttrs.buildInputs
+    ++ [
+      (getOutput "stubs" cuda_cudart)
+      dbus.lib
+      e2fsprogs
+      fontconfig
+      kdePackages.qtwayland
+      libssh
+      libxkbcommon
+      nspr
+      nss
+      rdma-core
+      ucx
+      xcb-util-cursor
+      # xorg
+      libxcb
+      libXcomposite
+      libXcursor
+      libXdamage
+      libxkbfile
+      libXrandr
+      libxshmfence
+      libXtst
+      xcbutilimage
+      xcbutilkeysyms
+      xcbutilrenderutil
+      xcbutilwm
+    ]
+    ++ optionals cudaStdenv.hostPlatform.isAarch64 [
+      qtpositioning
+      qtwebengine
+    ]
+    ++ optionals (finalAttrs.version == "2023.2.2.3") [
+      gst-plugins-base
+      gstreamer
+      libtiff_4_5 # libtiff.so.5
+    ];
+
+  postInstall =
+    prevAttrs.postInstall or ""
+    + ''
+      moveToOutput docs "''${doc:?}"
+      if [[ -e "$out/ncu" && -e "$out/ncu-ui" ]]; then
+        nixLog "symlinking executables to bin dir"
+        mkdir -p "$out/bin"
+        # TODO(@connorbaker): This should fail if there is not exactly one host/target.
+        ln -snf "$out/target/"linux-*"/ncu" "$out/bin/ncu"
+        ln -snf "$out/host/"linux-*"/ncu-ui" "$out/bin/ncu-ui"
+        rm "$out/ncu" "$out/ncu-ui"
+      fi
+    '';
+
+  passthru =
+    prevAttrs.passthru or { }
+    // optionalAttrs (finalAttrs.version == "2023.2.2.3") {
+      inherit libtiff_4_5;
+    };
+
+  meta = prevAttrs.meta or { } // {
+    mainProgram = "ncu";
+  };
 }
