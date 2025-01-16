@@ -22,13 +22,13 @@ let
 in
 cudaStdenv.mkDerivation (finalAttrs: {
   pname = "nccl-tests";
-  version = "2.13.11";
+  version = "2.13.12";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "nccl-tests";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-KJtnCTArnE8wZOCp2sJ1PLmuX0PD46Ku2ynCXh2HU6w=";
+    hash = "sha256-4aHXIk5ydZsSARQw1T6Nx49FpQjwNEvVD6yfHoEGt8g=";
   };
 
   nativeBuildInputs = [
