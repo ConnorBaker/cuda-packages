@@ -278,8 +278,7 @@ let
             --enable_pybind \
             --build_wheel \
             --enable_lto \
-            --enable_nccl \
-            --nccl_home "${getLib nccl}" \
+            ${optionalString nccl.meta.available ''--enable_nccl --nccl_home "${getLib nccl}"''} \
             --use_cuda \
             --cuda_home "${getLib cuda_cudart}" \
             --cudnn_home "${getLib cudnn}" \
