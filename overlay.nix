@@ -117,6 +117,10 @@ let
           # Redistributable packages
           ++ map (
             redistName:
+            let
+              manifestVersion = cudaPackagesConfig.redists.${redistName};
+              redistConfig = cudaConfig.redists.${redistName};
+            in
             buildRedistPackages {
               inherit
                 desiredCudaVariant
@@ -124,8 +128,8 @@ let
                 hostRedistArch
                 redistName
                 ;
-              manifestVersion = cudaPackagesConfig.redists.${redistName};
-              redistConfig = cudaConfig.redists.${redistName};
+              callPackageOverriders = redistConfig.versionedOverrides.${manifestVersion} or { };
+              manifest = redistConfig.versionedManifests.${manifestVersion};
             }
           ) (attrNames cudaPackagesConfig.redists)
           # CUDA version-specific packages

@@ -18,6 +18,9 @@ let
   inherit (lib.cuda.utils)
     dropDots
     getLibPath
+    getNixPlatforms
+    getSupportedRedistArchs
+    mkAarch64BadPlatformsConditions
     mkOptions
     mkRedistUrl
     mkRelativePath
@@ -371,16 +374,20 @@ in
     # Type
 
     ```
-    buildRedistPackages :: { desiredCudaVariant :: CudaVariant
+    buildRedistPackages :: { callPackageOverriders :: Attrs
+                           , desiredCudaVariant :: CudaVariant
                            , finalCudaPackages :: Attrs
                            , hostRedistArch :: RedistArch
-                           , manifest :: Version
+                           , manifest :: Manifest
                            , redistName :: RedistName
                            }
                         -> Attrs
     ```
 
     # Arguments
+
+    callPackageOverriders
+    : An attribute set of paths which can be `callPackage`-d and supplied to a package's `overrideAttrs` function.
 
     desiredCudaVariant
     : The desired CUDA variant
@@ -391,24 +398,31 @@ in
     hostRedistArch
     : The redistributable architecture of the host
 
-    manifestVersion
-    : The manifest version to build packages from
+    manifest
+    : The manifest of a redistributable package set
 
     redistName
     : The name of the redistributable package set
   */
   buildRedistPackages =
     {
+      callPackageOverriders,
       desiredCudaVariant,
       finalCudaPackages,
       hostRedistArch,
-      manifestVersion,
-      redistConfig,
+      manifest,
       redistName,
     }:
     let
-      versionedManifest = redistConfig.versionedManifests.${manifestVersion};
-      callPackageOverriders = redistConfig.versionedOverrides.${manifestVersion} or { };
+      inherit (finalCudaPackages)
+        callPackage
+        cudaMajorMinorPatchVersion
+        cudaStdenv
+        redist-builder
+        ;
+      inherit (finalCudaPackages.flags) isJetsonBuild;
+      inherit (finalCudaPackages.pkgs) fetchzip;
+      isNixHostPlatformSystemAarch64 = cudaStdenv.hostPlatform.system == "aarch64-linux";
     in
     foldlAttrs (
       acc:
@@ -416,22 +430,12 @@ in
       packageName:
       # A release, which is a collection of the package for different architectures and CUDA versions, along with
       # release information.
+      # NOTE: `packages` and `releaseInfo` correspond to types of the same name in lib.cuda.types.
       { packages, releaseInfo }:
       let
         # Names of redistributable architectures for the package which provide a release for the current CUDA version.
-        supportedRedistArchs = filter (
-          redistArch:
-          let
-            packageVariants = packages.${redistArch};
-          in
-          hasAttr "None" packageVariants || hasAttr desiredCudaVariant packageVariants
-        ) (attrNames packages);
-        isRedistArchSbsaExplicitlySupported = elem "linux-sbsa" supportedRedistArchs;
-        isRedistArchAarch64ExplicitlySupported = elem "linux-aarch64" supportedRedistArchs;
-        isNixHostPlatformSystemAarch64 =
-          finalCudaPackages.cudaStdenv.hostPlatform.system == "aarch64-linux";
-        inherit (finalCudaPackages.flags) isJetsonBuild;
-        supportedNixPlatforms = unique (concatMap lib.cuda.utils.getNixPlatforms supportedRedistArchs);
+        supportedRedistArchs = getSupportedRedistArchs packages desiredCudaVariant;
+        supportedNixPlatforms = unique (concatMap getNixPlatforms supportedRedistArchs);
 
         # NOTE: We must check for compatibility with the redistributable architecture, not the Nix platform,
         #       because the redistributable architecture is able to disambiguate between aarch64-linux with and
@@ -454,9 +458,10 @@ in
         # Choose the version without a CUDA variant by default, if it exists.
         cudaVariant = if hasAttr "None" packageVariants then "None" else desiredCudaVariant;
         packageInfo = packageVariants.${cudaVariant};
-        libPath = getLibPath finalCudaPackages.cudaMajorMinorPatchVersion packageInfo.features.cudaVersionsInLib;
+        libPath = getLibPath cudaMajorMinorPatchVersion packageInfo.features.cudaVersionsInLib;
+
         # The source is given by the tarball, which we unpack and use as a FOD.
-        src = finalCudaPackages.pkgs.fetchzip {
+        src = fetchzip {
           url = mkRedistUrl redistName (mkRelativePath {
             inherit
               cudaVariant
@@ -485,22 +490,22 @@ in
         package = pipe redistBuilderArgs (
           [
             # Build the package
-            finalCudaPackages.redist-builder
+            redist-builder
             # Update meta with the list of supported platforms and fix the license URL
             (
               pkg:
               pkg.overrideAttrs (prevAttrs: {
+                # When `src` is `null`, `redist-builder` will mark the package as unavailable on the platform.
                 src = if nixPlatformIsSupported then prevAttrs.src else null;
                 outputs = if nixPlatformIsSupported then prevAttrs.outputs else [ "out" ];
-                passthru = recursiveUpdate (prevAttrs.passthru or { }) {
-                  badPlatformsConditions = optionalAttrs isNixHostPlatformSystemAarch64 {
-                    "aarch64-linux support is limited to linux-sbsa (server ARM devices) which is not the current target" =
-                      isRedistArchSbsaExplicitlySupported && !isRedistArchAarch64ExplicitlySupported && isJetsonBuild;
-                    "aarch64-linux support is limited to linux-aarch64 (Jetson devices) which is not the current target" =
-                      !isRedistArchSbsaExplicitlySupported && isRedistArchAarch64ExplicitlySupported && !isJetsonBuild;
-                  };
-                };
-                meta = prevAttrs.meta // {
+                passthru =
+                  if !isNixHostPlatformSystemAarch64 then
+                    prevAttrs.passthru or { }
+                  else
+                    recursiveUpdate (prevAttrs.passthru or { }) {
+                      badPlatformsConditions = mkAarch64BadPlatformsConditions isJetsonBuild supportedRedistArchs;
+                    };
+                meta = recursiveUpdate (prevAttrs.meta or { }) {
                   platforms = supportedNixPlatforms;
                   license = nvidiaCudaRedist // {
                     url =
@@ -516,7 +521,7 @@ in
           ]
           # Apply optional fixups
           ++ optionals (maybeCallPackageOverrider != null) [
-            (pkg: pkg.overrideAttrs (finalCudaPackages.callPackage maybeCallPackageOverrider { }))
+            (pkg: pkg.overrideAttrs (callPackage maybeCallPackageOverrider { }))
           ]
         );
       in
@@ -524,7 +529,7 @@ in
       // optionalAttrs (supportedRedistArchs != [ ]) {
         ${packageName} = package;
       }
-    ) { } versionedManifest;
+    ) { } manifest;
 
   /**
     Returns the path to the CUDA library directory for a given version or null if no such version exists.
@@ -677,6 +682,19 @@ in
     nixSystem: attrs'.${nixSystem} or "unsupported";
 
   /**
+    TODO:
+  */
+  getSupportedRedistArchs =
+    packages: desiredCudaVariant:
+    filter (
+      redistArch:
+      let
+        packageVariants = packages.${redistArch};
+      in
+      hasAttr "None" packageVariants || hasAttr desiredCudaVariant packageVariants
+    ) (attrNames packages);
+
+  /**
     Returns whether a GPU should be built by default for a particular CUDA version.
 
     TODO:
@@ -706,6 +724,22 @@ in
         || (versionAtMost cudaMajorMinorVersion maxCudaMajorMinorVersion);
     in
     lowerBoundSatisfied && upperBoundSatisfied;
+
+  /**
+    TODO:
+  */
+  mkAarch64BadPlatformsConditions =
+    isJetsonBuild: supportedRedistArchs:
+    let
+      isRedistArchSbsaExplicitlySupported = elem "linux-sbsa" supportedRedistArchs;
+      isRedistArchAarch64ExplicitlySupported = elem "linux-aarch64" supportedRedistArchs;
+    in
+    {
+      "aarch64-linux support is limited to linux-sbsa (server ARM devices) which is not the current target" =
+        isRedistArchSbsaExplicitlySupported && !isRedistArchAarch64ExplicitlySupported && isJetsonBuild;
+      "aarch64-linux support is limited to linux-aarch64 (Jetson devices) which is not the current target" =
+        !isRedistArchSbsaExplicitlySupported && isRedistArchAarch64ExplicitlySupported && !isJetsonBuild;
+    };
 
   /**
     Generates a CUDA variant name from a version.
