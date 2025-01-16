@@ -31,14 +31,13 @@ in
 assert assertMsg (!enableTools) "enableTools is not yet implemented";
 cudaStdenv.mkDerivation (finalAttrs: {
   pname = "cutlass";
-  # They didn't cut a 3.6.0 release...
-  version = "3.6.0-unstable-2024-12-03";
+  version = "3.6.0";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "cutlass";
-    rev = "80243e0b8c644f281e2beb0c20fe78cf7b267061";
-    hash = "sha256-zBYgX9WcSdOjyuzDqULe4pOFv9QLqSlK7kF2IwKb1ng=";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-FbMVqR4eZyum5w4Dj5qJgBPOS66sTem/qKZjYIK/7sg=";
   };
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a
