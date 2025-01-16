@@ -3,7 +3,6 @@
   cuda_cccl,
   cuda_compat,
   cuda_nvcc,
-  cudaAtLeast,
   flags,
   lib,
 }:
@@ -68,7 +67,7 @@ prevAttrs: {
       printWords "${getOutput "include" cuda_nvcc}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
     ''
     # cuda_cuadrt.dev has include/cuda_fp16.h which requires cuda_cccl.dev's include/nv/target
-    + optionalString (cudaAtLeast "12.0") ''
+    + ''
       nixLog "adding cuda_cccl's include output to $outputInclude's propagatedBuildInputs"
       printWords "${getOutput "include" cuda_cccl}" >> "''${!outputInclude}/nix-support/propagated-build-inputs"
     ''

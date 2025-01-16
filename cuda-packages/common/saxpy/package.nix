@@ -3,14 +3,12 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
-  cudaAtLeast,
   cudaStdenv,
   lib,
   libcublas,
 }:
 let
   inherit (lib.fileset) toSource unions;
-  inherit (lib.lists) optionals;
   inherit (lib.strings) cmakeBool;
 in
 cudaStdenv.mkDerivation {
@@ -31,9 +29,10 @@ cudaStdenv.mkDerivation {
   ];
 
   buildInputs = [
+    cuda_cccl
     cuda_cudart
     libcublas
-  ] ++ optionals (cudaAtLeast "12.0") [ cuda_cccl ];
+  ];
 
   cmakeFlags = [
     (cmakeBool "CMAKE_VERBOSE_MAKEFILE" true)

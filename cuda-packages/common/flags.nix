@@ -1,6 +1,5 @@
 {
   config,
-  cudaAtLeast,
   cudaConfig,
   cudaCapabilities ? (config.cudaCapabilities or [ ]),
   cudaForwardCompat ? (config.cudaForwardCompat or true),
@@ -242,9 +241,7 @@ assert
     };
     actualWrapped = (builtins.tryEval (builtins.deepSeq actual actual)).value;
   in
-  assertMsg ((cudaAtLeast "11.2") -> (expected == actualWrapped)) ''
-    This test should only fail when using a version of CUDA older than 11.2, the first to support
-    8.6.
+  assertMsg (expected == actualWrapped) ''
     Expected: ${builtins.toJSON expected}
     Actual: ${builtins.toJSON actualWrapped}
   '';

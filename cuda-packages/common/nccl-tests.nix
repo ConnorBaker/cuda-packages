@@ -6,7 +6,6 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
-  cudaAtLeast,
   cudaStdenv,
   fetchFromGitHub,
   gitUpdater,
@@ -36,15 +35,11 @@ cudaStdenv.mkDerivation (finalAttrs: {
     which
   ];
 
-  buildInputs =
-    [
-      cuda_cudart
-      nccl
-    ]
-    ++ optionals (cudaAtLeast "12.0") [
-      cuda_cccl # <nv/target>
-    ]
-    ++ optionals mpiSupport [ mpi ];
+  buildInputs = [
+    cuda_cccl # <nv/target>
+    cuda_cudart
+    nccl
+  ] ++ optionals mpiSupport [ mpi ];
 
   makeFlags = [
     # NOTE: CUDA_HOME is expected to have the bin directory

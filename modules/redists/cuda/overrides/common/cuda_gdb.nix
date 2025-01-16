@@ -20,8 +20,7 @@ prevAttrs: {
 
   buildInputs =
     prevAttrs.buildInputs or [ ]
-    # x86_64 only needs gmp from 12.0 and on
-    ++ optionals (cudaAtLeast "12.0") [ gmp ]
+    ++ [ gmp ]
     # aarch64, sbsa needs expat
     ++ optionals stdenv.hostPlatform.isAarch64 [ expat ]
     # From 12.5, cuda-gdb comes with Python TUI wrappers

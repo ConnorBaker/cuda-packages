@@ -2,7 +2,6 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
-  cudaAtLeast,
   cudaStdenv,
   fetchFromGitHub,
   flags,
@@ -43,16 +42,11 @@ cudaStdenv.mkDerivation (finalAttrs: {
     which
   ];
 
-  buildInputs =
-    [
-      cuda_cudart
-      cuda_nvcc # crt/host_config.h
-    ]
-    # NOTE: CUDA versions in Nixpkgs only use a major and minor version. When we do comparisons
-    # against other version, like below, it's important that we use the same format. Otherwise,
-    # we'll get incorrect results.
-    # For example, lib.versionAtLeast "12.0" "12.0.0" == false.
-    ++ optionals (cudaAtLeast "12.0") [ cuda_cccl ];
+  buildInputs = [
+    cuda_cccl
+    cuda_cudart
+    cuda_nvcc # crt/host_config.h
+  ];
 
   env.NIX_CFLAGS_COMPILE = toString [ "-Wno-unused-function" ];
 
