@@ -26,13 +26,13 @@ in
 # TODO(@connorbaker): This should be a hybrid C++/Python package.
 cudaStdenv.mkDerivation (finalAttrs: {
   pname = "cudnn-frontend";
-  version = "1.8.0";
+  version = "1.9.0";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "cudnn-frontend";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-hKqIWGxVco1qkKxDZjc+pUisIcYJwFjZobJZg1WgDvY=";
+    hash = "sha256-Vc5jqB1XHcJEdKG0nxbWLewW2fDezRVwjUSzPDubSGE=";
   };
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a
