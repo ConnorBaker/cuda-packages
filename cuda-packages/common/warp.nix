@@ -46,13 +46,13 @@ let
 
     pname = "warp";
 
-    version = "1.5.0-unstable-2024-12-03";
+    version = "1.5.1-unstable-2025-01-15";
 
     src = fetchFromGitHub {
       owner = "NVIDIA";
       repo = "warp";
-      rev = "a714a427e109c4ba57e4165ba15965b8644ceda6";
-      hash = "sha256-KgWcxMQx0EttiwiuCuBDCwp0G+z/0XzqZb9nCB9A85k=";
+      rev = "c168fc67110dd887bd495052a27fc585b2826c98";
+      hash = "sha256-grAMMP8NeR5h9Of8iKzY5y+fdO1Wu2LDpbv7VzT9FAw=";
     };
 
     pyproject = true;
