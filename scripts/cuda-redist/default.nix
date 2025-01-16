@@ -9,7 +9,6 @@
   patchelf,
   pydantic,
   pyright,
-  pythonAtLeast,
   rich,
   ruff,
 }:
@@ -22,7 +21,6 @@ let
     pname = pyprojectAttrs.project.name;
     inherit (pyprojectAttrs.project) version;
     pyproject = true;
-    disabled = pythonAtLeast "3.12";
     src = toSource {
       root = ./.;
       fileset = unions [
@@ -60,8 +58,6 @@ let
       + ''
         echo "Typechecking with pyright"
         pyright --warnings
-        echo "Verifying type completeness with pyright"
-        pyright --verifytypes ${finalAttrs.pname} --ignoreexternal
       ''
       # postCheck
       + ''

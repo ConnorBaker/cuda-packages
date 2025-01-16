@@ -169,9 +169,6 @@ class NvidiaReleaseV3(NvidiaReleaseCommon):
         return self.__pydantic_extra__
 
 
-NvidiaVersionedManifests: TypeAlias = PydanticMapping[Version, "NvidiaManifest"]
-
-
 # A manifest contains many release objects.
 class NvidiaManifest(PydanticObject):
     model_config = ModelConfigAllowExtra
@@ -304,6 +301,9 @@ class NvidiaManifest(PydanticObject):
         cls: type[Self], redist_name: RedistName, version: Version, tensorrt_manifest_dir: Path | None = None
     ) -> Self:
         return cls.model_validate_json(cls.get_from_web_as_bytes(redist_name, version, tensorrt_manifest_dir))
+
+
+NvidiaVersionedManifests: TypeAlias = PydanticMapping[Version, NvidiaManifest]
 
 
 class NvidiaIndex(PydanticMapping[RedistName, NvidiaVersionedManifests]):

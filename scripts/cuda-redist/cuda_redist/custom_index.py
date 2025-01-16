@@ -21,7 +21,6 @@ from cuda_redist.extra_types import (
     SriHash,
     Version,
 )
-from cuda_redist.feature_detector.cuda_architectures import FeatureCudaArchitectures, mkFeatureCudaArchitectures
 from cuda_redist.feature_detector.cuda_versions_in_lib import FeatureCudaVersionsInLib
 from cuda_redist.feature_detector.outputs import FeatureOutputs
 from cuda_redist.logger import get_logger
@@ -37,7 +36,7 @@ class CustomPackageFeatures(PydanticObject):
     Features of a package in the manifest.
     """
 
-    cuda_architectures: FeatureCudaArchitectures | None
+    # cuda_architectures: FeatureCudaArchitectures | None
     cuda_versions_in_lib: FeatureCudaVersionsInLib | None
     outputs: FeatureOutputs
 
@@ -46,7 +45,6 @@ class CustomPackageFeatures(PydanticObject):
         LOGGER.info("Finding features for %s...", store_path)
         start_time = time.time()
 
-        cuda_architectures = mkFeatureCudaArchitectures(store_path)
         cuda_versions_in_lib = FeatureCudaVersionsInLib.of(store_path)
         outputs = FeatureOutputs.of(store_path)
 
@@ -55,7 +53,6 @@ class CustomPackageFeatures(PydanticObject):
 
         # Replace empty sequences with None.
         return cls.model_validate({
-            "cudaArchitectures": cuda_architectures or None,
             "cudaVersionsInLib": cuda_versions_in_lib or None,
             "outputs": outputs,
         })
