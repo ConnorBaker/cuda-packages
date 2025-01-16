@@ -128,7 +128,7 @@
 
           packages = {
             default = config.packages.cuda-redist;
-            cuda-redist = pkgs.python311Packages.callPackage ./scripts/cuda-redist { };
+            cuda-redist = pkgs.python3Packages.callPackage ./scripts/cuda-redist { };
           };
 
           pre-commit.settings.hooks =
