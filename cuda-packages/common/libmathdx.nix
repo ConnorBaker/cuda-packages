@@ -18,7 +18,7 @@ in
 # };
 cudaStdenv.mkDerivation (finalAttrs: {
   pname = "libmathdx";
-  version = "0.1.0";
+  version = "0.1.1";
 
   src =
     let
@@ -29,8 +29,8 @@ cudaStdenv.mkDerivation (finalAttrs: {
         finalAttrs.version
       ];
       hashes = {
-        aarch64-linux = "sha256-6Xcknpj5HU6eLPzjEyV4NXavgF28nN9epesS/+5Dq7o=";
-        x86_64-linux = "sha256-7BoghYBo19NgmjYoGA1VkeWciSf8B5jOddKRi9/rlBg=";
+        aarch64-linux = "sha256-OAp3QpfuF0GLdeoFZEjl+uKuapoJ+wkpe8Cu66ZS/7A=";
+        x86_64-linux = "sha256-kIvJd6UgDhIuBQaAz3Dy4zTbqzHaEQz5lW3PGEEfQZo=";
       };
     in
     mapNullable (
