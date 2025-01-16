@@ -73,6 +73,7 @@
   orc,
   pcre2,
   pkg-config,
+  # TODO(@connorbaker): Is it a problem that OpenCV uses (potentially) newer versions of protobuf than the CUDA ecosystem?
   protobuf_25,
   python3Packages,
   qimgv,
