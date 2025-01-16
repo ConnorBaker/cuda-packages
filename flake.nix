@@ -6,7 +6,6 @@
     };
     nixpkgs.url = "github:NixOS/nixpkgs";
     nixpkgs-24_11.url = "github:NixOS/nixpkgs/release-24.11";
-    nixpkgs-24_05.url = "github:NixOS/nixpkgs/release-24.05";
     git-hooks-nix = {
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:cachix/git-hooks.nix";
@@ -32,7 +31,6 @@
       nixpkgsVersions = [
         "nixpkgs"
         "nixpkgs-24_11"
-        "nixpkgs-24_05"
       ];
       mkNixpkgs =
         nixpkgsVersion: system:
