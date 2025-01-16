@@ -21,7 +21,6 @@ let
     mkOptions
     mkRedistUrl
     mkRelativePath
-    mkTensorRTUrl
     mkVersionedManifests
     mkVersionedOverrides
     packageExprPathsFromDirectoryRecursive
@@ -157,22 +156,27 @@ in
     : The relative path to a file in the redistributable tree
   */
   mkRedistUrl =
-    redistName:
-    assert assertMsg (
-      redistName != "tensorrt"
-    ) "mkRedistUrl: tensorrt does not use standard naming conventions for URLs; use mkTensorRTUrl";
-    relativePath:
-    concatStringsSep "/" [
-      redistUrlPrefix
-      redistName
-      "redist"
-      relativePath
-    ];
+    redistName: relativePath:
+    concatStringsSep "/" (
+      [
+        redistUrlPrefix
+      ]
+      ++ (
+        if redistName != "tensorrt" then
+          [
+            redistName
+            "redist"
+          ]
+        else
+          [ "machine-learning" ]
+      )
+      ++ [
+        relativePath
+      ]
+    );
 
   /**
     Function to recreate a relative path for a redistributable.
-
-    NOTE: `redistName` cannot be `"tensorrt"` as it does not use standard naming conventions for relative paths.
 
     # Type
 
@@ -216,11 +220,11 @@ in
       relativePath ? null,
       releaseInfo,
     }:
-    assert assertMsg (redistName != "tensorrt")
-      "mkRelativePath: tensorrt does not use standard naming conventions for relative paths; use mkTensorRTUrl";
     if relativePath != null then
       relativePath
     else
+      assert assertMsg (redistName != "tensorrt")
+        "mkRelativePath: tensorrt does not use standard naming conventions for relative paths and requires relativePath be non-null";
       concatStringsSep "/" [
         packageName
         redistArch
@@ -231,28 +235,6 @@ in
           "archive.tar.xz"
         ])
       ];
-
-  /**
-    Function to generate a URL for TensorRT.
-
-    # Type
-
-    ```
-    mkTensorRTUrl :: String -> String
-    ```
-
-    # Arguments
-
-    relativePath
-    : The relative path to a file in the redistributable tree
-  */
-  mkTensorRTUrl =
-    relativePath:
-    concatStringsSep "/" [
-      redistUrlPrefix
-      "machine-learning"
-      relativePath
-    ];
 
   /**
     Function to produce `versionedManifests`.
@@ -475,20 +457,16 @@ in
         libPath = getLibPath finalCudaPackages.cudaMajorMinorPatchVersion packageInfo.features.cudaVersionsInLib;
         # The source is given by the tarball, which we unpack and use as a FOD.
         src = finalCudaPackages.pkgs.fetchzip {
-          url =
-            if redistName == "tensorrt" then
-              mkTensorRTUrl packageInfo.relativePath
-            else
-              mkRedistUrl redistName (mkRelativePath {
-                inherit
-                  cudaVariant
-                  packageName
-                  redistArch
-                  redistName
-                  releaseInfo
-                  ;
-                inherit (packageInfo) relativePath;
-              });
+          url = mkRedistUrl redistName (mkRelativePath {
+            inherit
+              cudaVariant
+              packageName
+              redistArch
+              redistName
+              releaseInfo
+              ;
+            inherit (packageInfo) relativePath;
+          });
           hash = packageInfo.recursiveHash;
         };
 
