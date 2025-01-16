@@ -5,7 +5,6 @@
   fetchFromGitHub,
   lib,
   onnx,
-  protobuf_25,
   pycuda,
   python3,
   tensorrt-python,
@@ -16,7 +15,7 @@ let
   inherit (lib.attrsets) getLib;
   inherit (lib.strings) cmakeBool cmakeFeature;
   inherit (lib.versions) majorMinor;
-
+  inherit (onnx.passthru) cppProtobuf;
   inherit (python3.pkgs)
     buildPythonPackage
     cmake # Yes, we need cmake from python3Packages in order for the build to work.
@@ -54,8 +53,8 @@ let
     ];
 
     nativeBuildInputs = [
+      cppProtobuf
       cuda_nvcc
-      protobuf_25
     ];
 
     postPatch =
@@ -110,8 +109,8 @@ let
     ];
 
     buildInputs = [
+      cppProtobuf
       cuda_cudart
-      protobuf_25
       tensorrt
     ];
 

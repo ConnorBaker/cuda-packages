@@ -5,7 +5,8 @@
   gtest,
   lib,
   patchelf,
-  protobuf_25,
+  protobuf_25 ? null,
+  protobuf_24 ? null,
   python3,
 }:
 let
@@ -14,6 +15,7 @@ let
   inherit (lib.lists) map;
   inherit (lib.meta) getExe;
   inherit (lib.strings) cmakeFeature;
+  inherit (lib.versions) major;
   inherit (python3.pkgs)
     buildPythonPackage
     cmake
@@ -28,7 +30,32 @@ let
     tabulate
     ;
 
-  pythonProtobuf = python3.pkgs.protobuf5 or python3.pkgs.protobuf;
+  inherit
+    (
+      let
+        hasCppProtobuf25 = protobuf_25 != null;
+        hasCppProtobuf24 = protobuf_24 != null;
+        hasPyProtobuf5 =
+          python3.pkgs.protobuf5 or null != null || (major python3.pkgs.protobuf.version == "5");
+        hasPyProtobuf4 =
+          python3.pkgs.protobuf4 or null != null || (major python3.pkgs.protobuf.version == "4");
+      in
+      if hasCppProtobuf25 && hasPyProtobuf5 then
+        {
+          cppProtobuf = protobuf_25;
+          pyProtobuf = python3.pkgs.protobuf5 or python3.pkgs.protobuf;
+        }
+      else if hasCppProtobuf24 && hasPyProtobuf4 then
+        {
+          cppProtobuf = protobuf_24;
+          pyProtobuf = python3.pkgs.protobuf4 or python3.pkgs.protobuf;
+        }
+      else
+        throw "Invalid set of protobuf"
+    )
+    cppProtobuf
+    pyProtobuf
+    ;
 
   finalAttrs = {
     # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
@@ -52,13 +79,13 @@ let
     # NOTE: The project can not take advantage of ninja (as of 1.17.0).
     build-system = [
       cmake
-      pythonProtobuf
+      pyProtobuf
       setuptools
     ];
 
     nativeBuildInputs = [
       abseil-cpp
-      protobuf_25
+      cppProtobuf
       pybind11
     ];
 
@@ -70,13 +97,13 @@ let
 
     buildInputs = [
       abseil-cpp
-      protobuf_25
+      cppProtobuf
     ];
 
     dependencies = [
       abseil-cpp
       numpy
-      pythonProtobuf
+      pyProtobuf
     ];
 
     # Declared in setup.py
@@ -181,6 +208,13 @@ let
           --allowed-rpath-prefixes "${storeDir}" \
           '{}' \;
     '';
+
+    passthru = {
+      inherit
+        cppProtobuf
+        pyProtobuf
+        ;
+    };
 
     meta = with lib; {
       description = "Open Neural Network Exchange";

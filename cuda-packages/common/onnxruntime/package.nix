@@ -30,7 +30,6 @@
   onnxruntime, # For passthru.tests
   patchelf,
   pkg-config,
-  protobuf_25,
   python3,
   re2,
   tensorrt,
@@ -48,6 +47,7 @@ let
     ;
   inherit (lib.trivial) const flip;
   inherit (cudaStdenv.cc) isClang;
+  inherit (onnx.passthru) cppProtobuf;
   inherit (python3.pkgs)
     buildPythonPackage
     cmake
@@ -105,10 +105,10 @@ let
     ];
 
     nativeBuildInputs = [
+      cppProtobuf
       cuda_nvcc
       patchelf
       pkg-config
-      protobuf_25
       pybind11
       # python3
     ];
@@ -128,6 +128,7 @@ let
       [
         abseil-cpp
         clog
+        cppProtobuf
         cuda_cccl # CUDA 11.x <cub/cub.cuh>, CUDA 12.x <nv/target>
         cuda_cudart
         cudnn # cudnn.h
@@ -144,7 +145,6 @@ let
         nlohmann_json
         onnx
         onnx-tensorrt
-        protobuf_25
         re2
         tensorrt
         zlib
@@ -289,7 +289,7 @@ let
             --cmake_extra_defines \
               ''${cmakeFlags[@]//-D/} \
               CMAKE_CUDA_COMPILER="${cuda_nvcc.bin}/bin/nvcc" \
-              Protobuf_LIBRARIES="${getLib protobuf_25}/lib/libprotobuf.so"
+              Protobuf_LIBRARIES="${getLib cppProtobuf}/lib/libprotobuf.so"
 
         pushd "$NIX_BUILD_TOP/$sourceRoot/$cmakeBuildDir/Release"
       '';
