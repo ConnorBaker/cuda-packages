@@ -22,13 +22,13 @@ let
 in
 cudaStdenv.mkDerivation (finalAttrs: {
   pname = "nccl";
-  version = "2.23.4-1";
+  version = "2.24.3-1";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "nccl";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-DlMxlLO2F079fBkhORNPVN/ASYiVIRfLJw7bDoiClHw=";
+    hash = "sha256-TpZDy9lae1zZ38IJid6h893gk8OFPaSCZoeegLoYq9Y=";
   };
 
   outputs = [
