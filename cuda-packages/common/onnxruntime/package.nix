@@ -11,7 +11,6 @@
   cudaOlder,
   cudnn-frontend,
   cudnn,
-  cutlass,
   doCheck ? false,
   fetchFromGitHub,
   glibcLocales,
@@ -37,7 +36,7 @@
 }:
 let
   inherit (lib) licenses maintainers teams;
-  inherit (lib.attrsets) getLib mapAttrs;
+  inherit (lib.attrsets) attrValues getLib mapAttrs;
   inherit (lib.lists) optionals;
   inherit (lib.strings)
     cmakeBool
@@ -61,10 +60,11 @@ let
   isAarch64Linux = cudaStdenv.hostPlatform.system == "aarch64-linux";
 
   vendored = mapAttrs (const (flip callPackage { })) {
-    eigen = ./eigen.nix;
+    cutlass = ./cutlass.nix;
     date = ./date.nix;
-    safeint = ./safeint.nix;
+    eigen = ./eigen.nix;
     flatbuffers = ./flatbuffers.nix;
+    safeint = ./safeint.nix;
   };
 
   # TODO: Only building and installing Python package; no installation of the C++ library.
@@ -134,7 +134,6 @@ let
         cudnn # cudnn.h
         cudnn-frontend # cudnn_frontend.h
         cpuinfo
-        cutlass.src # NOTE: onnxruntime uses samples from the repo, and as a header-only library there's not much point in building it.
         glibcLocales
         libcublas # cublas_v2.h
         libcufft # cufft.h
@@ -152,12 +151,7 @@ let
       ++ optionals nccl.meta.available [ nccl ]
       # Build inputs used for source.
       # TODO(@connorbaker): Package these and get onnxruntime to use them instead of building them in the derivation.
-      ++ (with vendored; [
-        date
-        eigen
-        flatbuffers # NOTE: Cannot re-use flatbuffers built in Nixpkgs for some reason.
-        safeint
-      ]);
+      ++ (attrValues vendored);
 
     dependencies = [
       coloredlogs
@@ -233,12 +227,12 @@ let
         (cmakeBool "onnxruntime_USE_TENSORRT_BUILTIN_PARSER" false) # Use onnx-tensorrt
         (cmakeBool "onnxruntime_USE_TENSORRT" true)
         (cmakeFeature "onnxruntime_NVCC_THREADS" "1")
-        (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" cutlass.src.outPath)
       ]
       # Our vendored libraries
       ++ [
         (cmakeBool "onnxruntime_USE_PREINSTALLED_EIGEN" true)
         (cmakeOptionType "PATH" "eigen_SOURCE_PATH" vendored.eigen.outPath)
+        (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" vendored.cutlass.outPath)
         (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_DATE" vendored.date.outPath)
         (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" vendored.flatbuffers.outPath)
         (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_SAFEINT" vendored.safeint.outPath)
