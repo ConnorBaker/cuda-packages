@@ -84,7 +84,9 @@
   zlib,
   zstd,
 
-  runAccuracyTests ? true,
+  # TODO(@connorbaker):
+  # RPATH of binary /nix/store/jhm01wwp0yx44h3941bifym174n7ifdi-cuda12.2-opencv-4.10.0-package_tests/opencv_test_reg contains a forbidden reference to /build/
+  runAccuracyTests ? false,
   runPerformanceTests ? false,
   # Modules to enable via BUILD_LIST to build a customized opencv.
   # An empty lists means this setting is ommited which matches upstreams default.
@@ -544,12 +546,15 @@ cudaStdenv.mkDerivation (finalAttrs: {
     ''
     # remove the requirement that the exact same version of CUDA is used in packages
     # consuming OpenCV's CMakes files
+    # TODO(@connorbaker): Different versions of Nixpkgs produce different configure files, so we use --replace-quiet
+    # because not all builds will have these lines.
+    # For example, building against Nixpkgs 24.05, the lines are not present, but building against master, they are!
     + ''
       substituteInPlace "$out/lib/cmake/opencv4/OpenCVConfig.cmake" \
-        --replace-fail \
+        --replace-quiet \
           'find_package(CUDAToolkit ''${OpenCV_CUDA_VERSION} EXACT REQUIRED)' \
           'find_package(CUDAToolkit REQUIRED)' \
-        --replace-fail \
+        --replace-quiet \
           'message(FATAL_ERROR "OpenCV library was compiled with CUDA' \
           'message("OpenCV library was compiled with CUDA'
     ''
