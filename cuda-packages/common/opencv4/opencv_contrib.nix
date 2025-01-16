@@ -6,5 +6,5 @@ fetchFromGitHub {
   owner = "opencv";
   repo = "opencv_contrib";
   tag = opencv4.version;
-  hash = "sha256-JFSQQRvcZ+aiLUxXqfODaWQW635Xkkvh4xmkNcGySh8=";
+  hash = "sha256-YNd96qFJ8SHBgDEEsoNps888myGZdELbbuYCae9pW3M=";
 }

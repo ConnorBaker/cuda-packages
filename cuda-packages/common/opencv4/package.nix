@@ -261,13 +261,13 @@ in
 cudaStdenv.mkDerivation (finalAttrs: {
   pname = "opencv";
 
-  version = "4.10.0";
+  version = "4.11.0";
 
   src = fetchFromGitHub {
     owner = "opencv";
     repo = "opencv";
     tag = finalAttrs.version;
-    hash = "sha256-s+KvBrV/BxrxEvPhHzWCVFQdUQwhUdRJyb0wcGDFpeo=";
+    hash = "sha256-oiU4CwoMfuUbpDtujJVTShMCzc5GsnIaprC4DzkSzEM=";
   };
 
   outputs =
