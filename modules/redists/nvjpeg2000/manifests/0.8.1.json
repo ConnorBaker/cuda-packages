@@ -4,16 +4,6 @@
       "linux-aarch64": {
         "None": {
           "features": {
-            "cudaArchitectures": {
-              "11": [
-                "sm_72",
-                "sm_87"
-              ],
-              "12": [
-                "sm_72",
-                "sm_87"
-              ]
-            },
             "cudaVersionsInLib": [
               "11",
               "12"
@@ -32,26 +22,6 @@
       "linux-sbsa": {
         "None": {
           "features": {
-            "cudaArchitectures": {
-              "11": [
-                "sm_52",
-                "sm_60",
-                "sm_61",
-                "sm_70",
-                "sm_75",
-                "sm_80",
-                "sm_90"
-              ],
-              "12": [
-                "sm_52",
-                "sm_60",
-                "sm_61",
-                "sm_70",
-                "sm_75",
-                "sm_80",
-                "sm_90"
-              ]
-            },
             "cudaVersionsInLib": [
               "11",
               "12"
@@ -70,26 +40,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": {
-              "11": [
-                "sm_52",
-                "sm_60",
-                "sm_61",
-                "sm_70",
-                "sm_75",
-                "sm_80",
-                "sm_90"
-              ],
-              "12": [
-                "sm_52",
-                "sm_60",
-                "sm_61",
-                "sm_70",
-                "sm_75",
-                "sm_80",
-                "sm_90"
-              ]
-            },
             "cudaVersionsInLib": [
               "11",
               "12"

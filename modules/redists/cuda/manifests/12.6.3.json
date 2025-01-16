@@ -548,9 +548,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_52"
-            ],
             "outputs": [
               "out",
               "bin",
@@ -891,9 +888,6 @@
       "linux-sbsa": {
         "None": {
           "features": {
-            "cudaArchitectures": {
-              "systemd": []
-            },
             "outputs": [
               "out"
             ]
@@ -905,9 +899,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": {
-              "systemd": []
-            },
             "outputs": [
               "out"
             ]
@@ -929,9 +920,6 @@
       "linux-aarch64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_87"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -947,19 +935,6 @@
       "linux-sbsa": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_52",
-              "sm_60",
-              "sm_61",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90",
-              "sm_90a"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -975,19 +950,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_52",
-              "sm_60",
-              "sm_61",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90",
-              "sm_90a"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1037,9 +999,6 @@
       "linux-aarch64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_52"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1055,9 +1014,6 @@
       "linux-sbsa": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_52"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1073,9 +1029,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_52"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1101,16 +1054,6 @@
       "linux-aarch64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_60",
-              "sm_61",
-              "sm_62",
-              "sm_70",
-              "sm_72",
-              "sm_75",
-              "sm_80",
-              "sm_86"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1125,16 +1068,6 @@
       "linux-sbsa": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_60",
-              "sm_61",
-              "sm_62",
-              "sm_70",
-              "sm_72",
-              "sm_75",
-              "sm_80",
-              "sm_86"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1149,16 +1082,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_60",
-              "sm_61",
-              "sm_62",
-              "sm_70",
-              "sm_72",
-              "sm_75",
-              "sm_80",
-              "sm_86"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1183,18 +1106,6 @@
       "linux-aarch64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_53",
-              "sm_62",
-              "sm_70",
-              "sm_72",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_87",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1210,16 +1121,6 @@
       "linux-sbsa": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_60",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1235,16 +1136,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_60",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1270,19 +1161,6 @@
       "linux-aarch64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_53",
-              "sm_61",
-              "sm_62",
-              "sm_70",
-              "sm_72",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_87",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1298,17 +1176,6 @@
       "linux-sbsa": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_60",
-              "sm_61",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1324,17 +1191,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_60",
-              "sm_61",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1360,19 +1216,6 @@
       "linux-aarch64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_53",
-              "sm_61",
-              "sm_62",
-              "sm_70",
-              "sm_72",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_87",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1388,18 +1231,6 @@
       "linux-sbsa": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_52",
-              "sm_60",
-              "sm_61",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1415,18 +1246,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_52",
-              "sm_60",
-              "sm_61",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1452,20 +1271,6 @@
       "linux-aarch64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_52",
-              "sm_53",
-              "sm_61",
-              "sm_62",
-              "sm_70",
-              "sm_72",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_87",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1481,18 +1286,6 @@
       "linux-sbsa": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_52",
-              "sm_60",
-              "sm_61",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1508,18 +1301,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_52",
-              "sm_60",
-              "sm_61",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1687,19 +1468,6 @@
       "linux-aarch64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_53",
-              "sm_61",
-              "sm_62",
-              "sm_70",
-              "sm_72",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_87",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1715,18 +1483,6 @@
       "linux-sbsa": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_52",
-              "sm_60",
-              "sm_61",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
@@ -1742,18 +1498,6 @@
       "linux-x86_64": {
         "None": {
           "features": {
-            "cudaArchitectures": [
-              "sm_50",
-              "sm_52",
-              "sm_60",
-              "sm_61",
-              "sm_70",
-              "sm_75",
-              "sm_80",
-              "sm_86",
-              "sm_89",
-              "sm_90"
-            ],
             "outputs": [
               "out",
               "dev",
