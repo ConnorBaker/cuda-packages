@@ -13,7 +13,7 @@ let
 in
 prevAttrs: {
   # Include the static libraries as well since CMake needs them during the configure phase.
-  propagatedBuildOutputs = prevAttrs.propagatedBuildOutputs ++ [
+  propagatedBuildOutputs = prevAttrs.propagatedBuildOutputs or [ ] ++ [
     "static"
     "stubs"
   ];

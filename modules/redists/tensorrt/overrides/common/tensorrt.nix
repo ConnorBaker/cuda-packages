@@ -19,7 +19,7 @@ finalAttrs: prevAttrs: {
   allowFHSReferences = true;
 
   buildInputs =
-    prevAttrs.buildInputs
+    prevAttrs.buildInputs or [ ]
     ++ [
       (getLib cudnn)
       cuda_cudart
@@ -36,7 +36,7 @@ finalAttrs: prevAttrs: {
         parsed.abi.name
       ];
     in
-    (prevAttrs.preInstall or "")
+    prevAttrs.preInstall or ""
     # Replace symlinks to bin and lib with the actual directories from targets.
     + ''
       for dir in bin lib; do
@@ -63,7 +63,7 @@ finalAttrs: prevAttrs: {
     ];
 
   postInstall =
-    (prevAttrs.postInstall or "")
+    prevAttrs.postInstall or ""
     # Create a symlink for the Onnx header files in include/onnx
     # NOTE(@connorbaker): This is shared with the tensorrt-oss package, with the `out` output swapped with `include`.
     # When updating one, check if the other should be updated.
@@ -85,7 +85,7 @@ finalAttrs: prevAttrs: {
     let
       versionTriple = majorMinorPatch finalAttrs.version;
     in
-    (prevAttrs.postFixup or "")
+    prevAttrs.postFixup or ""
     + ''
       "${getExe patchelf}" --add-needed libnvinfer.so \
         "$lib/lib/libnvinfer.so.${versionTriple}" \
@@ -93,12 +93,12 @@ finalAttrs: prevAttrs: {
         "$lib/lib/libnvinfer_builder_resource.so.${versionTriple}"
     '';
 
-  passthru = prevAttrs.passthru // {
+  passthru = prevAttrs.passthru or { } // {
     # The CUDNN used with TensorRT.
     inherit cudnn;
   };
 
-  meta = prevAttrs.meta // {
+  meta = prevAttrs.meta or { } // {
     description = "TensorRT: An SDK for High-Performance Inference on NVIDIA GPUs";
     homepage = "https://developer.nvidia.com/tensorrt";
     maintainers = prevAttrs.meta.maintainers ++ [ lib.maintainers.aidalgol ];

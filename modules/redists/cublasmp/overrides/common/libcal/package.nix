@@ -11,7 +11,7 @@ let
 in
 finalAttrs: prevAttrs: {
   allowFHSReferences = true;
-  buildInputs = prevAttrs.buildInputs ++ [
+  buildInputs = prevAttrs.buildInputs or [ ] ++ [
     (getOutput "stubs" cuda_cudart)
     ucc
   ];

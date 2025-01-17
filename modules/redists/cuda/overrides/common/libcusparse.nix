@@ -1,4 +1,4 @@
 { libnvjitlink }:
 prevAttrs: {
-  buildInputs = prevAttrs.buildInputs ++ [ libnvjitlink ];
+  buildInputs = prevAttrs.buildInputs or [ ] ++ [ libnvjitlink ];
 }

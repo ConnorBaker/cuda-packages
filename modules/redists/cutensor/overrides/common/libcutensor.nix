@@ -7,8 +7,8 @@ let
 in
 prevAttrs: {
   allowFHSReferences = true;
-  buildInputs = prevAttrs.buildInputs ++ [ (getLib libcublas) ];
-  meta = prevAttrs.meta // {
+  buildInputs = prevAttrs.buildInputs or [ ] ++ [ (getLib libcublas) ];
+  meta = prevAttrs.meta or { } // {
     description = "cuTENSOR: A High-Performance CUDA Library For Tensor Primitives";
     homepage = "https://developer.nvidia.com/cutensor";
     maintainers = prevAttrs.meta.maintainers ++ [ lib.maintainers.obsidian-systems-maintenance ];

@@ -1,6 +1,6 @@
 { nvpl_blas }:
 prevAttrs: {
-  buildInputs = prevAttrs.buildInputs ++ [
+  buildInputs = prevAttrs.buildInputs or [ ] ++ [
     nvpl_blas
   ];
 }

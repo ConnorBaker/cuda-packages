@@ -1,5 +1,5 @@
 { zlib }:
 prevAttrs: {
   allowFHSReferences = true;
-  buildInputs = prevAttrs.buildInputs ++ [ zlib ];
+  buildInputs = prevAttrs.buildInputs or [ ] ++ [ zlib ];
 }

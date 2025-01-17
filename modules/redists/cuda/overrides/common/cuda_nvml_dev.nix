@@ -7,7 +7,7 @@ finalAttrs: prevAttrs: {
   allowFHSReferences = true;
 
   # Include the stubs output since it provides libnvidia-ml.so.
-  propagatedBuildOutputs = prevAttrs.propagatedBuildOutputs ++ [ "stubs" ];
+  propagatedBuildOutputs = prevAttrs.propagatedBuildOutputs or [ ] ++ [ "stubs" ];
 
   # TODO: Some programs try to link against libnvidia-ml.so.1, so make an alias.
   # Not sure about the version number though!

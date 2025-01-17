@@ -8,7 +8,7 @@
   mesa,
 }:
 prevAttrs: {
-  buildInputs = prevAttrs.buildInputs ++ [
+  buildInputs = prevAttrs.buildInputs or [ ] ++ [
     libcufft
     libcurand
     libGLU

@@ -111,7 +111,7 @@ finalAttrs: prevAttrs: {
   dontWrapQtApps = true;
 
   buildInputs =
-    prevAttrs.buildInputs
+    prevAttrs.buildInputs or [ ]
     ++ [
       (getOutput "stubs" cuda_cudart)
       (ucx.override { inherit cudaPackages; })

@@ -9,7 +9,7 @@ let
 in
 prevAttrs: {
   allowFHSReferences = true;
-  buildInputs = prevAttrs.buildInputs ++ [
+  buildInputs = prevAttrs.buildInputs or [ ] ++ [
     (getOutput "stubs" cuda_cudart)
     numactl
     rdma-core

@@ -162,10 +162,10 @@ in
       patchShebangs nsight-systems
     '';
 
-  nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ wrapQtAppsHook ];
+  nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ wrapQtAppsHook ];
 
   buildInputs =
-    prevAttrs.buildInputs
+    prevAttrs.buildInputs or [ ]
     ++ [
       (ucx.override { inherit cudaPackages; })
       boost178

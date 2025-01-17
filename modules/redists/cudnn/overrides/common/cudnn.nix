@@ -8,7 +8,7 @@ let
   inherit (lib.attrsets) getLib;
 in
 prevAttrs: {
-  buildInputs = prevAttrs.buildInputs ++ [
+  buildInputs = prevAttrs.buildInputs or [ ] ++ [
     # NOTE: Verions of CUDNN after 9.0 no longer depend on libcublas:
     # https://docs.nvidia.com/deeplearning/cudnn/latest/release-notes.html?highlight=cublas#cudnn-9-0-0
     # However, NVIDIA only provides libcublasLT via the libcublas package.

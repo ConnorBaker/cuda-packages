@@ -8,7 +8,7 @@ let
   inherit (lib.attrsets) getLib;
 in
 prevAttrs: {
-  buildInputs = prevAttrs.buildInputs ++ [
+  buildInputs = prevAttrs.buildInputs or [ ] ++ [
     (getLib libcublas)
     (getLib libcusparse)
     libnvjitlink
