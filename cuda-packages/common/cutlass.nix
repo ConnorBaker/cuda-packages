@@ -4,7 +4,6 @@
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
-  cudaStdenv,
   cudnn,
   cutlass,
   fetchFromGitHub,
@@ -15,6 +14,7 @@
   libcurand,
   ninja,
   python3,
+  stdenv,
   # Options
   enableF16C ? false,
   enableTools ? false,
@@ -29,7 +29,7 @@ in
 # TODO: This can also be packaged for Python!
 # TODO: Tests.
 assert assertMsg (!enableTools) "enableTools is not yet implemented";
-cudaStdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "cutlass";
   version = "3.6.0";
 

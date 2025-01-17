@@ -6,20 +6,20 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
-  cudaStdenv,
   fetchFromGitHub,
   gitUpdater,
   lib,
   mpi,
   mpiSupport ? false,
   nccl,
+  stdenv,
   which,
 }:
 let
   inherit (lib.attrsets) getBin;
   inherit (lib.lists) optionals;
 in
-cudaStdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "nccl-tests";
   version = "2.13.12";
 

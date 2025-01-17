@@ -4,10 +4,10 @@
   cudaMajorMinorPatchVersion,
   cudaMajorMinorVersion,
   cudaOlder,
-  cudaStdenv,
   lib,
   pkgs,
   setupCudaHook,
+  stdenv,
   stdenvAdapters,
 }:
 let
@@ -30,7 +30,7 @@ let
       nvccHostStdenv =
         if nvccConfig.hostStdenv != null then nvccConfig.hostStdenv else defaultNvccHostStdenv;
     in
-    stdenvAdapters.useLibsFrom cudaStdenv nvccHostStdenv;
+    stdenvAdapters.useLibsFrom stdenv nvccHostStdenv;
 in
 finalAttrs: prevAttrs: {
   # Patch the nvcc.profile.

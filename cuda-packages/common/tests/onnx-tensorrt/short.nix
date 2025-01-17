@@ -1,19 +1,15 @@
 {
   cuda_cudart,
-  cudaStdenv,
   onnx-tensorrt,
   python3,
   writeShellApplication,
 }:
-let
-  inherit (cudaStdenv) cudaNamePrefix;
-in
 writeShellApplication {
   derivationArgs = {
     __structuredAttrs = true;
     strictDeps = true;
   };
-  name = "${cudaNamePrefix}-tests-onnx-tensorrt-short";
+  name = "tests-onnx-tensorrt-short";
   runtimeInputs = [
     cuda_cudart
     (python3.withPackages (ps: [

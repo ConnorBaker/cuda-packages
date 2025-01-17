@@ -9,6 +9,8 @@ let
     foldlAttrs
     genAttrs
     hasAttr
+    isAttrs
+    isDerivation
     mapAttrs
     mapAttrs'
     optionalAttrs
@@ -21,6 +23,9 @@ let
     getNixPlatforms
     getSupportedRedistArchs
     mkAarch64BadPlatformsConditions
+    mkCudaPackagesCallPackage
+    mkCudaPackagesScope
+    mkCudaPackagesOverrideAttrsDefaultsFn
     mkOptions
     mkRedistUrl
     mkRelativePath
@@ -31,6 +36,7 @@ let
     versionAtMost
     ;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
+  inherit (lib.fixedPoints) extends;
   inherit (lib.licenses) nvidiaCudaRedist;
   inherit (lib.lists)
     concatMap
@@ -371,13 +377,16 @@ in
   /**
     Function to build redistributable packages.
 
+    NOTE: Curried to allow partial application.
+
     # Type
 
     ```
-    buildRedistPackages :: { callPackageOverriders :: Attrs
-                           , desiredCudaVariant :: CudaVariant
+    buildRedistPackages :: { desiredCudaVariant :: CudaVariant
                            , finalCudaPackages :: Attrs
                            , hostRedistArch :: RedistArch
+                           }
+                        -> { callPackageOverriders :: Attrs
                            , manifest :: Manifest
                            , redistName :: RedistName
                            }
@@ -406,24 +415,26 @@ in
   */
   buildRedistPackages =
     {
-      callPackageOverriders,
       desiredCudaVariant,
       finalCudaPackages,
       hostRedistArch,
-      manifest,
-      redistName,
     }:
     let
       inherit (finalCudaPackages)
         callPackage
         cudaMajorMinorPatchVersion
-        cudaStdenv
         redist-builder
         ;
       inherit (finalCudaPackages.flags) isJetsonBuild;
-      inherit (finalCudaPackages.pkgs) fetchzip;
-      isNixHostPlatformSystemAarch64 = cudaStdenv.hostPlatform.system == "aarch64-linux";
+      inherit (finalCudaPackages.pkgs) fetchzip stdenv;
+      isNixHostPlatformSystemAarch64 = stdenv.hostPlatform.isAarch64;
+      overrideAttrsDefaultsFn = mkCudaPackagesOverrideAttrsDefaultsFn finalCudaPackages;
     in
+    {
+      callPackageOverriders,
+      manifest,
+      redistName,
+    }:
     foldlAttrs (
       acc:
       # Package name
@@ -491,6 +502,8 @@ in
           [
             # Build the package
             redist-builder
+            # Apply our defaults
+            (pkg: pkg.overrideAttrs overrideAttrsDefaultsFn)
             # Update meta with the list of supported platforms and fix the license URL
             (
               pkg:
@@ -763,6 +776,78 @@ in
     : The version string
   */
   mkCudaVariant = version: "cuda${major version}";
+
+  /**
+    TODO:
+  */
+  # TODO(@connorbaker):
+  # - Aliases for backendStdenv, backendStdenv.cc.
+  # - Remove stdenv = cudaStdenv and update comment for __structuredAttrs = false.
+  # - Don't propagate nixLogWithLevelAndFunctionHook or noBrokenSymlinksHook.
+  # Manual definition of callPackage which will set certain attributes for us within the package set.
+  # Definition comes from the implementation of lib.customisation.makeScope:
+  # https://github.com/NixOS/nixpkgs/blob/9f4fd5626d7aa9a376352fc244600c894b5a0c79/lib/customisation.nix#L608
+  mkCudaPackagesCallPackage =
+    finalCudaPackages:
+    let
+      inherit (finalCudaPackages) newScope;
+      overrideAttrsFn = mkCudaPackagesOverrideAttrsDefaultsFn finalCudaPackages;
+    in
+    fn: args:
+    let
+      result = newScope { } fn args;
+    in
+    if isAttrs result && isDerivation result then result.overrideAttrs overrideAttrsFn else result;
+
+  /**
+    TODO:
+  */
+  # TODO(@connorbaker):
+  mkCudaPackagesOverrideAttrsDefaultsFn =
+    finalCudaPackages:
+    let
+      inherit (finalCudaPackages.pkgs) nixLogWithLevelAndFunctionNameHook noBrokenSymlinksHook;
+      inherit (finalCudaPackages) cudaNamePrefix;
+    in
+    finalAttrs: prevAttrs: {
+      # Default __structuredAttrs and strictDeps to true.
+      __structuredAttrs = prevAttrs.__structuredAttrs or true;
+      strictDeps = prevAttrs.strictDeps or true;
+
+      # Name should be prefixed by cudaNamePrefix to create more descriptive path names.
+      name =
+        if finalAttrs ? pname && finalAttrs ? version then
+          "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}"
+        # TODO(@connorbaker): Can't make the final name depend on itself.
+        else if (!(hasPrefix cudaNamePrefix prevAttrs.name)) then
+          "${cudaNamePrefix}-${prevAttrs.name}"
+        else
+          prevAttrs.name;
+
+      propagatedBuildInputs = prevAttrs.propagatedBuildInputs or [ ] ++ [
+        # We add a hook to replace the standard logging functions.
+        nixLogWithLevelAndFunctionNameHook
+        # We add a hook to make sure we're not propagating broken symlinks.
+        noBrokenSymlinksHook
+      ];
+    };
+
+  /**
+    TODO:
+  */
+  # Taken and modified from:
+  # https://github.com/NixOS/nixpkgs/blob/9f4fd5626d7aa9a376352fc244600c894b5a0c79/lib/customisation.nix#L603-L613
+  mkCudaPackagesScope =
+    newScope: f:
+    let
+      finalCudaPackages = f finalCudaPackages // {
+        newScope = scope: newScope (finalCudaPackages // scope);
+        callPackage = mkCudaPackagesCallPackage finalCudaPackages;
+        overrideScope = g: mkCudaPackagesScope newScope (extends g f);
+        packages = f;
+      };
+    in
+    finalCudaPackages;
 
   /**
     Utility function to generate a set of badPlatformsConditions for missing packages.

@@ -15,7 +15,7 @@
   cuda_profiler_api,
   cuda_sanitizer_api,
   cudaMajorMinorVersion,
-  cudaStdenv,
+  cudaNamePrefix,
   lib,
   libcublas,
   libcufft,
@@ -27,7 +27,6 @@
 }:
 
 let
-  inherit (cudaStdenv) cudaNamePrefix;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) concatMap filter map;
   inherit (lib.trivial) pipe;
@@ -63,16 +62,16 @@ let
     (hostPackages: hostPackages ++ targetPackages)
   ];
 in
-symlinkJoin rec {
-  name = "${cudaNamePrefix}-cudatoolkit";
+symlinkJoin {
+  pname = "cudatoolkit";
   version = cudaMajorMinorVersion;
-
   paths = concatMap getAllOutputs allPackages;
 
   passthru = {
-    cc = lib.warn "cudaPackages.cudatoolkit is deprecated, refer to the manual and use splayed packages instead" cudaStdenv.cc;
     lib = symlinkJoin {
-      inherit name;
+      # NOTE: cudaNamePrefix is needed here because cudaPackages.callPackage will not set it on passthru attributes.
+      name = "${cudaNamePrefix}-cudatoolkit-lib-${cudaMajorMinorVersion}";
+      version = cudaMajorMinorVersion;
       paths = map getLib allPackages;
     };
   };

@@ -4,7 +4,6 @@
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
-  cudaStdenv,
   fetchFromGitHub,
   flags,
   lib,
@@ -39,10 +38,9 @@ let
   #     /home/connorbaker/.cache/warp/1.5.0
   # True
   finalAttrs = {
-    # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
-    # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
+    # Must opt-out of __structuredAttrs which is set to true by default by cudaPackages.callPackage, but currently
+    # incompatible with Python packaging: https://github.com/NixOS/nixpkgs/pull/347194.
     __structuredAttrs = false;
-    stdenv = cudaStdenv;
 
     pname = "warp";
 

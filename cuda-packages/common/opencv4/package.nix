@@ -1,5 +1,4 @@
 {
-  cudaStdenv,
   blas,
   boost,
   buildPackages,
@@ -77,6 +76,7 @@
   protobuf_25,
   python3Packages,
   qimgv,
+  stdenv,
   tbb,
   tesseract,
   unzip,
@@ -92,7 +92,7 @@
 }:
 
 let
-  inherit (cudaStdenv) buildPlatform hostPlatform;
+  inherit (stdenv) buildPlatform hostPlatform;
   inherit (flags) cmakeCudaArchitecturesString cudaCapabilities;
   inherit (lib.attrsets) mapAttrsToList optionalAttrs;
   inherit (lib.lists) last optionals;
@@ -259,7 +259,7 @@ let
   #https://github.com/OpenMathLib/OpenBLAS/wiki/Faq/4bded95e8dc8aadc70ce65267d1093ca7bdefc4c#multi-threaded
   openblas_ = blas.provider.override { singleThreaded = true; };
 in
-cudaStdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "opencv";
 
   version = "4.11.0";
@@ -488,7 +488,7 @@ cudaStdenv.mkDerivation (finalAttrs: {
       # LTO options
       (cmakeBool "ENABLE_LTO" enableLto)
       # Only clang supports thin LTO
-      (cmakeBool "ENABLE_THIN_LTO" (enableLto && cudaStdenv.cc.isClang))
+      (cmakeBool "ENABLE_THIN_LTO" (enableLto && stdenv.cc.isClang))
 
       (cmakeBool "CUDA_FAST_MATH" true)
       (cmakeFeature "CUDA_NVCC_FLAGS" "--expt-relaxed-constexpr")

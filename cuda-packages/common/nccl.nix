@@ -2,11 +2,11 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
-  cudaStdenv,
   fetchFromGitHub,
   flags,
   lib,
   python3,
+  stdenv,
   which,
   # passthru.updateScript
   gitUpdater,
@@ -19,7 +19,7 @@ let
     ;
   inherit (lib.lists) optionals;
 in
-cudaStdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "nccl";
   version = "2.24.3-1";
 

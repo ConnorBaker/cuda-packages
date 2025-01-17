@@ -7,10 +7,10 @@
   cuda_compat,
   cudaConfig,
   cudaMajorMinorVersion,
-  cudaStdenv,
   flags,
   lib,
   markForCudatoolkitRootHook,
+  stdenv,
 }:
 let
   inherit (cudaConfig) hostRedistArch;
@@ -63,7 +63,7 @@ let
   # As such, the order of the output is dictated by the order of the second list.
   componentOutputs = intersectLists packageInfo.features.outputs possibleOutputs;
 in
-cudaStdenv.mkDerivation (
+stdenv.mkDerivation (
   finalAttrs:
   let
     isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
@@ -159,7 +159,7 @@ cudaStdenv.mkDerivation (
       # NB: We don't actually know if this is the right thing to do
       # NOTE: Not all packages actually need this, but it's easier to just add it than create overrides for nearly all
       # of them.
-      cudaStdenv.cc.cc.lib
+      stdenv.cc.cc.lib
     ];
 
     # Picked up by autoPatchelf
@@ -314,9 +314,9 @@ cudaStdenv.mkDerivation (
       sourceProvenance = [ sourceTypes.binaryNativeCode ];
       broken = isBroken;
       badPlatforms = optionals isBadPlatform (unique [
-        cudaStdenv.buildPlatform.system
-        cudaStdenv.hostPlatform.system
-        cudaStdenv.targetPlatform.system
+        stdenv.buildPlatform.system
+        stdenv.hostPlatform.system
+        stdenv.targetPlatform.system
       ]);
       license = licenses.unfree;
       maintainers = teams.cuda.members;

@@ -2,7 +2,6 @@
   cuda_cudart,
   cuda_nvcc,
   cuda_profiler_api,
-  cudaStdenv,
   fetchFromGitHub,
   lib,
   libcurand,
@@ -30,10 +29,9 @@ let
   inherit (lib.versions) majorMinor;
 in
 buildPythonPackage {
-  # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
-  # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
+  # Must opt-out of __structuredAttrs which is set to true by default by cudaPackages.callPackage, but currently
+  # incompatible with Python packaging: https://github.com/NixOS/nixpkgs/pull/347194.
   __structuredAttrs = false;
-  stdenv = cudaStdenv;
 
   pname = "pycuda";
   version = "2024.1.2-unstable-2024-11-05";

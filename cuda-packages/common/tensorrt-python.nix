@@ -1,11 +1,11 @@
 {
   cuda_cudart,
-  cudaStdenv,
   fetchFromGitHub,
   lib,
   onnx-tensorrt,
   python3,
   runCommand,
+  stdenv,
   tensorrt,
 }:
 let
@@ -41,10 +41,9 @@ let
       '';
 
   finalAttrs = {
-    # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
-    # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
+    # Must opt-out of __structuredAttrs which is set to true by default by cudaPackages.callPackage, but currently
+    # incompatible with Python packaging: https://github.com/NixOS/nixpkgs/pull/347194.
     __structuredAttrs = false;
-    stdenv = cudaStdenv;
 
     pname = "tensorrt-python";
 
@@ -110,7 +109,7 @@ let
       (cmakeFeature "EXT_PATH" "/dev/null") # Must be set, too lazy to patch around it
       (cmakeFeature "PYTHON_MAJOR_VERSION" pythonMajorVersion)
       (cmakeFeature "PYTHON_MINOR_VERSION" pythonMinorVersion)
-      (cmakeFeature "TARGET" cudaStdenv.hostPlatform.parsed.cpu.name)
+      (cmakeFeature "TARGET" stdenv.hostPlatform.parsed.cpu.name)
     ];
 
     preBuild =

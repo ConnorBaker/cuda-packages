@@ -17,9 +17,9 @@ Top-level:
 
 - Python wrappers which invoke CMake _do not always pass their environment_ to the CMake process. That means a number of the environment variables we set so CMake's auto-detection functionality just works is broken.
 - `autoAddDriverRunpath` for CMake projects is a crutch -- the correct fix is to have the CMake project link against `CUDA::cudart`.
-- `cudaStdenv` sets `strictDeps=true` and `__structuredAttrs=true` _by default_. Packages must have a good reason to opt out (e.g., Python packaging has not been updated yet to support structured attributes: <https://github.com/NixOS/nixpkgs/pull/347194>).
-- `cudaStdenv` uses a name prefix for more descriptive store path names.
-  - Prefix is available as `cudaStdenv.cudaNamePrefix`.
+- `cudaPackages.callPackage` sets `strictDeps=true` and `__structuredAttrs=true` _by default_. Packages must have a good reason to opt out (e.g., Python packaging has not been updated yet to support structured attributes: <https://github.com/NixOS/nixpkgs/pull/347194>).
+- `cudaPackages.callPackage` uses a name prefix for more descriptive store path names.
+  - Prefix is available as `cudaPackages.cudaNamePrefix`.
 - Manifests and overrides are versioned
   - This prevents conflicts when downstream consumers add their own manifests and overrides.
 - `noBrokenSymlinksHook` checks for broken or reflexive symlinks in your outputs, which are usually a sign of packaging gone wrong

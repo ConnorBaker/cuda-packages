@@ -1,12 +1,10 @@
 {
-  cudaStdenv,
   cudnn-frontend,
   jq,
   lib,
   writeShellApplication,
 }:
 let
-  inherit (cudaStdenv) cudaNamePrefix;
   inherit (lib.meta) getExe';
 in
 writeShellApplication {
@@ -14,7 +12,7 @@ writeShellApplication {
     __structuredAttrs = true;
     strictDeps = true;
   };
-  name = "${cudaNamePrefix}-tests-cudnn-frontend-tests";
+  name = "tests-cudnn-frontend-tests";
   runtimeInputs = [
     cudnn-frontend.tests
     jq

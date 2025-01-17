@@ -1,15 +1,15 @@
 {
-  cudaStdenv,
   lib,
   markForCudatoolkitRootHook,
   requireFile,
+  stdenv,
   unzip,
 }:
 let
   inherit (lib) maintainers teams;
   inherit (lib.versions) majorMinor;
 in
-cudaStdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   __structuredAttrs = true;
   strictDeps = true;
 
@@ -33,7 +33,7 @@ cudaStdenv.mkDerivation (finalAttrs: {
 
   installPhase =
     let
-      cpuName = cudaStdenv.hostPlatform.parsed.cpu.name;
+      cpuName = stdenv.hostPlatform.parsed.cpu.name;
     in
     ''
       runHook preInstall

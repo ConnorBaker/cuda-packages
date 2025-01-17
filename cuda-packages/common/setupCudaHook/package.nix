@@ -3,7 +3,6 @@
   config,
   cuda_nvcc,
   cudaConfig,
-  cudaStdenv,
   flags,
   lib,
   makeSetupHook,
@@ -12,7 +11,6 @@
 let
   inherit (cuda_nvcc.passthru.nvccStdenv) cc hostPlatform;
   inherit (cudaConfig) hostRedistArch;
-  inherit (cudaStdenv) cudaNamePrefix;
   inherit (flags) cmakeCudaArchitecturesString;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
@@ -21,13 +19,15 @@ let
   isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
 
   finalAttrs = {
-    name = "${cudaNamePrefix}-setup-cuda-hook";
+    name = "setup-cuda-hook";
 
     propagatedBuildInputs = [
       # We add a hook to replace the standard logging functions.
       nixLogWithLevelAndFunctionNameHook
     ];
 
+    # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
+    # path from nvccStdenv's host compiler. Generalize this to Clang as well!
     substitutions = {
       # Required in addition to ccRoot as otherwise bin/gcc is looked up
       # when building CMakeCUDACompilerId.cu

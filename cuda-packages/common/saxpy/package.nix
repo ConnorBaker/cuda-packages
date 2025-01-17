@@ -3,15 +3,15 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
-  cudaStdenv,
   lib,
   libcublas,
+  stdenv,
 }:
 let
   inherit (lib.fileset) toSource unions;
   inherit (lib.strings) cmakeBool;
 in
-cudaStdenv.mkDerivation {
+stdenv.mkDerivation {
   pname = "saxpy";
   version = "unstable-2023-07-11";
 

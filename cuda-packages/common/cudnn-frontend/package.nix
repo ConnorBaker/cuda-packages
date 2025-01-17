@@ -1,6 +1,5 @@
 {
   autoAddDriverRunpath,
-  cudaStdenv,
   catch2_3,
   cmake,
   cuda_cudart,
@@ -13,6 +12,7 @@
   libcublas,
   ninja,
   nlohmann_json,
+  stdenv,
 }:
 let
   inherit (lib.lists) optionals;
@@ -24,7 +24,7 @@ let
 in
 
 # TODO(@connorbaker): This should be a hybrid C++/Python package.
-cudaStdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "cudnn-frontend";
   version = "1.9.0";
 

@@ -8,7 +8,6 @@
   config,
   cuda_compat,
   cudaConfig,
-  cudaStdenv,
   flags,
   lib,
   makeSetupHook,
@@ -16,7 +15,6 @@
 }:
 let
   inherit (cudaConfig) hostRedistArch;
-  inherit (cudaStdenv) cudaNamePrefix;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
   inherit (lib.strings) optionalString;
@@ -26,7 +24,7 @@ let
   isBroken = any id (attrValues finalAttrs.passthru.brokenConditions);
 
   finalAttrs = {
-    name = "${cudaNamePrefix}-auto-add-cuda-compat-runpath-hook";
+    name = "auto-add-cuda-compat-runpath-hook";
     propagatedBuildInputs = [
       # Used in the setup hook
       autoFixElfFiles

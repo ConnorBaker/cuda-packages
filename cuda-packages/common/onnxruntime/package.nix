@@ -1,7 +1,6 @@
 {
   abseil-cpp,
   addDriverRunpath,
-  cudaStdenv,
   callPackage,
   clog,
   cpuinfo,
@@ -31,6 +30,7 @@
   pkg-config,
   python3,
   re2,
+  stdenv,
   tensorrt,
   zlib,
 }:
@@ -45,7 +45,7 @@ let
     optionalString
     ;
   inherit (lib.trivial) const flip;
-  inherit (cudaStdenv.cc) isClang;
+  inherit (stdenv.cc) isClang;
   inherit (onnx.passthru) cppProtobuf;
   inherit (python3.pkgs)
     buildPythonPackage
@@ -57,7 +57,7 @@ let
     setuptools
     ;
 
-  isAarch64Linux = cudaStdenv.hostPlatform.system == "aarch64-linux";
+  isAarch64Linux = stdenv.hostPlatform.system == "aarch64-linux";
 
   vendored = mapAttrs (const (flip callPackage { })) {
     cutlass = ./cutlass.nix;
@@ -70,10 +70,9 @@ let
   # TODO: Only building and installing Python package; no installation of the C++ library.
 
   finalAttrs = {
-    # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
-    # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
+    # Must opt-out of __structuredAttrs which is set to true by default by cudaPackages.callPackage, but currently
+    # incompatible with Python packaging: https://github.com/NixOS/nixpkgs/pull/347194.
     __structuredAttrs = false;
-    stdenv = cudaStdenv;
 
     pname = "onnxruntime";
 

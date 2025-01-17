@@ -1,7 +1,6 @@
 {
   cuda_cudart,
   cuda_nvcc,
-  cudaStdenv,
   fetchFromGitHub,
   lib,
   onnx,
@@ -23,10 +22,9 @@ let
     ;
 
   finalAttrs = {
-    # Must opt-out of __structuredAttrs which is on by default in our stdenv, but currently incompatible with Python
-    # packaging: https://github.com/NixOS/nixpkgs/pull/347194.
+    # Must opt-out of __structuredAttrs which is set to true by default by cudaPackages.callPackage, but currently
+    # incompatible with Python packaging: https://github.com/NixOS/nixpkgs/pull/347194.
     __structuredAttrs = false;
-    stdenv = cudaStdenv;
 
     pname = "onnx-tensorrt";
     version = "10.7";

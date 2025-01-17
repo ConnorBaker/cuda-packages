@@ -23,6 +23,8 @@ let
     ;
   inherit (lib.cuda.utils)
     buildRedistPackages
+    dropDots
+    mkCudaPackagesScope
     mkCudaVariant
     mkRealArchitecture
     versionAtMost
@@ -30,7 +32,6 @@ let
     versionBoundedInclusive
     versionNewer
     ;
-  inherit (lib.customisation) makeScope;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
   inherit (lib.lists) map;
@@ -40,7 +41,6 @@ let
     versionAtLeast
     versionOlder
     ;
-  inherit (lib.trivial) warn;
   inherit (lib.upstreamable.trivial) addNameToFetchFromGitLikeArgs;
   inherit (lib.versions) major majorMinor;
 
@@ -103,35 +103,53 @@ let
                 cudaOlder
                 ;
 
-              # Aliases
-              backendStdenv = warn "cudaPackages.backendStdenv has been renamed, use cudaPackages.cudaStdenv instead" finalCudaPackages.cudaStdenv;
-              cudaVersion = warn "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorVersion;
-              cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
-              cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
-
               # Utility function for automatically naming fetchFromGitHub derivations with `name`.
               fetchFromGitHub = fetchFromGitHubAutoName;
               fetchFromGitLab = fetchFromGitLabAutoName;
+
+              # Name prefix
+              cudaNamePrefix = "cuda${cudaMajorMinorVersion}";
+
+              # Aliases
+              # TODO(@connorbaker): Warnings disabled for now.
+              backendStdenv = final.stdenv;
+              cudaVersion = cudaMajorMinorVersion;
+              cudaFlags = finalCudaPackages.flags // {
+                cudaComputeCapabilityToName = finalCudaPackages.flags.cudaCapabilityToName;
+                dropDot = dropDots;
+                # cudaComputeCapabilityToName = warn "cudaPackages.flags.cudaComputeCapabilityToName is deprecated, use cudaPackages.flags.cudaCapabilityToName instead" cudaCapabilityToName;
+                # dropDot = warn "cudaPackages.flags.dropDot is deprecated, use lib.cuda.utils.dropDots instead" dropDots;
+              };
+              # backendStdenv = warn "cudaPackages.backendStdenv has been removed, use stdenv instead" final.stdenv;
+              # cudaVersion = warn "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorVersion;
+              # cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
+              cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
             })
           ]
           # Redistributable packages
-          ++ map (
-            redistName:
+          ++ (
             let
-              manifestVersion = cudaPackagesConfig.redists.${redistName};
-              redistConfig = cudaConfig.redists.${redistName};
+              buildRedistPackages' = buildRedistPackages {
+                inherit
+                  desiredCudaVariant
+                  finalCudaPackages
+                  hostRedistArch
+                  ;
+              };
             in
-            buildRedistPackages {
-              inherit
-                desiredCudaVariant
-                finalCudaPackages
-                hostRedistArch
-                redistName
-                ;
-              callPackageOverriders = redistConfig.versionedOverrides.${manifestVersion} or { };
-              manifest = redistConfig.versionedManifests.${manifestVersion};
-            }
-          ) (attrNames cudaPackagesConfig.redists)
+            map (
+              redistName:
+              let
+                manifestVersion = cudaPackagesConfig.redists.${redistName};
+                redistConfig = cudaConfig.redists.${redistName};
+              in
+              buildRedistPackages' {
+                inherit redistName;
+                callPackageOverriders = redistConfig.versionedOverrides.${manifestVersion} or { };
+                manifest = redistConfig.versionedManifests.${manifestVersion};
+              }
+            ) (attrNames cudaPackagesConfig.redists)
+          )
           # CUDA version-specific packages
           ++ map (
             directory:
@@ -142,7 +160,7 @@ let
           ) cudaPackagesConfig.packagesDirectories
         );
     in
-    makeScope final.newScope (
+    mkCudaPackagesScope final.newScope (
       # User additions are included through final.cudaPackagesExtensions
       extends (composeManyExtensions final.cudaPackagesExtensions) cudaPackagesFun
     );

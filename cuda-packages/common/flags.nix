@@ -14,6 +14,7 @@ let
   inherit (lib.attrsets)
     attrNames
     attrValues
+    dontRecurseIntoAttrs
     filterAttrs
     mapAttrs
     ;
@@ -36,7 +37,7 @@ let
     mkRealArchitecture
     mkVirtualArchitecture
     ;
-  inherit (lib.trivial) pipe throwIf warn;
+  inherit (lib.trivial) pipe throwIf;
   inherit (lib.strings) concatStringsSep;
   inherit (stdenv) hostPlatform;
 
@@ -325,7 +326,7 @@ assert
       Expected: ${builtins.toJSON expected}
       Actual: ${builtins.toJSON actualWrapped}
     '';
-{
+dontRecurseIntoAttrs {
   # formatCapabilities :: { cudaCapabilities: List Capability, cudaForwardCompat: Boolean } ->  { ... }
   inherit formatCapabilities;
 
@@ -337,10 +338,6 @@ assert
 
   # dropDots :: String -> String
   inherit dropDots;
-
-  # TODO: Aliases to be removed.
-  cudaComputeCapabilityToName = warn "cudaPackages.flags.cudaComputeCapabilityToName is deprecated, use cudaPackages.flags.cudaCapabilityToName instead" cudaCapabilityToName;
-  dropDot = warn "cudaPackages.flags.dropDot is deprecated, use lib.cuda.utils.dropDots instead" dropDots;
 
   inherit
     defaultCapabilities

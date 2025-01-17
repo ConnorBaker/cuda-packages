@@ -2,7 +2,6 @@
   cuda_cudart,
   cudaConfig,
   cudaPackages,
-  cudaStdenv,
   dbus,
   e2fsprogs,
   fontconfig,
@@ -16,6 +15,7 @@
   nss,
   qt6Packages,
   rdma-core,
+  stdenv,
   ucx,
   xcb-util-cursor,
   xorg,
@@ -139,7 +139,7 @@ finalAttrs: prevAttrs: {
       xcbutilrenderutil
       xcbutilwm
     ]
-    ++ optionals cudaStdenv.hostPlatform.isAarch64 [
+    ++ optionals stdenv.hostPlatform.isAarch64 [
       qtpositioning
       qtwebengine
     ]
