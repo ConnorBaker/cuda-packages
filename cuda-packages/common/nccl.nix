@@ -52,6 +52,12 @@ cudaStdenv.mkDerivation (finalAttrs: {
 
   postPatch = ''
     patchShebangs ./src/device/generate.py
+
+    nixLog "removing NVIDIA's ccbin declaration because we provide our own"
+    substituteInPlace ./makefiles/common.mk \
+      --replace-fail \
+        'NVCUFLAGS  := -ccbin $(CXX) ' \
+        'NVCUFLAGS  := '
   '';
 
   # TODO: This would likely break under cross; need to delineate between build and host packages.
