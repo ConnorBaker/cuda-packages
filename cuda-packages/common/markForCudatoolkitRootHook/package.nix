@@ -10,6 +10,7 @@
 }:
 let
   inherit (cudaConfig) hostRedistArch;
+  inherit (cudaStdenv) cudaNamePrefix;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id;
@@ -17,7 +18,7 @@ let
   isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
 
   finalAttrs = {
-    name = "${cudaStdenv.cudaNamePrefix}-mark-for-cudatoolkit-root-hook";
+    name = "${cudaNamePrefix}-mark-for-cudatoolkit-root-hook";
     propagatedBuildInputs = [
       # We add a hook to replace the standard logging functions.
       nixLogWithLevelAndFunctionNameHook
