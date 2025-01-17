@@ -159,7 +159,7 @@ cudaStdenv.mkDerivation (
       # NB: We don't actually know if this is the right thing to do
       # NOTE: Not all packages actually need this, but it's easier to just add it than create overrides for nearly all
       # of them.
-      cudaStdenv.cudaHostStdenv.cc.cc.lib
+      cudaStdenv.cc.cc.lib
     ];
 
     # Picked up by autoPatchelf

@@ -45,7 +45,6 @@ cudaStdenv.mkDerivation (finalAttrs: {
   buildInputs = [
     cuda_cccl
     cuda_cudart
-    cuda_nvcc # crt/host_config.h
   ];
 
   env.NIX_CFLAGS_COMPILE = toString [ "-Wno-unused-function" ];

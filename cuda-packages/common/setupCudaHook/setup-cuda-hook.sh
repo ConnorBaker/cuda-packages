@@ -137,6 +137,17 @@ setupCUDACmakeFlags() {
     appendToVar cmakeFlags "-DCMAKE_POLICY_DEFAULT_CMP0074=OLD"
     nixLog "appended -DCMAKE_POLICY_DEFAULT_CMP0074=OLD to cmakeFlags"
   fi
+
+  # Instruct CMake to ignore libraries provided by NVCC's host compiler when linking, as these should be supplied by
+  # the stdenv's compiler.
+  for sub_path in lib{,64,/gcc/@hostPlatformConfig@/@ccVersion@}; do
+    addToSearchPathWithCustomDelimiter ";" CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE "@unwrappedCCRoot@/$sub_path"
+    nixLog "appended @unwrappedCCRoot@/$sub_path to CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE"
+    if [[ $sub_path == "lib" ]]; then
+      addToSearchPathWithCustomDelimiter ";" CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE "@unwrappedCCLibRoot@/$sub_path"
+      nixLog "appended @unwrappedCCLibRoot@/$sub_path to CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE"
+    fi
+  done
 }
 
 postFixupHooks+=(propagateCudaLibraries)

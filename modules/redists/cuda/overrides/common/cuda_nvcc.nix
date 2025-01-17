@@ -1,13 +1,36 @@
 {
   cudaAtLeast,
+  cudaConfig,
+  cudaMajorMinorPatchVersion,
+  cudaMajorMinorVersion,
   cudaOlder,
   cudaStdenv,
   lib,
+  pkgs,
   setupCudaHook,
+  stdenvAdapters,
 }:
 let
   inherit (lib.lists) optionals;
   inherit (lib.strings) concatStringsSep optionalString;
+
+  # This is what nvcc uses as a backend,
+  # and it has to be an officially supported one (e.g. gcc11 for cuda11).
+  #
+  # It, however, propagates current stdenv's libstdc++ to avoid "GLIBCXX_* not found errors"
+  # when linked with other C++ libraries.
+  # E.g. for cudaPackages_11_8 we use gcc11 with gcc12's libstdc++
+  # Cf. https://github.com/NixOS/nixpkgs/pull/218265 for context
+  nvccStdenv =
+    let
+      defaultNvccHostCompilerMajorVersion =
+        cudaConfig.data.nvccCompatibilities.${cudaMajorMinorVersion}.gcc.maxMajorVersion;
+      defaultNvccHostStdenv = pkgs."gcc${defaultNvccHostCompilerMajorVersion}Stdenv";
+      nvccConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion}.nvcc;
+      nvccHostStdenv =
+        if nvccConfig.hostStdenv != null then nvccConfig.hostStdenv else defaultNvccHostStdenv;
+    in
+    stdenvAdapters.useLibsFrom cudaStdenv nvccHostStdenv;
 in
 finalAttrs: prevAttrs: {
   # Patch the nvcc.profile.
@@ -65,7 +88,7 @@ finalAttrs: prevAttrs: {
   # manipulating the files in `nix-support` in the respective outputs, I'm not sure there is a way to do per-output
   # manipulation of dependencies. If there is, I'd love to hear about it!
   postInstall =
-    (prevAttrs.postInstall or "")
+    prevAttrs.postInstall or ""
     + optionalString finalAttrs.finalPackage.meta.available (
       # Always move the nvvm directory to the bin output.
       ''
@@ -88,11 +111,11 @@ finalAttrs: prevAttrs: {
         nixLog "adding setupCudaHook to $outputBin's propagatedBuildInputs"
         printWords "${setupCudaHook}" >> "''${!outputBin}/nix-support/propagated-build-inputs"
       ''
-      # Add the dependency on cudaStdenv.cc to the nvcc.profile and native-propagated-build-inputs.
+      # Add the dependency on nvccStdenv.cc to the nvcc.profile and native-propagated-build-inputs.
       # NOTE: No need to add a dependency on `newNvvmDir` since it's already in the bin output.
       + ''
-        nixLog "adding cudaStdenv.cc to $outputBin's propagatedBuildInputs"
-        printWords "${cudaStdenv.cc}" >> "''${!outputBin}/nix-support/native-propagated-build-inputs"
+        nixLog "adding nvccStdenv.cc to $outputBin's nativePropagatedBuildInputs"
+        printWords "${nvccStdenv.cc}" >> "''${!outputBin}/nix-support/native-propagated-build-inputs"
       ''
       # Unconditional patching to remove the use of $(_TARGET_SIZE_) since we don't use lib64 in Nixpkgs
       + ''
@@ -137,14 +160,14 @@ finalAttrs: prevAttrs: {
               '${oldNvvmDir}/' \
               "${newNvvmDir}/"
         ''
-        # Add the dependency on cudaStdenv.cc and the new NVVM directories to the nvcc.profile.
+        # Add the dependency on nvccStdenv.cc and the new NVVM directories to the nvcc.profile.
         # NOTE: Escape the dollar sign in the variable expansion to prevent early expansion.
         + ''
-          nixLog "adding cudaStdenv.cc and ${newNvvmDir} to nvcc.profile"
+          nixLog "adding nvccStdenv.cc and ${newNvvmDir} to nvcc.profile"
           cat << EOF >> "''${!outputBin}/bin/nvcc.profile"
 
           # Fix a compatible backend compiler
-          PATH += "${cudaStdenv.cc}/bin":
+          PATH += "${nvccStdenv.cc}/bin":
 
           # Expose the split-out nvvm
           LIBRARIES =+ \$(_SPACE_) "-L${newNvvmDir}/lib"
@@ -157,7 +180,11 @@ finalAttrs: prevAttrs: {
   # The nvcc and cicc binaries contain hard-coded references to /usr
   allowFHSReferences = true;
 
-  meta = prevAttrs.meta // {
+  passthru = prevAttrs.passthru or { } // {
+    inherit nvccStdenv;
+  };
+
+  meta = prevAttrs.meta or { } // {
     mainProgram = "nvcc";
   };
 }

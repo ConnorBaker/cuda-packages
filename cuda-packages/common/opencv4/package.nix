@@ -104,6 +104,7 @@ let
     concatStrings
     concatStringsSep
     optionalString
+    versionOlder
     ;
   inherit (lib.trivial) flip;
   inherit (python3Packages)
@@ -500,6 +501,10 @@ cudaStdenv.mkDerivation (finalAttrs: {
       (cmakeFeature "CUDA_ARCH_PTX" (last cudaCapabilities))
 
       (cmakeOptionType "path" "NVIDIA_OPTICAL_FLOW_2_0_HEADERS_PATH" nvidia-optical-flow-sdk.outPath)
+    ]
+    ++ optionals (versionOlder cuda_nvcc.passthru.nvccStdenv.cc.version "13") [
+      # CMAKE_CXX_STANDARD=11 is too old to support protobuf(25.5.0) and/or abseil-cpp. Use C++17 or later.
+      (cmakeFeature "CMAKE_CXX_STANDARD" "17")
     ]
     ++ optionals enablePython [
       (cmakeOptionType "path" "OPENCV_PYTHON_INSTALL_PATH" python.sitePackages)
