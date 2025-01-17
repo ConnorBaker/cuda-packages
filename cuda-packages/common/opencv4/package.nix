@@ -197,10 +197,10 @@ let
   ade = rec {
     src = fetchurl {
       url = "https://github.com/opencv/ade/archive/${name}";
-      hash = "sha256-WG/GudVpkO10kOJhoKXFMj672kggvyRYCIpezal3wcE=";
+      hash = "sha256-O+Yshk3N2Lkl6S9qWxWnoDmBngSms88IiCfwjPLMB78=";
     };
-    name = "v0.1.2d.zip";
-    md5 = "dbb095a8bf3008e91edbbf45d8d34885";
+    name = "v0.1.2e.zip";
+    md5 = "962ce79e0b95591f226431f7b5f152cd";
     dst = ".cache/ade";
   };
 
