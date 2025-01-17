@@ -542,14 +542,15 @@ cudaStdenv.mkDerivation (finalAttrs: {
         "$out/lib/pkgconfig/opencv4.pc"
       mkdir "$cxxdev"
     ''
-    # remove the requirement that the exact same version of CUDA is used in packages
-    # consuming OpenCV's CMakes files
+    # Remove the requirement that the exact same version of CUDA is used in packages
+    # consuming OpenCV's CMakes files.
+    # NOTE: These lines are not present in all versions, so fail quietly if they are not found.
     + ''
       substituteInPlace "$out/lib/cmake/opencv4/OpenCVConfig.cmake" \
-        --replace-fail \
+        --replace-quiet \
           'find_package(CUDAToolkit ''${OpenCV_CUDA_VERSION} EXACT REQUIRED)' \
           'find_package(CUDAToolkit REQUIRED)' \
-        --replace-fail \
+        --replace-quiet \
           'message(FATAL_ERROR "OpenCV library was compiled with CUDA' \
           'message("OpenCV library was compiled with CUDA'
     ''
