@@ -17,6 +17,11 @@ fi
 declare -ig cudaSetupHookOnce=1
 declare -Ag cudaHostPathsSeen=()
 
+# NOTE: `appendToVar` does not export the variable to the environment because it is assumed to be a shell
+# variable. To avoid variables being locally scoped, we must export it prior to adding values.
+export NVCC_PREPEND_FLAGS="${NVCC_PREPEND_FLAGS:-}"
+export NVCC_APPEND_FLAGS="${NVCC_APPEND_FLAGS:-}"
+
 preConfigureHooks+=(setupCUDAPopulateArrays)
 nixLog "added setupCUDAPopulateArrays to preConfigureHooks"
 
@@ -75,20 +80,18 @@ setupCUDAEnvironmentVariables() {
     nixLog "set CUDAARCHS to $CUDAARCHS"
   fi
 
-  # For non-CMake projects:
-  # We prepend --compiler-bindir to nvcc flags.
-  # Downstream packages can override these, because NVCC
-  # uses the last --compiler-bindir it gets on the command line.
-  # https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#compiler-bindir-directory-ccbin
-  # NOTE: Using "--compiler-bindir" results in "incompatible redefinition"
-  # warnings, while using the short form "-ccbin" does not... more often than not.
-  # Perhaps the two forms can't exist in the same command line?
-  appendToVar NVCC_PREPEND_FLAGS "-ccbin @ccFullPath@"
-  nixLog "appended -ccbin @ccFullPath@ to NVCC_PREPEND_FLAGS"
-
   # NOTE: CUDA 12.5 and later allow setting NVCC_CCBIN as a lower-precedent way of using -ccbin.
+  # https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#compiler-bindir-directory-ccbin
   export NVCC_CCBIN="@ccFullPath@"
   nixLog "set NVCC_CCBIN to @ccFullPath@"
+
+  # We append --compiler-bindir because NVCC uses the last --compiler-bindir it gets on the command line.
+  # If users are able to be trusted to specify NVCC's host compiler, they can filter out this arg.
+  # NOTE: Warnings of the form
+  # nvcc warning : incompatible redefinition for option 'compiler-bindir', the last value of this option was used
+  # indicate something in the build system is specifying `--compiler-bindir` (or `-ccbin`) and should be patched.
+  appendToVar NVCC_APPEND_FLAGS "--compiler-bindir=@ccFullPath@"
+  nixLog "appended --compiler-bindir=@ccFullPath@ to NVCC_APPEND_FLAGS"
 
   # NOTE: We set -Xfatbin=-compress-all, which reduces the size of the compiled
   #   binaries. If binaries grow over 2GB, they will fail to link. This is a problem for us, as
@@ -106,7 +109,7 @@ preConfigureHooks+=(setupCUDACmakeFlags)
 nixLog "added setupCUDACmakeFlags to preConfigureHooks"
 
 setupCUDACmakeFlags() {
-  # If CMake is not present, don't set the flags.
+  # If CMake is not present, don't set CMake flags.
   if ! command -v cmake &>/dev/null; then
     return 0
   fi
