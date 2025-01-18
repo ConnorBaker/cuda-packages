@@ -26,7 +26,9 @@ prevAttrs: {
   # multiple versions of `libcuda.so` in the environment.
   # NOTE: `cuda_compat` can be disabled by setting the package to `null`. This is useful in cases where
   # the host OS has a recent enough CUDA driver that the compatibility library isn't needed.
-  propagatedBuildInputs = optionals (flags.isJetsonBuild && cuda_compat != null) [ cuda_compat ];
+  propagatedBuildInputs =
+    prevAttrs.propagatedBuildInputs or [ ]
+    ++ optionals (flags.isJetsonBuild && cuda_compat != null) [ cuda_compat ];
 
   postPatch =
     prevAttrs.postPatch or ""

@@ -16,7 +16,7 @@ prevAttrs: {
     zlib
   ];
 
-  meta = prevAttrs.meta // {
+  meta = prevAttrs.meta or { } // {
     homepage = "https://developer.nvidia.com/cudnn";
     maintainers =
       prevAttrs.meta.maintainers
