@@ -808,6 +808,20 @@ in
     let
       inherit (finalCudaPackages.pkgs) nixLogWithLevelAndFunctionNameHook noBrokenSymlinksHook;
       inherit (finalCudaPackages) cudaNamePrefix;
+      conditionallyAddHooks =
+        prevAttrs: depListName:
+        let
+          prevDepList = prevAttrs.${depListName} or [ ];
+        in
+        prevDepList
+        # We add a hook to replace the standard logging functions.
+        ++ optionals (!(elem nixLogWithLevelAndFunctionNameHook prevDepList)) [
+          nixLogWithLevelAndFunctionNameHook
+        ]
+        # We add a hook to make sure we're not propagating broken symlinks.
+        ++ optionals (!(elem noBrokenSymlinksHook prevDepList)) [
+          noBrokenSymlinksHook
+        ];
     in
     finalAttrs: prevAttrs: {
       # Default __structuredAttrs and strictDeps to true.
@@ -824,19 +838,9 @@ in
         else
           prevAttrs.name;
 
-      propagatedBuildInputs =
-        let
-          prevPropagatedBuildInputs = prevAttrs.propagatedBuildInputs or [ ];
-        in
-        prevPropagatedBuildInputs
-        # We add a hook to replace the standard logging functions.
-        ++ optionals (!(elem nixLogWithLevelAndFunctionNameHook prevPropagatedBuildInputs)) [
-          nixLogWithLevelAndFunctionNameHook
-        ]
-        # We add a hook to make sure we're not propagating broken symlinks.
-        ++ optionals (!(elem noBrokenSymlinksHook prevPropagatedBuildInputs)) [
-          noBrokenSymlinksHook
-        ];
+      nativeBuildInputs = conditionallyAddHooks prevAttrs "nativeBuildInputs";
+
+      propagatedBuildInputs = conditionallyAddHooks prevAttrs "propagatedBuildInputs";
     };
 
   /**
