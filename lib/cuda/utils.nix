@@ -824,12 +824,19 @@ in
         else
           prevAttrs.name;
 
-      propagatedBuildInputs = prevAttrs.propagatedBuildInputs or [ ] ++ [
+      propagatedBuildInputs =
+        let
+          prevPropagatedBuildInputs = prevAttrs.propagatedBuildInputs or [ ];
+        in
+        prevPropagatedBuildInputs
         # We add a hook to replace the standard logging functions.
-        nixLogWithLevelAndFunctionNameHook
+        ++ optionals (!(elem nixLogWithLevelAndFunctionNameHook prevPropagatedBuildInputs)) [
+          nixLogWithLevelAndFunctionNameHook
+        ]
         # We add a hook to make sure we're not propagating broken symlinks.
-        noBrokenSymlinksHook
-      ];
+        ++ optionals (!(elem noBrokenSymlinksHook prevPropagatedBuildInputs)) [
+          noBrokenSymlinksHook
+        ];
     };
 
   /**

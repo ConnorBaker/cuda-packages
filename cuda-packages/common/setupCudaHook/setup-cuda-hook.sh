@@ -16,6 +16,14 @@ fi
 
 declare -ig cudaSetupHookOnce=1
 declare -Ag cudaHostPathsSeen=()
+declare -ag cudaForbiddenRPATHs=(
+  # Compiler libraries
+  "@unwrappedCCRoot@/lib"
+  "@unwrappedCCRoot@/lib64"
+  "@unwrappedCCRoot@/gcc/@hostPlatformConfig@/@ccVersion@"
+  # Compiler library
+  "@unwrappedCCLibRoot@/lib"
+)
 
 # NOTE: `appendToVar` does not export the variable to the environment because it is assumed to be a shell
 # variable. To avoid variables being locally scoped, we must export it prior to adding values.
@@ -140,13 +148,9 @@ setupCUDACmakeFlags() {
 
   # Instruct CMake to ignore libraries provided by NVCC's host compiler when linking, as these should be supplied by
   # the stdenv's compiler.
-  for sub_path in lib{,64,/gcc/@hostPlatformConfig@/@ccVersion@}; do
-    addToSearchPathWithCustomDelimiter ";" CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE "@unwrappedCCRoot@/$sub_path"
-    nixLog "appended @unwrappedCCRoot@/$sub_path to CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE"
-    if [[ $sub_path == "lib" ]]; then
-      addToSearchPathWithCustomDelimiter ";" CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE "@unwrappedCCLibRoot@/$sub_path"
-      nixLog "appended @unwrappedCCLibRoot@/$sub_path to CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE"
-    fi
+  for forbiddenRPATH in "${cudaForbiddenRPATHs[@]}"; do
+    addToSearchPathWithCustomDelimiter ";" CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE "$forbiddenRPATH"
+    nixLog "appended $forbiddenRPATH to CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE"
   done
 }
 
@@ -174,4 +178,39 @@ propagateCudaLibraries() {
   # One'd expect this should be propagated-host-host-deps, but that doesn't seem to work
   printWords "${propagatedBuildInputs[@]}" >>"${!cudaPropagateToOutput}/nix-support/propagated-build-inputs"
   nixLog "added ${propagatedBuildInputs[*]} to the propagatedBuildInputs of output $cudaPropagateToOutput"
+}
+
+postFixupHooks+=(disallowNVCCHostCompilerLinkLeakageInAllOutputs)
+nixLog "added disallowNVCCHostCompilerLinkLeakageInAllOutputs to postFixupHooks"
+
+disallowNVCCHostCompilerLinkLeakage() {
+  local -r output="${1:?}"
+  local libpath
+  local rpath
+
+  if [[ ! -e $output ]]; then
+    nixWarnLog "skipping non-existent output $output"
+    return 0
+  fi
+  nixLog "running on $output"
+
+  # NOTE: libpath is absolute because we're running `find` against an absolute path (`output`).
+  while IFS= read -r -d $'\0' libpath; do
+    while IFS= read -r -d ':' rpath; do
+      for forbiddenRPATH in "${cudaForbiddenRPATHs[@]}"; do
+        if [[ $rpath == "$forbiddenRPATH"* ]]; then
+          nixErrorLog "forbidden path $forbiddenRPATH exists in RPATH of $libpath"
+          return 1
+        fi
+      done
+    done < <(patchelf --print-rpath "$libpath" || echo "")
+  done < <(find "$output" -type f \( -name '*.so' -o -name '*.so.*' \) -print0)
+
+  return 0
+}
+
+disallowNVCCHostCompilerLinkLeakageInAllOutputs() {
+  for output in $(getAllOutputNames); do
+    disallowNVCCHostCompilerLinkLeakage "${!output}"
+  done
 }
