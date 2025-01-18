@@ -29,10 +29,10 @@ stdenv.mkDerivation (finalAttrs: {
   version = "1.9.0";
 
   src = fetchFromGitHub {
-    owner = "NVIDIA";
+    owner = "ConnorBaker";
     repo = "cudnn-frontend";
-    tag = "v${finalAttrs.version}";
-    hash = "sha256-Vc5jqB1XHcJEdKG0nxbWLewW2fDezRVwjUSzPDubSGE=";
+    rev = "4ce40a0c3de0e8a7065caf1cf59a90493e084682";
+    hash = "sha256-+tEhkE4mz/GPEytV3xavdyfGKYDWsw3lSWNEZid6lcE=";
   };
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a
@@ -58,24 +58,16 @@ stdenv.mkDerivation (finalAttrs: {
     cuda_cudart
   ];
 
-  postPatch =
-    # nlohmann_json should be the only vendored dependency.
-    ''
-      nixLog "patching source to use nlohmann_json from nixpkgs"
-      rm -rf include/cudnn_frontend/thirdparty/nlohmann
-      rmdir include/cudnn_frontend/thirdparty
-      substituteInPlace include/cudnn_frontend_utils.h \
-        --replace-fail \
-          '#include "cudnn_frontend/thirdparty/nlohmann/json.hpp"' \
-          '#include <nlohmann/json.hpp>'
-    ''
-    # Use our own CMakeLists.txt and add a config to make the include files discoverable
-    + ''
-      nixLog "replacing CMakeLists.txt to link against forgotten libraries and install targets"
-      rm ./CMakeLists.txt
-      install -Dm644 "${./CMakeLists.txt}" ./CMakeLists.txt
-      install -Dm644 "${./cudnn_frontend-config.cmake.in}" ./cudnn_frontend-config.cmake.in
-    '';
+  # nlohmann_json should be the only vendored dependency.
+  postPatch = ''
+    nixLog "patching source to use nlohmann_json from nixpkgs"
+    rm -rf include/cudnn_frontend/thirdparty/nlohmann
+    rmdir include/cudnn_frontend/thirdparty
+    substituteInPlace include/cudnn_frontend_utils.h \
+      --replace-fail \
+        '#include "cudnn_frontend/thirdparty/nlohmann/json.hpp"' \
+        '#include <nlohmann/json.hpp>'
+  '';
 
   cmakeFlags = [
     (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
