@@ -90,8 +90,9 @@ let
     pyproject = true;
 
     env.NIX_CFLAGS_COMPILE = builtins.toString (
+      [ "-Wno-error=maybe-uninitialized" ]
       # Clang generates many more warnings than GCC does, so we just disable erroring on warnings entirely.
-      optionals isClang [ "-Wno-error" ]
+      ++ optionals isClang [ "-Wno-error" ]
     );
 
     # NOTE: Blocked moving to newer protobuf:
@@ -216,7 +217,7 @@ let
         # Configure build
         (cmakeBool "onnxruntime_BUILD_SHARED_LIB" true)
         (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" finalAttrs.doCheck) # TODO: Build unit tests so long as they don't require GPU access.
-        (cmakeBool "onnxruntime_ENABLE_LTO" true)
+        (cmakeBool "onnxruntime_ENABLE_LTO" false) # NOTE: Cannot enable LTO when building objects with different compiler versions, like the compiler used by NVCC.
         (cmakeBool "onnxruntime_ENABLE_PYTHON" true)
         (cmakeBool "onnxruntime_USE_CUDA" true)
         (cmakeBool "onnxruntime_USE_FULL_PROTOBUF" true) # NOTE: Using protobuf_21-lite causes linking errors
@@ -270,7 +271,6 @@ let
             --parallel ''${NIX_BUILD_CORES:?} \
             --enable_pybind \
             --build_wheel \
-            --enable_lto \
             ${optionalString nccl.meta.available ''--enable_nccl --nccl_home "${getLib nccl}"''} \
             --use_cuda \
             --cuda_home "${getLib cuda_cudart}" \
