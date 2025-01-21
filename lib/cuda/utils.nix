@@ -422,13 +422,21 @@ in
     let
       inherit (finalCudaPackages)
         callPackage
+        cudaNamePrefix
         cudaMajorMinorPatchVersion
         redist-builder
         ;
       inherit (finalCudaPackages.flags) isJetsonBuild;
-      inherit (finalCudaPackages.pkgs) fetchzip stdenv;
+      inherit (finalCudaPackages.pkgs)
+        fetchzip
+        nixLogWithLevelAndFunctionNameHook
+        noBrokenSymlinksHook
+        stdenv
+        ;
       isNixHostPlatformSystemAarch64 = stdenv.hostPlatform.isAarch64;
-      overrideAttrsDefaultsFn = mkCudaPackagesOverrideAttrsDefaultsFn finalCudaPackages;
+      overrideAttrsDefaultsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
+        inherit cudaNamePrefix nixLogWithLevelAndFunctionNameHook noBrokenSymlinksHook;
+      };
     in
     {
       callPackageOverriders,
@@ -791,7 +799,10 @@ in
     finalCudaPackages:
     let
       inherit (finalCudaPackages) newScope;
-      overrideAttrsFn = mkCudaPackagesOverrideAttrsDefaultsFn finalCudaPackages;
+      overrideAttrsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
+        inherit (finalCudaPackages) cudaNamePrefix;
+        inherit (finalCudaPackages.pkgs) nixLogWithLevelAndFunctionNameHook noBrokenSymlinksHook;
+      };
     in
     fn: args:
     let
@@ -804,10 +815,12 @@ in
   */
   # TODO(@connorbaker):
   mkCudaPackagesOverrideAttrsDefaultsFn =
-    finalCudaPackages:
+    {
+      cudaNamePrefix,
+      nixLogWithLevelAndFunctionNameHook,
+      noBrokenSymlinksHook,
+    }:
     let
-      inherit (finalCudaPackages.pkgs) nixLogWithLevelAndFunctionNameHook noBrokenSymlinksHook;
-      inherit (finalCudaPackages) cudaNamePrefix;
       conditionallyAddHooks =
         prevAttrs: depListName:
         let
