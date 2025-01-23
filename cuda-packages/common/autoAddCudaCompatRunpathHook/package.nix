@@ -1,4 +1,4 @@
-# autoAddCudaCompatRunpath hook must be added AFTER `setupCudaHook`. Both
+# `autoAddCudaCompatRunpathHook` must be added AFTER `cudaSetupHook`. Both
 # hooks prepend a path with `libcuda.so` to the `DT_RUNPATH` section of
 # patched elf files, but `cuda_compat` path must take precedence (otherwise,
 # it doesn't have any effect) and thus appear first. Meaning this hook must be
@@ -54,4 +54,4 @@ let
     };
   };
 in
-makeSetupHook finalAttrs ./auto-add-cuda-compat-runpath.sh
+makeSetupHook finalAttrs ./auto-add-cuda-compat-runpath-hook.sh

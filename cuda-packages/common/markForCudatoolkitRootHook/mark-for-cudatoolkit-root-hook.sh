@@ -20,10 +20,10 @@ markForCUDAToolkit_ROOT() {
 
   # Return early if the file already exists.
   if [[ -f $markerPath ]]; then
-    nixDebugLog "output ${output:?} already marked for inclusion by setupCudaHook"
+    nixDebugLog "output ${output:?} already marked for inclusion by cudaSetupHook"
     return 0
   fi
 
-  nixLog "marking output ${output:?} for inclusion by setupCudaHook"
+  nixLog "marking output ${output:?} for inclusion by cudaSetupHook"
   touch "$markerPath"
 }

@@ -4,7 +4,7 @@
 if ((${hostOffset:?} == -1 && ${targetOffset:?} == 0)); then
   # shellcheck disable=SC1091
   source @nixLogWithLevelAndFunctionNameHook@
-  nixLog "sourcing auto-add-cuda-compat-runpath.sh"
+  nixLog "sourcing auto-add-cuda-compat-runpath-hook.sh"
 else
   return 0
 fi

@@ -1,17 +1,13 @@
 # Currently propagated by cuda_nvcc or cudatoolkit, rather than used directly
 {
   config,
-  cuda_nvcc,
   cudaConfig,
-  flags,
   lib,
   makeSetupHook,
   nixLogWithLevelAndFunctionNameHook,
 }:
 let
-  inherit (cuda_nvcc.passthru.nvccStdenv) cc hostPlatform;
   inherit (cudaConfig) hostRedistArch;
-  inherit (flags) cmakeCudaArchitecturesString;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id;
@@ -19,26 +15,16 @@ let
   isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
 
   finalAttrs = {
-    name = "setup-cuda-hook";
+    name = "cuda-setup-hook";
 
     propagatedBuildInputs = [
       # We add a hook to replace the standard logging functions.
       nixLogWithLevelAndFunctionNameHook
     ];
 
-    # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
-    # path from nvccStdenv's host compiler. Generalize this to Clang as well!
     substitutions = {
-      # Required in addition to ccRoot as otherwise bin/gcc is looked up
-      # when building CMakeCUDACompilerId.cu
-      ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
-      ccVersion = cc.version;
-      unwrappedCCRoot = cc.cc.outPath;
-      unwrappedCCLibRoot = cc.cc.lib.outPath;
-      hostPlatformConfig = hostPlatform.config;
-      cudaArchs = cmakeCudaArchitecturesString;
       nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
-      setupCudaHook = placeholder "out";
+      cudaSetupHook = placeholder "out";
     };
 
     passthru.badPlatformsConditions = {
@@ -57,4 +43,4 @@ let
     };
   };
 in
-makeSetupHook finalAttrs ./setup-cuda-hook.sh
+makeSetupHook finalAttrs ./cuda-setup-hook.sh

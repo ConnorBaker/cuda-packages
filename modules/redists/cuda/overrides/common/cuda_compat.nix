@@ -26,5 +26,5 @@ prevAttrs: {
 
   # NOTE: libraries are left in the `compat` directory by design: they require runtime driver libraries unavailable
   # to us inside the sandbox. Instead, linking against `libcuda.so` is handled by the stubs provided by `cuda_cudart`,
-  # and the runtime path is set to our compatibility libraries by the `autoAddCudaCompatRunpath` hook.
+  # and the runtime path is set to our compatibility libraries by `autoAddCudaCompatRunpathHook`.
 }
