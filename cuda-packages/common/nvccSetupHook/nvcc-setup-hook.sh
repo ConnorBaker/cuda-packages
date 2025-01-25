@@ -111,16 +111,15 @@ nvccDisallowHostCompilerLeakage() {
   fi
 
   local path="$1"
-  local rpath
+  # shellcheck disable=SC2155
+  local rpath="$(patchelf --print-rpath "$path")"
 
-  while IFS= read -r -d ':' rpath; do
-    for forbiddenRPATH in "${nvccForbiddenHostCompilerRPATHs[@]}"; do
-      if [[ $rpath == "$forbiddenRPATH"* ]]; then
-        nixErrorLog "forbidden path $forbiddenRPATH exists in RPATH of $path"
-        return 1
-      fi
-    done
-  done < <(patchelf --print-rpath "$path" || echo "")
+  for forbiddenRPATH in "${nvccForbiddenHostCompilerRPATHs[@]}"; do
+    if [[ $rpath == *"$forbiddenRPATH"* ]]; then
+      nixErrorLog "forbidden path $forbiddenRPATH exists in run path of $path: $rpath"
+      exit 1
+    fi
+  done
 
   return 0
 }

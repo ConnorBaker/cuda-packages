@@ -7,6 +7,7 @@
   cuda_compat,
   cudaConfig,
   cudaMajorMinorVersion,
+  cudaRunpathFixupSetupHook,
   flags,
   lib,
   markForCudatoolkitRootHook,
@@ -155,7 +156,9 @@ stdenv.mkDerivation (
         autoAddCudaCompatRunpathHook
       ];
 
-    propagatedNativeBuildInputs = [ cudaSetupHook ];
+    propagatedNativeBuildInputs = [ cudaSetupHook ]
+    
+    ++ optionals (finalAttrs.pname != "cuda_compat" && finalAttrs.pname != "cuda_cudart") [ cudaRunpathFixupSetupHook ];
 
     buildInputs = [
       # autoPatchelfHook will search for a libstdc++ and we're giving it

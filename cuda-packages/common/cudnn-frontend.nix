@@ -2,6 +2,7 @@
   autoAddDriverRunpath,
   catch2_3,
   cmake,
+  cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
@@ -55,6 +56,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   buildInputs = [
+    cuda_cccl
     cuda_cudart
   ];
 
