@@ -29,6 +29,8 @@ Top-level:
 
 ## Todo
 
+- think about creating `noRunpathAmbiguityHook` -- a runpath is considered "ambiguous" if it has multiple paths to the same library name
+  - This is a sign that the package is linking against the same library multiple times (different versions?), which might be a source of undefined behavior depending on the order paths are resolved
 - `cuda_compat` should only be used when the host driver is not equal to the version of the CUDA package set currently being used.
   - Would detecting that would be impure?
 - When requested capability is newer than what is supported by version of CUDA, emit PTX for forward compat?

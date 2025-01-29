@@ -4,23 +4,23 @@
 if ((${hostOffset:?} == -1 && ${targetOffset:?} == 0)); then
   # shellcheck disable=SC1091
   source @nixLogWithLevelAndFunctionNameHook@
-  nixLog "sourcing cuda-setup-hook.sh"
+  nixLog "sourcing cuda-hook.sh"
 else
   return 0
 fi
 
-if (("${cudaSetupHookOnce:-0}" > 0)); then
+if (("${cudaHookOnce:-0}" > 0)); then
   nixWarnLog "skipping because the hook has been propagated more than once"
   return 0
 fi
 
-declare -ig cudaSetupHookOnce=1
+declare -ig cudaHookOnce=1
 declare -Ag cudaHostPathsSeen=()
 
-preConfigureHooks+=(cudaSetupPopulateDependencies)
-nixLog "added cudaSetupPopulateDependencies to preConfigureHooks"
+preConfigureHooks+=(cudaFindAvailablePackages)
+nixLog "added cudaFindAvailablePackages to preConfigureHooks"
 
-cudaSetupPopulateDependencies() {
+cudaFindAvailablePackages() {
   # These names are all guaranteed to be arrays (though they may be empty), with or without __structuredAttrs set.
   # TODO: This function should record *where* it saw each CUDA marker so we can ensure the device offsets are correct.
   # Currently, it lumps them all into the same array, and we use that array to set environment variables.
@@ -100,8 +100,8 @@ cudaPropagateLibraries() {
 
   mkdir -p "${!cudaPropagateToOutput}/nix-support"
   # One'd expect this should be propagated-bulid-build-deps, but that doesn't seem to work
-  printWords "@cudaSetupHook@" >>"${!cudaPropagateToOutput}/nix-support/propagated-native-build-inputs"
-  nixLog "added cudaSetupHook to the propagatedNativeBuildInputs of output $cudaPropagateToOutput"
+  printWords "@cudaHook@" >>"${!cudaPropagateToOutput}/nix-support/propagated-native-build-inputs"
+  nixLog "added cudaHook to the propagatedNativeBuildInputs of output $cudaPropagateToOutput"
 
   local propagatedBuildInputs=("${!cudaHostPathsSeen[@]}")
   for output in $(getAllOutputNames); do

@@ -15,7 +15,7 @@ let
   isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
 
   finalAttrs = {
-    name = "cuda-setup-hook";
+    name = "cuda-hook";
 
     propagatedBuildInputs = [
       # We add a hook to replace the standard logging functions.
@@ -24,7 +24,7 @@ let
 
     substitutions = {
       nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
-      cudaSetupHook = placeholder "out";
+      cudaHook = placeholder "out";
     };
 
     passthru.badPlatformsConditions = {
@@ -43,4 +43,4 @@ let
     };
   };
 in
-makeSetupHook finalAttrs ./cuda-setup-hook.sh
+makeSetupHook finalAttrs ./cuda-hook.sh

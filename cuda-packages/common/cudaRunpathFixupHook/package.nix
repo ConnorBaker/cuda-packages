@@ -9,6 +9,15 @@
   lib,
   makeSetupHook,
   nixLogWithLevelAndFunctionNameHook,
+
+  # passthru.tests
+  autoAddDriverRunpath,
+  autoPatchelfHook,
+  cudaRunpathFixupHook,
+  patchelf,
+  runCommand,
+  stdenv,
+  testers,
 }:
 let
   inherit (cudaConfig) hostRedistArch;
@@ -21,7 +30,7 @@ let
   isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
 
   finalAttrs = {
-    name = "cuda-runpath-fixup-setup-hook";
+    name = "cuda-runpath-fixup-hook";
 
     propagatedBuildInputs = [
       # Used in the setup hook
@@ -31,16 +40,33 @@ let
     ];
 
     substitutions = {
-      cudaCompatDir = optionalString (isJetsonBuild && cuda_compat != null) "${cuda_compat.outPath}/compat";
+      cudaCompatLibDir = optionalString (
+        isJetsonBuild && cuda_compat != null
+      ) "${cuda_compat.outPath}/compat";
       # The stubs are symlinked from lib/stubs into lib so autoPatchelf can find them.
-      cudaStubDir = "${cuda_cudart.stubs.outPath}/lib";
-      driverDir = "${addDriverRunpath.driverLink}/lib";
+      cudaStubLibDir = "${cuda_cudart.stubs.outPath}/lib";
+      driverLibDir = "${addDriverRunpath.driverLink}/lib";
       nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
     };
 
-    passthru.badPlatformsConditions = {
-      "CUDA support is not enabled" = !config.cudaSupport;
-      "Platform is not supported" = hostRedistArch == "unsupported";
+    passthru = {
+      inherit (finalAttrs) substitutions;
+      badPlatformsConditions = {
+        "CUDA support is not enabled" = !config.cudaSupport;
+        "Platform is not supported" = hostRedistArch == "unsupported";
+      };
+      tests = import ./tests.nix {
+        inherit
+          autoAddDriverRunpath
+          autoPatchelfHook
+          cudaRunpathFixupHook
+          lib
+          patchelf
+          runCommand
+          stdenv
+          testers
+          ;
+      };
     };
 
     meta = {
@@ -54,4 +80,4 @@ let
     };
   };
 in
-makeSetupHook finalAttrs ./cuda-runpath-fixup-setup-hook.sh
+makeSetupHook finalAttrs ./cuda-runpath-fixup-hook.sh

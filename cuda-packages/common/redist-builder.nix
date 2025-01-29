@@ -7,11 +7,11 @@
   cuda_compat,
   cudaConfig,
   cudaMajorMinorVersion,
-  cudaRunpathFixupSetupHook,
+  cudaRunpathFixupHook,
   flags,
   lib,
   markForCudatoolkitRootHook,
-  cudaSetupHook,
+  cudaHook,
   stdenv,
 }:
 let
@@ -143,8 +143,8 @@ stdenv.mkDerivation (
         # Check e.g. with `patchelf --print-rpath path/to/my/binary
         autoAddDriverRunpath
         markForCudatoolkitRootHook
-        # NOTE: `autoAddCudaCompatRunpathHook` hook must be added AFTER `cudaSetupHook`.
-        cudaSetupHook
+        # NOTE: `autoAddCudaCompatRunpathHook` hook must be added AFTER `cudaHook`.
+        cudaHook
       ]
       # autoAddCudaCompatRunpathHook depends on cuda_compat and would cause
       # infinite recursion if applied to `cuda_compat` itself (beside the fact
@@ -156,9 +156,12 @@ stdenv.mkDerivation (
         autoAddCudaCompatRunpathHook
       ];
 
-    propagatedNativeBuildInputs = [ cudaSetupHook ]
-    
-    ++ optionals (finalAttrs.pname != "cuda_compat" && finalAttrs.pname != "cuda_cudart") [ cudaRunpathFixupSetupHook ];
+    propagatedNativeBuildInputs =
+      [ cudaHook ]
+
+      ++ optionals (finalAttrs.pname != "cuda_compat" && finalAttrs.pname != "cuda_cudart") [
+        cudaRunpathFixupHook
+      ];
 
     buildInputs = [
       # autoPatchelfHook will search for a libstdc++ and we're giving it
