@@ -1,6 +1,7 @@
 {
   autoFixElfFiles,
   config,
+  arrayUtilitiesHook,
   cuda_nvcc,
   cudaConfig,
   flags,
@@ -35,6 +36,7 @@ let
     propagatedBuildInputs = [
       # Used in the setup hook
       autoFixElfFiles
+      arrayUtilitiesHook
       # We add a hook to replace the standard logging functions.
       nixLogWithLevelAndFunctionNameHook
     ];
@@ -59,7 +61,7 @@ let
         "CUDA support is not enabled" = !config.cudaSupport;
         "Platform is not supported" = hostRedistArch == "unsupported";
       };
-      tests = import ./tests.nix {
+      tests = import ./tests {
         inherit
           autoPatchelfHook
           cuda_cudart

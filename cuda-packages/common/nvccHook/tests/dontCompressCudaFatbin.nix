@@ -1,7 +1,9 @@
+# NOTE: Tests for dontCompressCudaFatbin option go here.
 {
   lib,
   nvccHook,
   stdenv,
+  __structuredAttrs ? null,
   ...
 }:
 let
@@ -14,9 +16,8 @@ let
       name,
     }:
     stdenv.mkDerivation (
-      prevAttrs:
       {
-        name = name + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
+        name = name + optionalString (__structuredAttrs == true) "-structuredAttrs";
         strictDeps = true;
         src = null;
         dontUnpack = true;
@@ -32,6 +33,9 @@ let
       }
       // optionalAttrs (dontCompressCudaFatbin != null) {
         inherit dontCompressCudaFatbin;
+      }
+      // optionalAttrs (__structuredAttrs == true) {
+        __structuredAttrs = true;
       }
     );
 in

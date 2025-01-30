@@ -62,12 +62,10 @@ cudaRunpathFixup() {
   local -r path="$1"
 
   # shellcheck disable=SC2155
-  local originalRunpathString="$(patchelf --print-rpath "$path")"
-  # Remove the trailing newline character.
-  originalRunpathString="${originalRunpathString%$'\n'}"
+  local -r originalRunpathString="$(patchelf --print-rpath "$path")"
 
   local -a originalRunpathEntries
-  mapfile -d ":" -t originalRunpathEntries <<<"$originalRunpathString"
+  mapfile -d ":" -t originalRunpathEntries < <(echo -n "$originalRunpathString")
 
   # NOTE: These variables count the number of times a runpath entry exists *in newRunpathEntries*. As such, it is
   # either zero or one.

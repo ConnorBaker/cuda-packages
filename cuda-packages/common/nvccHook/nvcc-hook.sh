@@ -132,16 +132,19 @@ nvccRunpathCheck() {
   fi
 
   local -r path="$1"
-  # shellcheck disable=SC2155
-  local rpath="$(patchelf --print-rpath "$path")"
-  # Remove the trailing newline character.
-  rpath="${rpath%$'\n'}"
+  local -r rpath="$(patchelf --print-rpath "$path")"
+
+  local -a rpathEntries
+  # shellcheck disable=SC2034
+  # rpathEntries is used in computeFrequencyMap
+  mapfile -d ":" -t rpathEntries < <(echo -n "$rpath")
+
+  local -A rpathEntryOccurrences
+  computeFrequencyMap rpathEntries rpathEntryOccurrences
 
   # NOTE: We do not automatically patch out the offending entry because it is typically a sign of a larger issue.
   for forbiddenEntry in "${nvccForbiddenHostCompilerRunpathEntries[@]}"; do
-    # To avoid matching prefixes (like lib vs lib64), try matching against the end first, and then
-    # anything which is not at the end.
-    if [[ $rpath == *"$forbiddenEntry" || $rpath == *"$forbiddenEntry:"* ]]; then
+    if ((${rpathEntryOccurrences["$forbiddenEntry"]:-0} > 0)); then
       nixErrorLog "forbidden path $forbiddenEntry exists in run path of $path: $rpath"
       exit 1
     fi

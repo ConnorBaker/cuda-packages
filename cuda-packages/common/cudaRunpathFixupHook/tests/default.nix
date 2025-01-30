@@ -1,9 +1,8 @@
 {
+  autoAddDriverRunpath,
   autoPatchelfHook,
-  cuda_cudart,
-  cuda_nvcc,
+  cudaRunpathFixupHook,
   lib,
-  nvccHook,
   patchelf,
   runCommand,
   stdenv,
@@ -31,38 +30,31 @@ let
 
   args = {
     inherit
+      autoAddDriverRunpath
       autoPatchelfHook
       cApplication
+      cudaRunpathFixupHook
       lib
-      nvccHook
       patchelf
       runCommand
-      stdenv
       testers
       ;
   };
 
   args-structuredAttrs = args // {
     cApplication = cApplication.overrideAttrs { __structuredAttrs = true; };
-    __structuredAttrs = true; # For dontCompressCudaFatbin.nix
   };
 in
 {
-  # Tests for dontCompressCudaFatbin option.
-  dontCompressCudaFatbin = import ./dontCompressCudaFatbin.nix args;
+  # Tests for cudaRunpathFixup.
+  cudaRunpathFixup = import ./cudaRunpathFixup.nix args;
 
   # TODO: Remove this when __structuredAttrs is enabled by default.
-  dontCompressCudaFatbin-structuredAttrs = import ./dontCompressCudaFatbin.nix args-structuredAttrs;
+  cudaRunpathFixup-structuredAttrs = import ./cudaRunpathFixup.nix args-structuredAttrs;
 
-  # Tests for nvccRunpathCheck.
-  nvccRunpathCheck = import ./nvccRunpathCheck.nix args;
-
-  # TODO: Remove this when __structuredAttrs is enabled by default.
-  nvccRunpathCheck-structuredAttrs = import ./nvccRunpathCheck.nix args-structuredAttrs;
-
-  # Tests for nvccHookOrderCheckPhase.
-  nvccHookOrderCheckPhase = import ./nvccHookOrderCheckPhase.nix args;
+  # Tests for cudaRunpathFixupHookOrderCheckPhase.
+  cudaRunpathFixupHookOrderCheckPhase = import ./cudaRunpathFixupHookOrderCheckPhase.nix args;
 
   # TODO: Remove this when __structuredAttrs is enabled by default.
-  nvccHookOrderCheckPhase-structuredAttrs = import ./nvccHookOrderCheckPhase.nix args-structuredAttrs;
+  cudaRunpathFixupHookOrderCheckPhase-structuredAttrs = import ./cudaRunpathFixupHookOrderCheckPhase.nix args-structuredAttrs;
 }

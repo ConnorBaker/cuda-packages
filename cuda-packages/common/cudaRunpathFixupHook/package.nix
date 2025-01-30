@@ -55,7 +55,7 @@ let
         "CUDA support is not enabled" = !config.cudaSupport;
         "Platform is not supported" = hostRedistArch == "unsupported";
       };
-      tests = import ./tests.nix {
+      tests = import ./tests {
         inherit
           autoAddDriverRunpath
           autoPatchelfHook
