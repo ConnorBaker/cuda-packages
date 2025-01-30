@@ -29,9 +29,8 @@ nixLog "added 'autoFixElfFiles deduplicateRunpathEntries' to postFixupHooks"
 deduplicateRunpathEntriesHookOrderCheckPhase() {
   # Ensure that our setup hook runs after autoPatchelf.
   # NOTE: Brittle because it relies on the name of the hook not changing.
-  local -r postFixupHooksString="${postFixupHooks[*]}"
-  if [[ $postFixupHooksString == *"autoPatchelfPostFixup"* &&
-    $postFixupHooksString != *"autoPatchelfPostFixup"*"autoFixElfFiles deduplicateRunpathEntries"* ]]; then
+  if elemIsIn autoPatchelfPostFixup postFixupHooks &&
+    elemIsBefore "autoFixElfFiles deduplicateRunpathEntries" autoPatchelfPostFixup postFixupHooks; then
     nixErrorLog "autoPatchelfPostFixup must run before 'autoFixElfFiles deduplicateRunpathEntries'"
     exit 1
   fi
@@ -53,35 +52,23 @@ deduplicateRunpathEntries() {
   local -r path="$1"
 
   # shellcheck disable=SC2155
-  local originalRunpathString="$(patchelf --print-rpath "$path")"
-  # Remove the trailing newline character.
-  originalRunpathString="${originalRunpathString%$'\n'}"
+  local -r originalRunpathString="$(patchelf --print-rpath "$path")"
 
   local -a originalRunpathEntries
-  mapfile -d ":" -t originalRunpathEntries <<<"$originalRunpathString"
+  # shellcheck disable=SC2034
+  # originalRunpathEntries is used.
+  mapfile -d ':' -t originalRunpathEntries < <(echo -n "$originalRunpathString")
 
   # observedRunpathEntries is a map from runpath entry to the number of times it has been seen *in
   # originalRunpathEntries*.
   local -A observedRunpathEntries=()
   local -a newRunpathEntries=()
-  local runpathEntry
-  local -i runpathEntryTimesSeen
-  local -i hasDuplicates=0
-  for runpathEntry in "${originalRunpathEntries[@]}"; do
-    runpathEntryTimesSeen=$((${observedRunpathEntries["$runpathEntry"]:-0} + 1))
-    observedRunpathEntries["$runpathEntry"]=$runpathEntryTimesSeen
 
-    if ((runpathEntryTimesSeen <= 1)); then
-      newRunpathEntries+=("$runpathEntry")
-    else
-      hasDuplicates=1
-    fi
-  done
+  deduplicateArray originalRunpathEntries newRunpathEntries observedRunpathEntries
 
-  if ((hasDuplicates > 0)); then
+  # TODO: Should this be info-level and above?
+  if ((${#newRunpathEntries[@]} < ${#originalRunpathEntries[@]})); then
     nixErrorLog "found duplicate runpath entries in $path: $originalRunpathString"
-    # NOTE: newRunpathEntries preserves the order of the entries and does not have duplicates, so we use it when
-    # indexing into observedRunpathEntries.
     for runpathEntry in "${newRunpathEntries[@]}"; do
       runpathEntryTimesSeen=${observedRunpathEntries["$runpathEntry"]}
       if ((runpathEntryTimesSeen > 1)); then

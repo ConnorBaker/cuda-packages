@@ -1,4 +1,5 @@
 {
+  arrayUtilitiesHook,
   autoFixElfFiles,
   lib,
   makeSetupHook,
@@ -15,6 +16,8 @@
 makeSetupHook {
   name = "deduplicate-runpath-entries-hook";
   propagatedBuildInputs = [
+    # Used in the setup hook
+    arrayUtilitiesHook
     # Used in the setup hook
     autoFixElfFiles
     # We add a hook to replace the standard logging functions.
