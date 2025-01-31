@@ -11,7 +11,7 @@
 }:
 let
   inherit (lib.asserts) assertMsg;
-  inherit (lib.attrsets) getLib;
+  inherit (lib.attrsets) getLib getOutput;
   inherit (lib.strings) cmakeBool cmakeFeature;
   inherit (lib.versions) majorMinor;
   inherit (onnx.passthru) cppProtobuf;
@@ -107,6 +107,7 @@ let
     ];
 
     buildInputs = [
+      (getOutput "include" cuda_nvcc) # for crt/host_defines.h
       cppProtobuf
       cuda_cudart
       tensorrt
