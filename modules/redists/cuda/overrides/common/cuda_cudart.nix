@@ -5,9 +5,7 @@
   lib,
 }:
 let
-  inherit (lib.attrsets) getOutput;
   inherit (lib.lists) optionals;
-  inherit (lib.strings) optionalString;
 in
 prevAttrs: {
   # Include the static libraries as well since CMake needs them during the configure phase.
@@ -18,8 +16,9 @@ prevAttrs: {
 
   # When cuda_compat is available, propagate it.
   # `cuda_compat` provides its own `libcuda.so`, but it requires driver libraries only available in the runtime.
-  # So, we always use the stubs provided by `cuda_cudart` and rely on `autoAddCudaCompatRunpathHook` to add
-  # `cuda_compat`'s `libcuda.so` to the RPATH of our libraries.
+  # So, we always use the stubs provided by `cuda_cudart` and rely on `cudaRunpathFixupHook` to add
+  # `cuda_compat`'s `libcuda.so` to the RPATH of our libraries -- importantly, *before* the driver libraries so that
+  # the compatibility library is used first.
   # Since the libraries in `cuda_compat` are all under the `compat` directory, we don't run into issues where there are
   # multiple versions of `libcuda.so` in the environment.
   # NOTE: `cuda_compat` can be disabled by setting the package to `null`. This is useful in cases where

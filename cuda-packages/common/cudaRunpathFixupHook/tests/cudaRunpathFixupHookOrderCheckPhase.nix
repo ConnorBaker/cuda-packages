@@ -2,105 +2,116 @@
 {
   autoAddDriverRunpath,
   autoPatchelfHook,
-  cApplication,
+  nixLogWithLevelAndFunctionNameHook,
   cudaRunpathFixupHook,
-  lib,
-  runCommand,
+  stdenv,
   testers,
-  ...
 }:
 let
-  inherit (lib.strings) optionalString;
-  inherit (testers) testBuildFailure;
+  inherit (testers) runCommand testBuildFailure;
 in
 {
-  no-autoPatchelfHook = cApplication.overrideAttrs (prevAttrs: {
-    name =
-      "no-autoPatchelfHook" + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
-      cudaRunpathFixupHook
-    ];
-  });
+  no-autoPatchelfHook = stdenv.mkDerivation {
+    __structuredAttrs = true;
+    strictDeps = true;
+    name = "no-autoPatchelfHook";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [ cudaRunpathFixupHook ];
+    installPhase = "touch $out";
+  };
 
-  before-autoPatchelfHook =
-    runCommand
-      (
-        "before-autoPatchelfHook"
-        + optionalString (cApplication.__structuredAttrs or false) "-structuredAttrs"
-      )
-      {
-        failed = testBuildFailure (
-          cApplication.overrideAttrs (prevAttrs: {
-            name =
-              "before-autoPatchelfHook-inner"
-              + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-            nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
-              cudaRunpathFixupHook
-              autoPatchelfHook
-            ];
-          })
-        );
+  before-autoPatchelfHook = runCommand {
+    name = "before-autoPatchelfHook";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      stdenv.mkDerivation {
+        __structuredAttrs = true;
+        strictDeps = true;
+        name = "before-autoPatchelfHook";
+        src = null;
+        dontUnpack = true;
+        nativeBuildInputs = [
+          cudaRunpathFixupHook
+          autoPatchelfHook
+        ];
+        installPhase = "touch $out";
       }
-      ''
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        grep -F \
-          "ERROR: cudaRunpathFixupHookOrderCheckPhase: autoPatchelfPostFixup must run before 'autoFixElfFiles cudaRunpathFixup'" \
-          "$failed/testBuildFailure.log"
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message"
+      grep -F \
+        "ERROR: cudaRunpathFixupHookOrderCheckPhase: autoPatchelfPostFixup must run before 'autoFixElfFiles cudaRunpathFixup'" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  after-autoPatchelfHook = cApplication.overrideAttrs (prevAttrs: {
-    name =
-      "after-autoPatchelfHook" + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
+  after-autoPatchelfHook = stdenv.mkDerivation {
+    __structuredAttrs = true;
+    strictDeps = true;
+    name = "after-autoPatchelfHook";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [
       autoPatchelfHook
       cudaRunpathFixupHook
     ];
-  });
+    installPhase = "touch $out";
+  };
 
-  no-autoAddDriverRunpath = cApplication.overrideAttrs (prevAttrs: {
-    name =
-      "no-autoAddDriverRunpath"
-      + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
-      cudaRunpathFixupHook
-    ];
-  });
+  no-autoAddDriverRunpath = stdenv.mkDerivation {
+    __structuredAttrs = true;
+    strictDeps = true;
+    name = "no-autoAddDriverRunpath";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [ cudaRunpathFixupHook ];
+    installPhase = "touch $out";
+  };
 
-  before-autoAddDriverRunpath =
-    runCommand
-      (
-        "before-autoAddDriverRunpath"
-        + optionalString (cApplication.__structuredAttrs or false) "-structuredAttrs"
-      )
-      {
-        failed = testBuildFailure (
-          cApplication.overrideAttrs (prevAttrs: {
-            name =
-              "before-autoAddDriverRunpath-inner"
-              + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-            nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
-              cudaRunpathFixupHook
-              autoAddDriverRunpath
-            ];
-          })
-        );
+  before-autoAddDriverRunpath = runCommand {
+    name = "before-autoAddDriverRunpath";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      stdenv.mkDerivation {
+        __structuredAttrs = true;
+        strictDeps = true;
+        name = "before-autoAddDriverRunpath";
+        src = null;
+        dontUnpack = true;
+        nativeBuildInputs = [
+          cudaRunpathFixupHook
+          autoAddDriverRunpath
+        ];
+        installPhase = "touch $out";
       }
-      ''
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        grep -F \
-          "ERROR: cudaRunpathFixupHookOrderCheckPhase: 'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles cudaRunpathFixup'" \
-          "$failed/testBuildFailure.log"
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message"
+      grep -F \
+        "ERROR: cudaRunpathFixupHookOrderCheckPhase: 'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles cudaRunpathFixup'" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  after-autoAddDriverRunpath = cApplication.overrideAttrs (prevAttrs: {
-    name =
-      "after-autoAddDriverRunpath"
-      + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
+  after-autoAddDriverRunpath = stdenv.mkDerivation {
+    __structuredAttrs = true;
+    strictDeps = true;
+    name = "after-autoAddDriverRunpath";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [
       autoAddDriverRunpath
       cudaRunpathFixupHook
     ];
-  });
+    installPhase = "touch $out";
+  };
 }

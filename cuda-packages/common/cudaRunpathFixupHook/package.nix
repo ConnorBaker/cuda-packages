@@ -1,6 +1,8 @@
 {
   addDriverRunpath,
+  arrayUtilitiesHook,
   autoFixElfFiles,
+  callPackages,
   config,
   cuda_compat,
   cuda_cudart,
@@ -9,15 +11,6 @@
   lib,
   makeSetupHook,
   nixLogWithLevelAndFunctionNameHook,
-
-  # passthru.tests
-  autoAddDriverRunpath,
-  autoPatchelfHook,
-  cudaRunpathFixupHook,
-  patchelf,
-  runCommand,
-  stdenv,
-  testers,
 }:
 let
   inherit (cudaConfig) hostRedistArch;
@@ -35,6 +28,7 @@ let
     propagatedBuildInputs = [
       # Used in the setup hook
       autoFixElfFiles
+      arrayUtilitiesHook
       # We add a hook to replace the standard logging functions.
       nixLogWithLevelAndFunctionNameHook
     ];
@@ -55,17 +49,11 @@ let
         "CUDA support is not enabled" = !config.cudaSupport;
         "Platform is not supported" = hostRedistArch == "unsupported";
       };
-      tests = import ./tests {
-        inherit
-          autoAddDriverRunpath
-          autoPatchelfHook
-          cudaRunpathFixupHook
-          lib
-          patchelf
-          runCommand
-          stdenv
-          testers
-          ;
+      tests = {
+        cudaRunpathFixup = callPackages ./tests/cudaRunpathFixup.nix { };
+        cudaRunpathFixupHookOrderCheckPhase =
+          callPackages ./tests/cudaRunpathFixupHookOrderCheckPhase.nix
+            { };
       };
     };
 

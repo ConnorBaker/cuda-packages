@@ -1,7 +1,8 @@
 # shellcheck shell=bash
 
 # Only run the hook from nativeBuildInputs
-if ((${hostOffset:?} == -1 && ${targetOffset:?} == 0)); then
+# shellcheck disable=SC2154
+if ((hostOffset == -1 && targetOffset == 0)); then
   # shellcheck disable=SC1091
   source @nixLogWithLevelAndFunctionNameHook@
   nixLog "sourcing cuda-runpath-fixup-hook.sh"
@@ -9,7 +10,7 @@ else
   return 0
 fi
 
-if ((${cudaRunpathFixupHookOnce:-0} > 0)); then
+if ((${cudaRunpathFixupHookOnce:-0})); then
   nixWarnLog "skipping because the hook has been propagated more than once"
   return 0
 fi
@@ -26,13 +27,10 @@ nixLog "added 'autoFixElfFiles cudaRunpathFixup' to postFixupHooks"
 cudaRunpathFixupHookOrderCheckPhase() {
   # Ensure that our setup hook runs after autoPatchelf and autoAddDriverRunpath.
   # NOTE: This function because it relies on the name of the hooks not changing.
-  local -r postFixupHooksString="${postFixupHooks[*]}"
-  if [[ $postFixupHooksString == *"autoPatchelfPostFixup"* &&
-    $postFixupHooksString != *"autoPatchelfPostFixup"*"autoFixElfFiles cudaRunpathFixup"* ]]; then
+  if ! occursOnlyOrAfterInArray "autoFixElfFiles cudaRunpathFixup" autoPatchelfPostFixup postFixupHooks; then
     nixErrorLog "autoPatchelfPostFixup must run before 'autoFixElfFiles cudaRunpathFixup'"
     exit 1
-  elif [[ $postFixupHooksString == *"autoFixElfFiles addDriverRunpath"* &&
-    $postFixupHooksString != *"autoFixElfFiles addDriverRunpath"*"autoFixElfFiles cudaRunpathFixup"* ]]; then
+  elif ! occursOnlyOrAfterInArray "autoFixElfFiles cudaRunpathFixup" "autoFixElfFiles addDriverRunpath" postFixupHooks; then
     nixErrorLog "'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles cudaRunpathFixup'"
     exit 1
   fi
@@ -84,7 +82,7 @@ cudaRunpathFixup() {
     # Case for driverLibDir.
     if [[ $runpathEntry == "$driverLibDir" ]]; then
       # If we've already seen it, skip it.
-      ((driverLibDirSeen > 0)) && continue
+      ((driverLibDirSeen)) && continue
 
       # If cudaCompatLibDir is set and we haven't seen it yet, add it to the runpath and mark it as seen.
       # NOTE: This ensures the compat library is loaded before the driver library!
