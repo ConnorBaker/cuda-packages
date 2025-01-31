@@ -1,7 +1,8 @@
 # shellcheck shell=bash
 
 # Only run the hook from nativeBuildInputs
-if ((${hostOffset:?} == -1 && ${targetOffset:?} == 0)); then
+# shellcheck disable=SC2154
+if ((hostOffset == -1 && targetOffset == 0)); then
   # shellcheck disable=SC1091
   source @nixLogWithLevelAndFunctionNameHook@
   nixLog "sourcing nvcc-hook.sh"
@@ -9,7 +10,7 @@ else
   return 0
 fi
 
-if ((${nvccHookOnce:-0} > 0)); then
+if ((${nvccHookOnce:-0})); then
   nixWarnLog "skipping because the hook has been propagated more than once"
   return 0
 fi
@@ -46,9 +47,7 @@ nixLog "added 'autoFixElfFiles nvccRunpathCheck' to postFixupHooks"
 nvccHookOrderCheckPhase() {
   # Ensure that our setup hook runs after autoPatchelf.
   # NOTE: Brittle because it relies on the name of the hook not changing.
-  local -r postFixupHooksString="${postFixupHooks[*]}"
-  if [[ $postFixupHooksString == *"autoPatchelfPostFixup"* &&
-    $postFixupHooksString != *"autoPatchelfPostFixup"*"autoFixElfFiles nvccRunpathCheck"* ]]; then
+  if ! occursOnlyOrAfterInArray "autoFixElfFiles nvccRunpathCheck" autoPatchelfPostFixup postFixupHooks; then
     nixErrorLog "autoPatchelfPostFixup must run before 'autoFixElfFiles nvccRunpathCheck'"
     exit 1
   fi
@@ -75,7 +74,7 @@ nvccSetupEnvironmentVariables() {
   #   example, with Magma).
   #
   # @SomeoneSerge: original comment was made by @ConnorBaker in .../cudatoolkit/common.nix
-  if ((dontCompressCudaFatbin < 1)); then
+  if ! ((dontCompressCudaFatbin)); then
     appendToVar NVCC_PREPEND_FLAGS "-Xfatbin=-compress-all"
     nixLog "appended -Xfatbin=-compress-all to NVCC_PREPEND_FLAGS"
   fi
@@ -143,12 +142,13 @@ nvccRunpathCheck() {
   computeFrequencyMap rpathEntries rpathEntryOccurrences
 
   # NOTE: We do not automatically patch out the offending entry because it is typically a sign of a larger issue.
+  local -i hasForbiddenEntry=0
   for forbiddenEntry in "${nvccForbiddenHostCompilerRunpathEntries[@]}"; do
-    if ((${rpathEntryOccurrences["$forbiddenEntry"]:-0} > 0)); then
+    if ((rpathEntryOccurrences["$forbiddenEntry"])); then
       nixErrorLog "forbidden path $forbiddenEntry exists in run path of $path: $rpath"
-      exit 1
+      hasForbiddenEntry=1
     fi
   done
 
-  return 0
+  ((hasForbiddenEntry)) && exit 1 || return 0
 }

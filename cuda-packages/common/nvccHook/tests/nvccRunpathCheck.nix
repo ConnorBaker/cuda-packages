@@ -1,115 +1,132 @@
 # NOTE: Tests for nvccRunpathCheck go here.
 {
-  cApplication,
-  lib,
+  nixLogWithLevelAndFunctionNameHook,
+  mkCheckExpectedRunpath,
   nvccHook,
-  patchelf,
-  runCommand,
   testers,
-  ...
 }:
 let
-  inherit (lib.strings) concatMapStringsSep optionalString;
   inherit (nvccHook.passthru.substitutions)
     ccVersion
     hostPlatformConfig
     unwrappedCCRoot
     unwrappedCCLibRoot
     ;
-  inherit (testers) testBuildFailure;
+  inherit (testers) runCommand testBuildFailure;
 
-  unwrappedCCRootLib = "${unwrappedCCRoot}/lib";
-  unwrappedCCRootLib64 = "${unwrappedCCRoot}/lib64";
-  unwrappedCCRootGcc = "${unwrappedCCRoot}/gcc/${hostPlatformConfig}/${ccVersion}";
-  unwrappedCCLibRootLib = "${unwrappedCCLibRoot}/lib";
+  libDir = "${unwrappedCCRoot}/lib";
+  lib64Dir = "${unwrappedCCRoot}/lib64";
+  gccDir = "${unwrappedCCRoot}/gcc/${hostPlatformConfig}/${ccVersion}";
+  ccLibDir = "${unwrappedCCLibRoot}/lib";
 
-  mkCApplicationWithRunpathEntries =
-    {
-      name,
-      runpathEntries ? [ ],
-    }:
-    let
-      # cudaCompatDir cudaStubDir driverDir
-      rpathModificationSteps = concatMapStringsSep "\n" (entry: ''
-        nixLog "Adding rpath entry for ${entry}"
-        patchelf --add-rpath "${entry}" main
-      '') runpathEntries;
-    in
-    cApplication.overrideAttrs (prevAttrs: {
-      name = name + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-      nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
-        nvccHook
-        patchelf
-      ];
-      postBuild =
-        prevAttrs.postBuild or ""
-        # Newlines are important here to separate the commands.
-        + optionalString (runpathEntries != [ ]) ''
-          ${rpathModificationSteps}
-        '';
-      # Disable automatic shrinking of runpaths which removes our doubling of paths since they are not used.
-      dontPatchELF = true;
-    });
+  check = mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
+    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ nvccHook ];
+    checkSetupScript = ''
+      nixLog "running nvccRunpathCheck on main"
+      nvccRunpathCheck main
+    '';
+  });
 in
 {
-  no-leak = mkCApplicationWithRunpathEntries {
-    name = "no-leak";
-    runpathEntries = [ ];
+  no-leak-empty = check.overrideAttrs {
+    name = "no-leak-empty";
+    valuesArr = [ ];
+    expectedArr = [ ];
   };
 
-  leak-host-cc-root-lib =
-    runCommand "leak-host-cc-root-lib"
-      {
-        failed = testBuildFailure (mkCApplicationWithRunpathEntries {
-          name = "leak-host-cc-root-lib-inner";
-          runpathEntries = [ unwrappedCCRootLib ];
-        });
-      }
-      ''
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        grep -F 'forbidden path ${unwrappedCCRootLib} exists' "$failed/testBuildFailure.log"
-        touch $out
-      '';
+  no-leak-singleton = check.overrideAttrs {
+    name = "no-leak-singleton";
+    valuesArr = [ "cat" ];
+    expectedArr = [ "cat" ];
+  };
 
-  leak-host-cc-root-lib64 =
-    runCommand "leak-host-cc-root-lib64"
-      {
-        failed = testBuildFailure (mkCApplicationWithRunpathEntries {
-          name = "leak-host-cc-root-lib64-inner";
-          runpathEntries = [ unwrappedCCRootLib64 ];
-        });
+  leak-singleton = runCommand {
+    name = "leak-singleton";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.overrideAttrs {
+        name = "leak-singleton-inner";
+        valuesArr = [ lib64Dir ];
+        expectedArr = [ ];
       }
-      ''
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        grep -F 'forbidden path ${unwrappedCCRootLib64} exists' "$failed/testBuildFailure.log"
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message"
+      grep -F \
+        "forbidden path ${lib64Dir} exists" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  leak-host-cc-root-gcc =
-    runCommand "leak-host-cc-root-gcc"
-      {
-        failed = testBuildFailure (mkCApplicationWithRunpathEntries {
-          name = "leak-host-cc-root-gcc-inner";
-          runpathEntries = [ unwrappedCCRootGcc ];
-        });
+  leak-all = runCommand {
+    name = "leak-all";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.overrideAttrs {
+        name = "leak-all-inner";
+        valuesArr = [
+          libDir
+          lib64Dir
+          gccDir
+          ccLibDir
+        ];
+        expectedArr = [ ];
       }
-      ''
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        grep -F 'forbidden path ${unwrappedCCRootGcc} exists' "$failed/testBuildFailure.log"
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message for libDir"
+      grep -F \
+        "forbidden path ${libDir} exists" \
+        "$failed/testBuildFailure.log"
+      nixLog "Checking for error message for lib64Dir"
+      grep -F \
+        "forbidden path ${lib64Dir} exists" \
+        "$failed/testBuildFailure.log"
+      nixLog "Checking for error message for gccDir"
+      grep -F \
+        "forbidden path ${gccDir} exists" \
+        "$failed/testBuildFailure.log"
+      nixLog "Checking for error message for ccLibDir"
+      grep -F \
+        "forbidden path ${ccLibDir} exists" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  leak-host-cc-lib-root-lib =
-    runCommand "leak-host-cc-lib-root-lib"
-      {
-        failed = testBuildFailure (mkCApplicationWithRunpathEntries {
-          name = "leak-host-cc-lib-root-lib-inner";
-          runpathEntries = [ unwrappedCCLibRootLib ];
-        });
+  leak-between-valid = runCommand {
+    name = "leak-between-valid";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.overrideAttrs {
+        name = "leak-between-valid-inner";
+        valuesArr = [
+          "cat"
+          libDir
+          "bee"
+        ];
+        expectedArr = [
+          "cat"
+          "bee"
+        ];
       }
-      ''
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        grep -F 'forbidden path ${unwrappedCCLibRootLib} exists' "$failed/testBuildFailure.log"
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message for libDir"
+      grep -F \
+        "forbidden path ${libDir} exists" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 }

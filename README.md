@@ -30,7 +30,7 @@ Top-level:
 ## Todo
 
 - docs/tests for `arrayUtilitiesHook`
-- docs/tests for `deduplicateRunpathEntriesHook` using `arrayUtilitiesHook`
+- docs for `deduplicateRunpathEntriesHook`
 - docs/tests for CUDA hooks using `arrayUtilitiesHook`
 - think about creating `noRunpathAmbiguityHook` -- a runpath is considered "ambiguous" if it has multiple paths to the same library name
   - This is a sign that the package is linking against the same library multiple times (different versions?), which might be a source of undefined behavior depending on the order paths are resolved

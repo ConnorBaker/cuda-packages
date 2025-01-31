@@ -3,47 +3,32 @@
   lib,
   nvccHook,
   stdenv,
-  __structuredAttrs ? null,
-  ...
 }:
 let
-  inherit (lib.attrsets) optionalAttrs;
-  inherit (lib.strings) optionalString;
-  mkCudaDontCompressCheck =
-    {
-      check,
-      dontCompressCudaFatbin, # When null, use the default value the hook provides.
-      name,
-    }:
-    stdenv.mkDerivation (
-      {
-        name = name + optionalString (__structuredAttrs == true) "-structuredAttrs";
-        strictDeps = true;
-        src = null;
-        dontUnpack = true;
-        nativeBuildInputs = [ nvccHook ];
-        configurePhase = ''
-          runHook preConfigure
-          ${check}
-          runHook postConfigure
-        '';
-        postInstall = ''
-          touch $out
-        '';
-      }
-      // optionalAttrs (dontCompressCudaFatbin != null) {
-        inherit dontCompressCudaFatbin;
-      }
-      // optionalAttrs (__structuredAttrs == true) {
-        __structuredAttrs = true;
-      }
-    );
+  cudaDontCompressCheck = stdenv.mkDerivation {
+    __structuredAttrs = true;
+    strictDeps = true;
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [ nvccHook ];
+    configurePhaseCheckScript = ''
+      nixErrorLog "configurePhaseCheckScript should be set!"
+      exit 1
+    '';
+    configurePhase = ''
+      runHook preConfigure
+      runHook configurePhaseCheckScript
+      runHook postConfigure
+    '';
+    postInstall = ''
+      touch $out
+    '';
+  };
 in
 {
-  flag-unset = mkCudaDontCompressCheck {
+  flag-unset = cudaDontCompressCheck.overrideAttrs {
     name = "flag-unset";
-    dontCompressCudaFatbin = null;
-    check = ''
+    configurePhaseCheckScript = ''
       if [[ $NVCC_PREPEND_FLAGS != *"-Xfatbin=-compress-all"* ]]; then
         nixErrorLog "NVCC_PREPEND_FLAGS does not contain -Xfatbin=-compress-all but dontCompressCudaFatbin is unset"
         exit 1
@@ -51,10 +36,10 @@ in
     '';
   };
 
-  flag-set-false = mkCudaDontCompressCheck {
+  flag-set-false = cudaDontCompressCheck.overrideAttrs {
     name = "flag-set-false";
     dontCompressCudaFatbin = false;
-    check = ''
+    configurePhaseCheckScript = ''
       if [[ $NVCC_PREPEND_FLAGS != *"-Xfatbin=-compress-all"* ]]; then
         nixErrorLog "NVCC_PREPEND_FLAGS does not contain -Xfatbin=-compress-all but dontCompressCudaFatbin is set to false"
         exit 1
@@ -62,10 +47,10 @@ in
     '';
   };
 
-  flag-set-true = mkCudaDontCompressCheck {
+  flag-set-true = cudaDontCompressCheck.overrideAttrs {
     name = "flag-set-true";
     dontCompressCudaFatbin = true;
-    check = ''
+    configurePhaseCheckScript = ''
       if [[ $NVCC_PREPEND_FLAGS == *"-Xfatbin=-compress-all"* ]]; then
         nixErrorLog "NVCC_PREPEND_FLAGS should not contain -Xfatbin=-compress-all when dontCompressCudaFatbin is set to true"
         exit 1

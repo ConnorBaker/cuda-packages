@@ -1,22 +1,14 @@
 {
-  autoFixElfFiles,
-  config,
   arrayUtilitiesHook,
+  autoFixElfFiles,
+  callPackages,
+  config,
   cuda_nvcc,
   cudaConfig,
   flags,
   lib,
   makeSetupHook,
   nixLogWithLevelAndFunctionNameHook,
-
-  # passthru.tests
-  autoPatchelfHook,
-  cuda_cudart,
-  nvccHook,
-  patchelf,
-  runCommand,
-  stdenv,
-  testers,
 }:
 let
   inherit (cuda_nvcc.passthru.nvccStdenv) cc hostPlatform;
@@ -44,8 +36,6 @@ let
     # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
     # path from nvccStdenv's host compiler. Generalize this to Clang as well!
     substitutions = {
-      # Required in addition to ccRoot as otherwise bin/gcc is looked up
-      # when building CMakeCUDACompilerId.cu
       ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
       ccVersion = cc.version;
       cudaArchs = cmakeCudaArchitecturesString;
@@ -61,18 +51,10 @@ let
         "CUDA support is not enabled" = !config.cudaSupport;
         "Platform is not supported" = hostRedistArch == "unsupported";
       };
-      tests = import ./tests {
-        inherit
-          autoPatchelfHook
-          cuda_cudart
-          cuda_nvcc
-          lib
-          nvccHook
-          patchelf
-          runCommand
-          stdenv
-          testers
-          ;
+      tests = {
+        dontCompressCudaFatbin = callPackages ./tests/dontCompressCudaFatbin.nix { };
+        nvccHookOrderCheckPhase = callPackages ./tests/nvccHookOrderCheckPhase.nix { };
+        nvccRunpathCheck = callPackages ./tests/nvccRunpathCheck.nix { };
       };
     };
 

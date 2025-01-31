@@ -1,59 +1,64 @@
 # NOTE: Tests for nvccHookOrderCheckPhase go here.
 {
   autoPatchelfHook,
-  cApplication,
-  lib,
+  nixLogWithLevelAndFunctionNameHook,
   nvccHook,
-  runCommand,
+  stdenv,
   testers,
-  ...
 }:
 let
-  inherit (lib.strings) optionalString;
-  inherit (testers) testBuildFailure;
+  inherit (testers) runCommand testBuildFailure;
 in
 {
-  no-autoPatchelfHook = cApplication.overrideAttrs (prevAttrs: {
-    name =
-      "no-autoPatchelfHook" + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
-      nvccHook
-    ];
-  });
+  no-autoPatchelfHook = stdenv.mkDerivation {
+    __structuredAttrs = true;
+    strictDeps = true;
+    name = "no-autoPatchelfHook";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [ nvccHook ];
+    installPhase = "touch $out";
+  };
 
-  before-autoPatchelfHook =
-    runCommand
-      (
-        "before-autoPatchelfHook"
-        + optionalString (cApplication.__structuredAttrs or false) "-structuredAttrs"
-      )
-      {
-        failed = testBuildFailure (
-          cApplication.overrideAttrs (prevAttrs: {
-            name =
-              "before-autoPatchelfHook-inner"
-              + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-            nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
-              nvccHook
-              autoPatchelfHook
-            ];
-          })
-        );
+  before-autoPatchelfHook = runCommand {
+    name = "before-autoPatchelfHook";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      stdenv.mkDerivation {
+        __structuredAttrs = true;
+        strictDeps = true;
+        name = "before-autoPatchelfHook";
+        src = null;
+        dontUnpack = true;
+        nativeBuildInputs = [
+          nvccHook
+          autoPatchelfHook
+        ];
+        installPhase = "touch $out";
       }
-      ''
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        grep -F \
-          "ERROR: nvccHookOrderCheckPhase: autoPatchelfPostFixup must run before 'autoFixElfFiles nvccRunpathCheck'" \
-          "$failed/testBuildFailure.log"
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message"
+      grep -F \
+        "ERROR: nvccHookOrderCheckPhase: autoPatchelfPostFixup must run before 'autoFixElfFiles nvccRunpathCheck'" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  after-autoPatchelfHook = cApplication.overrideAttrs (prevAttrs: {
-    name =
-      "after-autoPatchelfHook" + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
+  after-autoPatchelfHook = stdenv.mkDerivation {
+    __structuredAttrs = true;
+    strictDeps = true;
+    name = "after-autoPatchelfHook";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [
       autoPatchelfHook
       nvccHook
     ];
-  });
+    installPhase = "touch $out";
+  };
 }
