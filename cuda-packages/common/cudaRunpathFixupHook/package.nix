@@ -1,12 +1,11 @@
-# `autoAddCudaCompatRunpathHook` must be added AFTER `cudaSetupHook`. Both
-# hooks prepend a path with `libcuda.so` to the `DT_RUNPATH` section of
-# patched elf files, but `cuda_compat` path must take precedence (otherwise,
-# it doesn't have any effect) and thus appear first. Meaning this hook must be
-# executed last.
 {
+  addDriverRunpath,
+  arrayUtilitiesHook,
   autoFixElfFiles,
+  callPackages,
   config,
   cuda_compat,
+  cuda_cudart,
   cudaConfig,
   flags,
   lib,
@@ -15,43 +14,58 @@
 }:
 let
   inherit (cudaConfig) hostRedistArch;
+  inherit (flags) isJetsonBuild;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
-  inherit (lib.strings) optionalString;
   inherit (lib.trivial) id;
+  inherit (lib.strings) optionalString;
 
   isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
-  isBroken = any id (attrValues finalAttrs.passthru.brokenConditions);
 
   finalAttrs = {
-    name = "auto-add-cuda-compat-runpath-hook";
+    name = "cuda-runpath-fixup-hook";
+
     propagatedBuildInputs = [
       # Used in the setup hook
       autoFixElfFiles
+      arrayUtilitiesHook
       # We add a hook to replace the standard logging functions.
       nixLogWithLevelAndFunctionNameHook
     ];
+
     substitutions = {
-      libcudaPath = optionalString (cuda_compat != null) "${cuda_compat}/compat";
+      cudaCompatLibDir = optionalString (
+        isJetsonBuild && cuda_compat != null
+      ) "${cuda_compat.outPath}/compat";
+      # The stubs are symlinked from lib/stubs into lib so autoPatchelf can find them.
+      cudaStubLibDir = "${cuda_cudart.stubs.outPath}/lib";
+      driverLibDir = "${addDriverRunpath.driverLink}/lib";
       nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
     };
+
     passthru = {
-      brokenConditions = {
-        "cuda_compat is disabled" = cuda_compat == null;
-        "not building for Jetson devices" = !flags.isJetsonBuild;
-      };
+      inherit (finalAttrs) substitutions;
       badPlatformsConditions = {
         "CUDA support is not enabled" = !config.cudaSupport;
         "Platform is not supported" = hostRedistArch == "unsupported";
       };
+      tests = {
+        cudaRunpathFixup = callPackages ./tests/cudaRunpathFixup.nix { };
+        cudaRunpathFixupHookOrderCheckPhase =
+          callPackages ./tests/cudaRunpathFixupHookOrderCheckPhase.nix
+            { };
+      };
     };
+
     meta = {
-      description = "Setup hook which propagates cuda-compat on Jetson devices";
-      broken = isBroken;
-      platforms = [ "aarch64-linux" ];
+      description = "Setup hook which ensures correct ordering of CUDA-related runpaths";
+      platforms = [
+        "aarch64-linux"
+        "x86_64-linux"
+      ];
       badPlatforms = optionals isBadPlatform finalAttrs.meta.platforms;
       maintainers = lib.teams.cuda.members;
     };
   };
 in
-makeSetupHook finalAttrs ./auto-add-cuda-compat-runpath-hook.sh
+makeSetupHook finalAttrs ./cuda-runpath-fixup-hook.sh

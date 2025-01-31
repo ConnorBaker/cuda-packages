@@ -1,5 +1,6 @@
 {
   cuda_cudart,
+  cuda_nvcc,
   fetchFromGitHub,
   lib,
   onnx-tensorrt,
@@ -9,6 +10,7 @@
   tensorrt,
 }:
 let
+  inherit (lib.attrsets) getOutput;
   inherit (lib.lists) elemAt;
   inherit (lib.strings) cmakeFeature;
   inherit (lib.versions) splitVersion;
@@ -133,6 +135,7 @@ let
     dependencies = [ pybind11 ];
 
     buildInputs = [
+      (getOutput "include" cuda_nvcc) # for crt/host_defines.h
       cuda_cudart
       onnx-tensorrt-headers
       tensorrt

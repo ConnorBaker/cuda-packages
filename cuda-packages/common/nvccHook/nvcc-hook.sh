@@ -1,28 +1,23 @@
 # shellcheck shell=bash
 
 # Only run the hook from nativeBuildInputs
-if ((${hostOffset:?} == -1 && ${targetOffset:?} == 0)); then
+# shellcheck disable=SC2154
+if ((hostOffset == -1 && targetOffset == 0)); then
   # shellcheck disable=SC1091
   source @nixLogWithLevelAndFunctionNameHook@
-  nixLog "sourcing nvcc-setup-hook.sh"
+  nixLog "sourcing nvcc-hook.sh"
 else
   return 0
 fi
 
-if (("${nvccSetupHookOnce:-0}" > 0)); then
+if ((${nvccHookOnce:-0})); then
   nixWarnLog "skipping because the hook has been propagated more than once"
   return 0
 fi
 
-declare -ig nvccSetupHookOnce=1
-declare -ag nvccForbiddenHostCompilerRPATHs=(
-  # Compiler libraries
-  "@unwrappedCCRoot@/lib"
-  "@unwrappedCCRoot@/lib64"
-  "@unwrappedCCRoot@/gcc/@hostPlatformConfig@/@ccVersion@"
-  # Compiler library
-  "@unwrappedCCLibRoot@/lib"
-)
+declare -ig nvccHookOnce=1
+declare -ig nvccHostCCMatchesStdenvCC="@nvccHostCCMatchesStdenvCC@"
+declare -ig dontCompressCudaFatbin=${dontCompressCudaFatbin:-0}
 
 # NOTE: `appendToVar` does not export the variable to the environment because it is assumed to be a shell
 # variable. To avoid variables being locally scoped, we must export it prior to adding values.
@@ -31,6 +26,44 @@ export NVCC_APPEND_FLAGS="${NVCC_APPEND_FLAGS:-}"
 
 preConfigureHooks+=(nvccSetupEnvironmentVariables)
 nixLog "added nvccSetupEnvironmentVariables to preConfigureHooks"
+
+preConfigureHooks+=(nvccSetupCMakeEnvironmentVariables)
+nixLog "added nvccSetupCMakeEnvironmentVariables to preConfigureHooks"
+
+# If the host compiler does not match the stdenv compiler, we need to prevent NVCC from leaking the host compiler
+# into the build.
+if ! ((nvccHostCCMatchesStdenvCC)); then
+  declare -ag nvccForbiddenHostCompilerRunpathEntries=(
+    # Compiler libraries
+    "@unwrappedCCRoot@/lib"
+    "@unwrappedCCRoot@/lib64"
+    "@unwrappedCCRoot@/gcc/@hostPlatformConfig@/@ccVersion@"
+    # Compiler library
+    "@unwrappedCCLibRoot@/lib"
+  )
+
+  # Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
+  prePhases+=(nvccHookOrderCheckPhase)
+  nixLog "added nvccHookOrderCheckPhase to prePhases"
+
+  # Tell CMake to ignore libraries provided by NVCC's host compiler when linking.
+  preConfigureHooks+=(nvccSetupCMakeHostCompilerLeakPrevention)
+  nixLog "added nvccSetupCMakeHostCompilerLeakPrevention to preConfigureHooks"
+
+  # Ensure that the host compiler's libraries are not present in the runpath of the compiled binaries.
+  postFixupHooks+=("autoFixElfFiles nvccRunpathCheck")
+  nixLog "added 'autoFixElfFiles nvccRunpathCheck' to postFixupHooks"
+fi
+
+nvccHookOrderCheckPhase() {
+  # Ensure that our setup hook runs after autoPatchelf.
+  # NOTE: Brittle because it relies on the name of the hook not changing.
+  if ! occursOnlyOrAfterInArray "autoFixElfFiles nvccRunpathCheck" autoPatchelfPostFixup postFixupHooks; then
+    nixErrorLog "autoPatchelfPostFixup must run before 'autoFixElfFiles nvccRunpathCheck'"
+    exit 1
+  fi
+  return 0
+}
 
 nvccSetupEnvironmentVariables() {
   # NOTE: CUDA 12.5 and later allow setting NVCC_CCBIN as a lower-precedent way of using -ccbin.
@@ -52,14 +85,13 @@ nvccSetupEnvironmentVariables() {
   #   example, with Magma).
   #
   # @SomeoneSerge: original comment was made by @ConnorBaker in .../cudatoolkit/common.nix
-  if [[ -z ${cudaDontCompressFatbin:-} ]]; then
+  if ! ((dontCompressCudaFatbin)); then
     appendToVar NVCC_PREPEND_FLAGS "-Xfatbin=-compress-all"
     nixLog "appended -Xfatbin=-compress-all to NVCC_PREPEND_FLAGS"
   fi
-}
 
-preConfigureHooks+=(nvccSetupCMakeEnvironmentVariables)
-nixLog "added nvccSetupCMakeEnvironmentVariables to preConfigureHooks"
+  return 0
+}
 
 nvccSetupCMakeEnvironmentVariables() {
   # If CMake is not present, skip setting CMake flags.
@@ -87,18 +119,20 @@ nvccSetupCMakeEnvironmentVariables() {
     nixLog "set CUDAARCHS to $CUDAARCHS"
   fi
 
-  # Instruct CMake to ignore libraries provided by NVCC's host compiler when linking, as these should be supplied by
-  # the stdenv's compiler.
-  for forbiddenRPATH in "${nvccForbiddenHostCompilerRPATHs[@]}"; do
-    addToSearchPathWithCustomDelimiter ";" CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE "$forbiddenRPATH"
-    nixLog "appended $forbiddenRPATH to CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE"
-  done
+  return 0
 }
 
-postFixupHooks+=("autoFixElfFiles nvccDisallowHostCompilerLeakage")
-nixLog "added 'autoFixElfFiles nvccDisallowHostCompilerLeakage' to postFixupHooks"
+nvccSetupCMakeHostCompilerLeakPrevention() {
+  # Instruct CMake to ignore libraries provided by NVCC's host compiler when linking, as these should be supplied by
+  # the stdenv's compiler.
+  for forbiddenEntry in "${nvccForbiddenHostCompilerRunpathEntries[@]}"; do
+    addToSearchPathWithCustomDelimiter ";" CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE "$forbiddenEntry"
+    nixLog "appended $forbiddenEntry to CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE"
+  done
+  return 0
+}
 
-nvccDisallowHostCompilerLeakage() {
+nvccRunpathCheck() {
   if (($# == 0)); then
     nixErrorLog "no path provided"
     exit 1
@@ -110,17 +144,25 @@ nvccDisallowHostCompilerLeakage() {
     exit 1
   fi
 
-  local path="$1"
-  local rpath
+  local -r path="$1"
+  local -r rpath="$(patchelf --print-rpath "$path")"
 
-  while IFS= read -r -d ':' rpath; do
-    for forbiddenRPATH in "${nvccForbiddenHostCompilerRPATHs[@]}"; do
-      if [[ $rpath == "$forbiddenRPATH"* ]]; then
-        nixErrorLog "forbidden path $forbiddenRPATH exists in RPATH of $path"
-        return 1
-      fi
-    done
-  done < <(patchelf --print-rpath "$path" || echo "")
+  local -a rpathEntries
+  # shellcheck disable=SC2034
+  # rpathEntries is used in computeFrequencyMap
+  mapfile -d ":" -t rpathEntries < <(echo -n "$rpath")
 
-  return 0
+  local -A rpathEntryOccurrences
+  computeFrequencyMap rpathEntries rpathEntryOccurrences
+
+  # NOTE: We do not automatically patch out the offending entry because it is typically a sign of a larger issue.
+  local -i hasForbiddenEntry=0
+  for forbiddenEntry in "${nvccForbiddenHostCompilerRunpathEntries[@]}"; do
+    if ((rpathEntryOccurrences["$forbiddenEntry"])); then
+      nixErrorLog "forbidden path $forbiddenEntry exists in run path of $path: $rpath"
+      hasForbiddenEntry=1
+    fi
+  done
+
+  ((hasForbiddenEntry)) && exit 1 || return 0
 }

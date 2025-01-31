@@ -43,6 +43,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   buildInputs = [
+    (getOutput "include" cuda_nvcc)
     cuda_cccl
     cuda_cudart
   ];

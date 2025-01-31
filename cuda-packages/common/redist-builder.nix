@@ -1,16 +1,16 @@
 # General callPackage-supplied arguments
 {
-  autoAddCudaCompatRunpathHook,
   autoAddDriverRunpath,
   autoPatchelfHook,
   config,
   cuda_compat,
   cudaConfig,
   cudaMajorMinorVersion,
+  cudaRunpathFixupHook,
   flags,
   lib,
   markForCudatoolkitRootHook,
-  cudaSetupHook,
+  cudaHook,
   stdenv,
 }:
 let
@@ -142,20 +142,17 @@ stdenv.mkDerivation (
         # Check e.g. with `patchelf --print-rpath path/to/my/binary
         autoAddDriverRunpath
         markForCudatoolkitRootHook
-        # NOTE: `autoAddCudaCompatRunpathHook` hook must be added AFTER `cudaSetupHook`.
-        cudaSetupHook
       ]
-      # autoAddCudaCompatRunpathHook depends on cuda_compat and would cause
-      # infinite recursion if applied to `cuda_compat` itself (beside the fact
-      # that it doesn't make sense in the first place)
-      # NOTE: Setting `cuda_compat` to null allows disabling propagation of autoAddCudaCompatRunpathHook.
-      ++ optionals (finalAttrs.pname != "cuda_compat" && flags.isJetsonBuild && cuda_compat != null) [
-        # autoAddCudaCompatRunpathHook must appear AFTER autoAddDriverRunpath.
-        # See its documentation in ./setup-hooks/extension.nix.
-        autoAddCudaCompatRunpathHook
+      ++ optionals (finalAttrs.pname != "cuda_compat" && finalAttrs.pname != "cuda_cudart") [
+        cudaRunpathFixupHook
       ];
 
-    propagatedNativeBuildInputs = [ cudaSetupHook ];
+    propagatedBuildInputs =
+      [ cudaHook ]
+      # cudaRunpathFixupHook depends on cuda_cudart and cuda_compat, so we cannot include it in those.
+      ++ optionals (finalAttrs.pname != "cuda_compat" && finalAttrs.pname != "cuda_cudart") [
+        cudaRunpathFixupHook
+      ];
 
     buildInputs = [
       # autoPatchelfHook will search for a libstdc++ and we're giving it

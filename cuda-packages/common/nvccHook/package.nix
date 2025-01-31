@@ -1,5 +1,7 @@
 {
+  arrayUtilitiesHook,
   autoFixElfFiles,
+  callPackages,
   config,
   cuda_nvcc,
   cudaConfig,
@@ -7,6 +9,7 @@
   lib,
   makeSetupHook,
   nixLogWithLevelAndFunctionNameHook,
+  stdenv,
 }:
 let
   inherit (cuda_nvcc.passthru.nvccStdenv) cc hostPlatform;
@@ -18,12 +21,15 @@ let
 
   isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
 
+  # TODO: Document breaking change of move from cudaDontCompressFatbin to dontCompressCudaFatbin.
+
   finalAttrs = {
-    name = "nvcc-setup-hook";
+    name = "nvcc-hook";
 
     propagatedBuildInputs = [
       # Used in the setup hook
       autoFixElfFiles
+      arrayUtilitiesHook
       # We add a hook to replace the standard logging functions.
       nixLogWithLevelAndFunctionNameHook
     ];
@@ -31,10 +37,9 @@ let
     # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
     # path from nvccStdenv's host compiler. Generalize this to Clang as well!
     substitutions = {
-      # Required in addition to ccRoot as otherwise bin/gcc is looked up
-      # when building CMakeCUDACompilerId.cu
       ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
       ccVersion = cc.version;
+      nvccHostCCMatchesStdenvCC = cc == stdenv.cc;
       cudaArchs = cmakeCudaArchitecturesString;
       hostPlatformConfig = hostPlatform.config;
       nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
@@ -42,9 +47,17 @@ let
       unwrappedCCLibRoot = cc.cc.lib.outPath;
     };
 
-    passthru.badPlatformsConditions = {
-      "CUDA support is not enabled" = !config.cudaSupport;
-      "Platform is not supported" = hostRedistArch == "unsupported";
+    passthru = {
+      inherit (finalAttrs) substitutions;
+      badPlatformsConditions = {
+        "CUDA support is not enabled" = !config.cudaSupport;
+        "Platform is not supported" = hostRedistArch == "unsupported";
+      };
+      tests = {
+        dontCompressCudaFatbin = callPackages ./tests/dontCompressCudaFatbin.nix { };
+        nvccHookOrderCheckPhase = callPackages ./tests/nvccHookOrderCheckPhase.nix { };
+        nvccRunpathCheck = callPackages ./tests/nvccRunpathCheck.nix { };
+      };
     };
 
     meta = {
@@ -58,4 +71,4 @@ let
     };
   };
 in
-makeSetupHook finalAttrs ./nvcc-setup-hook.sh
+makeSetupHook finalAttrs ./nvcc-hook.sh

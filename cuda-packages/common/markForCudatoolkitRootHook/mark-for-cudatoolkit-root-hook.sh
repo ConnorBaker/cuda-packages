@@ -1,7 +1,8 @@
 # shellcheck shell=bash
 
 # Only run the hook from nativeBuildInputs
-if ((${hostOffset:?} == -1 && ${targetOffset:?} == 0)); then
+# shellcheck disable=SC2154
+if ((hostOffset == -1 && targetOffset == 0)); then
   # shellcheck disable=SC1091
   source @nixLogWithLevelAndFunctionNameHook@
   nixLog "sourcing mark-for-cudatoolkit-root-hook.sh"
@@ -20,10 +21,12 @@ markForCUDAToolkit_ROOT() {
 
   # Return early if the file already exists.
   if [[ -f $markerPath ]]; then
-    nixDebugLog "output ${output:?} already marked for inclusion by cudaSetupHook"
+    nixDebugLog "output ${output:?} already marked for inclusion by cudaHook"
     return 0
   fi
 
-  nixLog "marking output ${output:?} for inclusion by cudaSetupHook"
+  nixLog "marking output ${output:?} for inclusion by cudaHook"
   touch "$markerPath"
+
+  return 0
 }

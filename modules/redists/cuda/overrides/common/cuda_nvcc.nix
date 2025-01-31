@@ -5,7 +5,7 @@
   cudaMajorMinorVersion,
   cudaOlder,
   lib,
-  nvccSetupHook,
+  nvccHook,
   pkgs,
   stdenv,
   stdenvAdapters,
@@ -100,7 +100,7 @@ finalAttrs: prevAttrs: {
       + ''
         mkdir -p "''${!outputBin}/nix-support"
       ''
-      # Add nvccSetupHook to the propagatedBuildInputs of the bin output.
+      # Add nvccHook to the propagatedBuildInputs of the bin output.
       # NOTE(@connorbaker):
       # Though it might seem odd or counter-intuitive to add the setup hook to `propagatedBuildInputs` instead of
       # `propagatedNativeBuildInputs`, it is necessary! If you move the setup hook from `propagatedBuildInputs` to
@@ -108,8 +108,8 @@ finalAttrs: prevAttrs: {
       # setup hooks in `propagatedNativeBuildInputs` are not designed to affect the runtime or build environment of
       # dependencies; they are only meant to affect the build environment of the package that directly includes them.
       + ''
-        nixLog "adding nvccSetupHook to $outputBin's propagatedBuildInputs"
-        printWords "${nvccSetupHook}" >> "''${!outputBin}/nix-support/propagated-build-inputs"
+        nixLog "adding nvccHook to $outputBin's propagatedBuildInputs"
+        printWords "${nvccHook}" >> "''${!outputBin}/nix-support/propagated-build-inputs"
       ''
       # Add the dependency on nvccStdenv.cc to the nvcc.profile and native-propagated-build-inputs.
       # NOTE: No need to add a dependency on `newNvvmDir` since it's already in the bin output.

@@ -32,6 +32,7 @@ let
     versionBoundedInclusive
     versionNewer
     ;
+  inherit (lib.customisation) callPackagesWith;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
   inherit (lib.lists) map;
@@ -77,6 +78,8 @@ let
           [
             # Core attributes which largely don't depend on packages
             (recurseIntoAttrs {
+              callPackages = callPackagesWith (final // finalCudaPackages);
+
               pkgs = dontRecurseIntoAttrs final // {
                 __attrsFailEvaluation = true;
               };

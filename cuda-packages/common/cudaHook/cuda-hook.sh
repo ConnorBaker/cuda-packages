@@ -1,26 +1,36 @@
 # shellcheck shell=bash
 
 # Only run the hook from nativeBuildInputs
-if ((${hostOffset:?} == -1 && ${targetOffset:?} == 0)); then
+# shellcheck disable=SC2154
+if ((hostOffset == -1 && targetOffset == 0)); then
   # shellcheck disable=SC1091
   source @nixLogWithLevelAndFunctionNameHook@
-  nixLog "sourcing cuda-setup-hook.sh"
+  nixLog "sourcing cuda-hook.sh"
 else
   return 0
 fi
 
-if (("${cudaSetupHookOnce:-0}" > 0)); then
+if ((${cudaHookOnce:-0})); then
   nixWarnLog "skipping because the hook has been propagated more than once"
   return 0
 fi
 
-declare -ig cudaSetupHookOnce=1
+declare -ig cudaHookOnce=1
 declare -Ag cudaHostPathsSeen=()
 
-preConfigureHooks+=(cudaSetupPopulateDependencies)
-nixLog "added cudaSetupPopulateDependencies to preConfigureHooks"
+preConfigureHooks+=(cudaFindAvailablePackages)
+nixLog "added cudaFindAvailablePackages to preConfigureHooks"
 
-cudaSetupPopulateDependencies() {
+preConfigureHooks+=(cudaSetupEnvironmentVariables)
+nixLog "added cudaSetupEnvironmentVariables to preConfigureHooks"
+
+preConfigureHooks+=(cudaSetupCMakeFlags)
+nixLog "added cudaSetupCMakeFlags to preConfigureHooks"
+
+postFixupHooks+=(cudaPropagateLibraries)
+nixLog "added cudaPropagateLibraries to postFixupHooks"
+
+cudaFindAvailablePackages() {
   # These names are all guaranteed to be arrays (though they may be empty), with or without __structuredAttrs set.
   # TODO: This function should record *where* it saw each CUDA marker so we can ensure the device offsets are correct.
   # Currently, it lumps them all into the same array, and we use that array to set environment variables.
@@ -33,21 +43,20 @@ cudaSetupPopulateDependencies() {
     pkgsTargetTarget
   )
 
-  for name in "${dependencyArrayNames[@]}"; do
-    nixLog "searching dependencies in $name for CUDA markers"
-    local -n deps="$name"
-    for dep in "${deps[@]}"; do
-      nixInfoLog "checking $dep for CUDA markers"
-      if [[ -f "$dep/nix-support/include-in-cudatoolkit-root" ]]; then
-        nixLog "found CUDA marker in $dep from $name"
-        cudaHostPathsSeen["$dep"]=1
+  for dependencyArrayName in "${dependencyArrayNames[@]}"; do
+    nixInfoLog "searching dependencies in $dependencyArrayName for CUDA markers"
+    local -n dependencyArray="$dependencyArrayName"
+    for dependency in "${dependencyArray[@]}"; do
+      nixInfoLog "checking $dependency for CUDA markers"
+      if [[ -f "$dependency/nix-support/include-in-cudatoolkit-root" ]]; then
+        nixInfoLog "found CUDA marker in $dependency from $dependencyArrayName"
+        cudaHostPathsSeen["$dependency"]=1
       fi
     done
   done
-}
 
-preConfigureHooks+=(cudaSetupEnvironmentVariables)
-nixLog "added cudaSetupEnvironmentVariables to preConfigureHooks"
+  return 0
+}
 
 cudaSetupEnvironmentVariables() {
   nixInfoLog "running with cudaHostPathsSeen=${!cudaHostPathsSeen[*]}"
@@ -60,10 +69,9 @@ cudaSetupEnvironmentVariables() {
       nixLog "added $path/include to CUDAToolkit_INCLUDE_DIRS"
     fi
   done
-}
 
-preConfigureHooks+=(cudaSetupCMakeFlags)
-nixLog "added cudaSetupCMakeFlags to preConfigureHooks"
+  return 0
+}
 
 cudaSetupCMakeFlags() {
   # If CMake is not present, skip setting CMake flags.
@@ -88,10 +96,9 @@ cudaSetupCMakeFlags() {
     appendToVar cmakeFlags "-DCMAKE_POLICY_DEFAULT_CMP0074=OLD"
     nixLog "appended -DCMAKE_POLICY_DEFAULT_CMP0074=OLD to cmakeFlags"
   fi
-}
 
-postFixupHooks+=(cudaPropagateLibraries)
-nixLog "added cudaPropagateLibraries to postFixupHooks"
+  return 0
+}
 
 cudaPropagateLibraries() {
   nixInfoLog "running with cudaPropagateToOutput=$cudaPropagateToOutput cudaHostPathsSeen=${!cudaHostPathsSeen[*]}"
@@ -100,8 +107,8 @@ cudaPropagateLibraries() {
 
   mkdir -p "${!cudaPropagateToOutput}/nix-support"
   # One'd expect this should be propagated-bulid-build-deps, but that doesn't seem to work
-  printWords "@cudaSetupHook@" >>"${!cudaPropagateToOutput}/nix-support/propagated-native-build-inputs"
-  nixLog "added cudaSetupHook to the propagatedNativeBuildInputs of output $cudaPropagateToOutput"
+  printWords "@cudaHook@" >>"${!cudaPropagateToOutput}/nix-support/propagated-native-build-inputs"
+  nixLog "added cudaHook to the propagatedNativeBuildInputs of output $cudaPropagateToOutput"
 
   local propagatedBuildInputs=("${!cudaHostPathsSeen[@]}")
   for output in $(getAllOutputNames); do
@@ -114,4 +121,6 @@ cudaPropagateLibraries() {
   # One'd expect this should be propagated-host-host-deps, but that doesn't seem to work
   printWords "${propagatedBuildInputs[@]}" >>"${!cudaPropagateToOutput}/nix-support/propagated-build-inputs"
   nixLog "added ${propagatedBuildInputs[*]} to the propagatedBuildInputs of output $cudaPropagateToOutput"
+
+  return 0
 }

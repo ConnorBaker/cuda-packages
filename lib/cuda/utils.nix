@@ -428,6 +428,7 @@ in
         ;
       inherit (finalCudaPackages.flags) isJetsonBuild;
       inherit (finalCudaPackages.pkgs)
+        deduplicateRunpathEntriesHook
         fetchzip
         nixLogWithLevelAndFunctionNameHook
         noBrokenSymlinksHook
@@ -435,7 +436,12 @@ in
         ;
       isNixHostPlatformSystemAarch64 = stdenv.hostPlatform.isAarch64;
       overrideAttrsDefaultsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
-        inherit cudaNamePrefix nixLogWithLevelAndFunctionNameHook noBrokenSymlinksHook;
+        inherit
+          cudaNamePrefix
+          deduplicateRunpathEntriesHook
+          nixLogWithLevelAndFunctionNameHook
+          noBrokenSymlinksHook
+          ;
       };
     in
     {
@@ -801,7 +807,11 @@ in
       inherit (finalCudaPackages) newScope;
       overrideAttrsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
         inherit (finalCudaPackages) cudaNamePrefix;
-        inherit (finalCudaPackages.pkgs) nixLogWithLevelAndFunctionNameHook noBrokenSymlinksHook;
+        inherit (finalCudaPackages.pkgs)
+          deduplicateRunpathEntriesHook
+          nixLogWithLevelAndFunctionNameHook
+          noBrokenSymlinksHook
+          ;
       };
     in
     fn: args:
@@ -817,6 +827,7 @@ in
   mkCudaPackagesOverrideAttrsDefaultsFn =
     {
       cudaNamePrefix,
+      deduplicateRunpathEntriesHook,
       nixLogWithLevelAndFunctionNameHook,
       noBrokenSymlinksHook,
     }:
@@ -834,6 +845,10 @@ in
         # We add a hook to make sure we're not propagating broken symlinks.
         ++ optionals (!(elem noBrokenSymlinksHook prevDepList)) [
           noBrokenSymlinksHook
+        ]
+        # We add a hook to deduplicate runpath entries.
+        ++ optionals (!(elem deduplicateRunpathEntriesHook prevDepList)) [
+          deduplicateRunpathEntriesHook
         ];
     in
     finalAttrs: prevAttrs: {
