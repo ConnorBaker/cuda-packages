@@ -1,12 +1,10 @@
 {
   annotated-types,
   buildPythonPackage,
-  cudaPackages,
   flit-core,
   lib,
   makeWrapper,
   nixVersions,
-  patchelf,
   pydantic,
   pyright,
   rich,
@@ -36,9 +34,9 @@ let
       rich
     ];
     propagatedBuildInputs = [
-      cudaPackages.cuda_cuobjdump
+      # cudaPackages.cuda_cuobjdump
+      # patchelf
       nixVersions.latest
-      patchelf
     ];
     pythonImportsCheck = [ finalAttrs.pname ];
     nativeCheckInputs = [
@@ -67,9 +65,10 @@ let
       wrapProgram "$out/bin/update-custom-index" \
         --prefix PATH : "${
           makeBinPath [
-            cudaPackages.cuda_cuobjdump
+            # Optional dependencies, currently unused.
+            # cudaPackages.cuda_cuobjdump
+            # patchelf
             nixVersions.latest
-            patchelf
           ]
         }"
     '';
