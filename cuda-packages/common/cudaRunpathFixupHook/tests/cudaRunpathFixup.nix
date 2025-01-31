@@ -3,7 +3,6 @@
   cudaRunpathFixupHook,
   lib,
   mkCheckExpectedRunpath,
-  patchelf,
 }:
 let
   inherit (cudaRunpathFixupHook.passthru.substitutions) cudaCompatLibDir cudaStubLibDir driverLibDir;

@@ -1,6 +1,5 @@
 # NOTE: Tests for dontCompressCudaFatbin option go here.
 {
-  lib,
   nvccHook,
   stdenv,
 }:
