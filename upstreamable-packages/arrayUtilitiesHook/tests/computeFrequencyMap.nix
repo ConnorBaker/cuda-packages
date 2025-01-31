@@ -4,30 +4,29 @@
   mkCheckExpectedArrayAndMap,
   nixLogWithLevelAndFunctionNameHook,
   testers,
-  ...
 }:
 let
   inherit (testers) runCommand testBuildFailure;
-  check = mkCheckExpectedArrayAndMap.override {
-    setup = ''
+  check = mkCheckExpectedArrayAndMap.overrideAttrs (prevAttrs: {
+    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilitiesHook ];
+    checkSetupScript = ''
       nixLog "running computeFrequencyMap with valuesArr to populate actualMap"
       computeFrequencyMap valuesArr actualMap
     '';
-    extraNativeBuildInputs = [ arrayUtilitiesHook ];
-  };
+  });
 in
 {
-  empty = check.override {
+  empty = check.overrideAttrs {
     name = "empty";
     valuesArr = [ ];
     expectedMap = { };
   };
-  singleton = check.override {
+  singleton = check.overrideAttrs {
     name = "singleton";
     valuesArr = [ "apple" ];
     expectedMap.apple = 1;
   };
-  twoUnique = check.override {
+  twoUnique = check.overrideAttrs {
     name = "twoUnique";
     valuesArr = [
       "apple"
@@ -38,7 +37,7 @@ in
       bee = 1;
     };
   };
-  oneDuplicate = check.override {
+  oneDuplicate = check.overrideAttrs {
     name = "oneDuplicate";
     valuesArr = [
       "apple"
@@ -46,7 +45,7 @@ in
     ];
     expectedMap.apple = 2;
   };
-  oneUniqueOneDuplicate = check.override {
+  oneUniqueOneDuplicate = check.overrideAttrs {
     name = "oneUniqueOneDuplicate";
     valuesArr = [
       "bee"
@@ -62,7 +61,7 @@ in
     name = "failMissingKeyWithEmpty";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
-      check.override {
+      check.overrideAttrs {
         name = "failMissingKeyWithEmptyInner";
         valuesArr = [ ];
         expectedMap.apple = 1;
@@ -88,7 +87,7 @@ in
     name = "failIncorrectFrequency";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
-      check.override {
+      check.overrideAttrs {
         name = "failIncorrectFrequencyInner";
         valuesArr = [
           "apple"
@@ -117,7 +116,7 @@ in
     name = "failMissingKeyWithNonEmpty";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
-      check.override {
+      check.overrideAttrs {
         name = "failMissingKeyWithNonEmptyInner";
         valuesArr = [
           "cat"
@@ -150,7 +149,7 @@ in
     name = "failFirstArgumentIsString";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
-      check.override {
+      check.overrideAttrs {
         name = "failFirstArgumentIsStringInner";
         valuesArr = "apple";
         expectedMap = { };
@@ -172,7 +171,7 @@ in
     name = "failFirstArgumentIsMap";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
-      check.override {
+      check.overrideAttrs {
         name = "failFirstArgumentIsMapInner";
         valuesArr.apple = 1;
         expectedMap = { };
@@ -194,17 +193,17 @@ in
     name = "failSecondArgumentIsArray";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
-      check.override (prevAttrs: {
+      check.overrideAttrs (prevAttrs: {
         name = "failSecondArgumentIsArrayInner";
         valuesArr = [ ];
         expectedMap = { };
-        setup =
+        checkSetupScript =
           ''
             nixLog "unsetting and re-declaring actualMap to be an array"
             unset actualMap
-            local -a actualMap=()
+            declare -ag actualMap=()
           ''
-          + prevAttrs.setup;
+          + prevAttrs.checkSetupScript;
       })
     );
     script = ''
@@ -223,17 +222,17 @@ in
     name = "failSecondArgumentIsString";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
-      check.override (prevAttrs: {
+      check.overrideAttrs (prevAttrs: {
         name = "failSecondArgumentIsStringInner";
         valuesArr = [ ];
         expectedMap = { };
-        setup =
+        checkSetupScript =
           ''
             nixLog "unsetting and re-declaring actualMap to be a string"
             unset actualMap
-            local actualMap="hello!"
+            declare -g actualMap="hello!"
           ''
-          + prevAttrs.setup;
+          + prevAttrs.checkSetupScript;
       })
     );
     script = ''

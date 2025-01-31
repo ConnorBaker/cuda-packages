@@ -1,25 +1,14 @@
 {
+  callPackages,
   lib,
   makeSetupHook,
-
-  # passthru.tests
-  arrayUtilitiesHook,
-  mkCheckExpectedArrayAndMap,
-  nixLogWithLevelAndFunctionNameHook,
-  stdenv,
-  testers,
 }:
 makeSetupHook {
   name = "array-utilities-hook";
-  passthru.tests = import ./tests {
-    inherit
-      arrayUtilitiesHook
-      lib
-      mkCheckExpectedArrayAndMap
-      nixLogWithLevelAndFunctionNameHook
-      stdenv
-      testers
-      ;
+  passthru.tests = {
+    computeFrequencyMap = callPackages ./tests/computeFrequencyMap.nix { };
+    deduplicateArray = callPackages ./tests/deduplicateArray.nix { };
+    occursOnlyOrBeforeInArray = callPackages ./tests/occursOnlyOrBeforeInArray.nix { };
   };
   meta = {
     description = "Adds common array utilities";

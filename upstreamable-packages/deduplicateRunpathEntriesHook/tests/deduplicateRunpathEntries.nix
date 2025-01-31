@@ -1,10 +1,19 @@
 # NOTE: Tests for deduplicateRunpathEntries go here.
 {
+  deduplicateRunpathEntriesHook,
   mkCheckExpectedRunpath,
-  ...
 }:
+let
+  check = mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
+    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ deduplicateRunpathEntriesHook ];
+    checkSetupScript = ''
+      nixLog "running deduplicateRunpathEntries with on main"
+      deduplicateRunpathEntries main
+    '';
+  });
+in
 {
-  allUnique = mkCheckExpectedRunpath.override {
+  allUnique = check.overrideAttrs {
     name = "allUnique";
     valuesArr = [
       "bee"
@@ -20,7 +29,7 @@
     ];
   };
 
-  oneUniqueOneDuplicate = mkCheckExpectedRunpath.override {
+  oneUniqueOneDuplicate = check.overrideAttrs {
     name = "oneUniqueOneDuplicate";
     valuesArr = [
       "apple"
@@ -33,7 +42,7 @@
     ];
   };
 
-  allDuplicates = mkCheckExpectedRunpath.override {
+  allDuplicates = check.overrideAttrs {
     name = "duplicate-rpath-entries";
     valuesArr = [
       "apple"

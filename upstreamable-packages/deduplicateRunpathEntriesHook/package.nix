@@ -1,17 +1,11 @@
 {
   arrayUtilitiesHook,
   autoFixElfFiles,
+  callPackages,
   lib,
   makeSetupHook,
   nixLogWithLevelAndFunctionNameHook,
   patchelf,
-
-  # passthru.tests
-  autoPatchelfHook,
-  deduplicateRunpathEntriesHook,
-  mkCheckExpectedArrayAndMap,
-  stdenv,
-  testers,
 }:
 makeSetupHook {
   name = "deduplicate-runpath-entries-hook";
@@ -26,16 +20,12 @@ makeSetupHook {
     patchelf
   ];
   substitutions.nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
-  passthru.tests = import ./tests {
-    inherit
-      autoPatchelfHook
-      deduplicateRunpathEntriesHook
-      mkCheckExpectedArrayAndMap
-      nixLogWithLevelAndFunctionNameHook
-      patchelf
-      stdenv
-      testers
-      ;
+  passthru.tests = {
+    deduplicateRunpathEntries = callPackages ./tests/deduplicateRunpathEntries.nix { };
+    deduplicateRunpathEntriesHookOrderCheckPhase =
+      callPackages ./tests/deduplicateRunpathEntriesHookOrderCheckPhase.nix
+        { };
+    dontDeduplicateRunpathEntries = callPackages ./tests/dontDeduplicateRunpathEntries.nix { };
   };
   meta = {
     description = "Checks for and optionally removes duplicate runpath entries within outputs";

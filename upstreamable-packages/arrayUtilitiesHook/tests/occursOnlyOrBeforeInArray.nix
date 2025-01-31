@@ -3,7 +3,6 @@
   arrayUtilitiesHook,
   nixLogWithLevelAndFunctionNameHook,
   testers,
-  ...
 }:
 let
   inherit (testers) runCommand;

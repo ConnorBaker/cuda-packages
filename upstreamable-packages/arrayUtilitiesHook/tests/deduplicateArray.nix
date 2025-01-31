@@ -4,30 +4,29 @@
   mkCheckExpectedArrayAndMap,
   nixLogWithLevelAndFunctionNameHook,
   testers,
-  ...
 }:
 let
   inherit (testers) runCommand testBuildFailure;
-  check = mkCheckExpectedArrayAndMap.override {
-    setup = ''
+  check = mkCheckExpectedArrayAndMap.overrideAttrs (prevAttrs: {
+    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilitiesHook ];
+    checkSetupScript = ''
       nixLog "running deduplicateArray with valuesArr to populate actualArr"
       deduplicateArray valuesArr actualArr
     '';
-    extraNativeBuildInputs = [ arrayUtilitiesHook ];
-  };
+  });
 in
 {
-  empty = check.override {
+  empty = check.overrideAttrs {
     name = "empty";
     valuesArr = [ ];
     expectedArr = [ ];
   };
-  singleton = check.override {
+  singleton = check.overrideAttrs {
     name = "singleton";
     valuesArr = [ "apple" ];
     expectedArr = [ "apple" ];
   };
-  allUniqueOrderPreserved = check.override {
+  allUniqueOrderPreserved = check.overrideAttrs {
     name = "allUniqueOrderPreserved";
     valuesArr = [
       "apple"
@@ -38,7 +37,7 @@ in
       "bee"
     ];
   };
-  oneDuplicate = check.override {
+  oneDuplicate = check.overrideAttrs {
     name = "oneDuplicate";
     valuesArr = [
       "apple"
@@ -48,7 +47,7 @@ in
       "apple"
     ];
   };
-  oneUniqueOrderPreserved = check.override {
+  oneUniqueOrderPreserved = check.overrideAttrs {
     name = "oneUniqueOrderPreserved";
     valuesArr = [
       "bee"
@@ -60,7 +59,7 @@ in
       "apple"
     ];
   };
-  duplicatesWithSpacesAndLineBreaks = check.override {
+  duplicatesWithSpacesAndLineBreaks = check.overrideAttrs {
     name = "duplicatesWithSpacesAndLineBreaks";
     valuesArr = [
       "dog"
@@ -97,7 +96,7 @@ in
     name = "failNoDeduplication";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
-      check.override {
+      check.overrideAttrs {
         name = "failNoDeduplicationInner";
         valuesArr = [
           "bee"

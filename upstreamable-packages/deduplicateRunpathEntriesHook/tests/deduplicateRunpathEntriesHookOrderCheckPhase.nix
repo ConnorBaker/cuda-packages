@@ -5,7 +5,6 @@
   nixLogWithLevelAndFunctionNameHook,
   stdenv,
   testers,
-  ...
 }:
 let
   inherit (testers) runCommand testBuildFailure;

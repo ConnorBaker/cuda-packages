@@ -1,11 +1,20 @@
 # NOTE: Tests for dontDeduplicateRunpathEntries option go here.
 {
+  deduplicateRunpathEntriesHook,
   mkCheckExpectedRunpath,
-  ...
 }:
+let
+  check = mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
+    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ deduplicateRunpathEntriesHook ];
+    checkSetupScript = ''
+      nixLog "running deduplicateRunpathEntries with on main"
+      deduplicateRunpathEntries main
+    '';
+  });
+in
 {
   # Should deduplicate when dontDeduplicateRunpathEntries is not set.
-  flag-unset = mkCheckExpectedRunpath.override {
+  flag-unset = check.overrideAttrs {
     name = "flag-unset";
     valuesArr = [
       "bee"
@@ -23,7 +32,7 @@
   };
 
   # Should deduplicate when dontDeduplicateRunpathEntries is set to false.
-  flag-set-false = mkCheckExpectedRunpath.override (prevAttrs: {
+  flag-set-false = check.overrideAttrs {
     name = "flag-set-false";
     valuesArr = [
       "bee"
@@ -38,13 +47,11 @@
       "dog"
       "cat"
     ];
-    derivationArgs = prevAttrs.derivationArgs or { } // {
-      dontDeduplicateRunpathEntries = false;
-    };
-  });
+    dontDeduplicateRunpathEntries = false;
+  };
 
   # Should not deduplicate when dontDeduplicateRunpathEntries is set to true.
-  flag-set-true = mkCheckExpectedRunpath.override (prevAttrs: {
+  flag-set-true = check.overrideAttrs {
     name = "flag-set-true";
     valuesArr = [
       "bee"
@@ -60,8 +67,6 @@
       "apple"
       "cat"
     ];
-    derivationArgs = prevAttrs.derivationArgs or { } // {
-      dontDeduplicateRunpathEntries = true;
-    };
-  });
+    dontDeduplicateRunpathEntries = true;
+  };
 }

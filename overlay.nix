@@ -229,13 +229,6 @@ in
   inherit (final) callPackage;
   directory = ./upstreamable-packages;
 }
-# The upstreamable package mkCheckExpectedArrayAndMap gets special handling to avoid override
-# applying to the arguments it takes from the package set.
-// {
-  mkCheckExpectedArrayAndMap = import ./upstreamable-packages/mkCheckExpectedArrayAndMap/package.nix {
-    inherit (final) lib nixLogWithLevelAndFunctionNameHook stdenv;
-  };
-}
 # Package fixes
 // {
   openmpi = prev.openmpi.override {
