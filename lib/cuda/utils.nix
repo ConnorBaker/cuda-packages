@@ -17,6 +17,7 @@ let
     recursiveUpdate
     ;
   inherit (lib.cuda.data) redistUrlPrefix;
+  inherit (lib.cuda.types) redistName;
   inherit (lib.cuda.utils)
     dropDots
     getLibPath
@@ -27,6 +28,7 @@ let
     mkCudaPackagesScope
     mkCudaPackagesOverrideAttrsDefaultsFn
     mkOptions
+    mkRedistConfig
     mkRedistUrl
     mkRelativePath
     mkVersionedManifests
@@ -138,6 +140,19 @@ in
       inherit versionedManifests;
       versionedOverrides = mkVersionedOverrides versions (path + "/overrides");
     };
+
+  mkRedistConfigs =
+    path:
+    foldlAttrs (
+      acc: pathName: pathType:
+      acc
+      // optionalAttrs (pathType == "directory") (
+        assert assertMsg (redistName.check pathName) "Expected a redist name but got ${pathName}";
+        {
+          ${pathName} = mkRedistConfig (path + "/${pathName}");
+        }
+      )
+    ) { } (readDir path);
 
   /**
     Function to generate a URL for something in the redistributable tree.

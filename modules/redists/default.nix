@@ -1,10 +1,7 @@
 { lib, ... }:
 let
-  inherit (builtins) readDir;
-  inherit (lib.asserts) assertMsg;
-  inherit (lib.attrsets) foldlAttrs optionalAttrs;
-  inherit (lib.cuda.types) redistName redists;
-  inherit (lib.cuda.utils) mkRedistConfig;
+  inherit (lib.cuda.types) redists;
+  inherit (lib.cuda.utils) mkRedistConfigs;
   inherit (lib.options) mkOption;
 in
 {
@@ -13,14 +10,5 @@ in
     type = redists;
     default = { };
   };
-  config.redists = foldlAttrs (
-    acc: pathName: pathType:
-    acc
-    // optionalAttrs (pathType == "directory") (
-      assert assertMsg (redistName.check pathName) "Expected a redist name but got ${pathName}";
-      {
-        ${pathName} = mkRedistConfig (./. + "/${pathName}");
-      }
-    )
-  ) { } (readDir ./.);
+  config.redists = mkRedistConfigs ./.;
 }
