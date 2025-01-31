@@ -7,7 +7,7 @@ let
   check = mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
     nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ deduplicateRunpathEntriesHook ];
     checkSetupScript = ''
-      nixLog "running deduplicateRunpathEntries with on main"
+      nixLog "running deduplicateRunpathEntries on main"
       deduplicateRunpathEntries main
     '';
   });
