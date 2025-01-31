@@ -27,10 +27,6 @@ let
     mkCudaPackagesScope
     mkCudaVariant
     mkRealArchitecture
-    versionAtMost
-    versionBoundedExclusive
-    versionBoundedInclusive
-    versionNewer
     ;
   inherit (lib.customisation) callPackagesWith;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
@@ -61,11 +57,7 @@ let
       cudaMajorVersion = major cudaMajorMinorPatchVersion;
 
       cudaAtLeast = versionAtLeast cudaMajorMinorPatchVersion;
-      cudaAtMost = versionAtMost cudaMajorMinorPatchVersion;
-      cudaNewer = versionNewer cudaMajorMinorPatchVersion;
       cudaOlder = versionOlder cudaMajorMinorPatchVersion;
-      cudaBoundedExclusive = min: max: versionBoundedExclusive min max cudaMajorMinorPatchVersion;
-      cudaBoundedInclusive = min: max: versionBoundedInclusive min max cudaMajorMinorPatchVersion;
 
       # Packaging-specific utilities.
       desiredCudaVariant = mkCudaVariant cudaMajorMinorPatchVersion;
@@ -97,14 +89,7 @@ let
               inherit cudaMajorMinorPatchVersion cudaMajorMinorVersion cudaMajorVersion;
 
               # CUDA version comparison utilities
-              inherit
-                cudaAtLeast
-                cudaAtMost
-                cudaBoundedExclusive
-                cudaBoundedInclusive
-                cudaNewer
-                cudaOlder
-                ;
+              inherit cudaAtLeast cudaOlder;
 
               # Utility function for automatically naming fetchFromGitHub derivations with `name`.
               fetchFromGitHub = fetchFromGitHubAutoName;

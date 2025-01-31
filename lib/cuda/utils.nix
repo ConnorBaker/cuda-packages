@@ -33,7 +33,6 @@ let
     mkVersionedOverrides
     packageExprPathsFromDirectoryRecursive
     readDirIfExists
-    versionAtMost
     ;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) extends;
@@ -75,17 +74,10 @@ in
     flattenAttrs
     flattenDrvTree
     ;
-  inherit (lib.upstreamable.strings)
-    versionAtMost
-    versionNewer
-    versionBoundedExclusive
-    versionBoundedInclusive
-    ;
   inherit (lib.upstreamable.trivial) readDirIfExists;
   inherit (lib.upstreamable.versions)
     dropDots
     majorMinorPatch
-    majorMinorPatchBuild
     ;
 
   /**
@@ -748,7 +740,7 @@ in
       lowerBoundSatisfied = versionAtLeast cudaMajorMinorVersion minCudaMajorMinorVersion;
       upperBoundSatisfied =
         (maxCudaMajorMinorVersion == null)
-        || (versionAtMost cudaMajorMinorVersion maxCudaMajorMinorVersion);
+        || (versionAtLeast maxCudaMajorMinorVersion cudaMajorMinorVersion);
     in
     lowerBoundSatisfied && upperBoundSatisfied;
 

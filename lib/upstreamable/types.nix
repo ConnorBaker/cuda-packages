@@ -40,17 +40,6 @@ in
   majorMinorPatchVersion = versionWithNumComponents 3;
 
   /**
-    The option type of a version with four components.
-
-    # Type
-
-    ```
-    majorMinorPatchBuildVersion :: OptionType
-    ```
-  */
-  majorMinorPatchBuildVersion = versionWithNumComponents 4;
-
-  /**
     The option type of a SHA-256, base64-encoded hash.
 
     # Type

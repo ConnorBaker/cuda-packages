@@ -2,8 +2,11 @@
 let
   inherit (lib.cuda.types)
     attrs
+    cudaCapability
     cudaVariant
+    features
     manifest
+    nvccConfig
     packageInfo
     packageName
     packages
@@ -13,29 +16,36 @@ let
     redistName
     release
     releaseInfo
+    sriHash
     version
+    versionedManifests
+    versionedOverrides
     ;
   inherit (lib.cuda.utils) mkOptionsModule;
   inherit (lib.attrsets) attrNames;
   inherit (lib.lists) all;
-  inherit (lib.modules) importApply;
+  inherit (lib.upstreamable.types) majorMinorVersion;
   inherit (lib.types)
     addCheck
     attrsWith
+    bool
     enum
     functionTo
     lazyAttrsOf
+    listOf
+    nonEmptyListOf
+    nonEmptyStr
+    nullOr
     oneOf
+    package
+    path
     raw
     strMatching
     submodule
     ;
-
-  mkOptionsModuleIntoOptionType = path: submodule (importApply path { inherit lib; });
 in
 {
   inherit (lib.upstreamable.types)
-    majorMinorPatchBuildVersion
     majorMinorPatchVersion
     majorMinorVersion
     majorVersion
@@ -111,9 +121,69 @@ in
     features :: OptionType
     ```
   */
-  features = mkOptionsModuleIntoOptionType ./modules/features.nix // {
-    name = "features";
-  };
+  features =
+    submodule (mkOptionsModule {
+      cudaVersionsInLib = {
+        description = "Subdirectories of the `lib` directory which are named after CUDA versions";
+        type = nullOr (nonEmptyListOf (strMatching "^[[:digit:]]+(\.[[:digit:]]+)?$"));
+        default = null;
+      };
+      outputs = {
+        description = ''
+          The outputs provided by a package.
+
+          A `bin` output requires that we have a non-empty `bin` directory containing at least one file with the
+          executable bit set.
+
+          A `dev` output requires that we have at least one of the following non-empty directories:
+
+          - `lib/pkgconfig`
+          - `share/pkgconfig`
+          - `lib/cmake`
+          - `share/aclocal`
+
+          NOTE: Absent from this list is `include`, which is handled by the `include` output. This is because the `dev`
+          output in Nixpkgs is used for development files and is selected as the default output to install if present.
+          Since we want to be able to access only the header files, they are present in a separate output.
+
+          A `doc` output requires that we have at least one of the following non-empty directories:
+
+          - `share/info`
+          - `share/doc`
+          - `share/gtk-doc`
+          - `share/devhelp`
+          - `share/man`
+
+          An `include` output requires that we have a non-empty `include` directory.
+
+          A `lib` output requires that we have a non-empty lib directory containing at least one shared library.
+
+          A `python` output requires that we have a non-empty `python` directory.
+
+          A `sample` output requires that we have a non-empty `samples` directory.
+
+          A `static` output requires that we have a non-empty lib directory containing at least one static library.
+
+          A `stubs` output requires that we have a non-empty `lib/stubs` or `stubs` directory containing at least one
+          shared or static library.
+        '';
+        type = nonEmptyListOf (enum [
+          "out" # Always present
+          "bin"
+          "dev"
+          "doc"
+          "include"
+          "lib"
+          "python"
+          "sample"
+          "static"
+          "stubs"
+        ]);
+      };
+    })
+    // {
+      name = "features";
+    };
 
   /**
     The option type of information about a GPU.
@@ -124,9 +194,51 @@ in
     gpuInfo :: OptionType
     ```
   */
-  gpuInfo = mkOptionsModuleIntoOptionType ./modules/gpu-info.nix // {
-    name = "gpuInfo";
-  };
+  gpuInfo =
+    submodule (
+      { name, ... }:
+      mkOptionsModule {
+        archName = {
+          description = "The name of the microarchitecture.";
+          type = nonEmptyStr;
+        };
+        cudaCapability = {
+          description = "The CUDA capability of the GPU.";
+          type = cudaCapability;
+          default = name;
+        };
+        dontDefaultAfterCudaMajorMinorVersion = {
+          description = ''
+            The CUDA version after which to exclude this GPU from the list of default capabilities we build.
+
+            The value `null` means we always include this GPU in the default capabilities if it is supported.
+          '';
+          type = nullOr majorMinorVersion;
+        };
+        isJetson = {
+          description = ''
+            Whether a GPU is part of NVIDIA's line of Jetson embedded computers. This field is notable because it tells us
+            what architecture to build for (as Jetson devices are aarch64).
+            More on Jetson devices here: https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/
+            NOTE: These architectures are only built upon request.
+          '';
+          type = bool;
+        };
+        maxCudaMajorMinorVersion = {
+          description = ''
+            The maximum (exclusive) CUDA version that supports this GPU. `null` means there is no maximum.
+          '';
+          type = nullOr majorMinorVersion;
+        };
+        minCudaMajorMinorVersion = {
+          description = "The minimum (inclusive) CUDA version that supports this GPU.";
+          type = majorMinorVersion;
+        };
+      }
+    )
+    // {
+      name = "gpuInfo";
+    };
 
   /**
     The option type of a manifest attribute set.
@@ -150,9 +262,25 @@ in
     packageInfo :: OptionType
     ```
   */
-  packageInfo = mkOptionsModuleIntoOptionType ./modules/package-info.nix // {
-    name = "packageInfo";
-  };
+  packageInfo =
+    submodule (mkOptionsModule {
+      features = {
+        description = "Features the package provides";
+        type = features;
+      };
+      recursiveHash = {
+        description = "Recursive NAR hash of the unpacked tarball";
+        type = sriHash;
+      };
+      relativePath = {
+        description = "The path to the package in the redistributable tree or null if it can be reconstructed.";
+        type = nullOr nonEmptyStr;
+        default = null;
+      };
+    })
+    // {
+      name = "packageInfo";
+    };
 
   /**
     The option type of a `packages` attribute set.
@@ -215,9 +343,24 @@ in
     redistName :: OptionType
     ```
   */
-  redistConfig = mkOptionsModuleIntoOptionType ./modules/redist-config.nix // {
-    name = "redistConfig";
-  };
+  redistConfig =
+    submodule (mkOptionsModule {
+      versionedOverrides = {
+        description = ''
+          Overrides for packages provided by the redistributable.
+        '';
+        type = versionedOverrides;
+      };
+      versionedManifests = {
+        description = ''
+          Data required to produce packages for (potentially multiple) versions of CUDA.
+        '';
+        type = versionedManifests;
+      };
+    })
+    // {
+      name = "redistConfig";
+    };
 
   /**
     The option type of a redistributable name.
@@ -272,9 +415,29 @@ in
     releaseInfo :: OptionType
     ```
   */
-  releaseInfo = mkOptionsModuleIntoOptionType ./modules/release-info.nix // {
-    name = "releaseInfo";
-  };
+  releaseInfo =
+    submodule (mkOptionsModule {
+      licensePath = {
+        description = "The path to the license file in the redistributable tree";
+        type = nullOr nonEmptyStr;
+        default = null;
+      };
+      license = {
+        description = "The license of the redistributable";
+        type = nullOr nonEmptyStr;
+      };
+      name = {
+        description = "The full name of the redistributable";
+        type = nullOr nonEmptyStr;
+      };
+      version = {
+        description = "The version of the redistributable";
+        type = version;
+      };
+    })
+    // {
+      name = "releaseInfo";
+    };
 
   /**
     The option type of a versioned manifest attribute set.
@@ -358,13 +521,55 @@ in
     name = "cudaCapability";
   };
 
-  # TODO: Docs
-  nvccConfig = mkOptionsModuleIntoOptionType ./modules/nvcc-config.nix // {
-    name = "nvccConfig";
-  };
+  nvccConfig =
+    submodule (mkOptionsModule {
+      hostStdenv = {
+        description = ''
+          The host stdenv compiler to use when building CUDA code.
+          This option is used to determine the version of the host compiler to use when building CUDA code.
+        '';
+        default = null;
+        type = nullOr package;
+      };
+    })
+    // {
+      name = "nvccConfig";
+    };
 
   # TODO: Docs
-  cudaPackagesConfig = mkOptionsModuleIntoOptionType ./modules/cuda-packages-config.nix // {
-    name = "cudaPackagesConfig";
-  };
+  cudaPackagesConfig =
+    submodule (mkOptionsModule {
+      nvcc = {
+        description = ''
+          Configuration options for nvcc.
+        '';
+        type = nvccConfig;
+        default = { };
+      };
+      packagesDirectories = {
+        description = ''
+          Paths to directories containing Nix expressions to add to the package set.
+
+          Package names created from directories later in the list override packages earlier in the list.
+        '';
+        type = listOf path;
+        default = [ ];
+      };
+      redists = {
+        description = ''
+          Maps redist name to version.
+
+          Versions must match the format of the corresponding versioned manifest for the redist.
+
+          If a redistributable is not present in this attribute set, it is not included in the package set.
+
+          If the version specified for a redistributable is not present in the corresponding versioned manifest, it is not included in the package set.
+        '';
+        type = attrs redistName version;
+        default = { };
+      };
+    })
+    // {
+      name = "cudaPackagesConfig";
+    };
 }
