@@ -16,24 +16,13 @@ if ((${nvccHookOnce:-0})); then
 fi
 
 declare -ig nvccHookOnce=1
+declare -ig nvccHostCCMatchesStdenvCC="@nvccHostCCMatchesStdenvCC@"
 declare -ig dontCompressCudaFatbin=${dontCompressCudaFatbin:-0}
-declare -ag nvccForbiddenHostCompilerRunpathEntries=(
-  # Compiler libraries
-  "@unwrappedCCRoot@/lib"
-  "@unwrappedCCRoot@/lib64"
-  "@unwrappedCCRoot@/gcc/@hostPlatformConfig@/@ccVersion@"
-  # Compiler library
-  "@unwrappedCCLibRoot@/lib"
-)
 
 # NOTE: `appendToVar` does not export the variable to the environment because it is assumed to be a shell
 # variable. To avoid variables being locally scoped, we must export it prior to adding values.
 export NVCC_PREPEND_FLAGS="${NVCC_PREPEND_FLAGS:-}"
 export NVCC_APPEND_FLAGS="${NVCC_APPEND_FLAGS:-}"
-
-# NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
-prePhases+=(nvccHookOrderCheckPhase)
-nixLog "added nvccHookOrderCheckPhase to prePhases"
 
 preConfigureHooks+=(nvccSetupEnvironmentVariables)
 nixLog "added nvccSetupEnvironmentVariables to preConfigureHooks"
@@ -41,8 +30,30 @@ nixLog "added nvccSetupEnvironmentVariables to preConfigureHooks"
 preConfigureHooks+=(nvccSetupCMakeEnvironmentVariables)
 nixLog "added nvccSetupCMakeEnvironmentVariables to preConfigureHooks"
 
-postFixupHooks+=("autoFixElfFiles nvccRunpathCheck")
-nixLog "added 'autoFixElfFiles nvccRunpathCheck' to postFixupHooks"
+# If the host compiler does not match the stdenv compiler, we need to prevent NVCC from leaking the host compiler
+# into the build.
+if ! ((nvccHostCCMatchesStdenvCC)); then
+  declare -ag nvccForbiddenHostCompilerRunpathEntries=(
+    # Compiler libraries
+    "@unwrappedCCRoot@/lib"
+    "@unwrappedCCRoot@/lib64"
+    "@unwrappedCCRoot@/gcc/@hostPlatformConfig@/@ccVersion@"
+    # Compiler library
+    "@unwrappedCCLibRoot@/lib"
+  )
+
+  # Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
+  prePhases+=(nvccHookOrderCheckPhase)
+  nixLog "added nvccHookOrderCheckPhase to prePhases"
+
+  # Tell CMake to ignore libraries provided by NVCC's host compiler when linking.
+  preConfigureHooks+=(nvccSetupCMakeHostCompilerLeakPrevention)
+  nixLog "added nvccSetupCMakeHostCompilerLeakPrevention to preConfigureHooks"
+
+  # Ensure that the host compiler's libraries are not present in the runpath of the compiled binaries.
+  postFixupHooks+=("autoFixElfFiles nvccRunpathCheck")
+  nixLog "added 'autoFixElfFiles nvccRunpathCheck' to postFixupHooks"
+fi
 
 nvccHookOrderCheckPhase() {
   # Ensure that our setup hook runs after autoPatchelf.
@@ -108,13 +119,16 @@ nvccSetupCMakeEnvironmentVariables() {
     nixLog "set CUDAARCHS to $CUDAARCHS"
   fi
 
+  return 0
+}
+
+nvccSetupCMakeHostCompilerLeakPrevention() {
   # Instruct CMake to ignore libraries provided by NVCC's host compiler when linking, as these should be supplied by
   # the stdenv's compiler.
   for forbiddenEntry in "${nvccForbiddenHostCompilerRunpathEntries[@]}"; do
     addToSearchPathWithCustomDelimiter ";" CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE "$forbiddenEntry"
     nixLog "appended $forbiddenEntry to CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE"
   done
-
   return 0
 }
 

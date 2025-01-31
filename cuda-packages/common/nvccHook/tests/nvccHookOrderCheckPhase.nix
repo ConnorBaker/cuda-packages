@@ -1,15 +1,19 @@
 # NOTE: Tests for nvccHookOrderCheckPhase go here.
 {
   autoPatchelfHook,
+  lib,
   nixLogWithLevelAndFunctionNameHook,
   nvccHook,
   stdenv,
   testers,
 }:
 let
+  inherit (lib.attrsets) optionalAttrs;
+  inherit (nvccHook.passthru.substitutions) nvccHostCCMatchesStdenvCC;
   inherit (testers) runCommand testBuildFailure;
 in
-{
+# The ordering checks are only relevant when our host compiler is not the same as the standard environment's compiler.
+optionalAttrs (!nvccHostCCMatchesStdenvCC) {
   no-autoPatchelfHook = stdenv.mkDerivation {
     __structuredAttrs = true;
     strictDeps = true;

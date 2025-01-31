@@ -9,6 +9,7 @@
   lib,
   makeSetupHook,
   nixLogWithLevelAndFunctionNameHook,
+  stdenv,
 }:
 let
   inherit (cuda_nvcc.passthru.nvccStdenv) cc hostPlatform;
@@ -38,6 +39,7 @@ let
     substitutions = {
       ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
       ccVersion = cc.version;
+      nvccHostCCMatchesStdenvCC = cc == stdenv.cc;
       cudaArchs = cmakeCudaArchitecturesString;
       hostPlatformConfig = hostPlatform.config;
       nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
