@@ -1,13 +1,14 @@
 # shellcheck shell=bash
 
 # Only run the hook from nativeBuildInputs
-if ((${hostOffset:?} == -1 && ${targetOffset:?} == 0)); then
+# shellcheck disable=SC2154
+if ((hostOffset == -1 && targetOffset == 0)); then
   nixInfoLog "sourcing array-utilities-hook.sh"
 else
   return 0
 fi
 
-if ((${arrayUtilitiesHookOnce:-0} > 0)); then
+if ((${arrayUtilitiesHookOnce:-0})); then
   nixInfoLog "skipping because the hook has been propagated more than once"
   return 0
 fi
@@ -42,11 +43,12 @@ arraysAreEqual() {
   return 0
 }
 
-# Returns 0 if inputElem1 occurs before inputElem2 in inputArrRef, 1 otherwise.
-elemIsBefore() {
+# Returns 0 if inputElem1 occurs before inputElem2 in inputArrRef or if inputElem1 occurs and inputElem2 does not.
+# Returns 1 otherwise.
+occursOnlyOrBeforeInArray() {
   if (($# != 3)); then
     nixErrorLog "expected three arguments!"
-    nixErrorLog "usage: elemIsBefore inputElem1 inputElem2 inputArrRef"
+    nixErrorLog "usage: occursOnlyOrBeforeInArray inputElem1 inputElem2 inputArrRef"
     exit 1
   fi
 
@@ -65,22 +67,21 @@ elemIsBefore() {
   fi
 
   for entry in "${inputArrRef[@]}"; do
-    case "$entry" in
-    "$inputElem1") return 0 ;;
-    "$inputElem2") return 1 ;;
-    *) ;;
-    esac
+    # Early return on finding inputElem1
+    [[ $entry == "$inputElem1" ]] && return 0
+    # Stop searching if we find inputElem2
+    [[ $entry == "$inputElem2" ]] && break
   done
 
-  # Vacuously true if neither element is in the array.
-  return 0
+  return 1
 }
 
-# Returns 0 if inputElem1 occurs after inputElem2 in inputArrRef, 1 otherwise.
-elemIsAfter() {
+# Returns 0 if inputElem1 occurs after inputElem2 in inputArrRef or if inputElem1 occurs and inputElem2 does not.
+# Returns 1 otherwise.
+occursOnlyOrAfterInArray() {
   if (($# != 3)); then
     nixErrorLog "expected three arguments!"
-    nixErrorLog "usage: elemIsAfter inputElem1 inputElem2 inputArrRef"
+    nixErrorLog "usage: occursOnlyOrAfterInArray inputElem1 inputElem2 inputArrRef"
     exit 1
   fi
 
@@ -98,29 +99,34 @@ elemIsAfter() {
     exit 1
   fi
 
+  local -i seenInputElem1=0
+  local -i seenInputElem2=0
   for entry in "${inputArrRef[@]}"; do
-    nixLog "observed entry: $entry"
-    case "$entry" in
-    "$inputElem1")
-      nixLog "observed inputElem1, returning 1"
-      return 1
-      ;;
-    "$inputElem2")
-      nixLog "observed inputElem2, returning 0"
-      return 0
-      ;;
-    *) ;;
-    esac
+    if [[ $entry == "$inputElem1" ]]; then
+      # If we've already seen inputElem2, then inputElem1 occurs after inputElem2 and we can return success.
+      ((seenInputElem2)) && return 0
+      # Otherwise, we've seen inputElem1 and are waiting to see if inputElem2 occurs.
+      seenInputElem1=1
+    elif [[ $entry == "$inputElem2" ]]; then
+      # Since we've seen inputElem2, we can return failure if we've already seen inputElem1.
+      ((seenInputElem1)) && return 1
+      # Otherwise, we've seen inputElem2 and are waiting to see if inputElem1 occurs.
+      seenInputElem2=1
+    fi
   done
 
-  # Vacuously true if neither element is in the array.
-  return 0
+  # Due to the structure of the return statements, when we exit the for loop, we know that at most one of the
+  # input elements has been seen.
+  # If we've seen inputElem1, then we know that inputElem2 didn't occur, so we return success.
+  # If we haven't seen inputElem1, it doesn't matter if we've seen inputElem2 or not -- we return failure.
+  return $((1 - seenInputElem1))
 }
 
-elemIsIn() {
+# Returns 0 if inputElem occurs in inputArrRef, 1 otherwise.
+occursInArray() {
   if (($# != 2)); then
     nixErrorLog "expected two arguments!"
-    nixErrorLog "usage: elemIsIn inputElem inputArrRef"
+    nixErrorLog "usage: occursInArray inputElem inputArrRef"
     exit 1
   fi
 
@@ -133,12 +139,92 @@ elemIsIn() {
   fi
 
   for entry in "${inputArrRef[@]}"; do
-    if [[ $entry == "$inputElem" ]]; then
-      return 0
-    fi
+    [[ $entry == "$inputElem" ]] && return 0
   done
 
   return 1
+}
+
+# TODO: Would it be a mistake to provided an occursInSortedArray?
+
+# Sorts inputArrRef and stores the result in outputArrRef.
+sortArray() {
+  if (($# != 2)); then
+    nixErrorLog "expected two arguments!"
+    nixErrorLog "usage: sortArray inputArrRef outputArrRef"
+    exit 1
+  fi
+
+  local -rn inputArrRef="$1"
+  local -rn outputArrRef="$2"
+
+  if [[ ! ${inputArrRef@a} =~ a ]]; then
+    nixErrorLog "first arugment inputArrRef must be an array reference"
+    exit 1
+  fi
+
+  if [[ ! ${outputArrRef@a} =~ a ]]; then
+    nixErrorLog "second arugment outputArrRef must be an array reference"
+    exit 1
+  fi
+
+  # NOTE from sort manpage: The locale specified by the environment affects sort order. Set LC_ALL=C to get the
+  # traditional sort order that uses native byte values.
+  mapfile -d '' -t outputArrRef < <(printf '%s\0' "${inputArrRef[@]}" | LC_ALL=C sort --stable --zero-terminated)
+  return 0
+}
+
+# Returns a sorted array of the keys of inputMapRef.
+getMapKeys() {
+  if (($# != 2)); then
+    nixErrorLog "expected two arguments!"
+    nixErrorLog "usage: getMapKeys inputMapRef outputArrRef"
+    exit 1
+  fi
+
+  local -rn inputMapRef="$1"
+  # shellcheck disable=SC2178
+  # Don't warn about outputArrRef being used as an array because it is an array.
+  local -rn outputArrRef="$2"
+
+  if [[ ! ${inputMapRef@a} =~ A ]]; then
+    nixErrorLog "first arugment inputMapRef must be an associative array reference"
+    exit 1
+  fi
+
+  if [[ ! ${outputArrRef@a} =~ a ]]; then
+    nixErrorLog "second arugment outputArrRef must be an array reference"
+    exit 1
+  fi
+
+  # TODO: Should we hide mutation from the caller?
+  outputArrRef=("${!inputMapRef[@]}")
+  sortArray outputArrRef outputArrRef
+  return 0
+}
+
+# Returns 0 if inputElem occurs in the keys of inputMapRef, 1 otherwise.
+occursInMapKeys() {
+  if (($# != 2)); then
+    nixErrorLog "expected two arguments!"
+    nixErrorLog "usage: occursInMapKeys inputElem inputMapRef"
+    exit 1
+  fi
+
+  local -r inputElem="$1"
+  local -rn inputMapRef="$2"
+
+  if [[ ! ${inputMapRef@a} =~ A ]]; then
+    nixErrorLog "second arugment inputMapRef must be an associative array reference"
+    exit 1
+  fi
+
+  # shellcheck disable=SC2034
+  # keys is used in getMapKeys
+  local -a keys
+  getMapKeys inputMapRef keys
+  occursInArray "$inputElem" keys
+  return $? # Return the result of occursInArray
 }
 
 # TODO: Will empty arrays be considered unset and have no type?
@@ -164,9 +250,7 @@ mapIsSubmap() {
 
   local subMapKey
   for subMapKey in "${!submapRef[@]}"; do
-    if [[ ${submapRef["$subMapKey"]} != "${supermapRef["$subMapKey"]}" ]]; then
-      return 1
-    fi
+    [[ ${submapRef["$subMapKey"]} != "${supermapRef["$subMapKey"]}" ]] && return 1
   done
 
   return 0
@@ -202,30 +286,6 @@ mapsAreEqual() {
   return 0
 }
 
-sortArray() {
-  if (($# != 2)); then
-    nixErrorLog "expected two arguments!"
-    nixErrorLog "usage: sortArray inputArrRef outputArrRef"
-    exit 1
-  fi
-
-  local -rn inputArrRef="$1"
-  local -rn outputArrRef="$2"
-
-  if [[ ! ${inputArrRef@a} =~ a ]]; then
-    nixErrorLog "first arugment inputArrRef must be an array reference"
-    exit 1
-  fi
-
-  if [[ ! ${outputArrRef@a} =~ a ]]; then
-    nixErrorLog "second arugment outputArrRef must be an array reference"
-    exit 1
-  fi
-
-  mapfile -d '' -t outputArrRef < <(printf '%s\0' "${inputArrRef[@]}" | sort -z)
-  return 0
-}
-
 # computeFrequencyMap
 # Produces a frequency map of the elements in an array.
 #
@@ -256,7 +316,8 @@ computeFrequencyMap() {
 
   local -i numTimesSeen
   for entry in "${inputArrRef[@]}"; do
-    numTimesSeen=$((${outputMapRef["$entry"]:-0} + 1))
+    # NOTE: Unset values inside arithmetic expressions default to zero.
+    numTimesSeen=$((${outputMapRef["$entry"]} + 1))
     outputMapRef["$entry"]=$numTimesSeen
   done
 
@@ -307,7 +368,8 @@ deduplicateArray() {
 
   local -i numTimesSeen
   for entry in "${inputArrRef[@]}"; do
-    numTimesSeen=$((${outputMapRef["$entry"]:-0} + 1))
+    # NOTE: Unset values inside arithmetic expressions default to zero.
+    numTimesSeen=$((${outputMapRef["$entry"]} + 1))
     outputMapRef["$entry"]=$numTimesSeen
 
     if ((numTimesSeen <= 1)); then

@@ -1,76 +1,34 @@
 # NOTE: Tests related to computeFrequencyMap go here.
 {
   arrayUtilitiesHook,
+  mkCheckExpectedArrayAndMap,
   nixLogWithLevelAndFunctionNameHook,
-  runCommand,
-  stdenv,
   testers,
   ...
 }:
 let
-  inherit (testers) testBuildFailure;
-  mkCheck =
-    {
-      name,
-      valuesArr ? [ ],
-      expectedMap ? { },
-    }:
-    stdenv.mkDerivation {
-      inherit name;
-      # NOTE: Must set name!
-      strictDeps = true;
-      __structuredAttrs = true;
-      src = null;
-      inherit valuesArr expectedMap;
-      nativeBuildInputs = [
-        nixLogWithLevelAndFunctionNameHook
-        arrayUtilitiesHook
-      ];
-      # TODO: REPLACE WITH SCRIPTS IMPORT
-      dontUnpack = true;
-      dontBuild = true;
-      doCheck = true;
-      checkPhase = ''
-        runHook preCheck
-
-        nixLog "running with values: $(declare -p valuesArr)"
-
-        local -A actualMap=()
-        computeFrequencyMap valuesArr actualMap
-
-        ${builtins.readFile ./assert-map-is-submap.sh}
-
-        nixLog "ensuring expectedMap is a submap of actualMap"
-        assertMapIsSubmap expectedMap actualMap
-
-        nixLog "ensuring actualMap is a submap of expectedMap"
-        assertMapIsSubmap actualMap expectedMap
-
-        nixLog "the test passed"
-        runHook postCheck
-      '';
-      installPhase = ''
-        runHook preInstall
-        touch "$out"
-        runHook postInstall
-      '';
-    };
+  inherit (testers) runCommand testBuildFailure;
+  check = mkCheckExpectedArrayAndMap.override {
+    setup = ''
+      nixLog "running computeFrequencyMap with valuesArr to populate actualMap"
+      computeFrequencyMap valuesArr actualMap
+    '';
+    extraNativeBuildInputs = [ arrayUtilitiesHook ];
+  };
 in
 {
-  test0 = mkCheck {
-    name = "test0";
+  empty = check.override {
+    name = "empty";
     valuesArr = [ ];
     expectedMap = { };
   };
-  test1 = mkCheck {
-    name = "test1";
+  singleton = check.override {
+    name = "singleton";
     valuesArr = [ "apple" ];
-    expectedMap = {
-      apple = 1;
-    };
+    expectedMap.apple = 1;
   };
-  test2 = mkCheck {
-    name = "test2";
+  twoUnique = check.override {
+    name = "twoUnique";
     valuesArr = [
       "apple"
       "bee"
@@ -80,18 +38,16 @@ in
       bee = 1;
     };
   };
-  test3 = mkCheck {
-    name = "test3";
+  oneDuplicate = check.override {
+    name = "oneDuplicate";
     valuesArr = [
       "apple"
       "apple"
     ];
-    expectedMap = {
-      apple = 2;
-    };
+    expectedMap.apple = 2;
   };
-  test4 = mkCheck {
-    name = "test4";
+  oneUniqueOneDuplicate = check.override {
+    name = "oneUniqueOneDuplicate";
     valuesArr = [
       "bee"
       "apple"
@@ -102,177 +58,193 @@ in
       bee = 2;
     };
   };
-  test5 =
-    runCommand "test5"
-      {
-        failed = testBuildFailure (mkCheck {
-          name = "test5-inner";
-          valuesArr = [ ];
-          expectedMap = {
-            apple = 1;
-          };
-        });
+  failMissingKeyWithEmpty = runCommand {
+    name = "failMissingKeyWithEmpty";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.override {
+        name = "failMissingKeyWithEmptyInner";
+        valuesArr = [ ];
+        expectedMap.apple = 1;
       }
-      ''
-        echo "Checking for exit code 1" >&$NIX_LOG_FD
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        echo "Checking for first error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: assertMapIsSubmap: submap has more keys than supermap: submap has length 1 but supermap has length 0" \
-          "$failed/testBuildFailure.log"
-        echo "Checking for second error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: assertMapIsSubmap: submap has key 'apple' with value '1' but supermap has no such key" \
-          "$failed/testBuildFailure.log"
-        echo "Test passed" >&$NIX_LOG_FD
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for first error message"
+      grep -F \
+        "ERROR: assertMapsAreEqual: maps differ in number of keys: expectedMap has length 1 but actualMap has length 0" \
+        "$failed/testBuildFailure.log"
+      nixLog "Checking for second error message"
+      grep -F \
+        "ERROR: assertMapsAreEqual: expectedMap has key 'apple' with value '1' but actualMap has no such key" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  test6 =
-    runCommand "test6"
-      {
-        failed = testBuildFailure (mkCheck {
-          name = "test6-inner";
-          valuesArr = [
-            "apple"
-            "bee"
-            "apple"
-          ];
-          expectedMap = {
-            apple = 1;
-            bee = 1;
-          };
-        });
+  failIncorrectFrequency = runCommand {
+    name = "failIncorrectFrequency";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.override {
+        name = "failIncorrectFrequencyInner";
+        valuesArr = [
+          "apple"
+          "bee"
+          "apple"
+        ];
+        expectedMap = {
+          apple = 1;
+          bee = 1;
+        };
       }
-      ''
-        echo "Checking for exit code 1" >&$NIX_LOG_FD
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        echo "Checking for error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: assertMapIsSubmap: maps differ at key 'apple': submap value is '1' but supermap value is '2'" \
-          "$failed/testBuildFailure.log"
-        echo "Test passed" >&$NIX_LOG_FD
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message"
+      grep -F \
+        "ERROR: assertMapsAreEqual: maps differ at key 'apple': expectedMap value is '1' but actualMap value is '2'" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  test7 =
-    runCommand "test7"
-      {
-        failed = testBuildFailure (mkCheck {
-          name = "test7-inner";
-          valuesArr = [
-            "cat"
-            "apple"
-            "bee"
-          ];
-          expectedMap = {
-            apple = 1;
-            bee = 1;
-          };
-        });
+  failMissingKeyWithNonEmpty = runCommand {
+    name = "failMissingKeyWithNonEmpty";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.override {
+        name = "failMissingKeyWithNonEmptyInner";
+        valuesArr = [
+          "cat"
+          "apple"
+          "bee"
+        ];
+        expectedMap = {
+          apple = 1;
+          bee = 1;
+        };
       }
-      ''
-        echo "Checking for exit code 1" >&$NIX_LOG_FD
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        echo "Checking for first error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: assertMapIsSubmap: submap has more keys than supermap: submap has length 3 but supermap has length 2" \
-          "$failed/testBuildFailure.log"
-        echo "Checking for second error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: assertMapIsSubmap: submap has key 'cat' with value '1' but supermap has no such key" \
-          "$failed/testBuildFailure.log"
-        echo "Test passed" >&$NIX_LOG_FD
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for first error message"
+      grep -F \
+        "ERROR: assertMapsAreEqual: maps differ in number of keys: expectedMap has length 2 but actualMap has length 3" \
+        "$failed/testBuildFailure.log"
+      nixLog "Checking for second error message"
+      grep -F \
+        "ERROR: assertMapsAreEqual: actualMap has key 'cat' with value '1' but expectedMap has no such key" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  test8 =
-    runCommand "test8"
-      {
-        failed = testBuildFailure (mkCheck {
-          name = "test8-inner";
-          valuesArr = "apple";
-        });
+  failFirstArgumentIsString = runCommand {
+    name = "failFirstArgumentIsString";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.override {
+        name = "failFirstArgumentIsStringInner";
+        valuesArr = "apple";
+        expectedMap = { };
       }
-      ''
-        echo "Checking for exit code 1" >&$NIX_LOG_FD
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        echo "Checking for error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: computeFrequencyMap: first arugment inputArrRef must be an array reference" \
-          "$failed/testBuildFailure.log"
-        echo "Test passed" >&$NIX_LOG_FD
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message"
+      grep -F \
+        "ERROR: computeFrequencyMap: first arugment inputArrRef must be an array reference" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  test9 =
-    runCommand "test9"
-      {
-        failed = testBuildFailure (mkCheck {
-          name = "test9-inner";
-          valuesArr.apple = 1;
-        });
+  failFirstArgumentIsMap = runCommand {
+    name = "failFirstArgumentIsMap";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.override {
+        name = "failFirstArgumentIsMapInner";
+        valuesArr.apple = 1;
+        expectedMap = { };
       }
-      ''
-        echo "Checking for exit code 1" >&$NIX_LOG_FD
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        echo "Checking for error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: computeFrequencyMap: first arugment inputArrRef must be an array reference" \
-          "$failed/testBuildFailure.log"
-        echo "Test passed" >&$NIX_LOG_FD
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message"
+      grep -F \
+        "ERROR: computeFrequencyMap: first arugment inputArrRef must be an array reference" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  test10 =
-    runCommand "test10"
-      {
-        failed = testBuildFailure (
-          (mkCheck {
-            name = "test10-inner";
-          }).overrideAttrs
-            {
-              checkPhase = ''
-                local -a actualMap=()
-                computeFrequencyMap valuesArr actualMap
-              '';
-            }
-        );
-      }
-      ''
-        echo "Checking for exit code 1" >&$NIX_LOG_FD
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        echo "Checking for error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: computeFrequencyMap: second arugment outputMapRef must be an associative array reference" \
-          "$failed/testBuildFailure.log"
-        echo "Test passed" >&$NIX_LOG_FD
-        touch $out
-      '';
+  failSecondArgumentIsArray = runCommand {
+    name = "failSecondArgumentIsArray";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.override (prevAttrs: {
+        name = "failSecondArgumentIsArrayInner";
+        valuesArr = [ ];
+        expectedMap = { };
+        setup =
+          ''
+            nixLog "unsetting and re-declaring actualMap to be an array"
+            unset actualMap
+            local -a actualMap=()
+          ''
+          + prevAttrs.setup;
+      })
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message"
+      grep -F \
+        "ERROR: computeFrequencyMap: second arugment outputMapRef must be an associative array reference" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  test11 =
-    runCommand "test11"
-      {
-        failed = testBuildFailure (
-          (mkCheck {
-            name = "test10-inner";
-          }).overrideAttrs
-            {
-              checkPhase = ''
-                local actualMap="hello!"
-                computeFrequencyMap valuesArr actualMap
-              '';
-            }
-        );
-      }
-      ''
-        echo "Checking for exit code 1" >&$NIX_LOG_FD
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        echo "Checking for error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: computeFrequencyMap: second arugment outputMapRef must be an associative array reference" \
-          "$failed/testBuildFailure.log"
-        echo "Test passed" >&$NIX_LOG_FD
-        touch $out
-      '';
+  failSecondArgumentIsString = runCommand {
+    name = "failSecondArgumentIsString";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.override (prevAttrs: {
+        name = "failSecondArgumentIsStringInner";
+        valuesArr = [ ];
+        expectedMap = { };
+        setup =
+          ''
+            nixLog "unsetting and re-declaring actualMap to be a string"
+            unset actualMap
+            local actualMap="hello!"
+          ''
+          + prevAttrs.setup;
+      })
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message"
+      grep -F \
+        "ERROR: computeFrequencyMap: second arugment outputMapRef must be an associative array reference" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 }

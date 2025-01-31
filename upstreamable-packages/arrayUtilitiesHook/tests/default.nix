@@ -1,8 +1,8 @@
 {
   arrayUtilitiesHook,
   lib,
+  mkCheckExpectedArrayAndMap,
   nixLogWithLevelAndFunctionNameHook,
-  runCommand,
   stdenv,
   testers,
 }:
@@ -11,8 +11,8 @@ let
     inherit
       arrayUtilitiesHook
       lib
+      mkCheckExpectedArrayAndMap
       nixLogWithLevelAndFunctionNameHook
-      runCommand
       stdenv
       testers
       ;
@@ -24,6 +24,9 @@ in
 
   # Tests for deduplicateArray.
   deduplicateArray = import ./deduplicateArray.nix args;
+
+  # Tests for occursOnlyOrBeforeInArray.
+  occursOnlyOrBeforeInArray = import ./occursOnlyOrBeforeInArray.nix args;
 
   # TODO: Tests for other functions go here.
 }

@@ -1,7 +1,8 @@
 # shellcheck shell=bash
 
 # Only run the hook from nativeBuildInputs
-if ((${hostOffset:?} == -1 && ${targetOffset:?} == 0)); then
+# shellcheck disable=SC2154
+if ((hostOffset == -1 && targetOffset == 0)); then
   # shellcheck disable=SC1091
   source @nixLogWithLevelAndFunctionNameHook@
   nixLog "sourcing deduplicate-runpath-entries-hook.sh"
@@ -9,7 +10,7 @@ else
   return 0
 fi
 
-if ((${deduplicateRunpathEntriesHookOnce:-0} > 0)); then
+if ((${deduplicateRunpathEntriesHookOnce:-0})); then
   nixWarnLog "skipping because the hook has been propagated more than once"
   return 0
 fi
@@ -29,8 +30,7 @@ nixLog "added 'autoFixElfFiles deduplicateRunpathEntries' to postFixupHooks"
 deduplicateRunpathEntriesHookOrderCheckPhase() {
   # Ensure that our setup hook runs after autoPatchelf.
   # NOTE: Brittle because it relies on the name of the hook not changing.
-  if elemIsIn autoPatchelfPostFixup postFixupHooks &&
-    elemIsBefore "autoFixElfFiles deduplicateRunpathEntries" autoPatchelfPostFixup postFixupHooks; then
+  if ! occursOnlyOrAfterInArray "autoFixElfFiles deduplicateRunpathEntries" autoPatchelfPostFixup postFixupHooks; then
     nixErrorLog "autoPatchelfPostFixup must run before 'autoFixElfFiles deduplicateRunpathEntries'"
     exit 1
   fi

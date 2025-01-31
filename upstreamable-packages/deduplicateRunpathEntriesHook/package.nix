@@ -9,7 +9,7 @@
   # passthru.tests
   autoPatchelfHook,
   deduplicateRunpathEntriesHook,
-  runCommand,
+  mkCheckExpectedArrayAndMap,
   stdenv,
   testers,
 }:
@@ -29,10 +29,10 @@ makeSetupHook {
   passthru.tests = import ./tests {
     inherit
       autoPatchelfHook
-      lib
       deduplicateRunpathEntriesHook
+      mkCheckExpectedArrayAndMap
+      nixLogWithLevelAndFunctionNameHook
       patchelf
-      runCommand
       stdenv
       testers
       ;

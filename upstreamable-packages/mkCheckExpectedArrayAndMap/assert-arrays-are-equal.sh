@@ -28,7 +28,7 @@ assertArraysAreEqual() {
   local -i hasDiff=0
 
   if ((expectedArrayLength != actualArrayLength)); then
-    nixErrorLog "Arrays differ in length: expectedArrayRef has length $expectedArrayLength but actualArrayRef has length $actualArrayLength"
+    nixErrorLog "arrays differ in length: expectedArrayRef has length $expectedArrayLength but actualArrayRef has length $actualArrayLength"
     hasDiff=1
   fi
 
@@ -41,19 +41,15 @@ assertArraysAreEqual() {
 
     if [[ $expectedValue != "$actualValue" ]]; then
       if ((idx >= expectedArrayLength)); then
-        nixErrorLog "Arrays differ at index $idx: expected value would be out of bounds but actual value is '$actualValue'"
+        nixErrorLog "arrays differ at index $idx: expected value would be out of bounds but actual value is '$actualValue'"
       elif ((idx >= actualArrayLength)); then
-        nixErrorLog "Arrays differ at index $idx: expected value is '$expectedValue' but actual value would be out of bounds"
+        nixErrorLog "arrays differ at index $idx: expected value is '$expectedValue' but actual value would be out of bounds"
       else
-        nixErrorLog "Arrays differ at index $idx: expected value is '$expectedValue' but actual value is '$actualValue'"
+        nixErrorLog "arrays differ at index $idx: expected value is '$expectedValue' but actual value is '$actualValue'"
       fi
       hasDiff=1
     fi
   done
 
-  if ((hasDiff > 0)); then
-    exit 1
-  fi
-
-  return 0
+  ((hasDiff)) && exit 1 || return 0
 }

@@ -1,38 +1,60 @@
 # NOTE: Tests for deduplicateRunpathEntries go here.
 {
-  cc-lib-dir,
-  cc-libc-lib-dir,
-  mkCApplicationWithRunpathEntries,
+  mkCheckExpectedRunpath,
   ...
 }:
 {
-  no-duplicate-rpath-entries = mkCApplicationWithRunpathEntries {
-    name = "no-duplicate-rpath-entries";
-    runpathEntries = [ ];
-    postHookCheck = ''
-      nixLog "Checking that the runpath is unchanged when there are no duplicates"
-      test "''${POST_HOOK_RPATH:?}" = "''${ORIGINAL_RPATH:?}"
-    '';
-  };
-
-  duplicate-rpath-entry = mkCApplicationWithRunpathEntries {
-    name = "duplicate-rpath-entry";
-    runpathEntries = [ cc-lib-dir ];
-    postHookCheck = ''
-      nixLog "Checking that the hook removed the duplicate runpath entry"
-      test "''${POST_HOOK_RPATH:?}" = "''${ORIGINAL_RPATH:?}"
-    '';
-  };
-
-  duplicate-rpath-entries = mkCApplicationWithRunpathEntries {
-    name = "duplicate-rpath-entries";
-    runpathEntries = [
-      cc-lib-dir
-      cc-libc-lib-dir
+  allUnique = mkCheckExpectedRunpath.override {
+    name = "allUnique";
+    valuesArr = [
+      "bee"
+      "frog"
+      "apple"
+      "dog"
     ];
-    postHookCheck = ''
-      nixLog "Checking that the hook removed the duplicate runpath entries"
-      test "''${POST_HOOK_RPATH:?}" = "''${ORIGINAL_RPATH:?}"
-    '';
+    expectedArr = [
+      "bee"
+      "frog"
+      "apple"
+      "dog"
+    ];
+  };
+
+  oneUniqueOneDuplicate = mkCheckExpectedRunpath.override {
+    name = "oneUniqueOneDuplicate";
+    valuesArr = [
+      "apple"
+      "bee"
+      "apple"
+    ];
+    expectedArr = [
+      "apple"
+      "bee"
+    ];
+  };
+
+  allDuplicates = mkCheckExpectedRunpath.override {
+    name = "duplicate-rpath-entries";
+    valuesArr = [
+      "apple"
+      "apple"
+      "bee"
+      "dog"
+      "apple"
+      "cat"
+      "frog"
+      "apple"
+      "dog"
+      "frog"
+      "apple"
+      "cat"
+    ];
+    expectedArr = [
+      "apple"
+      "bee"
+      "dog"
+      "cat"
+      "frog"
+    ];
   };
 }

@@ -1,62 +1,59 @@
 # NOTE: Tests for deduplicateRunpathEntriesHookOrderCheckPhase go here.
 {
   autoPatchelfHook,
-  cApplication,
   deduplicateRunpathEntriesHook,
-  lib,
-  runCommand,
+  nixLogWithLevelAndFunctionNameHook,
+  stdenv,
   testers,
   ...
 }:
 let
-  inherit (lib.strings) optionalString;
-  inherit (testers) testBuildFailure;
+  inherit (testers) runCommand testBuildFailure;
 in
 {
-  no-autoPatchelfHook = cApplication.overrideAttrs (prevAttrs: {
-    name =
-      "no-autoPatchelfHook" + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
-      deduplicateRunpathEntriesHook
-    ];
-  });
+  no-autoPatchelfHook = stdenv.mkDerivation {
+    name = "no-autoPatchelfHook";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [ deduplicateRunpathEntriesHook ];
+    installPhase = "touch $out";
+  };
 
-  before-autoPatchelfHook =
-    runCommand
-      (
-        "before-autoPatchelfHook"
-        + optionalString (cApplication.__structuredAttrs or false) "-structuredAttrs"
-      )
-      {
-        failed = testBuildFailure (
-          cApplication.overrideAttrs (prevAttrs: {
-            name =
-              "before-autoPatchelfHook-inner"
-              + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-            nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
-              deduplicateRunpathEntriesHook
-              autoPatchelfHook
-            ];
-          })
-        );
+  before-autoPatchelfHook = runCommand {
+    name = "before-autoPatchelfHook";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      stdenv.mkDerivation {
+        name = "before-autoPatchelfHook";
+        src = null;
+        dontUnpack = true;
+        nativeBuildInputs = [
+          deduplicateRunpathEntriesHook
+          autoPatchelfHook
+        ];
+        installPhase = "touch $out";
       }
-      ''
-        echo "Checking for exit code 1" >&$NIX_LOG_FD
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        echo "Checking for error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: deduplicateRunpathEntriesHookOrderCheckPhase: autoPatchelfPostFixup must run before 'autoFixElfFiles deduplicateRunpathEntries'" \
-          "$failed/testBuildFailure.log"
-        echo "Test passed" >&$NIX_LOG_FD
-        touch $out
-      '';
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for error message"
+      grep -F \
+        "ERROR: deduplicateRunpathEntriesHookOrderCheckPhase: autoPatchelfPostFixup must run before 'autoFixElfFiles deduplicateRunpathEntries'" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
+  };
 
-  after-autoPatchelfHook = cApplication.overrideAttrs (prevAttrs: {
-    name =
-      "after-autoPatchelfHook" + optionalString (prevAttrs.__structuredAttrs or false) "-structuredAttrs";
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
+  after-autoPatchelfHook = stdenv.mkDerivation {
+    name = "after-autoPatchelfHook";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [
       autoPatchelfHook
       deduplicateRunpathEntriesHook
     ];
-  });
+    installPhase = "touch $out";
+  };
 }

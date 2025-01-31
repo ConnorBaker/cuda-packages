@@ -4,8 +4,8 @@
 
   # passthru.tests
   arrayUtilitiesHook,
+  mkCheckExpectedArrayAndMap,
   nixLogWithLevelAndFunctionNameHook,
-  runCommand,
   stdenv,
   testers,
 }:
@@ -15,8 +15,8 @@ makeSetupHook {
     inherit
       arrayUtilitiesHook
       lib
+      mkCheckExpectedArrayAndMap
       nixLogWithLevelAndFunctionNameHook
-      runCommand
       stdenv
       testers
       ;

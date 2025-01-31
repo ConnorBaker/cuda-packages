@@ -1,94 +1,34 @@
 # NOTE: Tests related to deduplicateArray go here.
 {
   arrayUtilitiesHook,
-  lib,
+  mkCheckExpectedArrayAndMap,
   nixLogWithLevelAndFunctionNameHook,
-  runCommand,
-  stdenv,
   testers,
   ...
 }:
 let
-  inherit (lib.attrsets) optionalAttrs;
-  inherit (lib.strings) optionalString;
-  inherit (testers) testBuildFailure;
-
-  mkCheck =
-    {
-      name,
-      valuesArr ? [ ],
-      expectedArr ? [ ],
-      expectedMap ? null,
-    }:
-    stdenv.mkDerivation (
-      {
-        inherit name;
-        # NOTE: Must set name!
-        strictDeps = true;
-        __structuredAttrs = true;
-        src = null;
-        inherit valuesArr expectedArr;
-        nativeBuildInputs = [
-          nixLogWithLevelAndFunctionNameHook
-          arrayUtilitiesHook
-        ];
-        dontUnpack = true;
-        dontBuild = true;
-        doCheck = true;
-        checkPhase =
-          ''
-            runHook preCheck
-
-            nixLog "running with values: $(declare -p valuesArr)"
-            local -a actualArr=()
-
-            ${optionalString (expectedMap != null) "local -A actualMap=()"}
-            deduplicateArray valuesArr actualArr ${optionalString (expectedMap != null) "actualMap"}
-
-            nixLog "expectedArr: $(declare -p expectedArr)"
-            nixLog "actualArr: $(declare -p actualArr)"
-            ${optionalString (expectedMap != null) ''
-              nixLog "expectedMap: $(declare -p expectedMap)"
-              nixLog "actualMap: $(declare -p actualMap)"
-            ''}
-
-            ${builtins.readFile ./assert-arrays-are-equal.sh}
-
-            nixLog "ensuring expectedArr equals actualArr"
-            assertArraysAreEqual expectedArr actualArr
-          ''
-          + optionalString (expectedMap != null) ''
-            ${builtins.readFile ./assert-map-is-submap.sh}
-
-            nixLog "ensuring expectedMap is a submap of actualMap"
-            assertMapIsSubmap expectedMap actualMap
-
-            nixLog "ensuring actualMap is a submap of expectedMap"
-            assertMapIsSubmap actualMap expectedMap
-            runHook postCheck
-          '';
-        installPhase = ''
-          runHook preInstall
-          touch "$out"
-          runHook postInstall
-        '';
-      }
-      // optionalAttrs (expectedMap != null) { inherit expectedMap; }
-    );
+  inherit (testers) runCommand testBuildFailure;
+  check = mkCheckExpectedArrayAndMap.override {
+    setup = ''
+      nixLog "running deduplicateArray with valuesArr to populate actualArr"
+      deduplicateArray valuesArr actualArr
+    '';
+    extraNativeBuildInputs = [ arrayUtilitiesHook ];
+  };
 in
 {
-  test0 = mkCheck {
-    name = "test0";
+  empty = check.override {
+    name = "empty";
     valuesArr = [ ];
     expectedArr = [ ];
   };
-  test1 = mkCheck {
-    name = "test1";
+  singleton = check.override {
+    name = "singleton";
     valuesArr = [ "apple" ];
     expectedArr = [ "apple" ];
   };
-  test2 = mkCheck {
-    name = "test2";
+  allUniqueOrderPreserved = check.override {
+    name = "allUniqueOrderPreserved";
     valuesArr = [
       "apple"
       "bee"
@@ -98,8 +38,8 @@ in
       "bee"
     ];
   };
-  test3 = mkCheck {
-    name = "test3";
+  oneDuplicate = check.override {
+    name = "oneDuplicate";
     valuesArr = [
       "apple"
       "apple"
@@ -108,8 +48,8 @@ in
       "apple"
     ];
   };
-  test4 = mkCheck {
-    name = "test4";
+  oneUniqueOrderPreserved = check.override {
+    name = "oneUniqueOrderPreserved";
     valuesArr = [
       "bee"
       "apple"
@@ -120,68 +60,71 @@ in
       "apple"
     ];
   };
-  test5 =
-    runCommand "test5"
-      {
-        failed = testBuildFailure (mkCheck {
-          name = "test5-inner";
-          valuesArr = [
-            "bee"
-            "apple"
-            "bee"
-          ];
-          expectedArr = [
-            "bee"
-            "apple"
-            "bee"
-          ];
-        });
+  duplicatesWithSpacesAndLineBreaks = check.override {
+    name = "duplicatesWithSpacesAndLineBreaks";
+    valuesArr = [
+      "dog"
+      "bee"
+      ''
+        line
+        break
+      ''
+      "cat"
+      "zebra"
+      "bee"
+      "cat"
+      "elephant"
+      "dog with spaces"
+      ''
+        line
+        break
+      ''
+    ];
+    expectedArr = [
+      "dog"
+      "bee"
+      ''
+        line
+        break
+      ''
+      "cat"
+      "zebra"
+      "elephant"
+      "dog with spaces"
+    ];
+  };
+  failNoDeduplication = runCommand {
+    name = "failNoDeduplication";
+    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
+    failed = testBuildFailure (
+      check.override {
+        name = "failNoDeduplicationInner";
+        valuesArr = [
+          "bee"
+          "apple"
+          "bee"
+        ];
+        expectedArr = [
+          "bee"
+          "apple"
+          "bee"
+        ];
       }
-      ''
-        echo "Checking for exit code 1" >&$NIX_LOG_FD
-        (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-        echo "Checking for first error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: assertArraysAreEqual: Arrays differ in length: expectedArrayRef has length 3 but actualArrayRef has length 2" \
-          "$failed/testBuildFailure.log"
-        echo "Checking for second error message" >&$NIX_LOG_FD
-        grep -F \
-          "ERROR: assertArraysAreEqual: Arrays differ at index 2: expected value is 'bee' but actual value would be out of bounds" \
-          "$failed/testBuildFailure.log"
-        echo "Test passed" >&$NIX_LOG_FD
-        touch $out
-      '';
-  test6 = mkCheck {
-    name = "test6";
-    valuesArr = [
-      "dog"
-      "bee"
-      ''
-        line
-        break
-      ''
-      "cat"
-      "zebra"
-      "bee"
-      "cat"
-      "elephant"
-      "dog with spaces"
-      ''
-        line
-        break
-      ''
-    ];
-    expectedArr = [
-      "dog"
-      "bee"
-      ''
-        line
-        break
-      ''
-      "cat"
-      "zebra"
-      "elephant"
-      "dog with spaces"
-    ];
+    );
+    script = ''
+      nixLog "Checking for exit code 1"
+      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
+      nixLog "Checking for first error message"
+      grep -F \
+        "ERROR: assertArraysAreEqual: arrays differ in length: expectedArrayRef has length 3 but actualArrayRef has length 2" \
+        "$failed/testBuildFailure.log"
+      nixLog "Checking for second error message"
+      grep -F \
+        "ERROR: assertArraysAreEqual: arrays differ at index 2: expected value is 'bee' but actual value would be out of bounds" \
+        "$failed/testBuildFailure.log"
+      nixLog "Test passed"
+      touch $out
+    '';
   };
+
 }

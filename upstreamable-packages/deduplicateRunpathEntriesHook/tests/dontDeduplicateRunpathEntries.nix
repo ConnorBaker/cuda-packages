@@ -1,39 +1,67 @@
 # NOTE: Tests for dontDeduplicateRunpathEntries option go here.
 {
-  cc-lib-dir,
-  mkCApplicationWithRunpathEntries,
+  mkCheckExpectedRunpath,
   ...
 }:
 {
-  # TODO: How can I get the output of the log to ensure the error message is printed?
-  # Default behavior is to dedpulicate.
-  flag-unset = mkCApplicationWithRunpathEntries {
+  # Should deduplicate when dontDeduplicateRunpathEntries is not set.
+  flag-unset = mkCheckExpectedRunpath.override {
     name = "flag-unset";
-    runpathEntries = [ cc-lib-dir ];
-    dontDeduplicateRunpathEntries = null;
-    postHookCheck = ''
-      nixLog "Checking that the default of dontDeduplicateRunpathEntries is to deduplicate"
-      test "''${POST_HOOK_RPATH:?}" = "''${ORIGINAL_RPATH:?}"
-    '';
+    valuesArr = [
+      "bee"
+      "apple"
+      "dog"
+      "apple"
+      "cat"
+    ];
+    expectedArr = [
+      "bee"
+      "apple"
+      "dog"
+      "cat"
+    ];
   };
 
-  flag-set-false = mkCApplicationWithRunpathEntries {
+  # Should deduplicate when dontDeduplicateRunpathEntries is set to false.
+  flag-set-false = mkCheckExpectedRunpath.override (prevAttrs: {
     name = "flag-set-false";
-    runpathEntries = [ cc-lib-dir ];
-    dontDeduplicateRunpathEntries = false;
-    postHookCheck = ''
-      nixLog "Checking that dontDeduplicateRunpathEntries deduplicates when set to false"
-      test "''${POST_HOOK_RPATH:?}" != "''${ORIGINAL_RPATH:?}"
-    '';
-  };
+    valuesArr = [
+      "bee"
+      "apple"
+      "dog"
+      "apple"
+      "cat"
+    ];
+    expectedArr = [
+      "bee"
+      "apple"
+      "dog"
+      "cat"
+    ];
+    derivationArgs = prevAttrs.derivationArgs or { } // {
+      dontDeduplicateRunpathEntries = false;
+    };
+  });
 
-  flag-set-true = mkCApplicationWithRunpathEntries {
+  # Should not deduplicate when dontDeduplicateRunpathEntries is set to true.
+  flag-set-true = mkCheckExpectedRunpath.override (prevAttrs: {
     name = "flag-set-true";
-    runpathEntries = [ cc-lib-dir ];
-    dontDeduplicateRunpathEntries = true;
-    postHookCheck = ''
-      nixLog "Checking that dontDeduplicateRunpathEntries disables deduplication when set to true"
-      test "''${POST_HOOK_RPATH:?}" != "''${ORIGINAL_RPATH:?}"
-    '';
-  };
+    valuesArr = [
+      "bee"
+      "apple"
+      "dog"
+      "apple"
+      "cat"
+    ];
+    expectedArr = [
+      "bee"
+      "apple"
+      "dog"
+      "apple"
+      "cat"
+    ];
+    derivationArgs = prevAttrs.derivationArgs or { } // {
+      dontDeduplicateRunpathEntries = true;
+    };
+  });
 }
