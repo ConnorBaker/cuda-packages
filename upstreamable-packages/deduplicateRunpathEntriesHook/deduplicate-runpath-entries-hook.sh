@@ -33,6 +33,9 @@ deduplicateRunpathEntriesHookOrderCheckPhase() {
   if ! occursOnlyOrAfterInArray "autoFixElfFiles deduplicateRunpathEntries" autoPatchelfPostFixup postFixupHooks; then
     nixErrorLog "autoPatchelfPostFixup must run before 'autoFixElfFiles deduplicateRunpathEntries'"
     exit 1
+  elif ! occursOnlyOrAfterInArray "autoFixElfFiles deduplicateRunpathEntries" "autoFixElfFiles addDriverRunpath" postFixupHooks; then
+    nixErrorLog "'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles deduplicateRunpathEntries'"
+    exit 1
   fi
   return 0
 }
@@ -77,7 +80,7 @@ deduplicateRunpathEntries() {
     done
   fi
 
-  if ((dontDeduplicateRunpathEntries > 0)); then
+  if ((dontDeduplicateRunpathEntries)); then
     nixLog "skipping deduplication because dontDeduplicateRunpathEntries is set"
     return 0
   fi
