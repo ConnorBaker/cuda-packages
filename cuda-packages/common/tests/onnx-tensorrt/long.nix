@@ -9,7 +9,7 @@ writeShellApplication {
     __structuredAttrs = true;
     strictDeps = true;
   };
-  name = "tests-onnx-tensorrt-short";
+  name = "tests-onnx-tensorrt-long";
   runtimeInputs = [
     cuda_cudart
     (python3.withPackages (ps: [

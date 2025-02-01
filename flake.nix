@@ -57,38 +57,36 @@
         upstreamable-lib = lib.upstreamable;
         overlays.default = import ./overlay.nix;
         # NOTE: Unlike other flake attributes, hydraJobs is indexed by jobset name and *then* system name.
+        # But I don't care, because it builds things recursively and for eval with `nix-eval-jobs` I can use
+        # --force-recurse since I've made sure the jobset is not recursive.
         hydraJobs = {
-          # 8.9 supported by all versions of CUDA 12
-          sm_89 = genAttrs systems (
-            system:
-            mkHydraJobsRecurseByDefault {
-              inherit (nixpkgsInstances.${system}.pkgsCuda.sm_89)
-                cudaPackages_12_2_2
-                cudaPackages_12_6_3
-                ;
-            }
-          );
-          # Xavier (7.2) is only supported up to CUDA 12.2.2 by cuda-compat on JetPack 5.
-          # Unfortunately, NVIDIA isn't releasing support for Xavier on JetPack 6, so we're stuck.
-          sm_72 = genAttrs [ "aarch64-linux" ] (
-            system:
-            mkHydraJobsRecurseByDefault {
-              inherit (nixpkgsInstances.${system}.pkgsCuda.sm_72)
-                cudaPackages_12_2_2
-                ;
-            }
-          );
-          # Orin (8.7) is only supported up to CUDA 12.2.2 by cuda-compat on JetPack 5.
-          # Orin has a JetPack 6 release which allows it to run later versions of CUDA, but it has not yet been
-          # packaged by https://github.com/anduril/jetpack-nixos.
-          sm_87 = genAttrs [ "aarch64-linux" ] (
-            system:
-            mkHydraJobsRecurseByDefault {
-              inherit (nixpkgsInstances.${system}.pkgsCuda.sm_87)
-                cudaPackages_12_2_2
-                ;
-            }
-          );
+          x86_64-linux =
+            let
+              inherit (nixpkgsInstances.x86_64-linux) pkgsCuda;
+            in
+            {
+              # 8.9 supported by all versions of CUDA 12
+              sm_89 = mkHydraJobsRecurseByDefault {
+                inherit (pkgsCuda.sm_89) cudaPackages_12_2_2 cudaPackages_12_6_3;
+              };
+            };
+          aarch64-linux =
+            let
+              inherit (nixpkgsInstances.aarch64-linux) pkgsCuda;
+            in
+            {
+              # Xavier (7.2) is only supported up to CUDA 12.2.2 by cuda-compat on JetPack 5.
+              # Unfortunately, NVIDIA isn't releasing support for Xavier on JetPack 6, so we're stuck.
+              sm_72 = mkHydraJobsRecurseByDefault {
+                inherit (pkgsCuda.sm_72) cudaPackages_12_2_2;
+              };
+              # Orin (8.7) is only supported up to CUDA 12.2.2 by cuda-compat on JetPack 5.
+              # Orin has a JetPack 6 release which allows it to run later versions of CUDA, but it has not yet been
+              # packaged by https://github.com/anduril/jetpack-nixos.
+              sm_87 = mkHydraJobsRecurseByDefault {
+                inherit (pkgsCuda.sm_87) cudaPackages_12_2_2;
+              };
+            };
         };
       };
 

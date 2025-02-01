@@ -16,7 +16,7 @@ let
   inherit (cudaConfig) hostRedistArch;
   inherit (flags) isJetsonBuild;
   inherit (lib.attrsets) attrValues;
-  inherit (lib.lists) any optionals;
+  inherit (lib.lists) any concatMap optionals;
   inherit (lib.trivial) id;
   inherit (lib.strings) optionalString;
 
@@ -45,6 +45,8 @@ let
 
     passthru = {
       inherit (finalAttrs) substitutions;
+      _hydraAggregate = true;
+      constituents = concatMap attrValues (attrValues finalAttrs.passthru.tests);
       badPlatformsConditions = {
         "CUDA support is not enabled" = !config.cudaSupport;
         "Platform is not supported" = hostRedistArch == "unsupported";

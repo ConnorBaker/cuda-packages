@@ -51,10 +51,12 @@ in
     # Arguments
 
     includeCond
-    : A function that takes an attribute path and a value and returns a boolean, controlling whether the attribute path should be included in the output.
+    : A function that takes an attribute path and a value and returns a boolean, controlling whether the attribute
+    path should be included in the output.
 
     recurseCond
-    : A function that takes an attribute path and a value and returns a boolean, controlling whether the attribute path should be recursed into.
+    : A function that takes an attribute path and a value and returns a boolean, controlling whether the attribute
+    path should be recursed into.
 
     attrs
     : The attribute set to generate attribute paths for.

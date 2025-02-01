@@ -31,6 +31,7 @@ let
     mkVersionedManifests
     mkVersionedOverrides
     packageExprPathsFromDirectoryRecursive
+    packagesFromDirectoryRecursive'
     readDirIfExists
     ;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
@@ -401,6 +402,53 @@ in
       # NOTE: Overrides for the specific version take precedence over those in `common`.
       common // overrides
     );
+
+  # Vendored from:
+  # https://github.com/NixOS/nixpkgs/blob/eb82888147a6aecb8ae6ee5a685ecdf021b8ed33/lib/filesystem.nix#L385-L416
+  # Modified to wrap result of directory traversal in a `recurseIntoAttrs` call.
+  packagesFromDirectoryRecursive' =
+    {
+      callPackage,
+      directory,
+      ...
+    }:
+    let
+      inherit (lib) concatMapAttrs recurseIntoAttrs removeSuffix;
+      inherit (lib.path) append;
+      defaultPath = append directory "package.nix";
+    in
+    if builtins.pathExists defaultPath then
+      # if `${directory}/package.nix` exists, call it directly
+      callPackage defaultPath { }
+    else
+      recurseIntoAttrs (concatMapAttrs (
+        name: type:
+        # otherwise, for each directory entry
+        let
+          path = append directory name;
+        in
+        if type == "directory" then
+          {
+            # recurse into directories
+            ${name} = packagesFromDirectoryRecursive' {
+              inherit callPackage;
+              directory = path;
+            };
+          }
+        else if type == "regular" && hasSuffix ".nix" name then
+          {
+            # call .nix files
+            ${removeSuffix ".nix" name} = callPackage path { };
+          }
+        else if type == "regular" then
+          {
+            # ignore non-nix files
+          }
+        else
+          throw ''
+            lib.filesystem.packagesFromDirectoryRecursive: Unsupported file type ${type} at path ${toString path}
+          ''
+      ) (builtins.readDir directory));
 
   /**
     Much like `packagesFromDirectoryRecursive`, except instead of invoking `callPackage` on the leaves, this function

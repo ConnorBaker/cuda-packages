@@ -27,9 +27,9 @@ let
     mkCudaPackagesOverrideAttrsDefaultsFn
     mkCudaPackagesScope
     mkRealArchitecture
+    packagesFromDirectoryRecursive'
     ;
   inherit (lib.customisation) callPackagesWith;
-  inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
   inherit (lib.lists) map optionals;
   inherit (lib.modules) evalModules;
@@ -164,7 +164,7 @@ let
           # CUDA version-specific packages
           ++ map (
             directory:
-            packagesFromDirectoryRecursive {
+            packagesFromDirectoryRecursive' {
               inherit (finalCudaPackages) callPackage;
               inherit directory;
             }
@@ -236,7 +236,7 @@ in
   }) cudaConfig.data.gpus;
 }
 # Upstreamable packages
-// packagesFromDirectoryRecursive {
+// packagesFromDirectoryRecursive' {
   inherit (final) callPackage;
   directory = ./upstreamable-packages;
 }
