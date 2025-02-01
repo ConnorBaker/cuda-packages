@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-mkRelativePath() {
+mkRedistUrlRelativePath() {
   local -r cudaMajorMinorVersion=${1:?}
   local -r tensorrtMajorMinorPatchBuildVersion=${2:?}
   local -r redistArch=${3:?}
@@ -39,7 +39,7 @@ mkRelativePath() {
     esac
     ;;
   *)
-    echo "mkRelativePath: Unsupported redistArch: $redistArch" >&2
+    echo "mkRedistUrlRelativePath: Unsupported redistArch: $redistArch" >&2
     exit 1
     ;;
   esac
@@ -117,7 +117,7 @@ main() {
     ;;
   esac
 
-  local -r relativePath="$(mkRelativePath "$cudaMajorMinorVersion" "$tensorrtMajorMinorPatchBuildVersion" "$redistArch")"
+  local -r relativePath="$(mkRedistUrlRelativePath "$cudaMajorMinorVersion" "$tensorrtMajorMinorPatchBuildVersion" "$redistArch")"
   local -r storePath="$(getNixStorePath "$relativePath")"
   echo "main: storePath: $storePath" >&2
   local -r md5Hash="$(nix hash file --type md5 --base16 "$storePath")"

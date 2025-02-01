@@ -18,30 +18,29 @@ let
     attrNames
     dontRecurseIntoAttrs
     mapAttrs'
+    mapAttrsToList
     mergeAttrsList
     recurseIntoAttrs
     ;
   inherit (lib.cuda.utils)
-    buildRedistPackages
     dropDots
+    mkCudaPackagesOverrideAttrsDefaultsFn
     mkCudaPackagesScope
-    mkCudaVariant
     mkRealArchitecture
     ;
   inherit (lib.customisation) callPackagesWith;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
-  inherit (lib.lists) map;
+  inherit (lib.lists) map optionals;
   inherit (lib.modules) evalModules;
   inherit (lib.strings)
     replaceStrings
     versionAtLeast
     versionOlder
     ;
+  inherit (lib.trivial) mapNullable pipe;
   inherit (lib.upstreamable.trivial) addNameToFetchFromGitLikeArgs;
   inherit (lib.versions) major majorMinor;
-
-  inherit (cudaConfig) hostRedistArch;
 
   fetchFromGitHubAutoName =
     args: final.fetchFromGitHub (addNameToFetchFromGitLikeArgs final.fetchFromGitHub args);
@@ -59,10 +58,17 @@ let
       cudaAtLeast = versionAtLeast cudaMajorMinorPatchVersion;
       cudaOlder = versionOlder cudaMajorMinorPatchVersion;
 
-      # Packaging-specific utilities.
-      desiredCudaVariant = mkCudaVariant cudaMajorMinorPatchVersion;
-
+      cudaNamePrefix = "cuda${cudaMajorMinorVersion}";
       cudaPackagesConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion};
+
+      overrideAttrsDefaultsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
+        inherit (final)
+          deduplicateRunpathEntriesHook
+          nixLogWithLevelAndFunctionNameHook
+          noBrokenSymlinksHook
+          ;
+        inherit cudaNamePrefix;
+      };
 
       cudaPackagesFun =
         finalCudaPackages:
@@ -85,6 +91,9 @@ let
                 __attrsFailEvaluation = true;
               };
 
+              # Name prefix
+              inherit cudaNamePrefix;
+
               # CUDA versions
               inherit cudaMajorMinorPatchVersion cudaMajorMinorVersion cudaMajorVersion;
 
@@ -94,9 +103,6 @@ let
               # Utility function for automatically naming fetchFromGitHub derivations with `name`.
               fetchFromGitHub = fetchFromGitHubAutoName;
               fetchFromGitLab = fetchFromGitLabAutoName;
-
-              # Name prefix
-              cudaNamePrefix = "cuda${cudaMajorMinorVersion}";
 
               # Aliases
               # TODO(@connorbaker): Warnings disabled for now.
@@ -115,29 +121,46 @@ let
             })
           ]
           # Redistributable packages
-          ++ (
+          ++ mapAttrsToList (
+            packageName:
+            {
+              callPackageOverrider,
+              packageInfo,
+              redistName,
+              releaseInfo,
+              srcArgs,
+              supportedNixPlatformAttrs,
+              supportedRedistArchAttrs,
+            }:
             let
-              buildRedistPackages' = buildRedistPackages {
+              redistBuilderArgs = {
                 inherit
-                  desiredCudaVariant
-                  finalCudaPackages
-                  hostRedistArch
+                  packageInfo
+                  packageName
+                  redistName
+                  releaseInfo
                   ;
+                src = mapNullable final.fetchzip srcArgs;
+                # NOTE: Don't need to worry about sorting the attribute names because Nix already does that.
+                supportedNixPlatforms = attrNames supportedNixPlatformAttrs;
+                supportedRedistArches = attrNames supportedRedistArchAttrs;
               };
             in
-            map (
-              redistName:
-              let
-                manifestVersion = cudaPackagesConfig.redists.${redistName};
-                redistConfig = cudaConfig.redists.${redistName};
-              in
-              buildRedistPackages' {
-                inherit redistName;
-                callPackageOverriders = redistConfig.versionedOverrides.${manifestVersion} or { };
-                manifest = redistConfig.versionedManifests.${manifestVersion};
-              }
-            ) (attrNames cudaPackagesConfig.redists)
-          )
+            {
+              ${packageName} = pipe redistBuilderArgs (
+                [
+                  # Build the package
+                  finalCudaPackages.redist-builder
+                  # Apply our defaults
+                  (pkg: pkg.overrideAttrs overrideAttrsDefaultsFn)
+                ]
+                # Apply optional fixups
+                ++ optionals (callPackageOverrider != null) [
+                  (pkg: pkg.overrideAttrs (finalCudaPackages.callPackage callPackageOverrider { }))
+                ]
+              );
+            }
+          ) cudaPackagesConfig.packageConfigs
           # CUDA version-specific packages
           ++ map (
             directory:

@@ -14,23 +14,20 @@ let
     mapAttrs
     mapAttrs'
     optionalAttrs
-    recursiveUpdate
     ;
   inherit (lib.cuda.data) redistUrlPrefix;
   inherit (lib.cuda.types) redistName;
   inherit (lib.cuda.utils)
     dropDots
-    getLibPath
     getNixPlatforms
-    getSupportedRedistArchs
-    mkAarch64BadPlatformsConditions
     mkCudaPackagesCallPackage
-    mkCudaPackagesScope
     mkCudaPackagesOverrideAttrsDefaultsFn
+    mkCudaPackagesScope
+    mkCudaVariant
     mkOptions
     mkRedistConfig
     mkRedistUrl
-    mkRelativePath
+    mkRedistUrlRelativePath
     mkVersionedManifests
     mkVersionedOverrides
     packageExprPathsFromDirectoryRecursive
@@ -38,18 +35,16 @@ let
     ;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) extends;
-  inherit (lib.licenses) nvidiaCudaRedist;
   inherit (lib.lists)
     concatMap
     elem
     filter
     findFirst
-    head
     optionals
     intersectLists
     reverseList
-    unique
     ;
+  inherit (lib.modules) mkDefault mkIf;
   inherit (lib.options) mkOption;
   inherit (lib.strings)
     concatMapStringsSep
@@ -81,6 +76,77 @@ in
     dropDots
     majorMinorPatch
     ;
+
+  # TODO: DOCS
+  collectPackageConfigsForCudaVersion =
+    cudaConfig: cudaMajorMinorPatchVersion:
+    let
+      inherit (cudaConfig) hostRedistArch;
+      backupCudaVariant = mkCudaVariant cudaMajorMinorPatchVersion;
+      # Get the redist names and versions for our particular package set.
+      redistNameToRedistVersion = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion}.redists;
+    in
+    concatMap (
+      redistName:
+      let
+        redistVersion = redistNameToRedistVersion.${redistName};
+        redistManifest = cudaConfig.redists.${redistName}.versionedManifests.${redistVersion};
+        redistCallPackageOverriders = cudaConfig.redists.${redistName}.versionedOverrides.${redistVersion};
+      in
+      concatMap (
+        packageName:
+        let
+          inherit (redistManifest.${packageName}) releaseInfo packages;
+        in
+        concatMap (
+          redistArch:
+          let
+            packageVariants = packages.${redistArch};
+            # Always show preference to the "source" redistArch if it is available, as it is the most general.
+            nixPlatformIsSupported =
+              redistArch == "source" || (redistArch == hostRedistArch && !(packages ? source));
+          in
+          map (
+            cudaVariant:
+            let
+              # Always show preference to the "None" cudaVariant if it is available, as it is the most general.
+              packageInfo = packageVariants.${cudaVariant};
+              cudaVariantIsSupported =
+                cudaVariant == "None" || (cudaVariant == backupCudaVariant && !(packageVariants ? None));
+            in
+            # If the package variant is supported for this CUDA version, include information about it --
+            # it means the package is available for *some* architecture.
+            {
+              ${packageName} = mkIf cudaVariantIsSupported {
+                inherit redistName releaseInfo;
+                # Attribute set handles deduplication for us; we use this to create platforms in meta.
+                supportedNixPlatformAttrs = genAttrs (getNixPlatforms redistArch) (const null);
+                supportedRedistArchAttrs.${redistArch} = null;
+                # We want packageInfo to be default here so it can be successfully replaced by the chosen
+                # package variant, if it exists.
+                packageInfo = if nixPlatformIsSupported then packageInfo else mkDefault packageInfo;
+                callPackageOverrider = mkIf nixPlatformIsSupported (
+                  redistCallPackageOverriders.${packageName} or null
+                );
+                srcArgs = mkIf nixPlatformIsSupported {
+                  url = mkRedistUrl redistName (mkRedistUrlRelativePath {
+                    inherit
+                      cudaVariant
+                      packageName
+                      redistArch
+                      redistName
+                      releaseInfo
+                      ;
+                    inherit (packageInfo) relativePath;
+                  });
+                  hash = packageInfo.recursiveHash;
+                };
+              };
+            }
+          ) (attrNames packageVariants)
+        ) (attrNames packages)
+      ) (attrNames redistManifest)
+    ) (attrNames redistNameToRedistVersion);
 
   /**
     Maps `mkOption` over the values of an attribute set.
@@ -197,14 +263,15 @@ in
     # Type
 
     ```
-    mkRelativePath :: { cudaVariant :: CudaVariant
-                      , packageName :: PackageName
-                      , redistArch :: RedistArch
-                      , redistName :: RedistName
-                      , relativePath :: NullOr NonEmptyStr
-                      , releaseInfo :: ReleaseInfo
-                      }
-                   -> String
+    mkRedistUrlRelativePath
+      :: { cudaVariant :: CudaVariant
+         , packageName :: PackageName
+         , redistArch :: RedistArch
+         , redistName :: RedistName
+         , relativePath :: NullOr NonEmptyStr
+         , releaseInfo :: ReleaseInfo
+         }
+      -> String
     ```
 
     # Arguments
@@ -227,7 +294,7 @@ in
     releaseInfo
     : The release information of the package
   */
-  mkRelativePath =
+  mkRedistUrlRelativePath =
     {
       cudaVariant,
       packageName,
@@ -240,7 +307,7 @@ in
       relativePath
     else
       assert assertMsg (redistName != "tensorrt")
-        "mkRelativePath: tensorrt does not use standard naming conventions for relative paths and requires relativePath be non-null";
+        "mkRedistUrlRelativePath: tensorrt does not use standard naming conventions for relative paths and requires relativePath be non-null";
       concatStringsSep "/" [
         packageName
         redistArch
@@ -382,190 +449,6 @@ in
   # TODO: Alphabetize
 
   /**
-    Function to build redistributable packages.
-
-    NOTE: Curried to allow partial application.
-
-    # Type
-
-    ```
-    buildRedistPackages :: { desiredCudaVariant :: CudaVariant
-                           , finalCudaPackages :: Attrs
-                           , hostRedistArch :: RedistArch
-                           }
-                        -> { callPackageOverriders :: Attrs
-                           , manifest :: Manifest
-                           , redistName :: RedistName
-                           }
-                        -> Attrs
-    ```
-
-    # Arguments
-
-    callPackageOverriders
-    : An attribute set of paths which can be `callPackage`-d and supplied to a package's `overrideAttrs` function.
-
-    desiredCudaVariant
-    : The desired CUDA variant
-
-    finalCudaPackages
-    : The fixed-point of the package set
-
-    hostRedistArch
-    : The redistributable architecture of the host
-
-    manifest
-    : The manifest of a redistributable package set
-
-    redistName
-    : The name of the redistributable package set
-  */
-  buildRedistPackages =
-    {
-      desiredCudaVariant,
-      finalCudaPackages,
-      hostRedistArch,
-    }:
-    let
-      inherit (finalCudaPackages)
-        callPackage
-        cudaNamePrefix
-        cudaMajorMinorPatchVersion
-        redist-builder
-        ;
-      inherit (finalCudaPackages.flags) isJetsonBuild;
-      inherit (finalCudaPackages.pkgs)
-        deduplicateRunpathEntriesHook
-        fetchzip
-        nixLogWithLevelAndFunctionNameHook
-        noBrokenSymlinksHook
-        stdenv
-        ;
-      isNixHostPlatformSystemAarch64 = stdenv.hostPlatform.isAarch64;
-      overrideAttrsDefaultsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
-        inherit
-          cudaNamePrefix
-          deduplicateRunpathEntriesHook
-          nixLogWithLevelAndFunctionNameHook
-          noBrokenSymlinksHook
-          ;
-      };
-    in
-    {
-      callPackageOverriders,
-      manifest,
-      redistName,
-    }:
-    foldlAttrs (
-      acc:
-      # Package name
-      packageName:
-      # A release, which is a collection of the package for different architectures and CUDA versions, along with
-      # release information.
-      # NOTE: `packages` and `releaseInfo` correspond to types of the same name in lib.cuda.types.
-      { packages, releaseInfo }:
-      let
-        # Names of redistributable architectures for the package which provide a release for the current CUDA version.
-        supportedRedistArchs = getSupportedRedistArchs packages desiredCudaVariant;
-        supportedNixPlatforms = unique (concatMap getNixPlatforms supportedRedistArchs);
-
-        # NOTE: We must check for compatibility with the redistributable architecture, not the Nix platform,
-        #       because the redistributable architecture is able to disambiguate between aarch64-linux with and
-        #       without Jetson support (`linux-aarch64` and `linux-sbsa`, respectively).
-        nixPlatformIsSupported = elem hostRedistArch supportedRedistArchs;
-
-        # Choose the source release by default, if it exists.
-        # If it doesn't and our platform is supported, use the host redistributable architecture.
-        # Otherwise, use whatever is first in the list of supported redistributable architectures -- the package won't be valid
-        # on the host platform, but we will at least have an entry for it.
-        redistArch =
-          if hasAttr "source" packages then
-            "source"
-          else if nixPlatformIsSupported then
-            hostRedistArch
-          else
-            head supportedRedistArchs;
-        packageVariants = packages.${redistArch};
-
-        # Choose the version without a CUDA variant by default, if it exists.
-        cudaVariant = if hasAttr "None" packageVariants then "None" else desiredCudaVariant;
-        packageInfo = packageVariants.${cudaVariant};
-        libPath = getLibPath cudaMajorMinorPatchVersion packageInfo.features.cudaVersionsInLib;
-
-        # The source is given by the tarball, which we unpack and use as a FOD.
-        src = fetchzip {
-          url = mkRedistUrl redistName (mkRelativePath {
-            inherit
-              cudaVariant
-              packageName
-              redistArch
-              redistName
-              releaseInfo
-              ;
-            inherit (packageInfo) relativePath;
-          });
-          hash = packageInfo.recursiveHash;
-        };
-
-        maybeCallPackageOverrider = callPackageOverriders.${packageName} or null;
-
-        redistBuilderArgs = {
-          inherit
-            libPath
-            packageInfo
-            packageName
-            releaseInfo
-            src
-            ;
-        };
-
-        package = pipe redistBuilderArgs (
-          [
-            # Build the package
-            redist-builder
-            # Apply our defaults
-            (pkg: pkg.overrideAttrs overrideAttrsDefaultsFn)
-            # Update meta with the list of supported platforms and fix the license URL
-            (
-              pkg:
-              pkg.overrideAttrs (prevAttrs: {
-                # When `src` is `null`, `redist-builder` will mark the package as unavailable on the platform.
-                src = if nixPlatformIsSupported then prevAttrs.src else null;
-                outputs = if nixPlatformIsSupported then prevAttrs.outputs else [ "out" ];
-                passthru =
-                  if !isNixHostPlatformSystemAarch64 then
-                    prevAttrs.passthru or { }
-                  else
-                    recursiveUpdate (prevAttrs.passthru or { }) {
-                      badPlatformsConditions = mkAarch64BadPlatformsConditions isJetsonBuild supportedRedistArchs;
-                    };
-                meta = recursiveUpdate (prevAttrs.meta or { }) {
-                  platforms = supportedNixPlatforms;
-                  license = nvidiaCudaRedist // {
-                    url =
-                      let
-                        licensePath =
-                          if releaseInfo.licensePath != null then releaseInfo.licensePath else "${packageName}/LICENSE.txt";
-                      in
-                      "https://developer.download.nvidia.com/compute/${redistName}/redist/${licensePath}";
-                  };
-                };
-              })
-            )
-          ]
-          # Apply optional fixups
-          ++ optionals (maybeCallPackageOverrider != null) [
-            (pkg: pkg.overrideAttrs (callPackage maybeCallPackageOverrider { }))
-          ]
-        );
-      in
-      acc
-      // optionalAttrs (supportedRedistArchs != [ ]) {
-        ${packageName} = package;
-      }
-    ) { } manifest;
-
-  /**
     Returns the path to the CUDA library directory for a given version or null if no such version exists.
 
     Implementation note: Find the first libPath in the list of cudaVersionsInLib that is a prefix of the current cuda
@@ -638,23 +521,15 @@ in
     : The NVIDIA redistributable architecture
   */
   getNixPlatforms =
-    # NOTE: Attribute name lookup is logarithmic, while if-then-else is linear.
-    let
-      attrs = {
-        linux-sbsa = [ "aarch64-linux" ];
-        linux-aarch64 = [ "aarch64-linux" ];
-        linux-x86_64 = [ "x86_64-linux" ];
-        linux-ppc64le = [ "powerpc64le-linux" ];
-        source = [
-          "aarch64-linux"
-          "powerpc64le-linux"
-          "x86_64-linux"
-          "x86_64-windows"
-        ];
-        windows-x86_64 = [ "x86_64-windows" ];
-      };
-    in
-    redistArch: attrs.${redistArch} or [ "unsupported" ];
+    redistArch:
+    if redistArch == "linux-x86_64" then
+      [ "x86_64-linux" ]
+    else if redistArch == "linux-sbsa" then
+      [ "aarch64-linux" ]
+    else if redistArch == "linux-aarch64" then
+      [ "aarch64-linux" ]
+    else
+      [ ];
 
   /**
     Function to map Nix system to NVIDIA redist arch
@@ -700,25 +575,18 @@ in
     : The Nix system
   */
   getRedistArch =
-    let
-      attrs = {
-        x86_64-linux = "linux-x86_64";
-        powerpc64le-linux = "linux-ppc64le";
-        x86_64-windows = "windows-x86_64";
-      };
-    in
-    isJetsonBuild:
-    let
-      attrs' = attrs // {
-        aarch64-linux = if isJetsonBuild then "linux-aarch64" else "linux-sbsa";
-      };
-    in
-    nixSystem: attrs'.${nixSystem} or "unsupported";
+    isJetsonBuild: nixSystem:
+    if nixSystem == "x86_64-linux" then
+      "linux-x86_64"
+    else if nixSystem == "aarch64-linux" then
+      if isJetsonBuild then "linux-aarch64" else "linux-sbsa"
+    else
+      "unsupported";
 
   /**
     TODO:
   */
-  getSupportedRedistArchs =
+  getSupportedRedistArches =
     packages: desiredCudaVariant:
     filter (
       redistArch:
@@ -758,22 +626,6 @@ in
         || (versionAtLeast maxCudaMajorMinorVersion cudaMajorMinorVersion);
     in
     lowerBoundSatisfied && upperBoundSatisfied;
-
-  /**
-    TODO:
-  */
-  mkAarch64BadPlatformsConditions =
-    isJetsonBuild: supportedRedistArchs:
-    let
-      isRedistArchSbsaExplicitlySupported = elem "linux-sbsa" supportedRedistArchs;
-      isRedistArchAarch64ExplicitlySupported = elem "linux-aarch64" supportedRedistArchs;
-    in
-    {
-      "aarch64-linux support is limited to linux-sbsa (server ARM devices) which is not the current target" =
-        isRedistArchSbsaExplicitlySupported && !isRedistArchAarch64ExplicitlySupported && isJetsonBuild;
-      "aarch64-linux support is limited to linux-aarch64 (Jetson devices) which is not the current target" =
-        !isRedistArchSbsaExplicitlySupported && isRedistArchAarch64ExplicitlySupported && !isJetsonBuild;
-    };
 
   /**
     Generates a CUDA variant name from a version.

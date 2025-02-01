@@ -5,7 +5,9 @@
   config,
   cudaConfig,
   cudaMajorMinorVersion,
+  cudaMajorMinorPatchVersion,
   cudaRunpathFixupHook,
+  flags,
   lib,
   markForCudatoolkitRootHook,
   cudaHook,
@@ -13,15 +15,18 @@
 }:
 let
   inherit (cudaConfig) hostRedistArch;
+  inherit (flags) isJetsonBuild;
   inherit (lib)
     licenses
     sourceTypes
     teams
     ;
 
-  inherit (lib.attrsets) attrValues;
+  inherit (lib.attrsets) attrValues optionalAttrs;
+  inherit (lib.cuda.utils) getLibPath;
   inherit (lib.lists)
     any
+    elem
     findFirstIndex
     intersectLists
     optionals
@@ -35,15 +40,19 @@ in
 {
   # src :: null | Derivation
   src,
-  # libPath :: null | Path
-  libPath,
   # packageInfo :: PackageInfo
   packageInfo,
   # Short package name (e.g., "cuda_cccl")
   # packageName : String
   packageName,
+  # redistName :: String
+  redistName,
   # releaseInfo :: ReleaseInfo
   releaseInfo,
+  # supportedNixPlatforms :: List String
+  supportedNixPlatforms,
+  # supportedRedistArches :: List RedistArch
+  supportedRedistArches,
 }:
 let
   # Order is important here so we use a list.
@@ -61,6 +70,8 @@ let
   # lists.intersectLists iterates over the second list, checking if the elements are in the first list.
   # As such, the order of the output is dictated by the order of the second list.
   componentOutputs = intersectLists packageInfo.features.outputs possibleOutputs;
+  # Some packages provide support for multiple CUDA versions in the lib directory.
+  libPath = getLibPath cudaMajorMinorPatchVersion packageInfo.features.cudaVersionsInLib;
 in
 stdenv.mkDerivation (
   finalAttrs:
@@ -76,7 +87,8 @@ stdenv.mkDerivation (
     pname = packageName;
     inherit (releaseInfo) version;
 
-    outputs = [ "out" ] ++ componentOutputs;
+    # We should only have the output `out` when `src` is null.
+    outputs = [ "out" ] ++ optionals (src != null) componentOutputs;
 
     # NOTE: Because the `dev` output is special in Nixpkgs -- make-derivation.nix uses it as the default if
     # it is present -- we must ensure that it brings in the expected dependencies. For us, this means that `dev`
@@ -278,6 +290,8 @@ stdenv.mkDerivation (
         ];
       };
 
+      inherit supportedRedistArches;
+
       # Useful for introspecting why something went wrong. Maps descriptions of why the derivation would be marked as
       # broken on have badPlatforms include the current platform.
 
@@ -303,22 +317,42 @@ stdenv.mkDerivation (
       # Example: Broken on a specific architecture when some condition is met, like targeting Jetson or
       # a required package missing.
       # NOTE: Use this when a broken condition means evaluation can fail!
-      badPlatformsConditions = {
-        "CUDA support is not enabled" = !config.cudaSupport;
-        "Platform is not supported" = finalAttrs.src == null || hostRedistArch == "unsupported";
-      };
+      badPlatformsConditions =
+        let
+          isRedistArchSbsaExplicitlySupported = elem "linux-sbsa" finalAttrs.passthru.supportedRedistArches;
+          isRedistArchAarch64ExplicitlySupported = elem "linux-aarch64" finalAttrs.passthru.supportedRedistArches;
+        in
+        {
+          "CUDA support is not enabled" = !config.cudaSupport;
+          "Platform is not supported" =
+            finalAttrs.src == null || hostRedistArch == "unsupported" || finalAttrs.meta.platforms == [ ];
+        }
+        // optionalAttrs (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isLinux) {
+          "aarch64-linux support is limited to linux-sbsa (server ARM devices) which is not the current target" =
+            isRedistArchSbsaExplicitlySupported && !isRedistArchAarch64ExplicitlySupported && isJetsonBuild;
+          "aarch64-linux support is limited to linux-aarch64 (Jetson devices) which is not the current target" =
+            !isRedistArchSbsaExplicitlySupported && isRedistArchAarch64ExplicitlySupported && !isJetsonBuild;
+        };
     };
 
     meta = {
       description = "${releaseInfo.name}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";
       sourceProvenance = [ sourceTypes.binaryNativeCode ];
       broken = isBroken;
+      platforms = supportedNixPlatforms;
       badPlatforms = optionals isBadPlatform (unique [
         stdenv.buildPlatform.system
         stdenv.hostPlatform.system
         stdenv.targetPlatform.system
       ]);
-      license = licenses.unfree;
+      license = licenses.nvidiaCudaRedist // {
+        url =
+          let
+            licensePath =
+              if releaseInfo.licensePath != null then releaseInfo.licensePath else "${packageName}/LICENSE.txt";
+          in
+          "https://developer.download.nvidia.com/compute/${redistName}/redist/${licensePath}";
+      };
       maintainers = teams.cuda.members;
     };
   }

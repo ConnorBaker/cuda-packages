@@ -7,6 +7,7 @@ let
     features
     manifest
     nvccConfig
+    packageConfig
     packageInfo
     packageName
     packages
@@ -30,13 +31,10 @@ let
     attrsWith
     bool
     enum
-    functionTo
-    lazyAttrsOf
     listOf
     nonEmptyListOf
     nonEmptyStr
     nullOr
-    oneOf
     package
     path
     raw
@@ -461,40 +459,12 @@ in
     versionedOverrides :: OptionType
     ```
   */
-  # NOTE: `raw` in our case is typically a path to a nix expression, but could be a callPackageOverrider
+  # NOTE: `raw` in our case is typically a path to a nix expression.
   versionedOverrides = attrs version (attrs packageName raw) // {
     name = "versionedOverrides";
   };
 
   # TODO: Better organize/alphabetize.
-
-  /**
-    The option type of a `callPackage` overrider.
-
-    These are functions which are passed to callPackage, and then provided to overrideAttrs.
-
-    NOTE: The argument provided to overrideAttrs MUST be a function -- if it is not, callPackage will set
-    the override attribute on the resulting attribute set, which when provided to overrideAttrs will break
-    the package evaluation.
-
-    # Type
-
-    ```
-    callPackageOverrider :: OptionType
-    ```
-  */
-  callPackageOverrider =
-    let
-      overrideAttrsPrevFn = functionTo (lazyAttrsOf raw);
-      overrideAttrsFinalPrevFn = functionTo overrideAttrsPrevFn;
-    in
-    functionTo (oneOf [
-      overrideAttrsPrevFn
-      overrideAttrsFinalPrevFn
-    ])
-    // {
-      name = "callPackageOverrider";
-    };
 
   /**
     The option type of a CUDA capability.
@@ -536,6 +506,38 @@ in
       name = "nvccConfig";
     };
 
+  # TODO: Used in overlay.nix to create arguments for `redist-builder`.
+  packageConfig =
+    submodule (mkOptionsModule {
+      redistName.type = redistName;
+      releaseInfo.type = releaseInfo;
+      packageInfo.type = packageInfo;
+      supportedNixPlatformAttrs.type = attrs nonEmptyStr (enum [ null ]);
+      supportedRedistArchAttrs.type = attrs redistArch (enum [ null ]);
+      callPackageOverrider = {
+        description = ''
+          A value which, if non-null, is `callPackage`-d and then provided to a package's `overrideAttrs` function.
+        '';
+        default = null;
+        type = nullOr raw;
+      };
+      srcArgs = {
+        description = ''
+          If non-null, arguments to pass to `fetchzip` to fetch the redistributable.
+        '';
+        default = null;
+        type = nullOr (
+          submodule (mkOptionsModule {
+            url.type = nonEmptyStr;
+            hash.type = nonEmptyStr;
+          })
+        );
+      };
+    })
+    // {
+      name = "packageConfig";
+    };
+
   # TODO: Docs
   cudaPackagesConfig =
     submodule (mkOptionsModule {
@@ -567,6 +569,13 @@ in
         '';
         type = attrs redistName version;
         default = { };
+      };
+      packageConfigs = {
+        description = ''
+          Maps package names from redists to package configurations, which are used with `redist-builder` to create
+          packages.
+        '';
+        type = attrs packageName packageConfig;
       };
     })
     // {
