@@ -25,15 +25,9 @@ nixLog "added deduplicateRunpathEntriesHookOrderCheckPhase to prePhases"
 postFixupHooks+=("autoFixElfFiles deduplicateRunpathEntries")
 nixLog "added 'autoFixElfFiles deduplicateRunpathEntries' to postFixupHooks"
 
-# TODO: Need a way to add additional phases to the order check -- for example, CUDA hooks which modify the runpath
-# must execute before this hook.
 deduplicateRunpathEntriesHookOrderCheckPhase() {
-  # Ensure that our setup hook runs after autoPatchelf.
   # NOTE: Brittle because it relies on the name of the hook not changing.
-  if ! occursOnlyOrAfterInArray "autoFixElfFiles deduplicateRunpathEntries" autoPatchelfPostFixup postFixupHooks; then
-    nixErrorLog "autoPatchelfPostFixup must run before 'autoFixElfFiles deduplicateRunpathEntries'"
-    exit 1
-  elif ! occursOnlyOrAfterInArray "autoFixElfFiles deduplicateRunpathEntries" "autoFixElfFiles addDriverRunpath" postFixupHooks; then
+  if ! occursOnlyOrAfterInArray "autoFixElfFiles deduplicateRunpathEntries" "autoFixElfFiles addDriverRunpath" postFixupHooks; then
     nixErrorLog "'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles deduplicateRunpathEntries'"
     exit 1
   fi
