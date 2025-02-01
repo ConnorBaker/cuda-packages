@@ -1,6 +1,7 @@
 {
   autoAddDriverRunpath,
   cmake,
+  cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
@@ -124,6 +125,7 @@ let
     ];
 
     buildInputs = [
+      (getOutput "include" cuda_cccl) # <cub/cub.cuh>
       (getOutput "static" cuda_nvcc) # dependency on nvptxcompiler_static; no dynamic version available
       cuda_cudart
       cuda_nvcc
