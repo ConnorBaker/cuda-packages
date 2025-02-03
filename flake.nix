@@ -112,28 +112,18 @@
             cuda-redist = pkgs.python3Packages.callPackage ./scripts/cuda-redist { };
           };
 
-          pre-commit.settings.hooks =
-            let
-              nixToolConfig = {
-                enable = true;
-                excludes = [
-                  "cuda-packages/wip/"
-                ];
-              };
-            in
-            {
-              # Formatter checks
-              treefmt = {
-                enable = true;
-                inherit (nixToolConfig) excludes;
-                package = config.treefmt.build.wrapper;
-              };
-
-              # Nix checks
-              deadnix = nixToolConfig;
-              nil = nixToolConfig;
-              statix = nixToolConfig;
+          pre-commit.settings.hooks = {
+            # Formatter checks
+            treefmt = {
+              enable = true;
+              package = config.treefmt.build.wrapper;
             };
+
+            # Nix checks
+            deadnix.enable = true;
+            nil.enable = true;
+            statix.enable = true;
+          };
 
           treefmt = {
             projectRootFile = "flake.nix";
