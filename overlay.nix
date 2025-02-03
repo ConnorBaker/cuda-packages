@@ -8,6 +8,7 @@ let
         {
           cudaCapabilities = final.config.cudaCapabilities or [ ];
           cudaForwardCompat = final.config.cudaForwardCompat or true;
+          defaultCudaPackagesVersion = final.config.cudaVersion or "12.6.3";
           hostNixSystem = final.stdenv.hostPlatform.system;
         }
       ] ++ final.cudaModules;

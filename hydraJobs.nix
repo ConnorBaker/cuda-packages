@@ -57,12 +57,13 @@ let
     ];
 
   mkHydraJobs =
-    system: realArch: cudaPackagesName:
+    system: realArch: cudaVersion:
     let
-      pkgs = nixpkgsInstances.${system};
-      cp = pkgs.pkgsCuda.${realArch}.${cudaPackagesName};
+      pkgs = nixpkgsInstances.${system}.${cudaVersion};
+      cp = pkgs.pkgsCuda.${realArch}.cudaPackages;
 
       inherit (pkgs.releaseTools) aggregate;
+      cudaPackagesName = "cudaPackages_" + (builtins.replaceStrings [ "." ] [ "_" ] cudaVersion);
 
       # TODO: Until these are upstreamed, we need them to function.
       setup-hooks = getSetupHooks cp ++ [
@@ -125,9 +126,6 @@ let
             ]
           );
         };
-        # TODO: The external packages (those outside of the package set) won't be affected by changes to the CUDA version
-        # because they will use the default version from the global scope.
-        # We're looking at either overriding the default version globally.
         core-external.${system} = aggregate {
           name = "core-external";
           meta = {
@@ -164,13 +162,13 @@ let
 in
 foldl' recursiveUpdate { } [
   # x86_64-linux
-  (mkHydraJobs "x86_64-linux" "sm_89" "cudaPackages_12_2_2")
-  (mkHydraJobs "x86_64-linux" "sm_89" "cudaPackages_12_6_3")
+  (mkHydraJobs "x86_64-linux" "sm_89" "12.2.2")
+  (mkHydraJobs "x86_64-linux" "sm_89" "12.6.3")
 
   # aarch64-linux
-  # (mkHydraJobs "aarch64-linux" "sm_89" "cudaPackages_12_2_2")
-  # (mkHydraJobs "aarch64-linux" "sm_89" "cudaPackages_12_6_3")
+  # (mkHydraJobs "aarch64-linux" "sm_89" "12.2.2")
+  # (mkHydraJobs "aarch64-linux" "sm_89" "12.6.3")
 
   # Jetson (limited to Jetpack 5)
-  (mkHydraJobs "aarch64-linux" "sm_87" "cudaPackages_12_2_2")
+  (mkHydraJobs "aarch64-linux" "sm_87" "12.2.2")
 ]

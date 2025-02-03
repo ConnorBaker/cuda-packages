@@ -63,7 +63,6 @@ in
       description = ''
         The CUDA package set to make default.
       '';
-      default = "12.6.3";
       type = majorMinorPatchVersion;
     };
   };
