@@ -421,34 +421,36 @@ in
       # if `${directory}/package.nix` exists, call it directly
       callPackage defaultPath { }
     else
-      recurseIntoAttrs (concatMapAttrs (
-        name: type:
-        # otherwise, for each directory entry
-        let
-          path = append directory name;
-        in
-        if type == "directory" then
-          {
-            # recurse into directories
-            ${name} = packagesFromDirectoryRecursive' {
-              inherit callPackage;
-              directory = path;
-            };
-          }
-        else if type == "regular" && hasSuffix ".nix" name then
-          {
-            # call .nix files
-            ${removeSuffix ".nix" name} = callPackage path { };
-          }
-        else if type == "regular" then
-          {
-            # ignore non-nix files
-          }
-        else
-          throw ''
-            lib.filesystem.packagesFromDirectoryRecursive: Unsupported file type ${type} at path ${toString path}
-          ''
-      ) (builtins.readDir directory));
+      recurseIntoAttrs (
+        concatMapAttrs (
+          name: type:
+          # otherwise, for each directory entry
+          let
+            path = append directory name;
+          in
+          if type == "directory" then
+            {
+              # recurse into directories
+              ${name} = packagesFromDirectoryRecursive' {
+                inherit callPackage;
+                directory = path;
+              };
+            }
+          else if type == "regular" && hasSuffix ".nix" name then
+            {
+              # call .nix files
+              ${removeSuffix ".nix" name} = callPackage path { };
+            }
+          else if type == "regular" then
+            {
+              # ignore non-nix files
+            }
+          else
+            throw ''
+              lib.filesystem.packagesFromDirectoryRecursive: Unsupported file type ${type} at path ${toString path}
+            ''
+        ) (builtins.readDir directory)
+      );
 
   /**
     Much like `packagesFromDirectoryRecursive`, except instead of invoking `callPackage` on the leaves, this function

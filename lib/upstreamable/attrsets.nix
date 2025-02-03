@@ -12,9 +12,7 @@ let
     listToAttrs
     nameValuePair
     showAttrPath
-    updateManyAttrsByPath
     ;
-  inherit (lib.customisation) hydraJob;
   inherit (lib.debug) traceIf;
   inherit (lib.fixedPoints) makeExtensible;
   inherit (lib.lists)
@@ -23,14 +21,12 @@ let
     last
     map
     ;
-  inherit (lib.trivial) const flip pipe;
+  inherit (lib.trivial) pipe;
   inherit (lib.upstreamable.attrsets)
     attrPaths
     flattenAttrs
-    drvAttrPathsRecurseByDefaultStrategy
     drvAttrPathsStrategy
     drvAttrPathsStrategyImpl
-    mkHydraJobsImpl
     ;
 in
 {
@@ -245,20 +241,4 @@ in
     ```
   */
   flattenDrvTree = flattenAttrs drvAttrPathsStrategy;
-
-  # Internal
-  mkHydraJobsImpl =
-    drvAttrPathsStrategy: attrs:
-    pipe attrs [
-      (attrPaths drvAttrPathsStrategy)
-      (map (attrPath: {
-        path = attrPath;
-        update = const (hydraJob (getAttrFromPath attrPath attrs));
-      }))
-      (flip updateManyAttrsByPath { })
-    ];
-
-  # TODO: Docs
-  mkHydraJobs = mkHydraJobsImpl drvAttrPathsStrategy;
-  mkHydraJobsRecurseByDefault = mkHydraJobsImpl drvAttrPathsRecurseByDefaultStrategy;
 }
