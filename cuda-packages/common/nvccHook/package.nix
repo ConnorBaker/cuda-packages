@@ -16,7 +16,7 @@ let
   inherit (cudaConfig) hostRedistArch;
   inherit (flags) cmakeCudaArchitecturesString;
   inherit (lib.attrsets) attrValues;
-  inherit (lib.lists) any concatMap optionals;
+  inherit (lib.lists) any optionals;
   inherit (lib.trivial) id;
 
   isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
@@ -49,8 +49,6 @@ let
 
     passthru = {
       inherit (finalAttrs) substitutions;
-      _hydraAggregate = true;
-      constituents = concatMap attrValues (attrValues finalAttrs.passthru.tests);
       badPlatformsConditions = {
         "CUDA support is not enabled" = !config.cudaSupport;
         "Platform is not supported" = hostRedistArch == "unsupported";
