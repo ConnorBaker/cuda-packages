@@ -108,12 +108,13 @@ let
               # TODO(@connorbaker): Warnings disabled for now.
               backendStdenv = final.stdenv;
               cudaVersion = cudaMajorMinorVersion;
-              cudaFlags = finalCudaPackages.flags // {
+              flags = finalCudaPackages.flags // {
                 cudaComputeCapabilityToName = finalCudaPackages.flags.cudaCapabilityToName;
                 dropDot = dropDots;
                 # cudaComputeCapabilityToName = warn "cudaPackages.flags.cudaComputeCapabilityToName is deprecated, use cudaPackages.flags.cudaCapabilityToName instead" cudaCapabilityToName;
                 # dropDot = warn "cudaPackages.flags.dropDot is deprecated, use lib.cuda.utils.dropDots instead" dropDots;
               };
+              cudaFlags = finalCudaPackages.flags;
               # backendStdenv = warn "cudaPackages.backendStdenv has been removed, use stdenv instead" final.stdenv;
               # cudaVersion = warn "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorVersion;
               # cudaFlags = warn "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
@@ -253,4 +254,6 @@ in
       };
     };
   };
+  # https://github.com/NixOS/nixpkgs/blob/6c4e0724e0a785a20679b1bca3a46bfce60f05b6/pkgs/by-name/uc/ucc/package.nix#L36-L39
+  ucc = prev.ucc.overrideAttrs { strictDeps = false; };
 }
