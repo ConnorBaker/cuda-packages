@@ -173,6 +173,8 @@ let
           ) cudaPackagesConfig.packagesDirectories
         );
     in
+    # TODO: To avoid the need to (potentially) deep-override every input callPackage provides to the package set,
+    # we should use final'.newScope, where `final'` is `final` with the default CUDA package set overridden.
     mkCudaPackagesScope final.newScope (
       # User additions are included through final.cudaPackagesExtensions
       extends (composeManyExtensions final.cudaPackagesExtensions) cudaPackagesFun
