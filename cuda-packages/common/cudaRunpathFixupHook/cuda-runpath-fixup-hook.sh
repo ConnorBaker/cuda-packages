@@ -16,6 +16,7 @@ if ((${cudaRunpathFixupHookOnce:-0})); then
 fi
 
 declare -ig cudaRunpathFixupHookOnce=1
+declare -ig dontCudaRunpathFixHookOrder=${dontCudaRunpathFixHookOrder:-0}
 
 # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
 prePhases+=(cudaRunpathFixupHookOrderCheckPhase)
@@ -24,17 +25,58 @@ nixLog "added cudaRunpathFixupHookOrderCheckPhase to prePhases"
 postFixupHooks+=("autoFixElfFiles cudaRunpathFixup")
 nixLog "added 'autoFixElfFiles cudaRunpathFixup' to postFixupHooks"
 
-cudaRunpathFixupHookOrderCheckPhase() {
+cudaRunpathFixupHookOrderCheck() {
   # Ensure that our setup hook runs after autoPatchelf and autoAddDriverRunpath.
   # NOTE: This function because it relies on the name of the hooks not changing.
   if ! occursOnlyOrAfterInArray "autoFixElfFiles cudaRunpathFixup" autoPatchelfPostFixup postFixupHooks; then
     nixErrorLog "autoPatchelfPostFixup must run before 'autoFixElfFiles cudaRunpathFixup'"
-    exit 1
+    return 1
   elif ! occursOnlyOrAfterInArray "autoFixElfFiles cudaRunpathFixup" "autoFixElfFiles addDriverRunpath" postFixupHooks; then
     nixErrorLog "'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles cudaRunpathFixup'"
-    exit 1
+    return 1
   fi
   return 0
+}
+
+cudaRunpathFixHookOrder() {
+  nixErrorLog "attempting to fix the hook order"
+  local -a newPostFixupHooks=()
+  # We know that:
+  # 1. autoPatchelfPostFixup or 'autoFixElfFiles addDriverRunpath' is in postFixupHooks.
+  # 2. 'autoFixElfFiles cudaRunpathFixup' is in postFixupHooks and occurs only once because we guard
+  #     against it being added multiple times.
+  # 3. autoPatchelfPostFixup or 'autoFixElfFiles addDriverRunpath' occurs before autoPatchelfPostFixup.
+  # We just remove 'autoFixElfFiles cudaRunpathFixup' and add it back at the end.
+  for hook in "${postFixupHooks[@]}"; do
+    if [[ $hook == "autoFixElfFiles cudaRunpathFixup" ]]; then
+      nixErrorLog "removing 'autoFixElfFiles cudaRunpathFixup'"
+      continue
+    fi
+
+    nixErrorLog "keeping $hook"
+    newPostFixupHooks+=("$hook")
+  done
+  nixErrorLog "adding 'autoFixElfFiles cudaRunpathFixup'"
+  postFixupHooks=("${newPostFixupHooks[@]}" "autoFixElfFiles cudaRunpathFixup")
+
+  # Run the check again to ensure the fix worked.
+  if cudaRunpathFixupHookOrderCheck; then
+    nixErrorLog "fixed the hook order; this is a workaround, please fix the hook order in the package definition!"
+    return 0
+  else
+    nixErrorLog "failed to fix the hook order"
+    exit 1
+  fi
+}
+
+cudaRunpathFixupHookOrderCheckPhase() {
+  if cudaRunpathFixupHookOrderCheck; then
+    return 0
+  elif ((dontCudaRunpathFixHookOrder)); then
+    exit 1
+  else
+    cudaRunpathFixHookOrder && return 0
+  fi
 }
 
 cudaRunpathFixup() {

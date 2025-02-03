@@ -18,6 +18,7 @@ fi
 declare -ig nvccHookOnce=1
 declare -ig nvccHostCCMatchesStdenvCC="@nvccHostCCMatchesStdenvCC@"
 declare -ig dontCompressCudaFatbin=${dontCompressCudaFatbin:-0}
+declare -ig dontNvccFixHookOrder=${dontNvccFixHookOrder:-0}
 
 # NOTE: `appendToVar` does not export the variable to the environment because it is assumed to be a shell
 # variable. To avoid variables being locally scoped, we must export it prior to adding values.
@@ -55,14 +56,59 @@ if ! ((nvccHostCCMatchesStdenvCC)); then
   nixLog "added 'autoFixElfFiles nvccRunpathCheck' to postFixupHooks"
 fi
 
-nvccHookOrderCheckPhase() {
+nvccHookOrderCheck() {
   # Ensure that our setup hook runs after autoPatchelf.
   # NOTE: Brittle because it relies on the name of the hook not changing.
   if ! occursOnlyOrAfterInArray "autoFixElfFiles nvccRunpathCheck" autoPatchelfPostFixup postFixupHooks; then
     nixErrorLog "autoPatchelfPostFixup must run before 'autoFixElfFiles nvccRunpathCheck'"
-    exit 1
+    return 1
   fi
   return 0
+}
+
+nvccFixHookOrder() {
+  nixErrorLog "attempting to fix the hook order"
+  local -a newPostFixupHooks=()
+  # We know that:
+  # 1. autoPatchelfPostFixup is in postFixupHooks.
+  # 2. 'autoFixElfFiles nvccRunpathCheck' is in postFixupHooks and occurs only once because we guard
+  #     against it being added multiple times.
+  # 3. 'autoFixElfFiles nvccRunpathCheck' occurs before autoPatchelfPostFixup.
+  # We assume that autoPatchelfPostFixup occurs only once.
+  for hook in "${postFixupHooks[@]}"; do
+    if [[ $hook == "autoFixElfFiles nvccRunpathCheck" ]]; then
+      nixErrorLog "removing 'autoFixElfFiles nvccRunpathCheck'"
+      continue
+    fi
+
+    nixErrorLog "keeping $hook"
+    newPostFixupHooks+=("$hook")
+
+    if [[ $hook == "autoPatchelfPostFixup" ]]; then
+      nixErrorLog "adding 'autoFixElfFiles nvccRunpathCheck'"
+      newPostFixupHooks+=("autoFixElfFiles nvccRunpathCheck")
+    fi
+  done
+  postFixupHooks=("${newPostFixupHooks[@]}")
+
+  # Run the check again to ensure the fix worked.
+  if nvccHookOrderCheck; then
+    nixErrorLog "fixed the hook order; this is a workaround, please fix the hook order in the package definition!"
+    return 0
+  else
+    nixErrorLog "failed to fix the hook order"
+    exit 1
+  fi
+}
+
+nvccHookOrderCheckPhase() {
+  if nvccHookOrderCheck; then
+    return 0
+  elif ((dontNvccFixHookOrder)); then
+    exit 1
+  else
+    nvccFixHookOrder && return 0
+  fi
 }
 
 nvccSetupEnvironmentVariables() {

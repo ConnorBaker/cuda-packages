@@ -339,6 +339,9 @@ dontRecurseIntoAttrs {
   # dropDots :: String -> String
   inherit dropDots;
 
+  # TODO: ALIAS
+  dropDot = dropDots;
+
   inherit
     defaultCapabilities
     supportedCapabilities
