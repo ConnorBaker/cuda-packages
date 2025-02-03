@@ -1,17 +1,26 @@
 {
+  flags,
+  lib,
   libcublas,
   mpi,
   nccl,
 }:
 let
   inherit (builtins) placeholder;
+  inherit (flags) isJetsonBuild;
+  inherit (lib.lists) optionals;
 in
 prevAttrs: {
-  buildInputs = prevAttrs.buildInputs or [ ] ++ [
-    libcublas
-    mpi
-    nccl
-  ];
+  buildInputs =
+    prevAttrs.buildInputs or [ ]
+    ++ [
+      libcublas
+    ]
+    # MPI brings in NCCL dependency by way of UCC/UCX.
+    ++ optionals (!isJetsonBuild) [
+      mpi
+      nccl
+    ];
 
   # Update the CMake configurations
   postFixup =
