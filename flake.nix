@@ -26,7 +26,7 @@
         "x86_64-linux"
       ];
       mkNixpkgs =
-        system: cudaVersion:
+        system:
         import inputs.nixpkgs {
           inherit system;
           # TODO: Due to the way Nixpkgs is built in stages, the config attribute set is not re-evaluated.
@@ -37,22 +37,11 @@
           config = {
             allowUnfree = true;
             cudaSupport = true;
-            inherit cudaVersion; # Changes the default CUDA package set version
           };
           overlays = [ inputs.self.overlays.default ];
         };
       # Memoization through lambda lifting.
-      # TODO: The external packages (those outside of the package set) won't be affected by changes to the CUDA version
-      # because they will use the default version from the global scope.
-      # We have our Nixpkgs config (above) set up so the default version of the package set varies with the CUDA
-      # version.
-      nixpkgsInstances = genAttrs systems (
-        system:
-        genAttrs [
-          "12.2.2"
-          "12.6.3"
-        ] (mkNixpkgs system)
-      );
+      nixpkgsInstances = genAttrs systems mkNixpkgs;
     in
     mkFlake { inherit inputs; } {
       inherit systems;
@@ -80,7 +69,7 @@
           ...
         }:
         {
-          _module.args.pkgs = nixpkgsInstances.${system}."12.6.3";
+          _module.args.pkgs = nixpkgsInstances.${system};
 
           devShells = {
             inherit (config.packages) cuda-redist;

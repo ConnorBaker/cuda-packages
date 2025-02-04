@@ -13,11 +13,14 @@ let
     isDerivation
     mapAttrs
     mapAttrs'
+    nameValuePair
     optionalAttrs
     ;
   inherit (lib.cuda.data) redistUrlPrefix;
   inherit (lib.cuda.types) redistName;
   inherit (lib.cuda.utils)
+    bimap
+    dotsToUnderscores
     dropDots
     getNixPlatforms
     mkCudaPackagesCallPackage
@@ -53,6 +56,7 @@ let
     hasPrefix
     hasSuffix
     removeSuffix
+    replaceStrings
     versionAtLeast
     ;
   inherit (lib.trivial)
@@ -405,13 +409,9 @@ in
 
   # Vendored from:
   # https://github.com/NixOS/nixpkgs/blob/eb82888147a6aecb8ae6ee5a685ecdf021b8ed33/lib/filesystem.nix#L385-L416
-  # Modified to wrap result of directory traversal in a `recurseIntoAttrs` call.
+  # Modified to wrap result of directory traversal in a `recurseIntoAttrs` call and to take arguments positionally.
   packagesFromDirectoryRecursive' =
-    {
-      callPackage,
-      directory,
-      ...
-    }:
+    callPackage: directory:
     let
       inherit (lib) concatMapAttrs recurseIntoAttrs removeSuffix;
       inherit (lib.path) append;
@@ -429,22 +429,14 @@ in
             path = append directory name;
           in
           if type == "directory" then
-            {
-              # recurse into directories
-              ${name} = packagesFromDirectoryRecursive' {
-                inherit callPackage;
-                directory = path;
-              };
-            }
+            # recurse into directories
+            { ${name} = packagesFromDirectoryRecursive' callPackage path; }
           else if type == "regular" && hasSuffix ".nix" name then
-            {
-              # call .nix files
-              ${removeSuffix ".nix" name} = callPackage path { };
-            }
+            # call .nix files
+            { ${removeSuffix ".nix" name} = callPackage path { }; }
           else if type == "regular" then
-            {
-              # ignore non-nix files
-            }
+            # ignore non-nix files
+            { }
           else
             throw ''
               lib.filesystem.packagesFromDirectoryRecursive: Unsupported file type ${type} at path ${toString path}
@@ -846,13 +838,37 @@ in
     # Take the attributes that are null.
     (filterAttrs (_: value: value == null))
     # Map them to a set of badPlatformsConditions.
-    (mapAttrs' (
-      name: value: {
-        name = "Required package ${name} is missing";
-        value = true;
-      }
-    ))
+    (bimap (name: "Required package ${name} is missing") (const true))
   ];
+
+  /**
+    Replaces dots in a string with underscores.
+
+    # Type
+
+    ```
+    dotsToUnderscores :: String -> String
+    ```
+
+    # Arguments
+
+    str
+    : The string for which dots shall be replaced by underscores
+
+    # Example
+
+    ```nix
+    lib.cuda.utils.dotsToUnderscores "1.2.3"
+    => "1_2_3"
+    ```
+  */
+  dotsToUnderscores = replaceStrings [ "." ] [ "_" ];
+
+  # TODO: Docs
+  mkCudaPackagesVersionedName = cudaVersion: "cudaPackages_${dotsToUnderscores cudaVersion}";
+
+  # TODO: Docs
+  bimap = f: g: mapAttrs' (name: value: nameValuePair (f name) (g value));
 
   # TODO: DOCS
   mkCmakeCudaArchitecturesString = concatMapStringsSep ";" dropDots;

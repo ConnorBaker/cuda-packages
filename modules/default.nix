@@ -6,7 +6,6 @@
 let
   inherit (lib.cuda.types)
     cudaCapability
-    majorMinorPatchVersion
     redistArch
     ;
   inherit (lib.cuda.utils)
@@ -56,14 +55,6 @@ in
         The Nix system of the host platform.
       '';
       type = nonEmptyStr;
-    };
-
-    # Package set creation
-    defaultCudaPackagesVersion = {
-      description = ''
-        The CUDA package set to make default.
-      '';
-      type = majorMinorPatchVersion;
     };
   };
 

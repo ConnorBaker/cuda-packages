@@ -8,7 +8,6 @@ let
         {
           cudaCapabilities = final.config.cudaCapabilities or [ ];
           cudaForwardCompat = final.config.cudaForwardCompat or true;
-          defaultCudaPackagesVersion = final.config.cudaVersion or "12.6.3";
           hostNixSystem = final.stdenv.hostPlatform.system;
         }
       ] ++ final.cudaModules;
@@ -18,41 +17,33 @@ let
   inherit (lib.attrsets)
     attrNames
     dontRecurseIntoAttrs
-    mapAttrs'
     mapAttrsToList
     mergeAttrsList
     recurseIntoAttrs
     ;
   inherit (lib.cuda.utils)
+    bimap
     dropDots
     mkCudaPackagesOverrideAttrsDefaultsFn
     mkCudaPackagesScope
+    mkCudaPackagesVersionedName
     mkRealArchitecture
     packagesFromDirectoryRecursive'
     ;
   inherit (lib.customisation) callPackagesWith;
   inherit (lib.fixedPoints) composeManyExtensions extends;
-  inherit (lib.lists) map optionals;
+  inherit (lib.lists) map;
   inherit (lib.modules) evalModules;
-  inherit (lib.strings)
-    replaceStrings
-    versionAtLeast
-    versionOlder
-    ;
+  inherit (lib.strings) versionAtLeast versionOlder;
   inherit (lib.trivial) mapNullable pipe;
   inherit (lib.upstreamable.trivial) addNameToFetchFromGitLikeArgs;
   inherit (lib.versions) major majorMinor;
 
-  fetchFromGitHubAutoName =
-    args: final.fetchFromGitHub (addNameToFetchFromGitLikeArgs final.fetchFromGitHub args);
-  fetchFromGitLabAutoName =
-    args: final.fetchFromGitLab (addNameToFetchFromGitLikeArgs final.fetchFromGitLab args);
-
   packageSetBuilder =
-    cudaMajorMinorPatchVersion:
+    cudaPackagesConfig:
     let
-      # Attribute set membership can depend on the CUDA version, so we declare these here and ensure they do not rely on
-      # the fixed point.
+      # Versions
+      cudaMajorMinorPatchVersion = cudaPackagesConfig.redists.cuda;
       cudaMajorMinorVersion = majorMinor cudaMajorMinorPatchVersion;
       cudaMajorVersion = major cudaMajorMinorPatchVersion;
 
@@ -60,10 +51,54 @@ let
       cudaOlder = versionOlder cudaMajorMinorPatchVersion;
 
       cudaNamePrefix = "cuda${cudaMajorMinorVersion}";
-      cudaPackagesConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion};
+
+      # cudaPackages_x_y_z
+      cudaPackagesMajorMinorPatchVerionName = mkCudaPackagesVersionedName cudaMajorMinorPatchVersion;
+      # cudaPackages_x_y
+      cudaPackagesMajorMinorVersionName = mkCudaPackagesVersionedName cudaMajorMinorVersion;
+      # cudaPackages_x
+      cudaPackagesMajorVersionName = mkCudaPackagesVersionedName cudaMajorVersion;
+
+      # NOTE: To avoid callPackage-provided arguments of our package set bringing in CUDA packages from different
+      # versions of the package set (this happens, for example, with MPI and UCX), our `callPackage` and
+      # `callPackages` functions are built using a variant of `final` where the CUDA package set we are constructing
+      # is the *default* CUDA package set at the top-level.
+      # This saves us from the need to do a (potentially deep) override of any `callPackage` provided arguments to
+      # ensure we are not introducing dependencies on CUDA packages from different versions of the package set.
+      pkgs = final.extend (
+        final: _: {
+          # Don't recurse for derivations
+          recurseForDerivations = false;
+          # Don't attempt eval
+          __attrsFailEvaluation = true;
+
+          # cudaPackages_x_y = cudaPackages_x_y_z
+          ${cudaPackagesMajorMinorVersionName} =
+            final.cudaPackagesVersions.${cudaPackagesMajorMinorPatchVerionName};
+          # cudaPackages_x = cudaPackages_x_y
+          ${cudaPackagesMajorVersionName} = final.${cudaPackagesMajorMinorVersionName};
+          # cudaPackages = cudaPackages_x
+          cudaPackages = final.${cudaPackagesMajorVersionName};
+        }
+      );
+
+      # TODO: All of these except newScope and cudaPackagesExtensions are invariant with respect to the default CUDA
+      # packages version.
+      # Ideally, they would be supplied by `final` to avoid re-evaluation of the fixed point if other args aren't
+      # needed. However, there doesn't seem to be a granular way to do that at the moment.
+      # cudaPackagesExtensions should come from `final` instead of `pkgs` because it is written with respect to
+      # the upper-most fixed point, not the fixed point created inside each package set.
+      inherit (final) cudaPackagesExtensions;
+      inherit (pkgs)
+        fetchFromGitHub
+        fetchFromGitLab
+        stdenv
+        fetchzip
+        newScope
+        ;
 
       overrideAttrsDefaultsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
-        inherit (final)
+        inherit (pkgs)
           deduplicateRunpathEntriesHook
           nixLogWithLevelAndFunctionNameHook
           noBrokenSymlinksHook
@@ -72,16 +107,16 @@ let
       };
 
       cudaPackagesFun =
+        # NOTE: DO NOT USE FINAL WITHIN THIS SCOPE.
         finalCudaPackages:
         mergeAttrsList (
           [
             # Core attributes which largely don't depend on packages
             (recurseIntoAttrs {
-              callPackages = callPackagesWith (final // finalCudaPackages);
+              callPackages = callPackagesWith (pkgs // finalCudaPackages);
 
-              pkgs = dontRecurseIntoAttrs final // {
-                __attrsFailEvaluation = true;
-              };
+              # TODO: Override callPackage here to use our special version of pkgs where the CUDA package set we're constructing is the default.
+              inherit pkgs;
 
               cudaPackages = dontRecurseIntoAttrs finalCudaPackages // {
                 __attrsFailEvaluation = true;
@@ -102,12 +137,12 @@ let
               inherit cudaAtLeast cudaOlder;
 
               # Utility function for automatically naming fetchFromGitHub derivations with `name`.
-              fetchFromGitHub = fetchFromGitHubAutoName;
-              fetchFromGitLab = fetchFromGitLabAutoName;
+              fetchFromGitHub = args: fetchFromGitHub (addNameToFetchFromGitLikeArgs fetchFromGitHub args);
+              fetchFromGitLab = args: fetchFromGitLab (addNameToFetchFromGitLikeArgs fetchFromGitLab args);
 
               # Aliases
               # TODO(@connorbaker): Warnings disabled for now.
-              backendStdenv = final.stdenv;
+              backendStdenv = stdenv;
               cudaVersion = cudaMajorMinorVersion;
               flags = finalCudaPackages.flags // {
                 cudaComputeCapabilityToName = finalCudaPackages.flags.cudaCapabilityToName;
@@ -124,6 +159,25 @@ let
           ]
           # Redistributable packages
           ++ mapAttrsToList (
+            let
+              inherit (finalCudaPackages) callPackage redist-builder;
+              mkRedistPackage =
+                callPackageOverrider: redistBuilderArgs:
+                pipe redistBuilderArgs [
+                  # Build the package
+                  redist-builder
+                  # Apply our defaults
+                  (pkg: pkg.overrideAttrs overrideAttrsDefaultsFn)
+                  # Apply optional fixups
+                  (
+                    pkg:
+                    if callPackageOverrider == null then
+                      pkg
+                    else
+                      pkg.overrideAttrs (callPackage callPackageOverrider { })
+                  )
+                ];
+            in
             packageName:
             {
               callPackageOverrider,
@@ -134,50 +188,28 @@ let
               supportedNixPlatformAttrs,
               supportedRedistArchAttrs,
             }:
-            let
-              redistBuilderArgs = {
+            {
+              ${packageName} = mkRedistPackage callPackageOverrider {
                 inherit
                   packageInfo
                   packageName
                   redistName
                   releaseInfo
                   ;
-                src = mapNullable final.fetchzip srcArgs;
+                src = mapNullable fetchzip srcArgs;
                 # NOTE: Don't need to worry about sorting the attribute names because Nix already does that.
                 supportedNixPlatforms = attrNames supportedNixPlatformAttrs;
                 supportedRedistArches = attrNames supportedRedistArchAttrs;
               };
-            in
-            {
-              ${packageName} = pipe redistBuilderArgs (
-                [
-                  # Build the package
-                  finalCudaPackages.redist-builder
-                  # Apply our defaults
-                  (pkg: pkg.overrideAttrs overrideAttrsDefaultsFn)
-                ]
-                # Apply optional fixups
-                ++ optionals (callPackageOverrider != null) [
-                  (pkg: pkg.overrideAttrs (finalCudaPackages.callPackage callPackageOverrider { }))
-                ]
-              );
             }
           ) cudaPackagesConfig.packageConfigs
           # CUDA version-specific packages
-          ++ map (
-            directory:
-            packagesFromDirectoryRecursive' {
-              inherit (finalCudaPackages) callPackage;
-              inherit directory;
-            }
-          ) cudaPackagesConfig.packagesDirectories
+          ++ map (packagesFromDirectoryRecursive' finalCudaPackages.callPackage) cudaPackagesConfig.packagesDirectories
         );
     in
-    # TODO: To avoid the need to (potentially) deep-override every input callPackage provides to the package set,
-    # we should use final'.newScope, where `final'` is `final` with the default CUDA package set overridden.
-    mkCudaPackagesScope final.newScope (
-      # User additions are included through final.cudaPackagesExtensions
-      extends (composeManyExtensions final.cudaPackagesExtensions) cudaPackagesFun
+    mkCudaPackagesScope newScope (
+      # User additions are included through cudaPackagesExtensions
+      extends (composeManyExtensions cudaPackagesExtensions) cudaPackagesFun
     );
 in
 # General configuration
@@ -194,56 +226,40 @@ in
 
   # For adding packages in an ad-hoc manner.
   cudaPackagesExtensions = [ ];
-}
-# Package sets
-// {
-  # We cannot add top-level attributes dependent on the fixed point, but we can add them within an attribute set!
-  cudaPackagesVersions = mapAttrs' (cudaMajorMinorPatchVersion: _: {
-    name = "cudaPackages_${replaceStrings [ "." ] [ "_" ] cudaMajorMinorPatchVersion}";
-    value = packageSetBuilder cudaMajorMinorPatchVersion;
-  }) cudaConfig.cudaPackages;
 
-  # Aliases
-  # NOTE: No way to automate this as presence or absence of attributes depends on the fixed point, which causes
-  # infinite recursion.
-  inherit (final.cudaPackagesVersions)
-    cudaPackages_12_2_2
-    cudaPackages_12_6_3
-    ;
+  # Versioned package sets
+  cudaPackagesVersions = bimap mkCudaPackagesVersionedName packageSetBuilder cudaConfig.cudaPackages;
 
-  cudaPackages_12_2 = final.cudaPackages_12_2_2;
-  cudaPackages_12_6 = final.cudaPackages_12_6_3;
-
+  # Package set aliases with a major and minor component are drawn directly from final.cudaPackagesVersions.
+  cudaPackages_12_2 = final.cudaPackagesVersions.cudaPackages_12_2_2;
+  cudaPackages_12_6 = final.cudaPackagesVersions.cudaPackages_12_6_3;
+  # Package set aliases with a major component refer to an alias with a major and minor component in final.
   cudaPackages_12 = final.cudaPackages_12_6;
+  # Unversioned package set alias refers to an alias with a major component in final.
+  cudaPackages = final.cudaPackages_12;
 
-  cudaPackages =
-    final.cudaPackagesVersions."cudaPackages_${
-      replaceStrings [ "." ] [ "_" ] cudaConfig.defaultCudaPackagesVersion
-    }";
-}
-# Nixpkgs package sets matrixed by real architecture (e.g., `sm_90a`).
-# TODO(@connorbaker): Yes, it is computationally expensive to call final.extend.
-# No, I can't think of a different way to force re-evaluation of the fixed point.
-// {
-  pkgsCuda = mapAttrs' (cudaCapability: _: {
-    name = mkRealArchitecture cudaCapability;
-    value = dontRecurseIntoAttrs (
-      final.extend (
-        _: prev': {
-          __attrsFailEvaluation = true;
-          config = prev'.config // {
-            cudaCapabilities = [ cudaCapability ];
-          };
-        }
-      )
-    );
-  }) cudaConfig.data.gpus;
+  # Nixpkgs package sets matrixed by real architecture (e.g., `sm_90a`).
+  # TODO(@connorbaker): Yes, it is computationally expensive to call final.extend.
+  # No, I can't think of a different way to force re-evaluation of the fixed point -- the problem being that
+  # pkgs.config is not part of the fixed point.
+  pkgsCuda = bimap mkRealArchitecture (
+    gpuInfo:
+    final.extend (
+      _: prev: {
+        # Don't recurse for derivations
+        recurseForDerivations = false;
+        # Don't attempt eval
+        __attrsFailEvaluation = true;
+        # Re-evaluate config
+        config = prev.config // {
+          cudaCapabilities = [ gpuInfo.cudaCapability ];
+        };
+      }
+    )
+  ) cudaConfig.data.gpus;
 }
 # Upstreamable packages
-// packagesFromDirectoryRecursive' {
-  inherit (final) callPackage;
-  directory = ./upstreamable-packages;
-}
+// packagesFromDirectoryRecursive' final.callPackage ./upstreamable-packages
 # Package fixes
 // {
   openmpi = prev.openmpi.override {
