@@ -24,16 +24,17 @@ optionalAttrs (!nvccHostCCMatchesStdenvCC) {
     installPhase = "touch $out";
   };
 
-  before-autoPatchelfHook = runCommand {
-    name = "before-autoPatchelfHook";
+  before-autoPatchelfHook-no-fixup = runCommand {
+    name = "before-autoPatchelfHook-no-fixup";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       stdenv.mkDerivation {
         __structuredAttrs = true;
         strictDeps = true;
-        name = "before-autoPatchelfHook";
+        name = "before-autoPatchelfHook-no-fixup";
         src = null;
         dontUnpack = true;
+        dontNvccFixHookOrder = true;
         nativeBuildInputs = [
           nvccHook
           autoPatchelfHook
@@ -46,11 +47,24 @@ optionalAttrs (!nvccHostCCMatchesStdenvCC) {
       (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
       nixLog "Checking for error message"
       grep -F \
-        "ERROR: nvccHookOrderCheckPhase: autoPatchelfPostFixup must run before 'autoFixElfFiles nvccRunpathCheck'" \
+        "ERROR: nvccHookOrderCheck: autoPatchelfPostFixup must run before 'autoFixElfFiles nvccRunpathCheck'" \
         "$failed/testBuildFailure.log"
       nixLog "Test passed"
       touch $out
     '';
+  };
+
+  before-autoPatchelfHook-with-fixup = stdenv.mkDerivation {
+    __structuredAttrs = true;
+    strictDeps = true;
+    name = "before-autoPatchelfHook-with-fixup";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [
+      nvccHook
+      autoPatchelfHook
+    ];
+    installPhase = "touch $out";
   };
 
   after-autoPatchelfHook = stdenv.mkDerivation {

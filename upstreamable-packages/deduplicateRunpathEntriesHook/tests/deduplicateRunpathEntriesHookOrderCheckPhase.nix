@@ -18,14 +18,15 @@ in
     installPhase = "touch $out";
   };
 
-  before-autoAddDriverRunpath = runCommand {
-    name = "before-autoAddDriverRunpath";
+  before-autoAddDriverRunpath-no-fixup = runCommand {
+    name = "before-autoAddDriverRunpath-no-fixup";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       stdenv.mkDerivation {
-        name = "before-autoAddDriverRunpath";
+        name = "before-autoAddDriverRunpath-no-fixup";
         src = null;
         dontUnpack = true;
+        dontDeduplicateRunpathEntriesFixHookOrder = true;
         nativeBuildInputs = [
           deduplicateRunpathEntriesHook
           autoAddDriverRunpath
@@ -38,11 +39,22 @@ in
       (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
       nixLog "Checking for error message"
       grep -F \
-        "ERROR: deduplicateRunpathEntriesHookOrderCheckPhase: 'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles deduplicateRunpathEntries'" \
+        "ERROR: deduplicateRunpathEntriesHookOrderCheck: 'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles deduplicateRunpathEntries'" \
         "$failed/testBuildFailure.log"
       nixLog "Test passed"
       touch $out
     '';
+  };
+
+  before-autoAddDriverRunpath-with-fixup = stdenv.mkDerivation {
+    name = "before-autoAddDriverRunpath-with-fixup";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [
+      deduplicateRunpathEntriesHook
+      autoAddDriverRunpath
+    ];
+    installPhase = "touch $out";
   };
 
   after-autoAddDriverRunpath = stdenv.mkDerivation {

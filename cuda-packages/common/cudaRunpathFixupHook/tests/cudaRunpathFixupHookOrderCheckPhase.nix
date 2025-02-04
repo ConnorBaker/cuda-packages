@@ -21,16 +21,17 @@ in
     installPhase = "touch $out";
   };
 
-  before-autoPatchelfHook = runCommand {
-    name = "before-autoPatchelfHook";
+  before-autoPatchelfHook-no-fixup = runCommand {
+    name = "before-autoPatchelfHook-no-fixup";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       stdenv.mkDerivation {
         __structuredAttrs = true;
         strictDeps = true;
-        name = "before-autoPatchelfHook";
+        name = "before-autoPatchelfHook-no-fixup";
         src = null;
         dontUnpack = true;
+        dontCudaRunpathFixHookOrder = true;
         nativeBuildInputs = [
           cudaRunpathFixupHook
           autoPatchelfHook
@@ -48,6 +49,19 @@ in
       nixLog "Test passed"
       touch $out
     '';
+  };
+
+  before-autoPatchelfHook-with-fixup = stdenv.mkDerivation {
+    __structuredAttrs = true;
+    strictDeps = true;
+    name = "before-autoPatchelfHook-with-fixup";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [
+      cudaRunpathFixupHook
+      autoPatchelfHook
+    ];
+    installPhase = "touch $out";
   };
 
   after-autoPatchelfHook = stdenv.mkDerivation {
@@ -73,16 +87,17 @@ in
     installPhase = "touch $out";
   };
 
-  before-autoAddDriverRunpath = runCommand {
-    name = "before-autoAddDriverRunpath";
+  before-autoAddDriverRunpath-no-fixup = runCommand {
+    name = "before-autoAddDriverRunpath-no-fixup";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       stdenv.mkDerivation {
         __structuredAttrs = true;
         strictDeps = true;
-        name = "before-autoAddDriverRunpath";
+        name = "before-autoAddDriverRunpath-no-fixup";
         src = null;
         dontUnpack = true;
+        dontCudaRunpathFixHookOrder = true;
         nativeBuildInputs = [
           cudaRunpathFixupHook
           autoAddDriverRunpath
@@ -95,11 +110,24 @@ in
       (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
       nixLog "Checking for error message"
       grep -F \
-        "ERROR: cudaRunpathFixupHookOrderCheckPhase: 'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles cudaRunpathFixup'" \
+        "ERROR: cudaRunpathFixupHookOrderCheck: 'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles cudaRunpathFixup'" \
         "$failed/testBuildFailure.log"
       nixLog "Test passed"
       touch $out
     '';
+  };
+
+  before-autoAddDriverRunpath-with-fixup = stdenv.mkDerivation {
+    __structuredAttrs = true;
+    strictDeps = true;
+    name = "before-autoAddDriverRunpath";
+    src = null;
+    dontUnpack = true;
+    nativeBuildInputs = [
+      cudaRunpathFixupHook
+      autoAddDriverRunpath
+    ];
+    installPhase = "touch $out";
   };
 
   after-autoAddDriverRunpath = stdenv.mkDerivation {
