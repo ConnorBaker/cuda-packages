@@ -2,7 +2,6 @@
   autoreconfHook,
   cuda_cudart,
   cudaConfig,
-  cudaPackages,
   dbus,
   e2fsprogs,
   fetchpatch,
@@ -29,7 +28,7 @@
 }:
 let
   inherit (cudaConfig) hostRedistArch;
-  inherit (lib.attrsets) getOutput;
+  inherit (lib.attrsets) getLib getOutput;
   inherit (lib.lists) optionals;
   inherit (lib.strings) optionalString;
   inherit (gst_all_1)
@@ -243,8 +242,7 @@ finalAttrs: prevAttrs: {
     prevAttrs.buildInputs or [ ]
     ++ [
       (getOutput "stubs" cuda_cudart)
-      (ucx.override { inherit cudaPackages; })
-      dbus.lib
+      (getLib dbus)
       e2fsprogs
       fontconfig
       kdePackages.qtwayland
@@ -253,6 +251,7 @@ finalAttrs: prevAttrs: {
       nspr
       nss
       rdma-core
+      ucx
       xcb-util-cursor
       # xorg
       libxcb

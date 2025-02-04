@@ -115,7 +115,6 @@ let
             (recurseIntoAttrs {
               callPackages = callPackagesWith (pkgs // finalCudaPackages);
 
-              # TODO: Override callPackage here to use our special version of pkgs where the CUDA package set we're constructing is the default.
               inherit pkgs;
 
               cudaPackages = dontRecurseIntoAttrs finalCudaPackages // {
