@@ -37,7 +37,7 @@ let
   # sets.
   # Of note, these are only run against the default version of the CUDA package set.
   mkPkgsJobs =
-    pkgs:
+    namePrefix: pkgs:
     let
       inherit (pkgs) cudaPackages;
       inherit (pkgs.releaseTools) aggregate;
@@ -62,7 +62,7 @@ let
       # only have different store paths if they have different input derivations, which again, they shouldn't given
       # they don't depend on CUDA packages.
       setup-hooks = aggregate {
-        name = "setup-hooks";
+        name = "${namePrefix}-pkgs-setup-hooks";
         meta = {
           description = "Setup hooks which are non-members of the CUDA package set responsible for basic CUDA package set functionality";
           maintainers = lib.teams.cuda.members;
@@ -70,7 +70,7 @@ let
         constituents = map hydraJob setup-hooks;
       };
       setup-hooks-tests = aggregate {
-        name = "setup-hooks-tests";
+        name = "${namePrefix}-pkgs-setup-hooks-tests";
         meta = {
           description = "Test suites for setup hooks which are non-members of the CUDA package set responsible for basic CUDA package set functionality";
           maintainers = lib.teams.cuda.members;
@@ -78,7 +78,7 @@ let
         constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) setup-hooks;
       };
       core = aggregate {
-        name = "core";
+        name = "${namePrefix}-pkgs-core";
         meta = {
           description = "Non-members of the CUDA package set which are required to build";
           maintainers = lib.teams.cuda.members;
@@ -87,7 +87,7 @@ let
         constituents = map hydraJob core;
       };
       extras = aggregate {
-        name = "extras";
+        name = "${namePrefix}-pkgs-extras";
         meta = {
           description = "Non-members of the CUDA package set which are not required to build";
           maintainers = lib.teams.cuda.members;
@@ -107,6 +107,7 @@ let
 
       realArch = mkRealArchitecture cudaCapability;
       cudaPackagesVersionedName = mkCudaPackagesVersionedName cudaMajorMinorPatchVersion;
+      namePrefix = "${pkgs.system}-${realArch}-${cudaPackagesVersionedName}";
 
       # TODO: Document requirement that hooks both have an attribute path ending with `Hook` and a `name` attribute
       # ending with `-hook`, and that setup hooks are all top-level.
@@ -148,7 +149,7 @@ let
     in
     {
       setup-hooks = aggregate {
-        name = "setup-hooks";
+        name = "${namePrefix}-setup-hooks";
         meta = {
           description = "Setup hooks responsible for basic cudaPackages functionality";
           maintainers = lib.teams.cuda.members;
@@ -156,7 +157,7 @@ let
         constituents = map hydraJob setup-hooks;
       };
       setup-hooks-tests = aggregate {
-        name = "setup-hooks-tests";
+        name = "${namePrefix}-setup-hooks-tests";
         meta = {
           description = "Test suites for setup-hooks";
           maintainers = lib.teams.cuda.members;
@@ -164,7 +165,7 @@ let
         constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) setup-hooks;
       };
       redists = aggregate {
-        name = "redists";
+        name = "${namePrefix}-redists";
         meta = {
           description = "CUDA packages redistributables which are required to build";
           maintainers = lib.teams.cuda.members;
@@ -172,7 +173,7 @@ let
         constituents = map hydraJob redists;
       };
       core = aggregate {
-        name = "core";
+        name = "${namePrefix}-core";
         meta = {
           description = "Members of the CUDA package set, excluding redistributables, which are required to build";
           maintainers = lib.teams.cuda.members;
@@ -180,7 +181,7 @@ let
         constituents = map hydraJob core;
       };
       extras = aggregate {
-        name = "extras";
+        name = "${namePrefix}-extras";
         meta = {
           description = "Members of the CUDA package set which are not required to build";
           maintainers = lib.teams.cuda.members;
@@ -189,7 +190,7 @@ let
       };
 
       # Tests for pkgs using a different global version of the CUDA package set
-      pkgs = mkPkgsJobs cudaPackages.pkgs;
+      pkgs = mkPkgsJobs namePrefix cudaPackages.pkgs;
     };
 in
 {
@@ -204,7 +205,7 @@ in
         ${mkCudaPackagesVersionedName "12.6.3"} = mkCudaPackagesJobs pkgs "8.9" "12.6.3";
       };
     }
-    // mkPkgsJobs pkgs;
+    // mkPkgsJobs "x86_64-linux" pkgs;
 
   aarch64-linux =
     let
@@ -223,5 +224,5 @@ in
       #   ${mkCudaPackagesVersionedName "12.6.3"} = mkCudaPackagesJobs pkgs "8.9" "12.6.3";
       # };
     }
-    // mkPkgsJobs pkgs;
+    // mkPkgsJobs "aarch64-linux" pkgs;
 }
