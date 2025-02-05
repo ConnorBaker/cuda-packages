@@ -7,6 +7,7 @@
 let
   inherit (cudaRunpathFixupHook.passthru.substitutions) cudaCompatLibDir cudaStubLibDir driverLibDir;
   inherit (lib.attrsets) optionalAttrs;
+  inherit (lib.lists) optionals;
 
   check =
     {
@@ -57,11 +58,14 @@ in
       cudaStubLibDir
       "cat"
     ];
-    expectedArr = [
-      "cat"
-      driverLibDir
-      "cat"
-    ];
+    expectedArr =
+      [ "cat" ]
+      # cudaCompat is present before driverLibDir if it is in the package set
+      ++ optionals (cudaCompatLibDir != "") [ cudaCompatLibDir ]
+      ++ [
+        driverLibDir
+        "cat"
+      ];
   };
 
   cudaStubLibDir-is-replaced-with-driverLibDir-and-deduplicated = check {
@@ -75,12 +79,15 @@ in
       "frog"
     ];
     # driverLibDir is before bee because it was transformed from the cudaStubLibDir entry.
-    expectedArr = [
-      "dog"
-      driverLibDir
-      "bee"
-      "frog"
-    ];
+    expectedArr =
+      [ "dog" ]
+      # cudaCompat is present before driverLibDir if it is in the package set
+      ++ optionals (cudaCompatLibDir != "") [ cudaCompatLibDir ]
+      ++ [
+        driverLibDir
+        "bee"
+        "frog"
+      ];
   };
 
   driverLibDir-first-then-cudaStubLibDir = check {
@@ -89,7 +96,8 @@ in
       driverLibDir
       cudaStubLibDir
     ];
-    expectedArr = [ driverLibDir ];
+    # cudaCompat is present before driverLibDir if it is in the package set
+    expectedArr = optionals (cudaCompatLibDir != "") [ cudaCompatLibDir ] ++ [ driverLibDir ];
   };
 }
 // optionalAttrs (cudaCompatLibDir != "") {
