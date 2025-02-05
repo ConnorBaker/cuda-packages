@@ -1,23 +1,29 @@
 {
-  cuda_cudart,
-  cuda_nvcc,
-  cuda_profiler_api,
+  boost,
+  buildPythonPackage,
+  config,
+  cudaPackages,
+  cudaSupport ? config.cudaSupport,
   fetchFromGitHub,
   lib,
-  libcurand,
+  mako,
+  numpy,
+  platformdirs,
   python3,
+  pytools,
+  setuptools,
+  wheel,
 }:
 let
-  inherit (python3.pkgs)
-    boost
-    buildPythonPackage
-    mako
-    numpy
-    platformdirs
-    pytools
-    setuptools
-    wheel
+  inherit (cudaPackages)
+    cuda_cudart
+    cuda_nvcc
+    cuda_profiler_api
+    libcurand
     ;
+  inherit (lib) licenses maintainers teams;
+  inherit (lib.cuda.utils) dropDots;
+  inherit (lib.versions) majorMinor;
 
   compyteSrc = fetchFromGitHub {
     owner = "inducer";
@@ -25,8 +31,6 @@ let
     rev = "955160ac2f504dabcd8641471a56146fa1afe35d";
     hash = "sha256-uObxDGBQ41HLDoKC5RtZk310niRjIupNiJaS2cFRP7c=";
   };
-  inherit (lib.cuda.utils) dropDots;
-  inherit (lib.versions) majorMinor;
 in
 buildPythonPackage {
   # Must opt-out of __structuredAttrs which is set to true by default by cudaPackages.callPackage, but currently
@@ -85,7 +89,8 @@ buildPythonPackage {
     py.test
   '';
 
-  meta = with lib; {
+  meta = {
+    broken = !cudaSupport;
     description = "CUDA integration for Python";
     homepage = "https://github.com/inducer/pycuda/";
     license = licenses.mit;

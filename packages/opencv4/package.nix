@@ -3,11 +3,10 @@
   boost,
   buildPackages,
   callPackage,
+  config,
+  cudaPackages,
+  cudaSupport ? config.cudaSupport,
   cmake,
-  cuda_cccl,
-  cuda_cudart,
-  cuda_nvcc,
-  cudnn,
   doxygen,
   eigen,
   elfutils,
@@ -40,7 +39,6 @@
   fetchFromGitHub,
   fetchurl,
   ffmpeg,
-  flags,
   gflags,
   glib,
   graphviz-nox,
@@ -51,19 +49,15 @@
   ilmbase,
   leptonica,
   lib,
-  libcublas,
-  libcufft,
   libdc1394,
   libgphoto2,
   libjpeg,
-  libnpp,
   libpng,
   libtiff,
   libunwind,
   libva,
   libwebp,
   nvidia-optical-flow-sdk,
-  nvidia-video-codec-sdk,
   ocl-icd,
   ogre,
   opencv4,
@@ -90,10 +84,20 @@
   # An empty lists means this setting is ommited which matches upstreams default.
   enabledModules ? [ ],
 }:
-
 let
-  inherit (stdenv) buildPlatform hostPlatform;
+  inherit (cudaPackages)
+    cuda_cccl
+    cuda_cudart
+    cuda_nvcc
+    cudnn
+    flags
+    libcublas
+    libcufft
+    libnpp
+    nvidia-video-codec-sdk
+    ;
   inherit (flags) cmakeCudaArchitecturesString cudaCapabilities;
+  inherit (lib) licenses maintainers teams;
   inherit (lib.attrsets) mapAttrsToList optionalAttrs;
   inherit (lib.lists) last optionals;
   inherit (lib.meta) getExe;
@@ -114,6 +118,7 @@ let
     setuptools
     wheel
     ;
+  inherit (stdenv) buildPlatform hostPlatform;
 
   contribSrc = callPackage ./opencv_contrib.nix { };
 
@@ -591,10 +596,11 @@ stdenv.mkDerivation (finalAttrs: {
   } // optionalAttrs enablePython { pythonPath = [ ]; };
 
   meta = {
+    broken = !cudaSupport;
     description = "Open Computer Vision Library with more than 500 algorithms";
     homepage = "https://opencv.org/";
-    license = lib.licenses.unfree;
-    maintainers = (with lib.maintainers; [ connorbaker ]) ++ lib.teams.cuda.members;
+    license = licenses.unfree;
+    maintainers = (with maintainers; [ connorbaker ]) ++ teams.cuda.members;
     platforms = [
       "aarch64-linux"
       "x86_64-linux"

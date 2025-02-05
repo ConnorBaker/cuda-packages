@@ -1,26 +1,30 @@
 {
-  cuda_cudart,
-  cuda_nvcc,
+  buildPythonPackage,
+  cmake,
+  config,
+  cudaPackages,
+  cudaSupport ? config.cudaSupport,
   fetchFromGitHub,
   lib,
   onnx-tensorrt,
+  pybind11,
   python3,
   runCommand,
+  setuptools,
   stdenv,
-  tensorrt,
+  wheel,
 }:
 let
+  inherit (cudaPackages)
+    cuda_cudart
+    cuda_nvcc
+    tensorrt
+    ;
+  inherit (lib) licenses maintainers teams;
   inherit (lib.attrsets) getOutput;
   inherit (lib.lists) elemAt;
   inherit (lib.strings) cmakeFeature;
   inherit (lib.versions) splitVersion;
-  inherit (python3.pkgs)
-    buildPythonPackage
-    cmake
-    pybind11
-    setuptools
-    wheel
-    ;
 
   pythonVersionComponents = splitVersion python3.version;
   pythonMajorVersion = elemAt pythonVersionComponents 0;
@@ -150,7 +154,8 @@ let
       cp -r "$NIX_BUILD_TOP/$sourceRoot/include" "$out/python/"
     '';
 
-    meta = with lib; {
+    meta = {
+      broken = !cudaSupport;
       description = "Open Source Software (OSS) components of NVIDIA TensorRT";
       homepage = "https://github.com/NVIDIA/TensorRT";
       license = licenses.asl20;

@@ -1,29 +1,33 @@
 {
   autoAddDriverRunpath,
+  build,
+  buildPythonPackage,
   cmake,
-  cuda_cccl,
-  cuda_cudart,
-  cuda_nvcc,
-  cuda_nvrtc,
+  config,
+  cudaPackages,
+  cudaSupport ? config.cudaSupport,
   fetchFromGitHub,
-  flags,
   lib,
-  libmathdx,
-  libnvjitlink,
   llvmPackages,
   ninja,
+  numpy,
   python3,
+  setuptools,
+  wheel,
 }:
 let
+  inherit (cudaPackages)
+    cuda_cccl
+    cuda_cudart
+    cuda_nvcc
+    cuda_nvrtc
+    flags
+    libmathdx
+    libnvjitlink
+    ;
+  inherit (lib) maintainers teams;
   inherit (lib.attrsets) getBin getOutput;
   inherit (lib.strings) concatStringsSep;
-  inherit (python3.pkgs)
-    build
-    buildPythonPackage
-    numpy
-    setuptools
-    wheel
-    ;
 
   # TODO: Replace in-tree CUTLASS checkout with ours?
   # TODO: Allow re-use of existing LLVM/Clang binaries instead of building from source.
@@ -138,8 +142,9 @@ let
 
     doCheck = true;
 
-    meta = with lib; {
+    meta = {
       description = "A Python framework for high performance GPU simulation and graphics";
+      broken = !cudaSupport;
       homepage = "https://github.com/NVIDIA/warp";
       license = {
         fullName = "NVIDIA Software License Agreement";

@@ -1,25 +1,28 @@
 {
-  cuda_cudart,
-  cuda_nvcc,
+  buildPythonPackage,
+  cmake, # Yes, we need cmake from python3Packages in order for the build to work.
+  config,
+  cudaPackages,
+  cudaSupport ? config.cudaSupport,
   fetchFromGitHub,
   lib,
   onnx,
   pycuda,
-  python3,
+  setuptools,
   tensorrt-python,
-  tensorrt,
 }:
 let
+  inherit (cudaPackages)
+    cuda_cudart
+    cuda_nvcc
+    tensorrt
+    ;
+  inherit (lib) licenses maintainers teams;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets) getLib getOutput;
   inherit (lib.strings) cmakeBool cmakeFeature;
   inherit (lib.versions) majorMinor;
   inherit (onnx.passthru) cppProtobuf;
-  inherit (python3.pkgs)
-    buildPythonPackage
-    cmake # Yes, we need cmake from python3Packages in order for the build to work.
-    setuptools
-    ;
 
   finalAttrs = {
     # Must opt-out of __structuredAttrs which is set to true by default by cudaPackages.callPackage, but currently
@@ -155,7 +158,8 @@ let
 
     doCheck = true;
 
-    meta = with lib; {
+    meta = {
+      broken = !cudaSupport;
       description = "TensorRT backend for Onnx";
       homepage = "https://github.com/onnx/onnx-tensorrt";
       license = licenses.asl20;

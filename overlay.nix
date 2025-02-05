@@ -256,9 +256,17 @@ in
       }
     )
   ) cudaConfig.data.gpus;
+
+  # Python packages extensions
+  pythonPackagesExtensions = prev.pythonPackagesExtensions or [ ] ++ [
+    (
+      finalPythonPackages: _:
+      packagesFromDirectoryRecursive' finalPythonPackages.callPackage ./python-packages
+    )
+  ];
 }
 # Upstreamable packages
-// packagesFromDirectoryRecursive' final.callPackage ./upstreamable-packages
+// packagesFromDirectoryRecursive' final.callPackage ./packages
 # Package fixes
 // {
   openmpi = prev.openmpi.override {

@@ -40,34 +40,30 @@ let
   mkPkgsJobs =
     namePrefix: pkgs:
     let
-      inherit (pkgs) cudaPackages;
       inherit (pkgs.releaseTools) aggregate;
       setup-hooks = [
         pkgs.arrayUtilitiesHook
         pkgs.deduplicateRunpathEntriesHook
       ];
       core = [
-        cudaPackages.onnx
-        cudaPackages.onnx-tensorrt
-        cudaPackages.onnxruntime
-        cudaPackages.opencv4
-        cudaPackages.pycuda
-        cudaPackages.warp
+        pkgs.opencv4
       ];
-      extras = [ ];
+      extras = [
+        pkgs.clog
+        pkgs.cpuinfo
+      ];
     in
     {
       core = aggregate {
-        name = "${namePrefix}-pkgs-core";
+        name = "${namePrefix}-core";
         meta = {
           description = "Non-members of the CUDA package set which are required to build";
           maintainers = lib.teams.cuda.members;
         };
-        # TODO: These need to be moved out of the package set
         constituents = map hydraJob core;
       };
       extras = aggregate {
-        name = "${namePrefix}-pkgs-extras";
+        name = "${namePrefix}-extras";
         meta = {
           description = "Non-members of the CUDA package set which are not required to build";
           maintainers = lib.teams.cuda.members;
@@ -79,7 +75,7 @@ let
     # to build them for arbitrary prefixes (including variants of `pkgs` with different default CUDA package sets).
     // optionalAttrs (pkgs.system == namePrefix) {
       setup-hooks = aggregate {
-        name = "${namePrefix}-pkgs-setup-hooks";
+        name = "${namePrefix}-setup-hooks";
         meta = {
           description = "Setup hooks which are non-members of the CUDA package set responsible for basic CUDA package set functionality";
           maintainers = lib.teams.cuda.members;
@@ -87,12 +83,45 @@ let
         constituents = map hydraJob setup-hooks;
       };
       setup-hooks-tests = aggregate {
-        name = "${namePrefix}-pkgs-setup-hooks-tests";
+        name = "${namePrefix}-setup-hooks-tests";
         meta = {
           description = "Test suites for setup hooks which are non-members of the CUDA package set responsible for basic CUDA package set functionality";
           maintainers = lib.teams.cuda.members;
         };
         constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) setup-hooks;
+      };
+    };
+
+  mkPython3PackagesJobs =
+    namePrefix: python3Packages:
+    let
+      inherit (python3Packages.pkgs.releaseTools) aggregate;
+      core = [
+        python3Packages.onnx
+        python3Packages.onnx-tensorrt
+        python3Packages.onnxruntime
+        python3Packages.tensorrt-python
+      ];
+      extras = [
+        python3Packages.warp
+      ];
+    in
+    {
+      core = aggregate {
+        name = "${namePrefix}-core";
+        meta = {
+          description = "Non-members of the CUDA package set which are required to build";
+          maintainers = lib.teams.cuda.members;
+        };
+        constituents = map hydraJob core;
+      };
+      extras = aggregate {
+        name = "${namePrefix}-extras";
+        meta = {
+          description = "Non-members of the CUDA package set which are not required to build";
+          maintainers = lib.teams.cuda.members;
+        };
+        constituents = map hydraJob extras;
       };
     };
 
@@ -130,6 +159,8 @@ let
       core =
         [
           cudaPackages.cudatoolkit
+          cudaPackages.cudnn-frontend
+          cudaPackages.cutlass
           cudaPackages.libmathdx
           cudaPackages.saxpy
         ]
@@ -137,12 +168,6 @@ let
         ++ optionals (!isJetsonBuild) [
           cudaPackages.nccl # TODO: Exclude on jetson platforms
           cudaPackages.nccl-tests
-        ]
-        # TODO: These might move to core-external
-        ++ [
-          cudaPackages.cudnn-frontend
-          cudaPackages.cutlass
-          cudaPackages.tensorrt-python
         ];
 
       extras = [ ];
@@ -190,7 +215,8 @@ let
       };
 
       # Tests for pkgs using a different global version of the CUDA package set
-      pkgs = mkPkgsJobs namePrefix cudaPackages.pkgs;
+      pkgs = mkPkgsJobs "${namePrefix}-pkgs" cudaPackages.pkgs;
+      python3Packages = mkPython3PackagesJobs "${namePrefix}-pkgs-python3Packages" cudaPackages.pkgs.python3Packages;
     };
 in
 {
@@ -204,8 +230,9 @@ in
         ${mkCudaPackagesVersionedName "12.2.2"} = mkCudaPackagesJobs pkgs "8.9" "12.2.2";
         ${mkCudaPackagesVersionedName "12.6.3"} = mkCudaPackagesJobs pkgs "8.9" "12.6.3";
       };
+      python3Packages = mkPython3PackagesJobs "x86_64-linux-pkgs-python3Packages" pkgs.python3Packages;
     }
-    // mkPkgsJobs "x86_64-linux" pkgs;
+    // mkPkgsJobs "x86_64-linux-pkgs" pkgs;
 
   aarch64-linux =
     let
@@ -223,6 +250,7 @@ in
       #   ${mkCudaPackagesVersionedName "12.2.2"} = mkCudaPackagesJobs pkgs "8.9" "12.2.2";
       #   ${mkCudaPackagesVersionedName "12.6.3"} = mkCudaPackagesJobs pkgs "8.9" "12.6.3";
       # };
+      python3Packages = mkPython3PackagesJobs "aarch64-linux-pkgs-python3Packages" pkgs.python3Packages;
     }
-    // mkPkgsJobs "aarch64-linux" pkgs;
+    // mkPkgsJobs "aarch64-linux-pkgs" pkgs;
 }

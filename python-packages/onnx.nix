@@ -1,33 +1,33 @@
 {
   abseil-cpp,
+  buildPythonPackage,
+  cmake,
   fetchFromGitHub,
+  google-re2,
   gtest,
   lib,
+  nbval,
+  nixLogWithLevelAndFunctionNameHook, # TODO: Remove when it lands in `master`
+  numpy,
+  parameterized,
   patchelf,
-  protobuf_25 ? null,
+  pillow,
   protobuf_24 ? null,
+  protobuf_25 ? null,
+  pybind11,
+  pytestCheckHook,
   python3,
+  setuptools,
+  tabulate,
 }:
 let
   inherit (builtins) storeDir;
+  inherit (lib) licenses maintainers teams;
   inherit (lib.attrsets) attrNames;
   inherit (lib.lists) map;
   inherit (lib.meta) getExe;
   inherit (lib.strings) cmakeFeature;
   inherit (lib.versions) major;
-  inherit (python3.pkgs)
-    buildPythonPackage
-    cmake
-    google-re2
-    nbval
-    numpy
-    parameterized
-    pillow
-    pybind11
-    pytestCheckHook
-    setuptools
-    tabulate
-    ;
 
   inherit
     (
@@ -84,6 +84,7 @@ let
     nativeBuildInputs = [
       abseil-cpp
       cppProtobuf
+      nixLogWithLevelAndFunctionNameHook
       pybind11
     ];
 
@@ -214,7 +215,7 @@ let
         ;
     };
 
-    meta = with lib; {
+    meta = {
       description = "Open Neural Network Exchange";
       homepage = "https://onnx.ai";
       license = licenses.asl20;

@@ -1,42 +1,58 @@
 {
   abseil-cpp,
   addDriverRunpath,
+  buildPythonPackage,
+  config,
+  cudaPackages,
+  cudaSupport ? config.cudaSupport,
   callPackage,
   clog,
+  cmake,
+  coloredlogs,
   cpuinfo,
-  cuda_cccl, # cub/cub.cuh -- Only available from CUDA 12.0.
-  cuda_cudart,
-  cuda_nvcc,
-  cudaOlder,
-  cudnn-frontend,
-  cudnn,
   doCheck ? false,
   fetchFromGitHub,
+  flatbuffers,
   glibcLocales,
   gtest,
   lib,
-  libcublas, # cublas_v2.h
-  libcufft, # cufft.h
-  libcurand, # curand.h
-  libcusparse, # cusparse.h
   libpng,
   microsoft-gsl,
-  nccl,
   nlohmann_json,
   onnx-tensorrt,
   onnx,
   onnxruntime, # For passthru.tests
   patchelf,
   pkg-config,
-  python3,
+  pybind11,
   re2,
+  setuptools,
   stdenv,
-  tensorrt,
+  sympy,
   zlib,
 }:
 let
+  inherit (cudaPackages)
+    cuda_cccl # cub/cub.cuh -- Only available from CUDA 12.0.
+    cuda_cudart
+    cuda_nvcc
+    cudaOlder
+    cudnn-frontend
+    cudnn
+    libcublas # cublas_v2.h
+    libcufft # cufft.h
+    libcurand # curand.h
+    libcusparse # cusparse.h
+    nccl
+    tensorrt
+    ;
   inherit (lib) licenses maintainers teams;
-  inherit (lib.attrsets) attrValues getLib mapAttrs;
+  inherit (lib.attrsets)
+    attrValues
+    getBin
+    getLib
+    mapAttrs
+    ;
   inherit (lib.lists) optionals;
   inherit (lib.strings)
     cmakeBool
@@ -47,15 +63,6 @@ let
   inherit (lib.trivial) const flip;
   inherit (stdenv.cc) isClang;
   inherit (onnx.passthru) cppProtobuf;
-  inherit (python3.pkgs)
-    buildPythonPackage
-    cmake
-    coloredlogs
-    flatbuffers
-    pybind11
-    sympy
-    setuptools
-    ;
 
   isAarch64Linux = stdenv.hostPlatform.system == "aarch64-linux";
 
@@ -151,7 +158,7 @@ let
       ++ optionals nccl.meta.available [ nccl ]
       # Build inputs used for source.
       # TODO(@connorbaker): Package these and get onnxruntime to use them instead of building them in the derivation.
-      ++ (attrValues vendored);
+      ++ attrValues vendored;
 
     dependencies = [
       coloredlogs
@@ -280,7 +287,7 @@ let
             --use_full_protobuf \
             --cmake_extra_defines \
               ''${cmakeFlags[@]//-D/} \
-              CMAKE_CUDA_COMPILER="${cuda_nvcc.bin}/bin/nvcc" \
+              CMAKE_CUDA_COMPILER="${getBin cuda_nvcc}/bin/nvcc" \
               Protobuf_LIBRARIES="${getLib cppProtobuf}/lib/libprotobuf.so"
 
         pushd "$NIX_BUILD_TOP/$sourceRoot/$cmakeBuildDir/Release"
@@ -355,6 +362,7 @@ let
     };
 
     meta = {
+      broken = !cudaSupport || cudaOlder "12";
       description = "Cross-platform, high performance scoring engine for ML models";
       longDescription = ''
         ONNX Runtime is a performance-focused complete scoring engine
@@ -367,7 +375,6 @@ let
       '';
       homepage = "https://github.com/microsoft/onnxruntime";
       changelog = "https://github.com/microsoft/onnxruntime/releases/tag/v${finalAttrs.version}";
-      broken = cudaOlder "12";
       # https://github.com/microsoft/onnxruntime/blob/master/BUILD.md#architectures
       platforms = [
         "aarch64-linux"
