@@ -44,7 +44,7 @@ in
       (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
       nixLog "Checking for error message"
       grep -F \
-        "ERROR: cudaRunpathFixupHookOrderCheckPhase: autoPatchelfPostFixup must run before 'autoFixElfFiles cudaRunpathFixup'" \
+        "ERROR: cudaRunpathFixupHookOrderCheck: autoPatchelfPostFixup must run before 'autoFixElfFiles cudaRunpathFixup'" \
         "$failed/testBuildFailure.log"
       nixLog "Test passed"
       touch $out
