@@ -123,7 +123,6 @@ cudaRunpathFixup() {
 
     # Case for driverLibDir.
     if [[ $runpathEntry == "$driverLibDir" ]]; then
-      # If we've already seen it, skip it.
       ((driverLibDirSeen)) && continue
 
       # If cudaCompatLibDir is set and we haven't seen it yet, add it to the runpath and mark it as seen.
@@ -138,9 +137,12 @@ cudaRunpathFixup() {
       driverLibDirSeen=1
 
     # Case for cudaCompatLibDir.
-    elif [[ $runpathEntry == "$cudaCompatLibDir" && $cudaCompatLibDirSeen -lt 1 ]]; then
-      newRunpathEntries+=("$cudaCompatLibDir")
-      cudaCompatLibDirSeen=1
+    elif [[ $runpathEntry == "$cudaCompatLibDir" ]]; then
+      # If cudaCompatLibDir is set and we haven't seen it yet, add it to the runpath and mark it as seen.
+      if [[ -n $cudaCompatLibDir && $cudaCompatLibDirSeen -lt 1 ]]; then
+        newRunpathEntries+=("$cudaCompatLibDir")
+        cudaCompatLibDirSeen=1
+      fi
 
     # Case for any other entry -- just pass through, not our job to deduplicate.
     else
