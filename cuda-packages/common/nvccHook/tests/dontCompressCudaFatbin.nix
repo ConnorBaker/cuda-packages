@@ -4,28 +4,37 @@
   stdenv,
 }:
 let
-  cudaDontCompressCheck = stdenv.mkDerivation {
-    __structuredAttrs = true;
-    strictDeps = true;
-    src = null;
-    dontUnpack = true;
-    nativeBuildInputs = [ nvccHook ];
-    configurePhaseCheckScript = ''
-      nixErrorLog "configurePhaseCheckScript should be set!"
-      exit 1
-    '';
-    configurePhase = ''
-      runHook preConfigure
-      runHook configurePhaseCheckScript
-      runHook postConfigure
-    '';
-    postInstall = ''
-      touch $out
-    '';
-  };
+  cudaDontCompressCheck =
+    drvArgs@{
+      name,
+      ...
+    }:
+    stdenv.mkDerivation (
+      {
+        __structuredAttrs = true;
+        strictDeps = true;
+        name = "${nvccHook.name}-${name}";
+        src = null;
+        dontUnpack = true;
+        nativeBuildInputs = [ nvccHook ];
+        configurePhaseCheckScript = ''
+          nixErrorLog "configurePhaseCheckScript should be set!"
+          exit 1
+        '';
+        configurePhase = ''
+          runHook preConfigure
+          runHook configurePhaseCheckScript
+          runHook postConfigure
+        '';
+        postInstall = ''
+          touch $out
+        '';
+      }
+      // builtins.removeAttrs drvArgs [ "name" ]
+    );
 in
 {
-  flag-unset = cudaDontCompressCheck.overrideAttrs {
+  flag-unset = cudaDontCompressCheck {
     name = "flag-unset";
     configurePhaseCheckScript = ''
       if [[ $NVCC_PREPEND_FLAGS != *"-Xfatbin=-compress-all"* ]]; then
@@ -35,7 +44,7 @@ in
     '';
   };
 
-  flag-set-false = cudaDontCompressCheck.overrideAttrs {
+  flag-set-false = cudaDontCompressCheck {
     name = "flag-set-false";
     dontCompressCudaFatbin = false;
     configurePhaseCheckScript = ''
@@ -46,7 +55,7 @@ in
     '';
   };
 
-  flag-set-true = cudaDontCompressCheck.overrideAttrs {
+  flag-set-true = cudaDontCompressCheck {
     name = "flag-set-true";
     dontCompressCudaFatbin = true;
     configurePhaseCheckScript = ''

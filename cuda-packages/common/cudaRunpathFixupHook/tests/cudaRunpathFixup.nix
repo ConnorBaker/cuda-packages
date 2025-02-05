@@ -8,23 +8,31 @@ let
   inherit (cudaRunpathFixupHook.passthru.substitutions) cudaCompatLibDir cudaStubLibDir driverLibDir;
   inherit (lib.attrsets) optionalAttrs;
 
-  check = mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ cudaRunpathFixupHook ];
-    checkSetupScript = ''
-      nixLog "running cudaRunpathFixup on main"
-      cudaRunpathFixup main
-    '';
-  });
+  check =
+    {
+      name,
+      valuesArr,
+      expectedArr,
+    }:
+    mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
+      inherit valuesArr expectedArr;
+      name = "${cudaRunpathFixupHook.name}-${name}";
+      nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ cudaRunpathFixupHook ];
+      checkSetupScript = ''
+        nixLog "running cudaRunpathFixup on main"
+        cudaRunpathFixup main
+      '';
+    });
 in
 # TODO: Jetson tests (cudaCompatLibDir).
 {
-  no-rpath-change = check.overrideAttrs {
+  no-rpath-change = check {
     name = "no-rpath-change";
     valuesArr = [ "cat" ];
     expectedArr = [ "cat" ];
   };
 
-  no-deduplication-of-non-cuda-entries = check.overrideAttrs {
+  no-deduplication-of-non-cuda-entries = check {
     name = "no-deduplication-of-non-cuda-entries";
     valuesArr = [
       "bee"
@@ -42,7 +50,7 @@ in
     ];
   };
 
-  cudaStubLibDir-is-replaced-with-driverLibDir = check.overrideAttrs {
+  cudaStubLibDir-is-replaced-with-driverLibDir = check {
     name = "cudaStubLibDir-is-replaced-with-driverLibDir";
     valuesArr = [
       "cat"
@@ -56,7 +64,7 @@ in
     ];
   };
 
-  cudaStubLibDir-is-replaced-with-driverLibDir-and-deduplicated = check.overrideAttrs {
+  cudaStubLibDir-is-replaced-with-driverLibDir-and-deduplicated = check {
     name = "cudaStubLibDir-is-replaced-with-driverLibDir-and-deduplicated";
     valuesArr = [
       "dog"
@@ -75,7 +83,7 @@ in
     ];
   };
 
-  driverLibDir-first-then-cudaStubLibDir = check.overrideAttrs {
+  driverLibDir-first-then-cudaStubLibDir = check {
     name = "driverLibDir-first-then-cudaStubLibDir";
     valuesArr = [
       driverLibDir
@@ -85,7 +93,7 @@ in
   };
 }
 // optionalAttrs (cudaCompatLibDir != "") {
-  cudaCompatLibDir-is-placed-before-driverLibDir = check.overrideAttrs {
+  cudaCompatLibDir-is-placed-before-driverLibDir = check {
     name = "cudaCompatLibDir-is-placed-before-driverLibDir";
     valuesArr = [
       "cat"

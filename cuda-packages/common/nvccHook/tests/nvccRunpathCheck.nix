@@ -19,37 +19,43 @@ let
   gccDir = "${unwrappedCCRoot}/gcc/${hostPlatformConfig}/${ccVersion}";
   ccLibDir = "${unwrappedCCLibRoot}/lib";
 
-  check = mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ nvccHook ];
-    checkSetupScript = ''
-      nixLog "running nvccRunpathCheck on main"
-      nvccRunpathCheck main
-    '';
-  });
+  check =
+    {
+      name,
+      valuesArr,
+      expectedArr,
+    }:
+    mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
+      inherit valuesArr expectedArr;
+      name = "${nvccHook.name}-${name}";
+      nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ nvccHook ];
+      checkSetupScript = ''
+        nixLog "running nvccRunpathCheck on main"
+        nvccRunpathCheck main
+      '';
+    });
 in
 {
-  no-leak-empty = check.overrideAttrs {
+  no-leak-empty = check {
     name = "no-leak-empty";
     valuesArr = [ ];
     expectedArr = [ ];
   };
 
-  no-leak-singleton = check.overrideAttrs {
+  no-leak-singleton = check {
     name = "no-leak-singleton";
     valuesArr = [ "cat" ];
     expectedArr = [ "cat" ];
   };
 
   leak-singleton = runCommand {
-    name = "leak-singleton";
+    name = "${nvccHook.name}-leak-singleton";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
-    failed = testBuildFailure (
-      check.overrideAttrs {
-        name = "leak-singleton-inner";
-        valuesArr = [ lib64Dir ];
-        expectedArr = [ ];
-      }
-    );
+    failed = testBuildFailure (check {
+      name = "leak-singleton-inner";
+      valuesArr = [ lib64Dir ];
+      expectedArr = [ ];
+    });
     script = ''
       nixLog "Checking for exit code 1"
       (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
@@ -63,20 +69,18 @@ in
   };
 
   leak-all = runCommand {
-    name = "leak-all";
+    name = "${nvccHook.name}-leak-all";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
-    failed = testBuildFailure (
-      check.overrideAttrs {
-        name = "leak-all-inner";
-        valuesArr = [
-          libDir
-          lib64Dir
-          gccDir
-          ccLibDir
-        ];
-        expectedArr = [ ];
-      }
-    );
+    failed = testBuildFailure (check {
+      name = "leak-all-inner";
+      valuesArr = [
+        libDir
+        lib64Dir
+        gccDir
+        ccLibDir
+      ];
+      expectedArr = [ ];
+    });
     script = ''
       nixLog "Checking for exit code 1"
       (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
@@ -102,22 +106,20 @@ in
   };
 
   leak-between-valid = runCommand {
-    name = "leak-between-valid";
+    name = "${nvccHook.name}-leak-between-valid";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
-    failed = testBuildFailure (
-      check.overrideAttrs {
-        name = "leak-between-valid-inner";
-        valuesArr = [
-          "cat"
-          libDir
-          "bee"
-        ];
-        expectedArr = [
-          "cat"
-          "bee"
-        ];
-      }
-    );
+    failed = testBuildFailure (check {
+      name = "leak-between-valid-inner";
+      valuesArr = [
+        "cat"
+        libDir
+        "bee"
+      ];
+      expectedArr = [
+        "cat"
+        "bee"
+      ];
+    });
     script = ''
       nixLog "Checking for exit code 1"
       (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))

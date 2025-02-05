@@ -11,37 +11,39 @@ let
   inherit (lib.attrsets) optionalAttrs;
   inherit (nvccHook.passthru.substitutions) nvccHostCCMatchesStdenvCC;
   inherit (testers) runCommand testBuildFailure;
+
+  check =
+    drvArgs@{ name, ... }:
+    stdenv.mkDerivation (
+      {
+        __structuredAttrs = true;
+        strictDeps = true;
+        name = "${nvccHook.name}-${name}";
+        src = null;
+        dontUnpack = true;
+        installPhase = "touch $out";
+      }
+      // builtins.removeAttrs drvArgs [ "name" ]
+    );
 in
 # The ordering checks are only relevant when our host compiler is not the same as the standard environment's compiler.
 optionalAttrs (!nvccHostCCMatchesStdenvCC) {
-  no-autoPatchelfHook = stdenv.mkDerivation {
-    __structuredAttrs = true;
-    strictDeps = true;
+  no-autoPatchelfHook = check {
     name = "no-autoPatchelfHook";
-    src = null;
-    dontUnpack = true;
     nativeBuildInputs = [ nvccHook ];
-    installPhase = "touch $out";
   };
 
   before-autoPatchelfHook-no-fixup = runCommand {
-    name = "before-autoPatchelfHook-no-fixup";
+    name = "${nvccHook.name}-before-autoPatchelfHook-no-fixup";
     nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
-    failed = testBuildFailure (
-      stdenv.mkDerivation {
-        __structuredAttrs = true;
-        strictDeps = true;
-        name = "before-autoPatchelfHook-no-fixup";
-        src = null;
-        dontUnpack = true;
-        dontNvccFixHookOrder = true;
-        nativeBuildInputs = [
-          nvccHook
-          autoPatchelfHook
-        ];
-        installPhase = "touch $out";
-      }
-    );
+    failed = testBuildFailure (check {
+      name = "before-autoPatchelfHook-no-fixup-inner";
+      dontNvccFixHookOrder = true;
+      nativeBuildInputs = [
+        nvccHook
+        autoPatchelfHook
+      ];
+    });
     script = ''
       nixLog "Checking for exit code 1"
       (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
@@ -54,29 +56,19 @@ optionalAttrs (!nvccHostCCMatchesStdenvCC) {
     '';
   };
 
-  before-autoPatchelfHook-with-fixup = stdenv.mkDerivation {
-    __structuredAttrs = true;
-    strictDeps = true;
+  before-autoPatchelfHook-with-fixup = check {
     name = "before-autoPatchelfHook-with-fixup";
-    src = null;
-    dontUnpack = true;
     nativeBuildInputs = [
       nvccHook
       autoPatchelfHook
     ];
-    installPhase = "touch $out";
   };
 
-  after-autoPatchelfHook = stdenv.mkDerivation {
-    __structuredAttrs = true;
-    strictDeps = true;
+  after-autoPatchelfHook = check {
     name = "after-autoPatchelfHook";
-    src = null;
-    dontUnpack = true;
     nativeBuildInputs = [
       autoPatchelfHook
       nvccHook
     ];
-    installPhase = "touch $out";
   };
 }
