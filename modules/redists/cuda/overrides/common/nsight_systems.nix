@@ -5,11 +5,13 @@
   e2fsprogs,
   gst_all_1,
   lib,
+  nsight_compute,
   nss,
   numactl,
   pulseaudio,
   qt6Packages,
   rdma-core,
+  stdenv,
   ucx,
   wayland,
   xorg,
@@ -17,7 +19,7 @@
 let
   inherit (lib.attrsets) getOutput;
   inherit (lib.lists) optionals;
-  inherit (lib.strings) versionAtLeast;
+  inherit (lib.strings) versionAtLeast versionOlder;
   inherit (gst_all_1)
     gst-plugins-base
     gstreamer
@@ -104,6 +106,9 @@ in
       rdma-core
       ucx
       wayland
+    ]
+    ++ optionals (versionOlder version "2024" && stdenv.hostPlatform.isAarch64) [
+      nsight_compute.passthru.libtiff_4_4
     ]
     ++ optionals (versionAtLeast version "2024") [
       (getOutput "stubs" cuda_nvml_dev)

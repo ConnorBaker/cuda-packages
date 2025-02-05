@@ -291,6 +291,10 @@ finalAttrs: prevAttrs: {
       fi
     '';
 
+  passthru = prevAttrs.passthru or { } // {
+    inherit libtiff_4_4;
+  };
+
   meta = prevAttrs.meta or { } // {
     mainProgram = "ncu";
   };
