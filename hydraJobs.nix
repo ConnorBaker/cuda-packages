@@ -7,6 +7,7 @@ let
     intersectAttrs
     isAttrs
     isDerivation
+    optionalAttrs
     ;
   inherit (lib.cuda.utils) mkCudaPackagesVersionedName mkRealArchitecture;
   inherit (lib.customisation) hydraJob;
@@ -56,27 +57,6 @@ let
       extras = [ ];
     in
     {
-      # Since the CUDA package sets *depend on* the setup hooks (and not the other way around), it doesn't make sense
-      # to build them for arbitrary prefixes (including variants of `pkgs` with different default CUDA package sets).
-      # However, by using the same name, setup-hooks and setup-hooks-tests under different variants of `pkgs` should
-      # only have different store paths if they have different input derivations, which again, they shouldn't given
-      # they don't depend on CUDA packages.
-      setup-hooks = aggregate {
-        name = "${namePrefix}-pkgs-setup-hooks";
-        meta = {
-          description = "Setup hooks which are non-members of the CUDA package set responsible for basic CUDA package set functionality";
-          maintainers = lib.teams.cuda.members;
-        };
-        constituents = map hydraJob setup-hooks;
-      };
-      setup-hooks-tests = aggregate {
-        name = "${namePrefix}-pkgs-setup-hooks-tests";
-        meta = {
-          description = "Test suites for setup hooks which are non-members of the CUDA package set responsible for basic CUDA package set functionality";
-          maintainers = lib.teams.cuda.members;
-        };
-        constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) setup-hooks;
-      };
       core = aggregate {
         name = "${namePrefix}-pkgs-core";
         meta = {
@@ -93,6 +73,26 @@ let
           maintainers = lib.teams.cuda.members;
         };
         constituents = map hydraJob extras;
+      };
+    }
+    # Since the CUDA package sets *depend on* the setup hooks (and not the other way around), it doesn't make sense
+    # to build them for arbitrary prefixes (including variants of `pkgs` with different default CUDA package sets).
+    // optionalAttrs (pkgs.system == namePrefix) {
+      setup-hooks = aggregate {
+        name = "${namePrefix}-pkgs-setup-hooks";
+        meta = {
+          description = "Setup hooks which are non-members of the CUDA package set responsible for basic CUDA package set functionality";
+          maintainers = lib.teams.cuda.members;
+        };
+        constituents = map hydraJob setup-hooks;
+      };
+      setup-hooks-tests = aggregate {
+        name = "${namePrefix}-pkgs-setup-hooks-tests";
+        meta = {
+          description = "Test suites for setup hooks which are non-members of the CUDA package set responsible for basic CUDA package set functionality";
+          maintainers = lib.teams.cuda.members;
+        };
+        constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) setup-hooks;
       };
     };
 
