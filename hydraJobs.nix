@@ -214,8 +214,8 @@ in
       # Jetson Orin
       ${mkRealArchitecture "8.7"} = {
         # JetPack 5 only supports up to 12.2.2
-        ${mkCudaPackagesVersionedName "12.2.2"} = mkCudaPackagesJobs pkgs "8.9" "12.2.2";
-        # ${mkCudaPackagesVersionedName "12.6.3"} = mkCudaPackagesJobs pkgs "8.9" "12.6.3";
+        ${mkCudaPackagesVersionedName "12.2.2"} = mkCudaPackagesJobs pkgs "8.7" "12.2.2";
+        # ${mkCudaPackagesVersionedName "12.6.3"} = mkCudaPackagesJobs pkgs "8.7" "12.6.3";
       };
       # Ada Lovelace
       # ${mkRealArchitecture "8.9"} = {
