@@ -65,22 +65,38 @@ let
       # is the *default* CUDA package set at the top-level.
       # This saves us from the need to do a (potentially deep) override of any `callPackage` provided arguments to
       # ensure we are not introducing dependencies on CUDA packages from different versions of the package set.
-      pkgs = final.extend (
-        final: _: {
-          # Don't recurse for derivations
-          recurseForDerivations = false;
-          # Don't attempt eval
-          __attrsFailEvaluation = true;
+      # NOTE: We only re-evaluate the fixed point when the three CUDA package set aliases don't match the default CUDA
+      # package set.
+      pkgs =
+        if
+          final.${cudaPackagesMajorMinorVersionName}.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
+          && final.${cudaPackagesMajorVersionName}.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
+          && final.cudaPackages.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
+        then
+          final
+          // {
+            # Don't recurse for derivations
+            recurseForDerivations = false;
+            # Don't attempt eval
+            __attrsFailEvaluation = true;
+          }
+        else
+          final.extend (
+            final: _: {
+              # Don't recurse for derivations
+              recurseForDerivations = false;
+              # Don't attempt eval
+              __attrsFailEvaluation = true;
 
-          # cudaPackages_x_y = cudaPackages_x_y_z
-          ${cudaPackagesMajorMinorVersionName} =
-            final.cudaPackagesVersions.${cudaPackagesMajorMinorPatchVerionName};
-          # cudaPackages_x = cudaPackages_x_y
-          ${cudaPackagesMajorVersionName} = final.${cudaPackagesMajorMinorVersionName};
-          # cudaPackages = cudaPackages_x
-          cudaPackages = final.${cudaPackagesMajorVersionName};
-        }
-      );
+              # cudaPackages_x_y = cudaPackages_x_y_z
+              ${cudaPackagesMajorMinorVersionName} =
+                final.cudaPackagesVersions.${cudaPackagesMajorMinorPatchVerionName};
+              # cudaPackages_x = cudaPackages_x_y
+              ${cudaPackagesMajorVersionName} = final.${cudaPackagesMajorMinorVersionName};
+              # cudaPackages = cudaPackages_x
+              cudaPackages = final.${cudaPackagesMajorVersionName};
+            }
+          );
 
       # TODO: All of these except newScope and cudaPackagesExtensions are invariant with respect to the default CUDA
       # packages version.
