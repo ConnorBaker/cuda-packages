@@ -3,8 +3,6 @@
 # Only run the hook from nativeBuildInputs
 # shellcheck disable=SC2154
 if ((hostOffset == -1 && targetOffset == 0)); then
-  # shellcheck disable=SC1091
-  source @nixLogWithLevelAndFunctionNameHook@
   nixLog "sourcing nvcc-hook.sh"
 else
   return 0

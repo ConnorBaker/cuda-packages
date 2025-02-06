@@ -4,7 +4,6 @@
   cudaConfig,
   lib,
   makeSetupHook,
-  nixLogWithLevelAndFunctionNameHook,
 }:
 let
   inherit (cudaConfig) hostRedistArch;
@@ -17,15 +16,7 @@ let
   finalAttrs = {
     name = "cuda-hook";
 
-    propagatedBuildInputs = [
-      # We add a hook to replace the standard logging functions.
-      nixLogWithLevelAndFunctionNameHook
-    ];
-
-    substitutions = {
-      nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
-      cudaHook = placeholder "out";
-    };
+    substitutions.cudaHook = placeholder "out";
 
     passthru.badPlatformsConditions = {
       "CUDA support is not enabled" = !config.cudaSupport;

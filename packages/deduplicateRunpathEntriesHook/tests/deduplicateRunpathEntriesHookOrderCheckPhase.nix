@@ -2,7 +2,6 @@
 {
   autoAddDriverRunpath,
   deduplicateRunpathEntriesHook,
-  nixLogWithLevelAndFunctionNameHook,
   stdenv,
   testers,
 }:
@@ -20,7 +19,6 @@ in
 
   before-autoAddDriverRunpath-no-fixup = runCommand {
     name = "before-autoAddDriverRunpath-no-fixup";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       stdenv.mkDerivation {
         name = "before-autoAddDriverRunpath-no-fixup";

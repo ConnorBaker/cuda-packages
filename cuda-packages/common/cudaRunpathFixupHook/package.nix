@@ -10,7 +10,6 @@
   flags,
   lib,
   makeSetupHook,
-  nixLogWithLevelAndFunctionNameHook,
 }:
 let
   inherit (cudaConfig) hostRedistArch;
@@ -29,8 +28,6 @@ let
       # Used in the setup hook
       autoFixElfFiles
       arrayUtilitiesHook
-      # We add a hook to replace the standard logging functions.
-      nixLogWithLevelAndFunctionNameHook
     ];
 
     substitutions = {
@@ -40,7 +37,6 @@ let
       # The stubs are symlinked from lib/stubs into lib so autoPatchelf can find them.
       cudaStubLibDir = "${cuda_cudart.stubs.outPath}/lib";
       driverLibDir = "${addDriverRunpath.driverLink}/lib";
-      nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
     };
 
     passthru = {

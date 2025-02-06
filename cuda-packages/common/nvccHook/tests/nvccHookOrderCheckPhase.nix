@@ -2,7 +2,6 @@
 {
   autoPatchelfHook,
   lib,
-  nixLogWithLevelAndFunctionNameHook,
   nvccHook,
   stdenv,
   testers,
@@ -35,7 +34,6 @@ optionalAttrs (!nvccHostCCMatchesStdenvCC) {
 
   before-autoPatchelfHook-no-fixup = runCommand {
     name = "${nvccHook.name}-before-autoPatchelfHook-no-fixup";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (check {
       name = "before-autoPatchelfHook-no-fixup-inner";
       dontNvccFixHookOrder = true;

@@ -1,6 +1,5 @@
 {
   lib,
-  nixLogWithLevelAndFunctionNameHook,
   stdenv,
 }:
 let
@@ -59,7 +58,6 @@ stdenv.mkDerivation (finalAttrs: {
     '';
 
   nativeBuildInputs = [
-    nixLogWithLevelAndFunctionNameHook
     ./assert-arrays-are-equal.sh
     ./assert-maps-are-equal.sh
   ];

@@ -7,7 +7,6 @@
   gtest,
   lib,
   nbval,
-  nixLogWithLevelAndFunctionNameHook, # TODO: Remove when it lands in `master`
   numpy,
   parameterized,
   patchelf,
@@ -84,7 +83,6 @@ let
     nativeBuildInputs = [
       abseil-cpp
       cppProtobuf
-      nixLogWithLevelAndFunctionNameHook
       pybind11
     ];
 

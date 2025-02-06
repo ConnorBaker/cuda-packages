@@ -1,8 +1,6 @@
 # shellcheck shell=bash
 
 if (("${cudaDontSetUccConfigFile:-0}" == 0)); then
-  # shellcheck disable=SC1091
-  source @nixLogWithLevelAndFunctionNameHook@
   nixLog "sourcing set-ucc-config-file-hook.sh"
 else
   return 0

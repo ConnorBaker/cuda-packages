@@ -698,7 +698,6 @@ in
   # TODO(@connorbaker):
   # - Aliases for backendStdenv, backendStdenv.cc.
   # - Remove stdenv = cudaStdenv and update comment for __structuredAttrs = false.
-  # - Don't propagate nixLogWithLevelAndFunctionHook or noBrokenSymlinksHook.
   # Manual definition of callPackage which will set certain attributes for us within the package set.
   # Definition comes from the implementation of lib.customisation.makeScope:
   # https://github.com/NixOS/nixpkgs/blob/9f4fd5626d7aa9a376352fc244600c894b5a0c79/lib/customisation.nix#L608
@@ -710,8 +709,6 @@ in
         inherit (finalCudaPackages) cudaNamePrefix;
         inherit (finalCudaPackages.pkgs)
           deduplicateRunpathEntriesHook
-          nixLogWithLevelAndFunctionNameHook
-          noBrokenSymlinksHook
           ;
       };
     in
@@ -729,8 +726,6 @@ in
     {
       cudaNamePrefix,
       deduplicateRunpathEntriesHook,
-      nixLogWithLevelAndFunctionNameHook,
-      noBrokenSymlinksHook,
     }:
     let
       conditionallyAddHooks =
@@ -739,14 +734,6 @@ in
           prevDepList = prevAttrs.${depListName} or [ ];
         in
         prevDepList
-        # We add a hook to replace the standard logging functions.
-        ++ optionals (!(elem nixLogWithLevelAndFunctionNameHook prevDepList)) [
-          nixLogWithLevelAndFunctionNameHook
-        ]
-        # We add a hook to make sure we're not propagating broken symlinks.
-        ++ optionals (!(elem noBrokenSymlinksHook prevDepList)) [
-          noBrokenSymlinksHook
-        ]
         # We add a hook to deduplicate runpath entries.
         ++ optionals (!(elem deduplicateRunpathEntriesHook prevDepList)) [
           deduplicateRunpathEntriesHook

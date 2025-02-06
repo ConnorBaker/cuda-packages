@@ -2,7 +2,6 @@
 {
   arrayUtilitiesHook,
   mkCheckExpectedArrayAndMap,
-  nixLogWithLevelAndFunctionNameHook,
   testers,
 }:
 let
@@ -59,7 +58,6 @@ in
   };
   failMissingKeyWithEmpty = runCommand {
     name = "failMissingKeyWithEmpty";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       check.overrideAttrs {
         name = "failMissingKeyWithEmptyInner";
@@ -85,7 +83,6 @@ in
 
   failIncorrectFrequency = runCommand {
     name = "failIncorrectFrequency";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       check.overrideAttrs {
         name = "failIncorrectFrequencyInner";
@@ -114,7 +111,6 @@ in
 
   failMissingKeyWithNonEmpty = runCommand {
     name = "failMissingKeyWithNonEmpty";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       check.overrideAttrs {
         name = "failMissingKeyWithNonEmptyInner";
@@ -147,7 +143,6 @@ in
 
   failFirstArgumentIsString = runCommand {
     name = "failFirstArgumentIsString";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       check.overrideAttrs {
         name = "failFirstArgumentIsStringInner";
@@ -169,7 +164,6 @@ in
 
   failFirstArgumentIsMap = runCommand {
     name = "failFirstArgumentIsMap";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       check.overrideAttrs {
         name = "failFirstArgumentIsMapInner";
@@ -191,7 +185,6 @@ in
 
   failSecondArgumentIsArray = runCommand {
     name = "failSecondArgumentIsArray";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       check.overrideAttrs (prevAttrs: {
         name = "failSecondArgumentIsArrayInner";
@@ -220,7 +213,6 @@ in
 
   failSecondArgumentIsString = runCommand {
     name = "failSecondArgumentIsString";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       check.overrideAttrs (prevAttrs: {
         name = "failSecondArgumentIsStringInner";

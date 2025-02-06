@@ -100,8 +100,6 @@ let
       overrideAttrsDefaultsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
         inherit (pkgs)
           deduplicateRunpathEntriesHook
-          nixLogWithLevelAndFunctionNameHook
-          noBrokenSymlinksHook
           ;
         inherit cudaNamePrefix;
       };

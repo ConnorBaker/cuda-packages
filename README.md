@@ -22,7 +22,6 @@ Top-level:
   - Prefix is available as `cudaPackages.cudaNamePrefix`.
 - Manifests and overrides are versioned
   - This prevents conflicts when downstream consumers add their own manifests and overrides.
-- `noBrokenSymlinksHook` checks for broken or reflexive symlinks in your outputs, which are usually a sign of packaging gone wrong
 - `12.2.2` is kept around because it is the last version of CUDA 12 supported by Xavier through `cuda_compat`
   - _DO NOT_ rely on it being around forever -- try to upgrade to newer hardware!
 - `cuda_compat` can be disabled by setting the package to `null`. This is useful in cases where the host OS has a recent enough CUDA driver that the compatibility library isn't needed.

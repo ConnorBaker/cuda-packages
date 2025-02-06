@@ -1,7 +1,6 @@
 # NOTE: Tests related to occursOnlyOrBeforeInArray go here.
 {
   arrayUtilitiesHook,
-  nixLogWithLevelAndFunctionNameHook,
   testers,
 }:
 let
@@ -26,7 +25,6 @@ let
       strictDeps = true;
       __structuredAttrs = true;
       nativeBuildInputs = [
-        nixLogWithLevelAndFunctionNameHook
         arrayUtilitiesHook
       ];
       script = ''

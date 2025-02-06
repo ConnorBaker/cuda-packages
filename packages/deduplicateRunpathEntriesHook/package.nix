@@ -4,7 +4,6 @@
   callPackages,
   lib,
   makeSetupHook,
-  nixLogWithLevelAndFunctionNameHook,
   patchelf,
 }:
 makeSetupHook {
@@ -14,12 +13,9 @@ makeSetupHook {
     arrayUtilitiesHook
     # Used in the setup hook
     autoFixElfFiles
-    # We add a hook to replace the standard logging functions.
-    nixLogWithLevelAndFunctionNameHook
     # Use in the setup hook
     patchelf
   ];
-  substitutions.nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
   passthru.tests = {
     deduplicateRunpathEntries = callPackages ./tests/deduplicateRunpathEntries.nix { };
     deduplicateRunpathEntriesHookOrderCheckPhase =

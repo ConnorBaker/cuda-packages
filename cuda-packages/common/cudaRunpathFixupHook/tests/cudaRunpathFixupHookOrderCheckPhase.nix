@@ -2,7 +2,6 @@
 {
   autoAddDriverRunpath,
   autoPatchelfHook,
-  nixLogWithLevelAndFunctionNameHook,
   cudaRunpathFixupHook,
   stdenv,
   testers,
@@ -32,7 +31,6 @@ in
 
   before-autoPatchelfHook-no-fixup = runCommand {
     name = "${cudaRunpathFixupHook.name}-before-autoPatchelfHook-no-fixup";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (check {
       name = "before-autoPatchelfHook-no-fixup-inner";
       dontCudaRunpathFixHookOrder = true;
@@ -76,7 +74,6 @@ in
 
   before-autoAddDriverRunpath-no-fixup = runCommand {
     name = "${cudaRunpathFixupHook.name}-before-autoAddDriverRunpath-no-fixup";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (check {
       name = "before-autoAddDriverRunpath-no-fixup-inner";
       dontCudaRunpathFixHookOrder = true;

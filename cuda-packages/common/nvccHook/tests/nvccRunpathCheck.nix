@@ -1,6 +1,5 @@
 # NOTE: Tests for nvccRunpathCheck go here.
 {
-  nixLogWithLevelAndFunctionNameHook,
   mkCheckExpectedRunpath,
   nvccHook,
   testers,
@@ -50,7 +49,6 @@ in
 
   leak-singleton = runCommand {
     name = "${nvccHook.name}-leak-singleton";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (check {
       name = "leak-singleton-inner";
       valuesArr = [ lib64Dir ];
@@ -70,7 +68,6 @@ in
 
   leak-all = runCommand {
     name = "${nvccHook.name}-leak-all";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (check {
       name = "leak-all-inner";
       valuesArr = [
@@ -107,7 +104,6 @@ in
 
   leak-between-valid = runCommand {
     name = "${nvccHook.name}-leak-between-valid";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (check {
       name = "leak-between-valid-inner";
       valuesArr = [

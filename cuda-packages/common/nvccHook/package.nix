@@ -8,7 +8,6 @@
   flags,
   lib,
   makeSetupHook,
-  nixLogWithLevelAndFunctionNameHook,
   stdenv,
 }:
 let
@@ -30,8 +29,6 @@ let
       # Used in the setup hook
       autoFixElfFiles
       arrayUtilitiesHook
-      # We add a hook to replace the standard logging functions.
-      nixLogWithLevelAndFunctionNameHook
     ];
 
     # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
@@ -42,7 +39,6 @@ let
       nvccHostCCMatchesStdenvCC = cc == stdenv.cc;
       cudaArchs = cmakeCudaArchitecturesString;
       hostPlatformConfig = hostPlatform.config;
-      nixLogWithLevelAndFunctionNameHook = "${nixLogWithLevelAndFunctionNameHook}/nix-support/setup-hook";
       unwrappedCCRoot = cc.cc.outPath;
       unwrappedCCLibRoot = cc.cc.lib.outPath;
     };

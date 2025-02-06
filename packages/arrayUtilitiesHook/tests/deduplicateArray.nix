@@ -2,7 +2,6 @@
 {
   arrayUtilitiesHook,
   mkCheckExpectedArrayAndMap,
-  nixLogWithLevelAndFunctionNameHook,
   testers,
 }:
 let
@@ -94,7 +93,6 @@ in
   };
   failNoDeduplication = runCommand {
     name = "failNoDeduplication";
-    nativeBuildInputs = [ nixLogWithLevelAndFunctionNameHook ];
     failed = testBuildFailure (
       check.overrideAttrs {
         name = "failNoDeduplicationInner";
