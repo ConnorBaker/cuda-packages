@@ -1,6 +1,5 @@
 {
   cuda_cudart,
-  onnx-tensorrt,
   python3,
   writeShellApplication,
 }:
@@ -13,7 +12,7 @@ writeShellApplication {
   runtimeInputs = [
     cuda_cudart
     (python3.withPackages (ps: [
-      onnx-tensorrt
+      ps.onnx-tensorrt
       ps.pytest
       ps.six
     ]))
@@ -21,7 +20,7 @@ writeShellApplication {
   text = ''
     args=(
       python3
-      "${onnx-tensorrt.test_script}/onnx_backend_test.py"
+      "${python3.pkgs.onnx-tensorrt.test_script}/onnx_backend_test.py"
     )
 
     if (( $# != 0 ))

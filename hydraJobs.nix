@@ -19,6 +19,7 @@ let
     ;
   inherit (lib.strings) hasSuffix;
   inherit (lib.trivial) pipe;
+  inherit (lib.upstreamable.attrsets) flattenDrvTree;
 
   getPassthruTests =
     let
@@ -171,6 +172,8 @@ let
         ];
 
       extras = [ ];
+
+      all = attrValues (flattenDrvTree cudaPackages);
     in
     {
       setup-hooks = aggregate {
@@ -212,6 +215,19 @@ let
           maintainers = lib.teams.cuda.members;
         };
         constituents = map hydraJob extras;
+      };
+      # NOTE: The `all` job is helpful for keeping an eye on total package set closure size. Additionally, having a
+      # single closure for the entire package set lets us more easily debug and troubleshoot mishaps where members of
+      # the package set bring in (perhaps transitively) packages which depend on different versions of the package set!
+      # e.g.,
+      # nix why-depends --derivation .#hydraJobs.x86_64-linux.sm_89.cudaPackages_12_2_2.all /nix/store/17nqxa9fdv3kfyrl7yd8vkfqd0zd67rl-cuda12.6-cuda_cccl-12.6.77.drv
+      all = aggregate {
+        name = "${namePrefix}-all";
+        meta = {
+          description = "All members of the CUDA package set, including their tests";
+          maintainers = lib.teams.cuda.members;
+        };
+        constituents = map hydraJob all ++ concatMap (pkg: map hydraJob (getPassthruTests pkg)) all;
       };
 
       # Tests for pkgs using a different global version of the CUDA package set

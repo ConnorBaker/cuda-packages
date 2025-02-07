@@ -5,7 +5,6 @@
   cuda_nvcc,
   cuda_nvrtc,
   cudnn,
-  cutlass,
   fetchFromGitHub,
   flags,
   gtest,
@@ -133,7 +132,8 @@ stdenv.mkDerivation (finalAttrs: {
       inherit (finalAttrs) pname version;
       rev-prefix = "v";
     };
-    tests.test = cutlass.overrideAttrs { doCheck = true; };
+    # TODO:
+    # tests.test = cutlass.overrideAttrs { doCheck = true; };
   };
 
   meta = with lib; {

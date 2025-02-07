@@ -1,9 +1,18 @@
 { lib }:
 let
-  inherit (builtins) deepSeq tryEval;
+  inherit (builtins)
+    deepSeq
+    genericClosure
+    getContext
+    tryEval
+    typeOf
+    unsafeDiscardStringContext
+    ;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets)
     attrNames
+    attrValues
+    catAttrs
     getAttr
     getAttrFromPath
     hasAttr
@@ -21,7 +30,7 @@ let
     last
     map
     ;
-  inherit (lib.trivial) pipe;
+  inherit (lib.trivial) const pipe;
   inherit (lib.upstreamable.attrsets)
     attrPaths
     flattenAttrs
@@ -241,4 +250,47 @@ in
     ```
   */
   flattenDrvTree = flattenAttrs drvAttrPathsStrategy;
+
+  # TODO: Docs
+  collectDepsRecursive =
+    let
+      mkItem = dep: {
+        # String interpolation is easier than dep.outPath with a fallback to "${dep}" in the case of a path or string with context.
+        key = unsafeDiscardStringContext "${dep}";
+        inherit dep;
+      };
+
+      # listStrategy :: List Any -> List (Derivation | Path)
+      listStrategy = concatMap getDepsFromValueSingleStep;
+      # Attribute names can't be paths or strings with context.
+      # setStrategy :: Attrs Any -> List (Derivation | Path)
+      setStrategy = attrs: if isDerivation attrs then [ attrs ] else listStrategy (attrValues attrs);
+      # stringStrategy :: String -> List Path
+      stringStrategy = string: attrNames (getContext string);
+      # pathStrategy :: Path -> List Path
+      pathStrategy = path: [ path ];
+      # fallbackStrategy :: a -> List (Derivation | Path)
+      fallbackStrategy = const [ ];
+
+      strategies = {
+        list = listStrategy;
+        set = setStrategy;
+        string = stringStrategy;
+        path = pathStrategy;
+      };
+
+      # getDrvsFromValueSingleStep :: a -> List (Derivation | Path)
+      # type :: "int" | "bool" | "string" | "path" | "null" | "set" | "list" | "lambda" | "float"
+      getDepsFromValueSingleStep = value: (strategies.${typeOf value} or fallbackStrategy) value;
+    in
+    drvs:
+    catAttrs "dep" (genericClosure {
+      startSet = map mkItem drvs;
+      # If we don't have drvAttrs then it's not a derivation produced by mkDerivation and we can just return
+      # since there's no further processing we can do.
+      # NOTE: Processing drvAttrs is safer than trying to process the attribute set resulting from mkDerivation.
+      operator =
+        item:
+        if item.dep ? drvAttrs then map mkItem (getDepsFromValueSingleStep item.dep.drvAttrs) else [ ];
+    });
 }
