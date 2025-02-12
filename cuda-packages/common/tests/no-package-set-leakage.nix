@@ -1,4 +1,5 @@
 {
+  cudaLib,
   cudaNamePrefix,
   cudaPackages,
   lib,
@@ -6,6 +7,7 @@
 }:
 let
   inherit (builtins) unsafeDiscardStringContext;
+  inherit (cudaLib.utils) collectDepsRecursive flattenDrvTree;
   inherit (lib.attrsets)
     attrValues
     getOutput
@@ -21,7 +23,6 @@ let
     ;
   inherit (lib.strings) match;
   inherit (lib.trivial) flip pipe;
-  inherit (lib.upstreamable.attrsets) collectDepsRecursive flattenDrvTree;
 
   # Make sure to get all the outputs, not just the default one, to avoid leaks slipping through.
   getOutputs = drv: map (flip getOutput drv) drv.outputs or [ "out" ];

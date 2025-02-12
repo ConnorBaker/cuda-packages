@@ -1,6 +1,10 @@
-{ lib, nixpkgsInstances }:
-
+{
+  cudaLib,
+  lib,
+  nixpkgsInstances,
+}:
 let
+  inherit (cudaLib.utils) flattenDrvTree mkCudaPackagesVersionedName mkRealArchitecture;
   inherit (lib.attrsets)
     attrNames
     attrValues
@@ -9,7 +13,6 @@ let
     isDerivation
     optionalAttrs
     ;
-  inherit (lib.cuda.utils) mkCudaPackagesVersionedName mkRealArchitecture;
   inherit (lib.customisation) hydraJob;
   inherit (lib.lists)
     concatMap
@@ -19,7 +22,6 @@ let
     ;
   inherit (lib.strings) hasSuffix;
   inherit (lib.trivial) pipe;
-  inherit (lib.upstreamable.attrsets) flattenDrvTree;
 
   getPassthruTests =
     let

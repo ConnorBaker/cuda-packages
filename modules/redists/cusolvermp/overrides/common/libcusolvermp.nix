@@ -1,13 +1,14 @@
 {
   cuda_cudart,
+  cudaLib,
   lib,
   libcal ? null,
   libcublas,
   libcusolver,
 }:
 let
+  inherit (cudaLib.utils) mkMissingPackagesBadPlatformsConditions;
   inherit (lib.attrsets) recursiveUpdate;
-  inherit (lib.cuda.utils) mkMissingPackagesBadPlatformsConditions;
 in
 prevAttrs: {
   buildInputs = prevAttrs.buildInputs or [ ] ++ [

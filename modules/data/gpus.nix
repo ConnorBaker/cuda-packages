@@ -1,6 +1,6 @@
-{ lib, ... }:
+{ cudaLib, lib, ... }:
 let
-  inherit (lib.cuda.types) attrs cudaCapability gpuInfo;
+  inherit (cudaLib.types) attrs cudaCapability gpuInfo;
   inherit (lib.options) mkOption;
 in
 {

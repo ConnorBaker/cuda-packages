@@ -2,6 +2,7 @@
   boost,
   buildPythonPackage,
   config,
+  cudaLib,
   cudaPackages,
   cudaSupport ? config.cudaSupport,
   fetchFromGitHub,
@@ -15,6 +16,7 @@
   wheel,
 }:
 let
+  inherit (cudaLib.utils) dropDots;
   inherit (cudaPackages)
     cuda_cudart
     cuda_nvcc
@@ -22,7 +24,6 @@ let
     libcurand
     ;
   inherit (lib) licenses maintainers teams;
-  inherit (lib.cuda.utils) dropDots;
   inherit (lib.versions) majorMinor;
 
   compyteSrc = fetchFromGitHub {

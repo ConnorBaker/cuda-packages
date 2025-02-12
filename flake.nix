@@ -19,8 +19,9 @@
     inputs:
     let
       inherit (inputs.flake-parts.lib) mkFlake;
-      lib = import ./lib { inherit (inputs.nixpkgs) lib; };
+      inherit (inputs.nixpkgs) lib;
       inherit (lib.attrsets) genAttrs;
+      cudaLib = import ./cuda-lib { inherit lib; };
       systems = [
         "aarch64-linux"
         "x86_64-linux"
@@ -52,12 +53,11 @@
       ];
 
       flake = {
-        cuda-lib = lib.cuda;
-        upstreamable-lib = lib.upstreamable;
+        inherit cudaLib;
         overlays.default = import ./overlay.nix;
         # NOTE: Unlike other flake attributes, hydraJobs is indexed by jobset name and *then* system name.
         hydraJobs = import ./hydraJobs.nix {
-          inherit lib nixpkgsInstances;
+          inherit cudaLib lib nixpkgsInstances;
         };
       };
 

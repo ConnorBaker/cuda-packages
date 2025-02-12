@@ -2,6 +2,7 @@
   boost178,
   cuda_cudart,
   cuda_nvml_dev,
+  cudaLib,
   e2fsprogs,
   gst_all_1,
   lib,
@@ -17,13 +18,14 @@
   xorg,
 }:
 let
-  inherit (lib.attrsets) getOutput;
-  inherit (lib.lists) optionals;
-  inherit (lib.strings) versionAtLeast versionOlder;
+  inherit (cudaLib.utils) majorMinorPatch;
   inherit (gst_all_1)
     gst-plugins-base
     gstreamer
     ;
+  inherit (lib.attrsets) getOutput;
+  inherit (lib.lists) optionals;
+  inherit (lib.strings) versionAtLeast versionOlder;
   inherit (qt6Packages)
     qtbase
     qtdeclarative
@@ -118,7 +120,7 @@ in
     # 1. Move dependencies of nsys, nsys-ui binaries to bin output
     # 2. Fix paths in wrapper scripts
     let
-      majorMinorPatchVersion = lib.cuda.utils.majorMinorPatch version;
+      majorMinorPatchVersion = majorMinorPatch version;
     in
     prevAttrs.postInstall or ""
     # Patch bin output

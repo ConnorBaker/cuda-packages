@@ -1,27 +1,8 @@
 final: prev:
 let
-  lib = import ./lib { inherit (prev) lib; };
-  cudaConfig =
-    (evalModules {
-      modules = [
-        ./modules
-        {
-          cudaCapabilities = final.config.cudaCapabilities or [ ];
-          cudaForwardCompat = final.config.cudaForwardCompat or true;
-          hostNixSystem = final.stdenv.hostPlatform.system;
-        }
-      ] ++ final.cudaModules;
-    }).config;
-
   inherit (builtins) throw;
-  inherit (lib.attrsets)
-    attrNames
-    dontRecurseIntoAttrs
-    mapAttrsToList
-    mergeAttrsList
-    recurseIntoAttrs
-    ;
-  inherit (lib.cuda.utils)
+  inherit (cudaLib.utils)
+    addNameToFetchFromGitLikeArgs
     bimap
     dropDots
     mkCudaPackagesOverrideAttrsDefaultsFn
@@ -30,14 +11,33 @@ let
     mkRealArchitecture
     packagesFromDirectoryRecursive'
     ;
+  inherit (lib.attrsets)
+    attrNames
+    mapAttrsToList
+    mergeAttrsList
+    recurseIntoAttrs
+    ;
   inherit (lib.customisation) callPackagesWith;
   inherit (lib.fixedPoints) composeManyExtensions extends;
   inherit (lib.lists) map;
   inherit (lib.modules) evalModules;
   inherit (lib.strings) versionAtLeast versionOlder;
   inherit (lib.trivial) mapNullable pipe;
-  inherit (lib.upstreamable.trivial) addNameToFetchFromGitLikeArgs;
   inherit (lib.versions) major majorMinor;
+  inherit (prev) lib;
+
+  # We need access to cudaLib constructed with `prev` to avoid falling into the infinite recursion tarpit.
+  cudaLib = import ./cuda-lib { inherit lib; };
+
+  dontRecurseForDerivationsOrEvaluate =
+    attrs:
+    attrs
+    // {
+      # Don't recurse for derivations
+      recurseForDerivations = false;
+      # Don't attempt eval
+      __attrsFailEvaluation = true;
+    };
 
   packageSetBuilder =
     cudaPackagesConfig:
@@ -67,135 +67,17 @@ let
       # ensure we are not introducing dependencies on CUDA packages from different versions of the package set.
       # NOTE: We only re-evaluate the fixed point when the three CUDA package set aliases don't match the default CUDA
       # package set.
-
-      # TODO: TESTING
-
-      # With no change:
-      # pkgs = final // {
-      #   # Don't recurse for derivations
-      #   recurseForDerivations = false;
-      #   # Don't attempt eval
-      #   __attrsFailEvaluation = true;
-      # };
-      # $ nexpr derivation show --recursive .#legacyPackages.x86_64-linux.cudaPackages_12_2.libcal | jq '[.[].inputDrvs | keys[] | select(contains("-cuda"))] | unique'
-      # [
-      #   "/nix/store/17nqxa9fdv3kfyrl7yd8vkfqd0zd67rl-cuda12.6-cuda_cccl-12.6.77.drv",
-      #   "/nix/store/ihs8ymkgz2vlxmn028l61byc6hvnhd4c-cuda12.6-cuda_cudart-12.6.77.drv",
-      #   "/nix/store/kimzjv1jdbxqgl7pzhnr13h6hyhd18k8-cuda12.6-cuda_nvml_dev-12.6.77.drv",
-      #   "/nix/store/nygvaz7w3b978i5xj6vlgfyblag00y82-cuda12.6-cuda-runpath-fixup-hook.drv",
-      #   "/nix/store/rlalb3d98h4g01wwxag29a0c8i16jxhs-cuda12.6-nccl-2.24.3-1.drv",
-      #   "/nix/store/srf0nisckfaamlpnx9zx0cg43qw89lyf-cuda12.6-cuda-hook.drv",
-      #   "/nix/store/vl01gkrqxh56rmdmxvz2h62yp9lpcsvh-cuda12.6-mark-for-cudatoolkit-root-hook.drv",
-      #   "/nix/store/x7p6ms0wxa8c5y5jvw5vag6fsbszg8z8-cuda12.6-nvcc-hook.drv",
-      #   "/nix/store/z8jyii6sfkjx4c39mz1y6wsdzbkgbkix-cuda12.6-cuda_nvcc-12.6.85.drv"
-      # ]
-
-      # With attribute set replacement:
-      # pkgs =
-      #   final
-      #   // {
-      #     # Don't recurse for derivations
-      #     recurseForDerivations = false;
-      #     # Don't attempt eval
-      #     __attrsFailEvaluation = true;
-      #   }
-      #   // (
-      #     if
-      #       final.${cudaPackagesMajorMinorVersionName}.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
-      #       && final.${cudaPackagesMajorVersionName}.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
-      #       && final.cudaPackages.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
-      #     then
-      #       { }
-      #     else
-      #       {
-      #         # cudaPackages_x_y = cudaPackages_x_y_z
-      #         ${cudaPackagesMajorMinorVersionName} =
-      #           final.cudaPackagesVersions.${cudaPackagesMajorMinorPatchVerionName};
-      #         # cudaPackages_x = cudaPackages_x_y
-      #         ${cudaPackagesMajorVersionName} = final.${cudaPackagesMajorMinorVersionName};
-      #         # cudaPackages = cudaPackages_x
-      #         cudaPackages = final.${cudaPackagesMajorVersionName};
-      #       }
-      #   );
-      # $ nexpr derivation show --recursive .#legacyPackages.x86_64-linux.cudaPackages_12_2.libcal | jq '[.[].inputDrvs | keys[] | select(contains("-cuda"))] | unique'
-      # [
-      #   "/nix/store/17nqxa9fdv3kfyrl7yd8vkfqd0zd67rl-cuda12.6-cuda_cccl-12.6.77.drv",
-      #   "/nix/store/ihs8ymkgz2vlxmn028l61byc6hvnhd4c-cuda12.6-cuda_cudart-12.6.77.drv",
-      #   "/nix/store/kimzjv1jdbxqgl7pzhnr13h6hyhd18k8-cuda12.6-cuda_nvml_dev-12.6.77.drv",
-      #   "/nix/store/nygvaz7w3b978i5xj6vlgfyblag00y82-cuda12.6-cuda-runpath-fixup-hook.drv",
-      #   "/nix/store/rlalb3d98h4g01wwxag29a0c8i16jxhs-cuda12.6-nccl-2.24.3-1.drv",
-      #   "/nix/store/srf0nisckfaamlpnx9zx0cg43qw89lyf-cuda12.6-cuda-hook.drv",
-      #   "/nix/store/vl01gkrqxh56rmdmxvz2h62yp9lpcsvh-cuda12.6-mark-for-cudatoolkit-root-hook.drv",
-      #   "/nix/store/x7p6ms0wxa8c5y5jvw5vag6fsbszg8z8-cuda12.6-nvcc-hook.drv",
-      #   "/nix/store/z8jyii6sfkjx4c39mz1y6wsdzbkgbkix-cuda12.6-cuda_nvcc-12.6.85.drv"
-      # ]
-
-      # With updating `overlays`:
-      # pkgs =
-      #   final
-      #   // {
-      #     # Don't recurse for derivations
-      #     recurseForDerivations = false;
-      #     # Don't attempt eval
-      #     __attrsFailEvaluation = true;
-      #   }
-      #   // (
-      #     if
-      #       final.${cudaPackagesMajorMinorVersionName}.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
-      #       && final.${cudaPackagesMajorVersionName}.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
-      #       && final.cudaPackages.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
-      #     then
-      #       { }
-      #     else
-      #       {
-      #         overlays = final.overlays or [ ] ++ [
-      #           (final: _: {
-      #             # cudaPackages_x_y = cudaPackages_x_y_z
-      #             ${cudaPackagesMajorMinorVersionName} =
-      #               final.cudaPackagesVersions.${cudaPackagesMajorMinorPatchVerionName};
-      #             # cudaPackages_x = cudaPackages_x_y
-      #             ${cudaPackagesMajorVersionName} = final.${cudaPackagesMajorMinorVersionName};
-      #             # cudaPackages = cudaPackages_x
-      #             cudaPackages = final.${cudaPackagesMajorVersionName};
-      #           })
-      #         ];
-      #       }
-      #   );
-      # $ nexpr derivation show --recursive .#legacyPackages.x86_64-linux.cudaPackages_12_2.libcal | jq '[.[].inputDrvs | keys[] | select(contains("-cuda"))] | unique'
-      # [
-      #   "/nix/store/17nqxa9fdv3kfyrl7yd8vkfqd0zd67rl-cuda12.6-cuda_cccl-12.6.77.drv",
-      #   "/nix/store/ihs8ymkgz2vlxmn028l61byc6hvnhd4c-cuda12.6-cuda_cudart-12.6.77.drv",
-      #   "/nix/store/kimzjv1jdbxqgl7pzhnr13h6hyhd18k8-cuda12.6-cuda_nvml_dev-12.6.77.drv",
-      #   "/nix/store/nygvaz7w3b978i5xj6vlgfyblag00y82-cuda12.6-cuda-runpath-fixup-hook.drv",
-      #   "/nix/store/rlalb3d98h4g01wwxag29a0c8i16jxhs-cuda12.6-nccl-2.24.3-1.drv",
-      #   "/nix/store/srf0nisckfaamlpnx9zx0cg43qw89lyf-cuda12.6-cuda-hook.drv",
-      #   "/nix/store/vl01gkrqxh56rmdmxvz2h62yp9lpcsvh-cuda12.6-mark-for-cudatoolkit-root-hook.drv",
-      #   "/nix/store/x7p6ms0wxa8c5y5jvw5vag6fsbszg8z8-cuda12.6-nvcc-hook.drv",
-      #   "/nix/store/z8jyii6sfkjx4c39mz1y6wsdzbkgbkix-cuda12.6-cuda_nvcc-12.6.85.drv"
-      # ]
-
-      # With extend:
       pkgs =
         if
           final.${cudaPackagesMajorMinorVersionName}.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
           && final.${cudaPackagesMajorVersionName}.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
           && final.cudaPackages.cudaMajorMinorPatchVersion == cudaMajorMinorPatchVersion
         then
-          final
-          // {
-            # Don't recurse for derivations
-            recurseForDerivations = false;
-            # Don't attempt eval
-            __attrsFailEvaluation = true;
-          }
+          dontRecurseForDerivationsOrEvaluate final
         else
           final.extend (
-            final: _: {
-              # Don't recurse for derivations
-              recurseForDerivations = false;
-              # Don't attempt eval
-              __attrsFailEvaluation = true;
-
+            final: _:
+            dontRecurseForDerivationsOrEvaluate {
               # cudaPackages_x_y = cudaPackages_x_y_z
               ${cudaPackagesMajorMinorVersionName} =
                 final.cudaPackagesVersions.${cudaPackagesMajorMinorPatchVerionName};
@@ -205,18 +87,6 @@ let
               cudaPackages = final.${cudaPackagesMajorVersionName};
             }
           );
-      # $ nexpr derivation show --recursive .#legacyPackages.x86_64-linux.cudaPackages_12_2.libcal | jq '[.[].inputDrvs | keys[] | select(contains("-cuda"))] | unique'
-      # [
-      #   "/nix/store/17hfsp87npgdmq8hqkyg9jwqr9rf5038-cuda12.2-cuda_cccl-12.2.140.drv",
-      #   "/nix/store/f0sg3cs00p7clw5dmymds857z122yj9h-cuda12.2-cuda_nvml_dev-12.2.140.drv",
-      #   "/nix/store/g5say7s2s2yi6a3w121m34609x2i5i8w-cuda12.2-nccl-2.24.3-1.drv",
-      #   "/nix/store/k5b36xgxyd7pwnqddxjnvf64cfjdhzxp-cuda12.2-cuda-hook.drv",
-      #   "/nix/store/r0zhbmjb6x16pcg69bdkgpmcr1m7b899-cuda12.2-cuda_nvcc-12.2.140.drv",
-      #   "/nix/store/r2sgkx3q4v1s289jfjk2m2rxav6ls322-cuda12.2-cuda-runpath-fixup-hook.drv",
-      #   "/nix/store/x4hi68z3ka99xyhnvgkawg2nxl2xz7hx-cuda12.2-cuda_cudart-12.2.140.drv",
-      #   "/nix/store/y6i2y7f39gcp22qx1szqaqw49vkqi27s-cuda12.2-mark-for-cudatoolkit-root-hook.drv",
-      #   "/nix/store/ykynkc3r21zgv1cirn4z6yb18dgz1hb2-cuda12.2-nvcc-hook.drv"
-      # ]
 
       # TODO: All of these except newScope and cudaPackagesExtensions are invariant with respect to the default CUDA
       # packages version.
@@ -251,14 +121,10 @@ let
 
               inherit pkgs;
 
-              cudaPackages = dontRecurseIntoAttrs finalCudaPackages // {
-                __attrsFailEvaluation = true;
-              };
+              cudaPackages = dontRecurseForDerivationsOrEvaluate finalCudaPackages;
 
               # Introspection
-              cudaPackagesConfig = dontRecurseIntoAttrs cudaPackagesConfig // {
-                __attrsFailEvaluation = true;
-              };
+              cudaPackagesConfig = dontRecurseForDerivationsOrEvaluate cudaPackagesConfig;
 
               # Name prefix
               inherit cudaNamePrefix;
@@ -281,7 +147,7 @@ let
                 cudaComputeCapabilityToName = finalCudaPackages.flags.cudaCapabilityToName;
                 dropDot = dropDots;
                 # cudaComputeCapabilityToName = warn "cudaPackages.flags.cudaComputeCapabilityToName is deprecated, use cudaPackages.flags.cudaCapabilityToName instead" cudaCapabilityToName;
-                # dropDot = warn "cudaPackages.flags.dropDot is deprecated, use lib.cuda.utils.dropDots instead" dropDots;
+                # dropDot = warn "cudaPackages.flags.dropDot is deprecated, use cudaLibs.utils.dropDots instead" dropDots;
               };
               cudaFlags = finalCudaPackages.flags;
               # backendStdenv = warn "cudaPackages.backendStdenv has been removed, use stdenv instead" final.stdenv;
@@ -347,12 +213,26 @@ let
 in
 # General configuration
 {
-  inherit lib;
+  # Make sure to use `lib` from `prev` to avoid attribute names (in which attribute sets are strict) depending on the
+  # fixed point, as this causes infinite recursion.
+  cudaLib = dontRecurseForDerivationsOrEvaluate cudaLib;
 
   # For inspecting the results of the module system evaluation.
-  cudaConfig = dontRecurseIntoAttrs cudaConfig // {
-    __attrsFailEvaluation = true;
-  };
+  cudaConfig =
+    dontRecurseForDerivationsOrEvaluate
+      (evalModules {
+        modules = [
+          ./modules
+          {
+            cudaCapabilities = final.config.cudaCapabilities or [ ];
+            cudaForwardCompat = final.config.cudaForwardCompat or true;
+            hostNixSystem = final.stdenv.hostPlatform.system;
+          }
+        ] ++ final.cudaModules;
+        specialArgs = {
+          inherit (final) cudaLib;
+        };
+      }).config;
 
   # For changing the manifests available.
   cudaModules = [ ];
@@ -361,7 +241,9 @@ in
   cudaPackagesExtensions = [ ];
 
   # Versioned package sets
-  cudaPackagesVersions = bimap mkCudaPackagesVersionedName packageSetBuilder cudaConfig.cudaPackages;
+  cudaPackagesVersions =
+    bimap mkCudaPackagesVersionedName packageSetBuilder
+      final.cudaConfig.cudaPackages;
 
   # Package set aliases with a major and minor component are drawn directly from final.cudaPackagesVersions.
   cudaPackages_12_2 = final.cudaPackagesVersions.cudaPackages_12_2_2;
@@ -378,18 +260,15 @@ in
   pkgsCuda = bimap mkRealArchitecture (
     gpuInfo:
     final.extend (
-      _: prev: {
-        # Don't recurse for derivations
-        recurseForDerivations = false;
-        # Don't attempt eval
-        __attrsFailEvaluation = true;
+      _: prev:
+      dontRecurseForDerivationsOrEvaluate {
         # Re-evaluate config
         config = prev.config // {
           cudaCapabilities = [ gpuInfo.cudaCapability ];
         };
       }
     )
-  ) cudaConfig.data.gpus;
+  ) final.cudaConfig.data.gpus;
 
   # Python packages extensions
   pythonPackagesExtensions = prev.pythonPackagesExtensions or [ ] ++ [

@@ -4,6 +4,7 @@
   autoPatchelfHook,
   config,
   cudaConfig,
+  cudaLib,
   cudaMajorMinorVersion,
   cudaMajorMinorPatchVersion,
   cudaRunpathFixupHook,
@@ -15,15 +16,14 @@
 }:
 let
   inherit (cudaConfig) hostRedistArch;
+  inherit (cudaLib.utils) getLibPath;
   inherit (flags) isJetsonBuild;
   inherit (lib)
     licenses
     sourceTypes
     teams
     ;
-
   inherit (lib.attrsets) attrValues optionalAttrs;
-  inherit (lib.cuda.utils) getLibPath;
   inherit (lib.lists)
     any
     elem

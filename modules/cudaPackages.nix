@@ -1,15 +1,16 @@
 {
   config,
+  cudaLib,
   lib,
   ...
 }:
 let
-  inherit (lib.cuda.types)
+  inherit (cudaLib.types)
     attrs
     cudaPackagesConfig
     majorMinorPatchVersion
     ;
-  inherit (lib.cuda.utils)
+  inherit (cudaLib.utils)
     collectPackageConfigsForCudaVersion
     mkOptionsModule
     ;

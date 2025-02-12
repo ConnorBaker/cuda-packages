@@ -1,11 +1,12 @@
 {
+  cudaLib,
   lib,
   libcal ? null,
   libcublas,
 }:
 let
+  inherit (cudaLib.utils) mkMissingPackagesBadPlatformsConditions;
   inherit (lib.attrsets) recursiveUpdate;
-  inherit (lib.cuda.utils) mkMissingPackagesBadPlatformsConditions;
 in
 prevAttrs: {
   # TODO: Looks like the minimum supported capability is 7.0 as of the latest:

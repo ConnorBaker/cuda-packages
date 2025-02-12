@@ -1,14 +1,15 @@
 {
   config,
+  cudaLib,
   lib,
   ...
 }:
 let
-  inherit (lib.cuda.types)
+  inherit (cudaLib.types)
     cudaCapability
     redistArch
     ;
-  inherit (lib.cuda.utils)
+  inherit (cudaLib.utils)
     getJetsonTargets
     getRedistArch
     mkOptions

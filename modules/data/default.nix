@@ -1,11 +1,12 @@
 {
   config,
+  cudaLib,
   lib,
   ...
 }:
 let
+  inherit (cudaLib.types) majorMinorPatchVersion;
   inherit (lib.attrsets) attrNames;
-  inherit (lib.cuda.types) majorMinorPatchVersion;
   inherit (lib.options) mkOption;
   inherit (lib.types) nonEmptyListOf;
 in

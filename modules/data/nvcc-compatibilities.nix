@@ -1,12 +1,12 @@
-{ lib, ... }:
+{ cudaLib, lib, ... }:
 let
-  inherit (lib.cuda.types)
+  inherit (cudaLib.types)
     attrs
     majorMinorVersion
     majorVersion
     nvccHostCompiler
     ;
-  inherit (lib.cuda.utils) mkOptionsModule;
+  inherit (cudaLib.utils) mkOptionsModule;
   inherit (lib.options) mkOption;
   inherit (lib.types) submodule;
 in

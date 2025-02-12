@@ -1,6 +1,7 @@
 {
 
   cuda_cudart,
+  cudaLib,
   cudnn,
   flags,
   lib,
@@ -9,7 +10,7 @@
   stdenv,
 }:
 let
-  inherit (lib.cuda.utils) majorMinorPatch;
+  inherit (cudaLib.utils) majorMinorPatch;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) optionals;
   inherit (lib.meta) getExe;

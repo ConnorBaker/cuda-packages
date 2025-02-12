@@ -3,6 +3,7 @@
   cudaConfig,
   cudaCapabilities ? (config.cudaCapabilities or [ ]),
   cudaForwardCompat ? (config.cudaForwardCompat or true),
+  cudaLib,
   cudaMajorMinorVersion,
   lib,
   stdenv,
@@ -10,6 +11,15 @@
 let
   inherit (builtins) toJSON;
   inherit (cudaConfig.data) gpus;
+  inherit (cudaLib.utils)
+    dropDots
+    gpuIsDefault
+    gpuIsSupported
+    mkCmakeCudaArchitecturesString
+    mkGencodeFlag
+    mkRealArchitecture
+    mkVirtualArchitecture
+    ;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets)
     attrNames
@@ -27,15 +37,6 @@ let
     map
     optionals
     unique
-    ;
-  inherit (lib.cuda.utils)
-    dropDots
-    gpuIsDefault
-    gpuIsSupported
-    mkCmakeCudaArchitecturesString
-    mkGencodeFlag
-    mkRealArchitecture
-    mkVirtualArchitecture
     ;
   inherit (lib.trivial) pipe throwIf;
   inherit (lib.strings) concatStringsSep;

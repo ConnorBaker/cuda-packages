@@ -1,7 +1,7 @@
-{ lib, ... }:
+{ cudaLib, lib, ... }:
 let
-  inherit (lib.cuda.types) redists;
-  inherit (lib.cuda.utils) mkRedistConfigs;
+  inherit (cudaLib.types) redists;
+  inherit (cudaLib.utils) mkRedistConfigs;
   inherit (lib.options) mkOption;
 in
 {
