@@ -28,6 +28,8 @@ Top-level:
 
 ## Todo
 
+- swap `redistArch` with `redistSystem` and `nixPlatform` with `nixSystem` (since it comes from `stdenv.*Platform.system`)
+- remove `linux-ppc64le` to reduce size of JSON
 - docs/tests for `arrayUtilitiesHook`
 - docs for `deduplicateRunpathEntriesHook`
 - docs/tests for CUDA hooks using `arrayUtilitiesHook`

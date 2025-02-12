@@ -122,9 +122,12 @@ in
           redistArch:
           let
             packageVariants = packages.${redistArch};
-            # Always show preference to the "source" redistArch if it is available, as it is the most general.
+            # Always show preference to the "source", then "linux-all" redistArch if they are available, as they are
+            # the most general.
             nixPlatformIsSupported =
-              redistArch == "source" || (redistArch == hostRedistArch && !(packages ? source));
+              redistArch == "source"
+              || redistArch == "linux-all"
+              || (redistArch == hostRedistArch && !hasAttr "source" packages && !hasAttr "linux-all" packages);
           in
           map (
             cudaVariant:
@@ -132,7 +135,7 @@ in
               # Always show preference to the "None" cudaVariant if it is available, as it is the most general.
               packageInfo = packageVariants.${cudaVariant};
               cudaVariantIsSupported =
-                cudaVariant == "None" || (cudaVariant == backupCudaVariant && !(packageVariants ? None));
+                cudaVariant == "None" || (cudaVariant == backupCudaVariant && !hasAttr "None" packageVariants);
             in
             # If the package variant is supported for this CUDA version, include information about it --
             # it means the package is available for *some* architecture.
@@ -547,8 +550,8 @@ in
   /**
     Maps a NVIDIA redistributable architecture to Nix platforms.
 
-    NOTE: This function returns a list of platforms because the redistributable architecture `"source"` can be
-    built on multiple platforms.
+    NOTE: This function returns a list of platforms because the redistributable architectures `"linux-all"` and
+    `"source"` can be built on multiple platforms.
 
     NOTE: This function *will* be called by unsupported platforms because `cudaPackages` is part of
     `all-packages.nix`, which is evaluated on all platforms. As such, we need to handle unsupported
@@ -581,10 +584,13 @@ in
     redistArch:
     if redistArch == "linux-x86_64" then
       [ "x86_64-linux" ]
-    else if redistArch == "linux-sbsa" then
+    else if redistArch == "linux-sbsa" || redistArch == "linux-aarch64" then
       [ "aarch64-linux" ]
-    else if redistArch == "linux-aarch64" then
-      [ "aarch64-linux" ]
+    else if redistArch == "linux-all" || redistArch == "source" then
+      [
+        "aarch64-linux"
+        "x86_64-linux"
+      ]
     else
       [ ];
 

@@ -10,6 +10,7 @@
   */
   redistArches = [
     "linux-aarch64"
+    "linux-all" # Taken to mean all other linux platforms
     "linux-ppc64le"
     "linux-sbsa"
     "linux-x86_64"

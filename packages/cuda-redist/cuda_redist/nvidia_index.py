@@ -87,6 +87,7 @@ class NvidiaReleaseCommon(PydanticObject):
 
 # Does not have or use `cuda_variant` field
 # Does not have a `source` platform
+# Does not have a `linux-all` platform
 class NvidiaReleaseV2(NvidiaReleaseCommon):
     model_config = ModelConfigAllowExtra
     __pydantic_extra__: dict[  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -108,7 +109,7 @@ class NvidiaReleaseV3(NvidiaReleaseCommon):
     model_config = ModelConfigAllowExtra
     __pydantic_extra__: dict[  # pyright: ignore[reportIncompatibleVariableOverride]
         RedistPlatform,  # NOTE: This is an invariant we must maintain
-        NvidiaPackage | Mapping[CudaVariant, NvidiaPackage],  # NOTE: `source` does not use cuda variants
+        NvidiaPackage | Mapping[CudaVariant, NvidiaPackage],  # NOTE: Neither `source` nor `linux-all` use cuda variants
     ]
 
     cuda_variant: Annotated[
@@ -128,16 +129,17 @@ class NvidiaReleaseV3(NvidiaReleaseCommon):
         return _check_extra_keys_are_platforms(self)
 
     @model_validator(mode="after")
-    def check_source_is_present(self) -> Self:
+    def check_exclusive_platforms_are_exclusive(self) -> Self:
         """
-        Ensure that the `source` platform is exclusive with all the others.
+        Ensure that the `linux-all` and `source` platforms are exclusive with all the others.
         """
-        if "source" in self.__pydantic_extra__:
-            if len(self.__pydantic_extra__) > 1:
-                raise ValueError("The `source` platform is exclusive with all the others.")
+        for exclusive_platform in ["linux-all", "source"]:
+            if exclusive_platform in self.__pydantic_extra__:
+                if len(self.__pydantic_extra__) > 1:
+                    raise ValueError(f"The `{exclusive_platform}` platform is exclusive with all the others.")
 
-            if self.cuda_variant != []:
-                raise ValueError("The `source` platform requires `cuda_variant` be empty.")
+                if self.cuda_variant != []:
+                    raise ValueError(f"The `{exclusive_platform}` platform requires `cuda_variant` be empty.")
 
         return self
 
@@ -148,10 +150,10 @@ class NvidiaReleaseV3(NvidiaReleaseCommon):
         """
         allowed_cuda_variants = {f"cuda{major_version}" for major_version in self.cuda_variant}
         for platform, variants in self.__pydantic_extra__.items():
-            if platform == "source" and not isinstance(variants, NvidiaPackage):
-                raise ValueError("The `source` platform must have a single package.")
+            if platform in {"linux-all", "source"} and not isinstance(variants, NvidiaPackage):
+                raise ValueError(f"Platform `{platform}` must have a single package.")
             elif not isinstance(variants, Mapping):
-                raise ValueError(f"Platform {platform} does not have a mapping of CUDA variants.")
+                raise ValueError(f"Platform `{platform}` does not have a mapping of CUDA variants.")
 
             # Check for keys which are not CUDA variants
             if unexpected_keys := variants.keys() - allowed_cuda_variants:
@@ -339,9 +341,9 @@ class NvidiaIndex(PydanticMapping[RedistName, NvidiaVersionedManifests]):
         """
         d: dict[RedistName, dict[Version, NvidiaManifest]] = defaultdict(dict)
         effective_redist_names = set(redist_names) if redist_names is not None else RedistNames
-        for redist_name_dir in sorted(filter(
-            lambda p: p.is_dir() and p.name in effective_redist_names, manifests_dir.iterdir()
-        )):
+        for redist_name_dir in sorted(
+            filter(lambda p: p.is_dir() and p.name in effective_redist_names, manifests_dir.iterdir())
+        ):
             LOGGER.info("Reading directory %s", redist_name_dir)
             redist_name: RedistName = redist_name_dir.name  # type: ignore
             json_files = sorted(filter(lambda p: p.is_file() and p.suffix == ".json", redist_name_dir.iterdir()))

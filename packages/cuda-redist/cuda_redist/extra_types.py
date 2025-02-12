@@ -16,11 +16,12 @@ IgnoredRedistPlatform = Literal["windows-x86_64"]
 IgnoredRedistPlatforms: Final[Set[IgnoredRedistPlatform]] = set(get_args(IgnoredRedistPlatform))
 
 RedistPlatform = Literal[
-    "source",  # Source-agnostic
     "linux-aarch64",
+    "linux-all",  # Taken to mean all other linux platforms
     "linux-ppc64le",
     "linux-sbsa",
     "linux-x86_64",
+    "source",  # Source-agnostic
 ]
 RedistPlatforms: Final[Set[RedistPlatform]] = set(get_args(RedistPlatform))
 
