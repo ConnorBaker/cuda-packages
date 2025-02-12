@@ -259,7 +259,7 @@ class NvidiaManifest(PydanticObject):
                 # Fake HTML listing
                 listing = "\n".join(
                     '<a href="' + redistrib_path.name + '">' + redistrib_path.name + "</a>"
-                    for redistrib_path in tensorrt_manifest_dir.iterdir()
+                    for redistrib_path in sorted(tensorrt_manifest_dir.iterdir())
                     if redistrib_path.is_file()
                 )
             case _:
@@ -339,12 +339,12 @@ class NvidiaIndex(PydanticMapping[RedistName, NvidiaVersionedManifests]):
         """
         d: dict[RedistName, dict[Version, NvidiaManifest]] = defaultdict(dict)
         effective_redist_names = set(redist_names) if redist_names is not None else RedistNames
-        for redist_name_dir in filter(
+        for redist_name_dir in sorted(filter(
             lambda p: p.is_dir() and p.name in effective_redist_names, manifests_dir.iterdir()
-        ):
+        )):
             LOGGER.info("Reading directory %s", redist_name_dir)
             redist_name: RedistName = redist_name_dir.name  # type: ignore
-            json_files = list(filter(lambda p: p.is_file() and p.suffix == ".json", redist_name_dir.iterdir()))
+            json_files = sorted(filter(lambda p: p.is_file() and p.suffix == ".json", redist_name_dir.iterdir()))
             if version == "all":
                 pass
             elif version == "latest":

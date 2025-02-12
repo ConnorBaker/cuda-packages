@@ -31,7 +31,7 @@ class PythonModuleDetector(FeatureDetector[Sequence[Path]]):
             return None
 
         # Get the site-packages directory.
-        # There should only be one.
+        # There should only be one, so no need to sort.
         site_packages_dirs = [
             subsubdir
             for subdir in lib_dir.iterdir()
