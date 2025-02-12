@@ -1,19 +1,22 @@
 {
-  annotated-types,
-  buildPythonPackage,
-  flit-core,
   lib,
   makeWrapper,
   nixVersions,
-  pydantic,
   pyright,
-  rich,
-  ruff,
+  python3,
 }:
 let
   inherit (lib.fileset) toSource unions;
   inherit (lib.strings) makeBinPath;
   inherit (lib.trivial) importTOML;
+  inherit (python3.pkgs)
+    annotated-types
+    buildPythonPackage
+    flit-core
+    pydantic
+    rich
+    ruff
+    ;
   pyprojectAttrs = importTOML ./pyproject.toml;
   finalAttrs = {
     pname = pyprojectAttrs.project.name;
@@ -33,11 +36,7 @@ let
       pydantic
       rich
     ];
-    propagatedBuildInputs = [
-      # cudaPackages.cuda_cuobjdump
-      # patchelf
-      nixVersions.latest
-    ];
+    propagatedBuildInputs = [ nixVersions.latest ];
     pythonImportsCheck = [ finalAttrs.pname ];
     nativeCheckInputs = [
       pyright
@@ -63,19 +62,12 @@ let
       '';
     postInstall = ''
       wrapProgram "$out/bin/update-custom-index" \
-        --prefix PATH : "${
-          makeBinPath [
-            # Optional dependencies, currently unused.
-            # cudaPackages.cuda_cuobjdump
-            # patchelf
-            nixVersions.latest
-          ]
-        }"
+        --prefix PATH : "${makeBinPath [ nixVersions.latest ]}"
     '';
-    meta = with lib; {
+    meta = {
       inherit (pyprojectAttrs.project) description;
       homepage = pyprojectAttrs.project.urls.Homepage;
-      maintainers = with maintainers; [ connorbaker ];
+      maintainers = with lib.maintainers; [ connorbaker ];
     };
   };
 in

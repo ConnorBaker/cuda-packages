@@ -79,8 +79,7 @@
           legacyPackages = pkgs;
 
           packages = {
-            default = config.packages.cuda-redist;
-            cuda-redist = pkgs.python3Packages.callPackage ./scripts/cuda-redist { };
+            inherit (pkgs) cuda-redist;
           };
 
           pre-commit.settings.hooks = {
