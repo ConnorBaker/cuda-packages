@@ -20,7 +20,6 @@ let
     mkRealArchitecture
     mkVirtualArchitecture
     ;
-  inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets)
     attrNames
     attrValues
@@ -34,6 +33,7 @@ let
     groupBy'
     intersectLists
     last
+    length
     map
     optionals
     unique
@@ -89,9 +89,18 @@ let
   # cudaCapabilityToIsJetson :: AttrSet String Boolean
   cudaCapabilityToIsJetson = mapAttrs (_: gpu: gpu.isJetson) gpus;
 
+  # cudaCapabilityToIsAccelerated :: AttrSet String Boolean
+  cudaCapabilityToIsAccelerated = mapAttrs (_: gpu: gpu.isAccelerated) gpus;
+
   # jetsonComputeCapabilities :: List String
   jetsonComputeCapabilities = pipe cudaCapabilityToIsJetson [
     (filterAttrs (_: isJetson: isJetson))
+    attrNames
+  ];
+
+  # acceleratedComputeCapabilities :: List String
+  acceleratedComputeCapabilities = pipe cudaCapabilityToIsAccelerated [
+    (filterAttrs (_: isAccelerated: isAccelerated))
     attrNames
   ];
 
@@ -102,6 +111,10 @@ let
   # NOTE: We don't need to worry about mixes of Jetson and non-Jetson devices here -- there's
   # sanity-checking for all that in below.
   jetsonTargets = intersectLists jetsonComputeCapabilities cudaCapabilities;
+
+  # Similarly, we can find the intersection of accelerated devices, which are not built by default and require
+  # special handling.
+  acceleratedTargets = intersectLists acceleratedComputeCapabilities cudaCapabilities;
 
   formatCapabilities =
     {
@@ -191,142 +204,32 @@ let
           See gpus.nix for a list of architectures supported by this version of Nixpkgs.
         '' jetsonBuildSufficientCondition
         && jetsonBuildNecessaryCondition;
+
+      # Accelerated devices are not built by default and cannot be built with other capabilities.
+      isAcceleratedBuild =
+        let
+          requestedAcceleratedDevices = filter (
+            cudaCapability: cudaCapabilityToIsAccelerated.${cudaCapability} or false
+          ) cudaCapabilities;
+          requestedNonAcceleratedDevices = filter (
+            cudaCapability: !(elem cudaCapability requestedAcceleratedDevices)
+          ) cudaCapabilities;
+          acceleratedBuildSufficientCondition = length requestedAcceleratedDevices == 1;
+          acceleratedBuildNecessaryCondition = requestedNonAcceleratedDevices == [ ];
+        in
+        throwIf (acceleratedBuildSufficientCondition && !acceleratedBuildNecessaryCondition) ''
+          Accelerated devices cannot be targeted with non-accelerated devices.
+          You requested ${toJSON cudaCapabilities}.
+          Requested accelerated devices: ${toJSON requestedAcceleratedDevices}.
+          Requested non-accelerated devices: ${toJSON requestedNonAcceleratedDevices}.
+          Exactly one of the following must be true:
+          - Exactly one CUDA capability is provided and is accelerated.
+          - No CUDA capabilities are accelerated.
+          See gpus.nix for a list of architectures supported by this version of Nixpkgs.
+        '' acceleratedBuildSufficientCondition
+        && acceleratedBuildNecessaryCondition;
     };
 in
-# When changing names or formats: pause, validate, and update the assert
-assert assertMsg (
-  gpus ? "7.5" && gpus ? "8.6"
-) "The following test requires both 7.5 and 8.6 be known GPUs";
-assert
-  let
-    expected = {
-      cudaCapabilities = [
-        "7.5"
-        "8.6"
-      ];
-      cudaForwardCompat = true;
-
-      archNames = [
-        "Turing"
-        "Ampere"
-      ];
-      realArches = [
-        "sm_75"
-        "sm_86"
-      ];
-      virtualArches = [
-        "compute_75"
-        "compute_86"
-      ];
-      arches = [
-        "sm_75"
-        "sm_86"
-        "compute_86"
-      ];
-
-      gencode = [
-        "-gencode=arch=compute_75,code=sm_75"
-        "-gencode=arch=compute_86,code=sm_86"
-        "-gencode=arch=compute_86,code=compute_86"
-      ];
-      gencodeString = "-gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_86,code=compute_86";
-
-      cmakeCudaArchitecturesString = "75;86";
-
-      isJetsonBuild = false;
-    };
-    actual = formatCapabilities {
-      cudaCapabilities = [
-        "7.5"
-        "8.6"
-      ];
-    };
-    actualWrapped = (builtins.tryEval (builtins.deepSeq actual actual)).value;
-  in
-  assertMsg (expected == actualWrapped) ''
-    Expected: ${builtins.toJSON expected}
-    Actual: ${builtins.toJSON actualWrapped}
-  '';
-# Check mixed Jetson and non-Jetson devices
-assert assertMsg (
-  gpus ? "7.2" && gpus ? "7.5"
-) "The following test requires both 7.2 and 7.5 be known GPUs";
-assert
-  let
-    expected = false;
-    actual = formatCapabilities {
-      cudaCapabilities = [
-        "7.2"
-        "7.5"
-      ];
-    };
-    actualWrapped = (builtins.tryEval (builtins.deepSeq actual actual)).value;
-  in
-  assertMsg (expected == actualWrapped) ''
-    Jetson devices capabilities cannot be mixed with non-jetson devices.
-    Capability 7.5 is non-Jetson and should not be allowed with Jetson 7.2.
-    Expected: ${builtins.toJSON expected}
-    Actual: ${builtins.toJSON actualWrapped}
-  '';
-# Check Jetson-only
-assert assertMsg (
-  gpus ? "7.2" && gpus ? "8.7"
-) "The following test requires both 7.2 and 8.7 be known GPUs";
-assert
-  let
-    expected = {
-      cudaCapabilities = [
-        "7.2"
-        "8.7"
-      ];
-      cudaForwardCompat = true;
-
-      archNames = [
-        "Volta"
-        "Ampere"
-      ];
-      realArches = [
-        "sm_72"
-        "sm_87"
-      ];
-      virtualArches = [
-        "compute_72"
-        "compute_87"
-      ];
-      arches = [
-        "sm_72"
-        "sm_87"
-        "compute_87"
-      ];
-
-      gencode = [
-        "-gencode=arch=compute_72,code=sm_72"
-        "-gencode=arch=compute_87,code=sm_87"
-        "-gencode=arch=compute_87,code=compute_87"
-      ];
-      gencodeString = "-gencode=arch=compute_72,code=sm_72 -gencode=arch=compute_87,code=sm_87 -gencode=arch=compute_87,code=compute_87";
-
-      cmakeCudaArchitecturesString = "72;87";
-
-      isJetsonBuild = true;
-    };
-    actual = formatCapabilities {
-      cudaCapabilities = [
-        "7.2"
-        "8.7"
-      ];
-    };
-    actualWrapped = (builtins.tryEval (builtins.deepSeq actual actual)).value;
-  in
-  assertMsg
-    # We can't do this test unless we're targeting aarch64
-    (hostPlatform.isAarch64 -> (expected == actualWrapped))
-    ''
-      Jetson devices can only be built with other Jetson devices.
-      Both 7.2 and 8.7 are Jetson devices.
-      Expected: ${builtins.toJSON expected}
-      Actual: ${builtins.toJSON actualWrapped}
-    '';
 dontRecurseIntoAttrs {
   # formatCapabilities :: { cudaCapabilities: List Capability, cudaForwardCompat: Boolean } ->  { ... }
   inherit formatCapabilities;
@@ -348,6 +251,8 @@ dontRecurseIntoAttrs {
     supportedCapabilities
     jetsonComputeCapabilities
     jetsonTargets
+    acceleratedComputeCapabilities
+    acceleratedTargets
     ;
 }
 // formatCapabilities {

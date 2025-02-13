@@ -205,6 +205,16 @@ in
             The value `null` means we always include this GPU in the default capabilities if it is supported.
           '';
           type = nullOr majorMinorVersion;
+          default = null;
+        };
+        isAccelerated = {
+          description = ''
+            Whether this GPU is an accelerated version of a base architecture.
+            This field is notable because it tells us what architecture to build for (as accelerated architectures are
+            not forward or backward compatible with the base architecture).
+          '';
+          type = bool;
+          default = false;
         };
         isJetson = {
           description = ''
@@ -214,12 +224,14 @@ in
             NOTE: These architectures are only built upon request.
           '';
           type = bool;
+          default = false;
         };
         maxCudaMajorMinorVersion = {
           description = ''
             The maximum (exclusive) CUDA version that supports this GPU. `null` means there is no maximum.
           '';
           type = nullOr majorMinorVersion;
+          default = null;
         };
         minCudaMajorMinorVersion = {
           description = "The minimum (inclusive) CUDA version that supports this GPU.";

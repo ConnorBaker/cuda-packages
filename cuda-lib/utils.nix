@@ -659,27 +659,40 @@ in
   /**
     Returns whether a GPU should be built by default for a particular CUDA version.
 
-    TODO:
+    # Type
+
+    ```
+    gpuIsDefault :: Version -> GpuInfo -> Bool
+    ```
   */
   gpuIsDefault =
-    cudaMajorMinorVersion: gpuInfo:
+    cudaMajorMinorVersion:
+    {
+      dontDefaultAfterCudaMajorMinorVersion,
+      isAccelerated,
+      isJetson,
+      ...
+    }:
     let
-      inherit (gpuInfo) dontDefaultAfterCudaMajorMinorVersion isJetson;
       recentGpu =
         dontDefaultAfterCudaMajorMinorVersion == null
         || versionAtLeast dontDefaultAfterCudaMajorMinorVersion cudaMajorMinorVersion;
     in
-    recentGpu && !isJetson;
+    recentGpu && !isJetson && !isAccelerated;
 
   /**
     Returns whether a GPU is supported for a particular CUDA version.
 
-    TODO:
+    # Type
+
+    ```
+    gpuIsSupported :: Version -> GpuInfo -> Bool
+    ```
   */
   gpuIsSupported =
-    cudaMajorMinorVersion: gpuInfo:
+    cudaMajorMinorVersion:
+    { minCudaMajorMinorVersion, maxCudaMajorMinorVersion, ... }:
     let
-      inherit (gpuInfo) minCudaMajorMinorVersion maxCudaMajorMinorVersion;
       lowerBoundSatisfied = versionAtLeast cudaMajorMinorVersion minCudaMajorMinorVersion;
       upperBoundSatisfied =
         (maxCudaMajorMinorVersion == null)
