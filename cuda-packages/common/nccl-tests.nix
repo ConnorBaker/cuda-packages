@@ -30,6 +30,20 @@ stdenv.mkDerivation (finalAttrs: {
     hash = "sha256-4aHXIk5ydZsSARQw1T6Nx49FpQjwNEvVD6yfHoEGt8g=";
   };
 
+  postPatch = ''
+    nixLog "patching $PWD/src/Makefile to remove NVIDIA's ccbin declaration"
+    substituteInPlace ./src/Makefile \
+      --replace-fail \
+        '-ccbin $(CXX)' \
+        ""
+
+    nixLog "patching $PWD/src/Makefile to replace -std=c++11 with -std=c++14"
+    substituteInPlace ./src/Makefile \
+      --replace-fail \
+        '-std=c++11' \
+        '-std=c++14'
+  '';
+
   nativeBuildInputs = [
     cuda_nvcc
     which
