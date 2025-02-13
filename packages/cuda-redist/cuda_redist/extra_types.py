@@ -12,18 +12,18 @@ from pydantic import Field, TypeAdapter
 
 from cuda_redist.extra_pydantic import PydanticTypeAdapter
 
-IgnoredRedistPlatform = Literal["windows-x86_64"]
-IgnoredRedistPlatforms: Final[Set[IgnoredRedistPlatform]] = set(get_args(IgnoredRedistPlatform))
+IgnoredRedistSystem = Literal["windows-x86_64"]
+IgnoredRedistSystems: Final[Set[IgnoredRedistSystem]] = set(get_args(IgnoredRedistSystem))
 
-RedistPlatform = Literal[
+RedistSystem = Literal[
     "linux-aarch64",
-    "linux-all",  # Taken to mean all other linux platforms
+    "linux-all",  # Taken to mean all other linux systems
     "linux-ppc64le",
     "linux-sbsa",
     "linux-x86_64",
     "source",  # Source-agnostic
 ]
-RedistPlatforms: Final[Set[RedistPlatform]] = set(get_args(RedistPlatform))
+RedistSystems: Final[Set[RedistSystem]] = set(get_args(RedistSystem))
 
 RedistName = Literal[
     "cublasmp",

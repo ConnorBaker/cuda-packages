@@ -9,7 +9,7 @@ from cuda_redist.extra_types import (
     CudaVariant,
     PackageName,
     RedistName,
-    RedistPlatform,
+    RedistSystem,
     RedistUrlPrefix,
     Sha256,
     SriHash,
@@ -40,16 +40,16 @@ def mk_sri_hash(bs: bytes) -> SriHash:
 
 def mk_relative_path(
     package_name: PackageName,
-    platform: RedistPlatform,
+    system: RedistSystem,
     version: Version,
     cuda_variant: CudaVariant | None,
 ) -> Path:
     return (
         Path(package_name)
-        / platform
+        / system
         / "-".join([
             package_name,
-            platform,
+            system,
             (version + (f"_{cuda_variant}" if cuda_variant is not None else "")),
             "archive.tar.xz",
         ])

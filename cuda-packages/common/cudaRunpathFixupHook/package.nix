@@ -12,7 +12,7 @@
   makeSetupHook,
 }:
 let
-  inherit (cudaConfig) hostRedistArch;
+  inherit (cudaConfig) hostRedistSystem;
   inherit (flags) isJetsonBuild;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
@@ -43,7 +43,7 @@ let
       inherit (finalAttrs) substitutions;
       badPlatformsConditions = {
         "CUDA support is not enabled" = !config.cudaSupport;
-        "Platform is not supported" = hostRedistArch == "unsupported";
+        "Platform is not supported" = hostRedistSystem == "unsupported";
       };
       tests = {
         cudaRunpathFixup = callPackages ./tests/cudaRunpathFixup.nix { };

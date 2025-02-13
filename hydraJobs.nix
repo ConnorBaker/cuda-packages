@@ -169,7 +169,7 @@ let
         ]
         # Non-Jetson packages
         ++ optionals (!isJetsonBuild) [
-          cudaPackages.nccl # TODO: Exclude on jetson platforms
+          cudaPackages.nccl # TODO: Exclude on jetson systems
           cudaPackages.nccl-tests
         ];
 

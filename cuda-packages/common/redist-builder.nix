@@ -15,7 +15,7 @@
   stdenv,
 }:
 let
-  inherit (cudaConfig) hostRedistArch;
+  inherit (cudaConfig) hostRedistSystem;
   inherit (cudaLib.utils) getLibPath;
   inherit (flags) isJetsonBuild;
   inherit (lib)
@@ -49,10 +49,10 @@ in
   redistName,
   # releaseInfo :: ReleaseInfo
   releaseInfo,
-  # supportedNixPlatforms :: List String
-  supportedNixPlatforms,
-  # supportedRedistArches :: List RedistArch
-  supportedRedistArches,
+  # supportedNixSystems :: List String
+  supportedNixSystems,
+  # supportedRedistSystems :: List RedistSystem
+  supportedRedistSystems,
 }:
 let
   # Order is important here so we use a list.
@@ -290,7 +290,7 @@ stdenv.mkDerivation (
         ];
       };
 
-      inherit supportedRedistArches;
+      inherit supportedRedistSystems;
 
       # Useful for introspecting why something went wrong. Maps descriptions of why the derivation would be marked as
       # broken on have badPlatforms include the current platform.
@@ -314,24 +314,26 @@ stdenv.mkDerivation (
 
       # badPlatformsConditions :: AttrSet Bool
       # Sets `meta.badPlatforms = meta.platforms` if any of the conditions are true.
-      # Example: Broken on a specific architecture when some condition is met, like targeting Jetson or
+      # Example: Broken on a specific system when some condition is met, like targeting Jetson or
       # a required package missing.
       # NOTE: Use this when a broken condition means evaluation can fail!
       badPlatformsConditions =
         let
-          isRedistArchSbsaExplicitlySupported = elem "linux-sbsa" finalAttrs.passthru.supportedRedistArches;
-          isRedistArchAarch64ExplicitlySupported = elem "linux-aarch64" finalAttrs.passthru.supportedRedistArches;
+          isRedistSystemSbsaExplicitlySupported = elem "linux-sbsa" finalAttrs.passthru.supportedRedistSystems;
+          isRedistSystemAarch64ExplicitlySupported = elem "linux-aarch64" finalAttrs.passthru.supportedRedistSystems;
         in
         {
           "CUDA support is not enabled" = !config.cudaSupport;
           "Platform is not supported" =
-            finalAttrs.src == null || hostRedistArch == "unsupported" || finalAttrs.meta.platforms == [ ];
+            finalAttrs.src == null || hostRedistSystem == "unsupported" || finalAttrs.meta.platforms == [ ];
         }
         // optionalAttrs (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isLinux) {
           "aarch64-linux support is limited to linux-sbsa (server ARM devices) which is not the current target" =
-            isRedistArchSbsaExplicitlySupported && !isRedistArchAarch64ExplicitlySupported && isJetsonBuild;
+            isRedistSystemSbsaExplicitlySupported && !isRedistSystemAarch64ExplicitlySupported && isJetsonBuild;
           "aarch64-linux support is limited to linux-aarch64 (Jetson devices) which is not the current target" =
-            !isRedistArchSbsaExplicitlySupported && isRedistArchAarch64ExplicitlySupported && !isJetsonBuild;
+            !isRedistSystemSbsaExplicitlySupported
+            && isRedistSystemAarch64ExplicitlySupported
+            && !isJetsonBuild;
         };
     };
 
@@ -339,7 +341,7 @@ stdenv.mkDerivation (
       description = "${releaseInfo.name}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";
       sourceProvenance = [ sourceTypes.binaryNativeCode ];
       broken = isBroken;
-      platforms = supportedNixPlatforms;
+      platforms = supportedNixSystems;
       badPlatforms = optionals isBadPlatform (unique [
         stdenv.buildPlatform.system
         stdenv.hostPlatform.system

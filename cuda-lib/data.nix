@@ -1,16 +1,16 @@
 {
   /**
-    A list of redistributable architectures to use in creation of the redistArch type.
+    A list of redistributable systems to use in creation of the redistSystem type.
 
     # Type
 
     ```
-    redistArches :: List String
+    redistSystems :: List String
     ```
   */
-  redistArches = [
+  redistSystems = [
     "linux-aarch64"
-    "linux-all" # Taken to mean all other linux platforms
+    "linux-all" # Taken to mean all other linux systems
     "linux-ppc64le"
     "linux-sbsa"
     "linux-x86_64"

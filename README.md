@@ -7,7 +7,7 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 Top-level:
 
 - `cudaConfig`: evaluated configuration for CUDA package sets
-  - includes `hostNixSystem`, `hostRedistArch`, and `cudaCapabilities` (among others), which are helpful when writing modules for `cudaModules` with the goal of conditionally changing the build based on what's being targeted through `mkMerge` and `mkIf`.
+  - includes `hostNixSystem`, `hostRedistSystem`, and `cudaCapabilities` (among others), which are helpful when writing modules for `cudaModules` with the goal of conditionally changing the build based on what's being targeted through `mkMerge` and `mkIf`.
 - `cudaPackagesExtensions`: extensions (overlays) applied to each CUDA package set
   - an easy way to add packages to all CUDA package sets
 - `cudaModules`: modules which change the creation of CUDA package sets
@@ -28,7 +28,6 @@ Top-level:
 
 ## Todo
 
-- swap `redistArch` with `redistSystem` and `nixPlatform` with `nixSystem` (since it comes from `stdenv.*Platform.system`)
 - remove `linux-ppc64le` to reduce size of JSON
 - docs/tests for `arrayUtilitiesHook`
 - docs for `deduplicateRunpathEntriesHook`

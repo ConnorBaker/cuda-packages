@@ -7,7 +7,7 @@ set -euo pipefail
 mkRedistUrlRelativePath() {
   local -r cudaMajorMinorVersion=${1:?}
   local -r tensorrtMajorMinorPatchBuildVersion=${2:?}
-  local -r redistArch=${3:?}
+  local -r redistSystem=${3:?}
 
   local -r tensorrtMajorMinorPatchVersion="$(echo "$tensorrtMajorMinorPatchBuildVersion" | cut -d. -f1-3)"
   local -r tensorrtMinorVersion="$(echo "$tensorrtMajorMinorPatchVersion" | cut -d. -f2)"
@@ -15,11 +15,11 @@ mkRedistUrlRelativePath() {
   local archiveDir=""
   local archiveExtension=""
   local osName=""
-  local platformName=""
-  case "$redistArch" in
-  linux-aarch64) archiveDir="tars" && archiveExtension="tar.gz" && osName="l4t" && platformName="aarch64-gnu" ;;
+  local redistSystem=""
+  case "$redistSystem" in
+  linux-aarch64) archiveDir="tars" && archiveExtension="tar.gz" && osName="l4t" && redistSystem="aarch64-gnu" ;;
   linux-sbsa)
-    archiveDir="tars" && archiveExtension="tar.gz" && platformName="aarch64-gnu"
+    archiveDir="tars" && archiveExtension="tar.gz" && redistSystem="aarch64-gnu"
     # 10.0-10.3 use Ubuntu 22.40
     # 10.4-10.6 use Ubuntu 24.04
     # 10.7+ use Linux
@@ -29,9 +29,9 @@ mkRedistUrlRelativePath() {
     *) osName="Linux" ;;
     esac
     ;;
-  linux-x86_64) archiveDir="tars" && archiveExtension="tar.gz" && osName="Linux" && platformName="x86_64-gnu" ;;
+  linux-x86_64) archiveDir="tars" && archiveExtension="tar.gz" && osName="Linux" && redistSystem="x86_64-gnu" ;;
   windows-x86_64)
-    archiveExtension="zip" && platformName="win10"
+    archiveExtension="zip" && redistSystem="win10"
     # Windows info is different for 10.0.*
     case "$tensorrtMinorVersion" in
     0) archiveDir="zips" && osName="Windows10" ;;
@@ -39,12 +39,12 @@ mkRedistUrlRelativePath() {
     esac
     ;;
   *)
-    echo "mkRedistUrlRelativePath: Unsupported redistArch: $redistArch" >&2
+    echo "mkRedistUrlRelativePath: Unsupported redistSystem: $redistSystem" >&2
     exit 1
     ;;
   esac
 
-  local -r relativePath="tensorrt/$tensorrtMajorMinorPatchVersion/$archiveDir/TensorRT-${tensorrtMajorMinorPatchBuildVersion}.${osName}.${platformName}.cuda-${cudaMajorMinorVersion}.${archiveExtension}"
+  local -r relativePath="tensorrt/$tensorrtMajorMinorPatchVersion/$archiveDir/TensorRT-${tensorrtMajorMinorPatchBuildVersion}.${osName}.${redistSystem}.cuda-${cudaMajorMinorVersion}.${archiveExtension}"
   echo "$relativePath"
 }
 
@@ -61,7 +61,7 @@ getNixStorePath() {
 
 printOutput() {
   local -r cudaMajorMinorVersion=${1:?}
-  local -r redistArch=${2:?}
+  local -r redistSystem=${2:?}
   local -r md5Hash=${3:?}
   local -r relativePath=${4:?}
   local -r sha256Hash=${5:?}
@@ -74,14 +74,14 @@ printOutput() {
     --raw-output \
     --sort-keys \
     --null-input \
-    --arg redistArch "$redistArch" \
+    --arg redistSystem "$redistSystem" \
     --arg cudaVariant "$cudaVariant" \
     --arg md5Hash "$md5Hash" \
     --arg relativePath "$relativePath" \
     --arg sha256Hash "$sha256Hash" \
     --arg size "$size" \
     '{
-      $redistArch: {
+      $redistSystem: {
         $cudaVariant: {
           md5: $md5Hash,
           relative_path: $relativePath,
@@ -105,26 +105,26 @@ main() {
     exit 1
   fi
 
-  local -r redistArch=${3:?}
-  case "$redistArch" in
+  local -r redistSystem=${3:?}
+  case "$redistSystem" in
   linux-aarch64) ;;
   linux-sbsa) ;;
   linux-x86_64) ;;
   windows-x86_64) ;;
   *)
-    echo "main: Unsupported redistArch: $redistArch" >&2
+    echo "main: Unsupported redistSystem: $redistSystem" >&2
     exit 1
     ;;
   esac
 
-  local -r relativePath="$(mkRedistUrlRelativePath "$cudaMajorMinorVersion" "$tensorrtMajorMinorPatchBuildVersion" "$redistArch")"
+  local -r relativePath="$(mkRedistUrlRelativePath "$cudaMajorMinorVersion" "$tensorrtMajorMinorPatchBuildVersion" "$redistSystem")"
   local -r storePath="$(getNixStorePath "$relativePath")"
   echo "main: storePath: $storePath" >&2
   local -r md5Hash="$(nix hash file --type md5 --base16 "$storePath")"
   local -r sha256Hash="$(nix hash file --type sha256 --base16 "$storePath")"
   local -r size="$(du -b "$storePath" | cut -f1)"
 
-  printOutput "$cudaMajorMinorVersion" "$redistArch" "$md5Hash" "$relativePath" "$sha256Hash" "$size"
+  printOutput "$cudaMajorMinorVersion" "$redistSystem" "$md5Hash" "$relativePath" "$sha256Hash" "$size"
 }
 
 main "$@"

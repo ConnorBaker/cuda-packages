@@ -14,7 +14,7 @@ let
     packageName
     packages
     packageVariants
-    redistArch
+    redistSystem
     redistConfig
     redistName
     release
@@ -282,7 +282,7 @@ in
     packages :: OptionType
     ```
   */
-  packages = attrs redistArch packageVariants // {
+  packages = attrs redistSystem packageVariants // {
     name = "packages";
   };
 
@@ -313,16 +313,16 @@ in
   };
 
   /**
-    The option type of a redistributable architecture name.
+    The option type of a redistributable system name.
 
     # Type
 
     ```
-    redistArch :: OptionType
+    redistSystem :: OptionType
     ```
   */
-  redistArch = enum cudaLib.data.redistArches // {
-    name = "redistArch";
+  redistSystem = enum cudaLib.data.redistSystems // {
+    name = "redistSystem";
   };
 
   /**
@@ -505,8 +505,8 @@ in
       redistName.type = redistName;
       releaseInfo.type = releaseInfo;
       packageInfo.type = packageInfo;
-      supportedNixPlatformAttrs.type = attrs nonEmptyStr (enum [ null ]);
-      supportedRedistArchAttrs.type = attrs redistArch (enum [ null ]);
+      supportedNixSystemAttrs.type = attrs nonEmptyStr (enum [ null ]);
+      supportedRedistSystemAttrs.type = attrs redistSystem (enum [ null ]);
       callPackageOverrider = {
         description = ''
           A value which, if non-null, is `callPackage`-d and then provided to a package's `overrideAttrs` function.

@@ -16,7 +16,7 @@ from cuda_redist.extra_types import (
     CudaVariant,
     PackageName,
     RedistName,
-    RedistPlatform,
+    RedistSystem,
     Sha256,
     SriHash,
     Version,
@@ -135,7 +135,7 @@ class CustomPackageVariants(PydanticMapping[CudaVariant | None, CustomPackageInf
         redist_name: RedistName,
         package_name: PackageName,
         release_info: CustomReleaseInfo,
-        platform: RedistPlatform,
+        system: RedistSystem,
         package_or_cuda_variants_to_packages: NvidiaPackage | Mapping[CudaVariant, NvidiaPackage],
     ) -> Self:
         """
@@ -156,14 +156,14 @@ class CustomPackageVariants(PydanticMapping[CudaVariant | None, CustomPackageInf
                 nvidia_package.relative_path,
                 nvidia_package.sha256,
                 expected_relative_path=mk_relative_path(
-                    package_name, platform, release_info.version, cuda_variant_name
+                    package_name, system, release_info.version, cuda_variant_name
                 ),
             )
             infos[cuda_variant_name] = package_info
         return cls.model_validate(infos)
 
 
-CustomPackages: TypeAlias = PydanticMapping[RedistPlatform, CustomPackageVariants]
+CustomPackages: TypeAlias = PydanticMapping[RedistSystem, CustomPackageVariants]
 
 
 class CustomRelease(PydanticObject):
@@ -179,15 +179,15 @@ class CustomRelease(PydanticObject):
     ) -> Self:
         release_info = CustomReleaseInfo.mk(nvidia_release)
 
-        packages: dict[RedistPlatform, CustomPackageVariants] = {
-            platform: CustomPackageVariants.mk(
+        packages: dict[RedistSystem, CustomPackageVariants] = {
+            system: CustomPackageVariants.mk(
                 redist_name,
                 package_name,
                 release_info,
-                platform,
+                system,
                 package_or_cuda_variants_to_packages,
             )
-            for platform, package_or_cuda_variants_to_packages in nvidia_release.packages().items()
+            for system, package_or_cuda_variants_to_packages in nvidia_release.packages().items()
         }
 
         return cls.model_validate({"release_info": release_info, "packages": packages})
@@ -204,7 +204,7 @@ class CustomManifest(PydanticMapping[PackageName, CustomRelease]):
         releases: dict[str, CustomRelease] = {
             package_name: release
             for package_name, nvidia_release in nvidia_manifest.releases().items()
-            # Don't include releases for packages that have no packages for the platforms we care about.
+            # Don't include releases for packages that have no packages for the systems we care about.
             if len((release := CustomRelease.mk(redist_name, package_name, nvidia_release)).packages) != 0
         }
 

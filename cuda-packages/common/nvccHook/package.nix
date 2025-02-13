@@ -12,7 +12,7 @@
 }:
 let
   inherit (cuda_nvcc.passthru.nvccStdenv) cc hostPlatform;
-  inherit (cudaConfig) hostRedistArch;
+  inherit (cudaConfig) hostRedistSystem;
   inherit (flags) cmakeCudaArchitecturesString;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
@@ -47,7 +47,7 @@ let
       inherit (finalAttrs) substitutions;
       badPlatformsConditions = {
         "CUDA support is not enabled" = !config.cudaSupport;
-        "Platform is not supported" = hostRedistArch == "unsupported";
+        "Platform is not supported" = hostRedistSystem == "unsupported";
       };
       tests = {
         dontCompressCudaFatbin = callPackages ./tests/dontCompressCudaFatbin.nix { };

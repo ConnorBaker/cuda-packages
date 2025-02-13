@@ -15,15 +15,15 @@ from cuda_redist.extra_pydantic import ModelConfigAllowExtra, PydanticMapping, P
 from cuda_redist.extra_types import (
     CudaVariant,
     Date,
-    IgnoredRedistPlatforms,
+    IgnoredRedistSystems,
     MajorVersion,
     Md5,
     PackageName,
     PackageNameTA,
     RedistName,
     RedistNames,
-    RedistPlatform,
-    RedistPlatforms,
+    RedistSystem,
+    RedistSystems,
     RedistUrlPrefix,
     Sha256,
     Version,
@@ -38,25 +38,25 @@ LOGGER: Final[Logger] = get_logger(__name__)
 NvidiaReleaseCommonTy = TypeVar("NvidiaReleaseCommonTy", bound="NvidiaReleaseCommon")
 
 
-def _check_extra_keys_are_platforms(self: NvidiaReleaseCommonTy) -> NvidiaReleaseCommonTy:
+def _check_extra_keys_are_systems(self: NvidiaReleaseCommonTy) -> NvidiaReleaseCommonTy:
     """
-    Ensure that all redistributable platforms are present as keys. Additionally removes ignored platforms from the
+    Ensure that all redistributable systems are present as keys. Additionally removes ignored systems from the
     extra fields.
 
-    This is to avoid the scenario wherein the platforms are updated but this class is not.
+    This is to avoid the scenario wherein the systems are updated but this class is not.
     """
     if not self.__pydantic_extra__:
-        LOGGER.info("No redistributable platforms found for %s version %s", self.name, self.version)
+        LOGGER.info("No redistributable systems found for %s version %s", self.name, self.version)
         return self
 
-    # Remove ignored platforms
-    for platform in IgnoredRedistPlatforms & self.__pydantic_extra__.keys():
-        del self.__pydantic_extra__[platform]  # pyright: ignore[reportArgumentType]
+    # Remove ignored systems
+    for system in IgnoredRedistSystems & self.__pydantic_extra__.keys():
+        del self.__pydantic_extra__[system]  # pyright: ignore[reportArgumentType]
 
-    # Check for keys which are not platforms
-    if unexpected_keys := self.__pydantic_extra__.keys() - RedistPlatforms:
+    # Check for keys which are not systems
+    if unexpected_keys := self.__pydantic_extra__.keys() - RedistSystems:
         unexpected_keys_str = ", ".join(sorted(unexpected_keys))
-        raise ValueError(f"Unexpected platform key(s) encountered: {unexpected_keys_str}")
+        raise ValueError(f"Unexpected system key(s) encountered: {unexpected_keys_str}")
 
     return self
 
@@ -80,27 +80,27 @@ class NvidiaReleaseCommon(PydanticObject):
     ]
     version: Annotated[Version, Field(description="Version of the release.")]
 
-    def packages(self) -> Mapping[RedistPlatform, NvidiaPackage | Mapping[CudaVariant, NvidiaPackage]]:
+    def packages(self) -> Mapping[RedistSystem, NvidiaPackage | Mapping[CudaVariant, NvidiaPackage]]:
         # Only implemented in subclasses
         raise NotImplementedError()
 
 
 # Does not have or use `cuda_variant` field
-# Does not have a `source` platform
-# Does not have a `linux-all` platform
+# Does not have a `source` system
+# Does not have a `linux-all` system
 class NvidiaReleaseV2(NvidiaReleaseCommon):
     model_config = ModelConfigAllowExtra
     __pydantic_extra__: dict[  # pyright: ignore[reportIncompatibleVariableOverride]
-        RedistPlatform,  # NOTE: This is an invariant we must maintain
+        RedistSystem,  # NOTE: This is an invariant we must maintain
         NvidiaPackage,
     ]
 
     @model_validator(mode="after")
-    def check_extra_keys_are_platforms(self) -> Self:
-        return _check_extra_keys_are_platforms(self)
+    def check_extra_keys_are_systems(self) -> Self:
+        return _check_extra_keys_are_systems(self)
 
     @override
-    def packages(self) -> Mapping[RedistPlatform, NvidiaPackage]:
+    def packages(self) -> Mapping[RedistSystem, NvidiaPackage]:
         return self.__pydantic_extra__
 
 
@@ -108,7 +108,7 @@ class NvidiaReleaseV2(NvidiaReleaseCommon):
 class NvidiaReleaseV3(NvidiaReleaseCommon):
     model_config = ModelConfigAllowExtra
     __pydantic_extra__: dict[  # pyright: ignore[reportIncompatibleVariableOverride]
-        RedistPlatform,  # NOTE: This is an invariant we must maintain
+        RedistSystem,  # NOTE: This is an invariant we must maintain
         NvidiaPackage | Mapping[CudaVariant, NvidiaPackage],  # NOTE: Neither `source` nor `linux-all` use cuda variants
     ]
 
@@ -125,21 +125,21 @@ class NvidiaReleaseV3(NvidiaReleaseCommon):
         return value
 
     @model_validator(mode="after")
-    def check_extra_keys_are_platforms(self) -> Self:
-        return _check_extra_keys_are_platforms(self)
+    def check_extra_keys_are_systems(self) -> Self:
+        return _check_extra_keys_are_systems(self)
 
     @model_validator(mode="after")
-    def check_exclusive_platforms_are_exclusive(self) -> Self:
+    def check_exclusive_systems_are_exclusive(self) -> Self:
         """
-        Ensure that the `linux-all` and `source` platforms are exclusive with all the others.
+        Ensure that the `linux-all` and `source` systems are exclusive with all the others.
         """
-        for exclusive_platform in ["linux-all", "source"]:
-            if exclusive_platform in self.__pydantic_extra__:
+        for exclusive_system in ["linux-all", "source"]:
+            if exclusive_system in self.__pydantic_extra__:
                 if len(self.__pydantic_extra__) > 1:
-                    raise ValueError(f"The `{exclusive_platform}` platform is exclusive with all the others.")
+                    raise ValueError(f"The `{exclusive_system}` system is exclusive with all the others.")
 
                 if self.cuda_variant != []:
-                    raise ValueError(f"The `{exclusive_platform}` platform requires `cuda_variant` be empty.")
+                    raise ValueError(f"The `{exclusive_system}` system requires `cuda_variant` be empty.")
 
         return self
 
@@ -149,17 +149,17 @@ class NvidiaReleaseV3(NvidiaReleaseCommon):
         Ensure the values of the extra fields are objects keyed by CUDA variant.
         """
         allowed_cuda_variants = {f"cuda{major_version}" for major_version in self.cuda_variant}
-        for platform, variants in self.__pydantic_extra__.items():
-            if platform in {"linux-all", "source"} and not isinstance(variants, NvidiaPackage):
-                raise ValueError(f"Platform `{platform}` must have a single package.")
+        for system, variants in self.__pydantic_extra__.items():
+            if system in {"linux-all", "source"} and not isinstance(variants, NvidiaPackage):
+                raise ValueError(f"System `{system}` must have a single package.")
             elif not isinstance(variants, Mapping):
-                raise ValueError(f"Platform `{platform}` does not have a mapping of CUDA variants.")
+                raise ValueError(f"System `{system}` does not have a mapping of CUDA variants.")
 
             # Check for keys which are not CUDA variants
             if unexpected_keys := variants.keys() - allowed_cuda_variants:
                 unexpected_keys_str = ", ".join(sorted(unexpected_keys))
                 raise ValueError(
-                    f"Unexpected CUDA variant(s) encountered for platform {platform}: {unexpected_keys_str}"
+                    f"Unexpected CUDA variant(s) encountered for system {system}: {unexpected_keys_str}"
                 )
 
         return self
@@ -167,7 +167,7 @@ class NvidiaReleaseV3(NvidiaReleaseCommon):
     @override
     def packages(
         self,
-    ) -> Mapping[RedistPlatform, NvidiaPackage | Mapping[CudaVariant, NvidiaPackage]]:
+    ) -> Mapping[RedistSystem, NvidiaPackage | Mapping[CudaVariant, NvidiaPackage]]:
         return self.__pydantic_extra__
 
 

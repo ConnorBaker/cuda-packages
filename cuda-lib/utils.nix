@@ -43,7 +43,7 @@ let
     drvAttrPathsStrategy
     drvAttrPathsStrategyImpl
     flattenAttrs
-    getNixPlatforms
+    getNixSystems
     mkCudaPackagesCallPackage
     mkCudaPackagesOverrideAttrsDefaultsFn
     mkCudaPackagesScope
@@ -101,7 +101,7 @@ in
   collectPackageConfigsForCudaVersion =
     cudaConfig: cudaMajorMinorPatchVersion:
     let
-      inherit (cudaConfig) hostRedistArch;
+      inherit (cudaConfig) hostRedistSystem;
       backupCudaVariant = mkCudaVariant cudaMajorMinorPatchVersion;
       # Get the redist names and versions for our particular package set.
       redistNameToRedistVersion = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion}.redists;
@@ -119,15 +119,17 @@ in
           inherit (redistManifest.${packageName}) releaseInfo packages;
         in
         concatMap (
-          redistArch:
+          redistSystem:
           let
-            packageVariants = packages.${redistArch};
-            # Always show preference to the "source", then "linux-all" redistArch if they are available, as they are
+            packageVariants = packages.${redistSystem};
+            # Always show preference to the "source", then "linux-all" redistSystem if they are available, as they are
             # the most general.
-            nixPlatformIsSupported =
-              redistArch == "source"
-              || redistArch == "linux-all"
-              || (redistArch == hostRedistArch && !hasAttr "source" packages && !hasAttr "linux-all" packages);
+            nixSystemIsSupported =
+              redistSystem == "source"
+              || redistSystem == "linux-all"
+              || (
+                redistSystem == hostRedistSystem && !hasAttr "source" packages && !hasAttr "linux-all" packages
+              );
           in
           map (
             cudaVariant:
@@ -138,25 +140,25 @@ in
                 cudaVariant == "None" || (cudaVariant == backupCudaVariant && !hasAttr "None" packageVariants);
             in
             # If the package variant is supported for this CUDA version, include information about it --
-            # it means the package is available for *some* architecture.
+            # it means the package is available for *some* system.
             {
               ${packageName} = mkIf cudaVariantIsSupported {
                 inherit redistName releaseInfo;
                 # Attribute set handles deduplication for us; we use this to create platforms in meta.
-                supportedNixPlatformAttrs = genAttrs (getNixPlatforms redistArch) (const null);
-                supportedRedistArchAttrs.${redistArch} = null;
+                supportedNixSystemAttrs = genAttrs (getNixSystems redistSystem) (const null);
+                supportedRedistSystemAttrs.${redistSystem} = null;
                 # We want packageInfo to be default here so it can be successfully replaced by the chosen
                 # package variant, if it exists.
-                packageInfo = if nixPlatformIsSupported then packageInfo else mkDefault packageInfo;
-                callPackageOverrider = mkIf nixPlatformIsSupported (
+                packageInfo = if nixSystemIsSupported then packageInfo else mkDefault packageInfo;
+                callPackageOverrider = mkIf nixSystemIsSupported (
                   redistCallPackageOverriders.${packageName} or null
                 );
-                srcArgs = mkIf nixPlatformIsSupported {
+                srcArgs = mkIf nixSystemIsSupported {
                   url = mkRedistUrl redistName (mkRedistUrlRelativePath {
                     inherit
                       cudaVariant
                       packageName
-                      redistArch
+                      redistSystem
                       redistName
                       releaseInfo
                       ;
@@ -289,7 +291,7 @@ in
     mkRedistUrlRelativePath
       :: { cudaVariant :: CudaVariant
          , packageName :: PackageName
-         , redistArch :: RedistArch
+         , redistSystem :: RedistSystem
          , redistName :: RedistName
          , relativePath :: NullOr NonEmptyStr
          , releaseInfo :: ReleaseInfo
@@ -305,8 +307,8 @@ in
     packageName
     : The name of the package
 
-    redistArch
-    : The redist architecture of the package
+    redistSystem
+    : The redist system of the package
 
     redistName
     : The name of the redistributable
@@ -321,7 +323,7 @@ in
     {
       cudaVariant,
       packageName,
-      redistArch,
+      redistSystem,
       redistName,
       relativePath ? null,
       releaseInfo,
@@ -333,10 +335,10 @@ in
         "mkRedistUrlRelativePath: tensorrt does not use standard naming conventions for relative paths and requires relativePath be non-null";
       concatStringsSep "/" [
         packageName
-        redistArch
+        redistSystem
         (concatStringsSep "-" [
           packageName
-          redistArch
+          redistSystem
           (releaseInfo.version + (if cudaVariant != "None" then "_${cudaVariant}" else ""))
           "archive.tar.xz"
         ])
@@ -548,45 +550,45 @@ in
     );
 
   /**
-    Maps a NVIDIA redistributable architecture to Nix platforms.
+    Maps a NVIDIA redistributable system to Nix systems.
 
-    NOTE: This function returns a list of platforms because the redistributable architectures `"linux-all"` and
-    `"source"` can be built on multiple platforms.
+    NOTE: This function returns a list of systems because the redistributable systems `"linux-all"` and
+    `"source"` can be built on multiple systems.
 
-    NOTE: This function *will* be called by unsupported platforms because `cudaPackages` is part of
-    `all-packages.nix`, which is evaluated on all platforms. As such, we need to handle unsupported
-    platforms gracefully.
+    NOTE: This function *will* be called by unsupported systems because `cudaPackages` is part of
+    `all-packages.nix`, which is evaluated on all systems. As such, we need to handle unsupported
+    systems gracefully.
 
     # Example
 
     ```nix
-    cudaLib.utils.getNixPlatforms "linux-sbsa"
+    cudaLib.utils.getNixSystems "linux-sbsa"
     => [ "aarch64-linux" ]
     ```
 
     ```nix
-    cudaLib.utils.getNixPlatforms "linux-aarch64"
+    cudaLib.utils.getNixSystems "linux-aarch64"
     => [ "aarch64-linux" ]
     ```
 
     # Type
 
     ```
-    getNixPlatforms :: RedistArch -> List String
+    getNixSystems :: RedistSystem -> List String
     ```
 
     # Arguments
 
-    redistArch
-    : The NVIDIA redistributable architecture
+    redistSystem
+    : The NVIDIA redistributable system
   */
-  getNixPlatforms =
-    redistArch:
-    if redistArch == "linux-x86_64" then
+  getNixSystems =
+    redistSystem:
+    if redistSystem == "linux-x86_64" then
       [ "x86_64-linux" ]
-    else if redistArch == "linux-sbsa" || redistArch == "linux-aarch64" then
+    else if redistSystem == "linux-sbsa" || redistSystem == "linux-aarch64" then
       [ "aarch64-linux" ]
-    else if redistArch == "linux-all" || redistArch == "source" then
+    else if redistSystem == "linux-all" || redistSystem == "source" then
       [
         "aarch64-linux"
         "x86_64-linux"
@@ -609,24 +611,24 @@ in
     # Example
 
     ```nix
-    cudaLib.utils.getRedistArch true "aarch64-linux"
+    cudaLib.utils.getRedistSystem true "aarch64-linux"
     => "linux-aarch64"
     ```
 
     ```nix
-    cudaLib.utils.getRedistArch false "aarch64-linux"
+    cudaLib.utils.getRedistSystem false "aarch64-linux"
     => "linux-sbsa"
     ```
 
     ```nix
-    cudaLib.utils.getRedistArch false "powerpc64le-linux"
+    cudaLib.utils.getRedistSystem false "powerpc64le-linux"
     => "linux-ppc64le"
     ```
 
     # Type
 
     ```
-    getRedistArch :: Bool -> String -> String
+    getRedistSystem :: Bool -> String -> String
     ```
 
     # Arguments
@@ -637,7 +639,7 @@ in
     nixSystem
     : The Nix system
   */
-  getRedistArch =
+  getRedistSystem =
     isJetsonBuild: nixSystem:
     if nixSystem == "x86_64-linux" then
       "linux-x86_64"
@@ -649,12 +651,12 @@ in
   /**
     TODO:
   */
-  getSupportedRedistArches =
+  getSupportedRedistSystems =
     packages: desiredCudaVariant:
     filter (
-      redistArch:
+      redistSystem:
       let
-        packageVariants = packages.${redistArch};
+        packageVariants = packages.${redistSystem};
       in
       hasAttr "None" packageVariants || hasAttr desiredCudaVariant packageVariants
     ) (attrNames packages);
@@ -889,8 +891,6 @@ in
   mkRealArchitecture = cudaCapability: "sm_" + dropDots cudaCapability;
   mkVirtualArchitecture = cudaCapability: "compute_" + dropDots cudaCapability;
 
-  # This is used solely for utility functions getNixPlatform and getRedistArch which are needed before the flags
-  # attribute set of values and functions is created in the package fixed-point.
   getJetsonTargets =
     gpus: cudaCapabilities:
     let

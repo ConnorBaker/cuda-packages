@@ -7,11 +7,11 @@
 let
   inherit (cudaLib.types)
     cudaCapability
-    redistArch
+    redistSystem
     ;
   inherit (cudaLib.utils)
     getJetsonTargets
-    getRedistArch
+    getRedistSystem
     mkOptions
     ;
   inherit (lib.types) bool listOf nonEmptyStr;
@@ -41,15 +41,15 @@ in
     };
     hasJetsonTarget = {
       description = ''
-        Whether the target platform is a Jetson device.
+        Whether the target capabilities include a Jetson system.
       '';
       type = bool;
     };
-    hostRedistArch = {
+    hostRedistSystem = {
       description = ''
-        The architecture of the host platform for redistributable packages.
+        The redistributable system of the host platform, to be used for redistributable packages.
       '';
-      type = redistArch;
+      type = redistSystem;
     };
     hostNixSystem = {
       description = ''
@@ -62,6 +62,6 @@ in
   # Set defaults for our use.
   config = {
     hasJetsonTarget = (getJetsonTargets config.data.gpus config.cudaCapabilities) != [ ];
-    hostRedistArch = getRedistArch config.hasJetsonTarget config.hostNixSystem;
+    hostRedistSystem = getRedistSystem config.hasJetsonTarget config.hostNixSystem;
   };
 }

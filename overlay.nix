@@ -184,8 +184,8 @@ let
               redistName,
               releaseInfo,
               srcArgs,
-              supportedNixPlatformAttrs,
-              supportedRedistArchAttrs,
+              supportedNixSystemAttrs,
+              supportedRedistSystemAttrs,
             }:
             {
               ${packageName} = mkRedistPackage callPackageOverrider {
@@ -197,8 +197,8 @@ let
                   ;
                 src = mapNullable fetchzip srcArgs;
                 # NOTE: Don't need to worry about sorting the attribute names because Nix already does that.
-                supportedNixPlatforms = attrNames supportedNixPlatformAttrs;
-                supportedRedistArches = attrNames supportedRedistArchAttrs;
+                supportedNixSystems = attrNames supportedNixSystemAttrs;
+                supportedRedistSystems = attrNames supportedRedistSystemAttrs;
               };
             }
           ) cudaPackagesConfig.packageConfigs

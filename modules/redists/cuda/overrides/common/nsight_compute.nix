@@ -27,7 +27,7 @@
   zlib,
 }:
 let
-  inherit (cudaConfig) hostRedistArch;
+  inherit (cudaConfig) hostRedistSystem;
   inherit (lib.attrsets) getLib getOutput;
   inherit (lib.lists) optionals;
   inherit (lib.strings) optionalString;
@@ -204,14 +204,14 @@ finalAttrs: prevAttrs: {
     prevAttrs.postPatch or ""
     + ''
       for kind in host target; do
-        nixLog "removing unsupported ''${kind}s for host redist arch ${hostRedistArch}"
+        nixLog "removing unsupported ''${kind}s for host redist system ${hostRedistSystem}"
         if [[ ! -d "$kind" ]]; then
           nixLog "directory $kind does not exist, skipping"
           continue
         fi
         pushd "$kind"
         for dir in *; do
-          case "${hostRedistArch}" in
+          case "${hostRedistSystem}" in
           linux-aarch64|linux-sbsa)
             case "$dir" in
             linux-*-a64) nixLog "keeping $dir";;
@@ -224,7 +224,7 @@ finalAttrs: prevAttrs: {
             *) nixLog "removing $dir" && rm -r "$dir";;
             esac
             ;;
-          *) nixLogError "unknown host redist arch: ${hostRedistArch}" && exit 1;;
+          *) nixLogError "unknown host redist system: ${hostRedistSystem}" && exit 1;;
           esac
         done
         popd
