@@ -2,6 +2,7 @@
   buildPythonPackage,
   cmake,
   config,
+  cudaLib,
   cudaPackages,
   cudaSupport ? config.cudaSupport,
   fetchFromGitHub,
@@ -15,6 +16,7 @@
   wheel,
 }:
 let
+  inherit (cudaLib.utils) majorMinorPatch;
   inherit (cudaPackages)
     cuda_cudart
     cuda_nvcc
@@ -29,7 +31,6 @@ let
   pythonVersionComponents = splitVersion python3.version;
   pythonMajorVersion = elemAt pythonVersionComponents 0;
   pythonMinorVersion = elemAt pythonVersionComponents 1;
-  tensorRTMajorMinorPatchVersion = tensorrt.version;
 
   # This allows us to break a circular dependency on onnx-tensorrt, which requires tensorrt-python.
   # We only need the header files.
@@ -53,14 +54,18 @@ let
 
     pname = "tensorrt-python";
 
-    version = "10.7.0";
+    version = majorMinorPatch tensorrt.version;
 
     src = fetchFromGitHub {
       owner = "NVIDIA";
       repo = "TensorRT";
-      rev = "17003e43da9858f574e3a4a1d795fcf218862fe3";
-      # NOTE: We supply our own Onnx and Protobuf, so we do not do a recursive clone.
-      hash = "sha256-sbp61GverIWrHKvJV+oO9TctFTO4WUmH0oInZIwqF/s=";
+      tag = "v${finalAttrs.version}";
+      hash =
+        {
+          "10.7.0" = "sha256-sbp61GverIWrHKvJV+oO9TctFTO4WUmH0oInZIwqF/s=";
+          "10.8.0" = "sha256-SDlTZf8EQBq8vDCH3YFJCROHbf47RB5WUu4esLNpYuA=";
+        }
+        .${finalAttrs.version};
     };
 
     sourceRoot = "${finalAttrs.src.name}/python";
@@ -74,6 +79,8 @@ let
       wheel
     ];
 
+    # TODO: Resume patching here for 10.8.0 release since the CMakeLists.txt in the python directory had some
+    # reformatting done -- will need to replace multiple lines.
     postPatch =
       ''
         nixLog "patching CMakeLists.txt to use our supplied packages"
@@ -99,10 +106,10 @@ let
               '${tensorrt.version}' \
             --replace-quiet \
               '##TENSORRT_MAJMINPATCH##' \
-              '${tensorRTMajorMinorPatchVersion}' \
+              '${finalAttrs.version}' \
             --replace-quiet \
               '##TENSORRT_PYTHON_VERSION##' \
-              '${tensorRTMajorMinorPatchVersion}' \
+              '${finalAttrs.version}' \
             --replace-quiet \
               '##TENSORRT_MODULE##' \
               'tensorrt'

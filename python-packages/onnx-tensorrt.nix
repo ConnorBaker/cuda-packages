@@ -30,13 +30,18 @@ let
     __structuredAttrs = false;
 
     pname = "onnx-tensorrt";
-    version = "10.7";
+    version = majorMinor tensorrt.version;
 
     src = fetchFromGitHub {
       owner = "onnx";
       repo = "onnx-tensorrt";
       tag = "release/${finalAttrs.version}-GA";
-      hash = "sha256-1Y5jELqVkRkjeiEbF7GrPqAGZMu7U8JgmM3ZQbsG304=";
+      hash =
+        {
+          "10.7" = "sha256-1Y5jELqVkRkjeiEbF7GrPqAGZMu7U8JgmM3ZQbsG304=";
+          "10.8" = "sha256-wIi1+V8ZVs0tZxtfG0kxTZcB03IKMO1KJuWypaAFi3g=";
+        }
+        .${finalAttrs.version};
     };
 
     outputs = [
@@ -174,7 +179,5 @@ in
 assert assertMsg (
   finalAttrs.version == majorMinor finalAttrs.version
 ) "Version must have only two components";
-assert assertMsg (
-  finalAttrs.version == majorMinor tensorrt.version
-) "Version must match tensorrt-oss";
+assert assertMsg (finalAttrs.version == majorMinor tensorrt.version) "Version must match tensorrt";
 buildPythonPackage finalAttrs

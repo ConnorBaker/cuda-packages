@@ -27,13 +27,13 @@ in
 # TODO(@connorbaker): This should be a hybrid C++/Python package.
 stdenv.mkDerivation (finalAttrs: {
   pname = "cudnn-frontend";
-  version = "1.9.0";
+  version = "1.10.0";
 
   src = fetchFromGitHub {
     owner = "ConnorBaker";
     repo = "cudnn-frontend";
-    rev = "4ce40a0c3de0e8a7065caf1cf59a90493e084682";
-    hash = "sha256-+tEhkE4mz/GPEytV3xavdyfGKYDWsw3lSWNEZid6lcE=";
+    rev = "0bbb0e949aac4f41e9d91f667a753ece24a22bb3";
+    hash = "sha256-nYbYEv1q5zZt/1VqKHL94XofttxrOvZSLjkL93bzvQE=";
   };
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a
@@ -110,14 +110,14 @@ stdenv.mkDerivation (finalAttrs: {
     rev-prefix = "v";
   };
 
-  meta = with lib; {
+  meta = {
     description = "A c++ wrapper for the cudnn backend API";
     homepage = "https://github.com/NVIDIA/cudnn-frontend";
-    license = licenses.mit;
+    license = lib.licenses.mit;
     platforms = [
       "aarch64-linux"
       "x86_64-linux"
     ];
-    maintainers = (with maintainers; [ connorbaker ]) ++ teams.cuda.members;
+    maintainers = (with lib.maintainers; [ connorbaker ]) ++ lib.teams.cuda.members;
   };
 })

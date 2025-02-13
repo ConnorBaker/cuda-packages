@@ -247,6 +247,7 @@ in
       ${mkRealArchitecture "8.9"} = {
         ${mkCudaPackagesVersionedName "12.2.2"} = mkCudaPackagesJobs pkgs "8.9" "12.2.2";
         ${mkCudaPackagesVersionedName "12.6.3"} = mkCudaPackagesJobs pkgs "8.9" "12.6.3";
+        ${mkCudaPackagesVersionedName "12.8.0"} = mkCudaPackagesJobs pkgs "8.9" "12.8.0";
       };
       python3Packages = mkPython3PackagesJobs "x86_64-linux-pkgs-python3Packages" pkgs.python3Packages;
     }
@@ -261,13 +262,7 @@ in
       ${mkRealArchitecture "8.7"} = {
         # JetPack 5 only supports up to 12.2.2
         ${mkCudaPackagesVersionedName "12.2.2"} = mkCudaPackagesJobs pkgs "8.7" "12.2.2";
-        # ${mkCudaPackagesVersionedName "12.6.3"} = mkCudaPackagesJobs pkgs "8.7" "12.6.3";
       };
-      # Ada Lovelace
-      # ${mkRealArchitecture "8.9"} = {
-      #   ${mkCudaPackagesVersionedName "12.2.2"} = mkCudaPackagesJobs pkgs "8.9" "12.2.2";
-      #   ${mkCudaPackagesVersionedName "12.6.3"} = mkCudaPackagesJobs pkgs "8.9" "12.6.3";
-      # };
       python3Packages = mkPython3PackagesJobs "aarch64-linux-pkgs-python3Packages" pkgs.python3Packages;
     }
     // mkPkgsJobs "aarch64-linux-pkgs" pkgs;

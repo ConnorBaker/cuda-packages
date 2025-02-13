@@ -135,5 +135,18 @@ in
         minMajorVersion = "6";
       };
     };
+
+    # Maximum Clang version is 19, maximum GCC version is 14
+    # https://docs.nvidia.com/cuda/archive/12.6.0/cuda-installation-guide-linux/index.html#host-compiler-support-policy
+    "12.8" = {
+      clang = {
+        maxMajorVersion = "19";
+        minMajorVersion = "7";
+      };
+      gcc = {
+        maxMajorVersion = "14";
+        minMajorVersion = "6";
+      };
+    };
   };
 }

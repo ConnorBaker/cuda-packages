@@ -21,13 +21,20 @@ let
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "nccl";
-  version = "2.24.3-1";
+  version = "2.25.1-1";
 
+  # TODO: Build fails on CUDA 12.8 due to GCC 14 changes?
+  # cuda12.8-nccl> /nix/store/2s2ra7dqy7xs1qqd9qxzj7rvizdnhvc2-gcc-14-20241116/include/c++/14-20241116/type_traits(1610): error: "__is_nothrow_new_constructible" is not a function or static data member
+  # cuda12.8-nccl>       constexpr bool __is_nothrow_new_constructible
+  # cuda12.8-nccl>                      ^
+  # cuda12.8-nccl> /nix/store/2s2ra7dqy7xs1qqd9qxzj7rvizdnhvc2-gcc-14-20241116/include/c++/14-20241116/type_traits(1610): error: "constexpr" is not valid here
+  # cuda12.8-nccl>       constexpr bool __is_nothrow_new_constructible
+  # cuda12.8-nccl>       ^
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "nccl";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-TpZDy9lae1zZ38IJid6h893gk8OFPaSCZoeegLoYq9Y=";
+    hash = "sha256-3snh0xdL9I5BYqdbqdl+noizJoI38mZRVOJChgEE1I8=";
   };
 
   outputs = [

@@ -15,7 +15,7 @@ let
     mkOptionsModule
     ;
   inherit (lib.options) mkOption;
-  inherit (lib.modules) mkMerge;
+  inherit (lib.modules) mkIf mkMerge;
   inherit (lib.types) submodule;
 
   cudaConfig = config;
@@ -52,27 +52,39 @@ in
     let
       common = {
         packagesDirectories = [ ../cuda-packages/common ];
-        redists = {
-          cublasmp = "0.3.1";
-          cudnn = "9.6.0";
-          cudss = "0.4.0";
-          cuquantum = "24.11.0";
-          cusolvermp = "0.5.1";
-          cusparselt = "0.6.3";
-          cutensor = "2.0.2.1";
-          nppplus = "0.9.0";
-          nvjpeg2000 = "0.8.1";
-          nvpl = "24.7";
-          nvtiff = "0.4.0";
-          tensorrt = "10.7.0";
-        };
+        redists = mkMerge [
+          {
+            cublasmp = "0.3.1";
+            cudnn = "9.7.1";
+            cudss = "0.4.0";
+            cuquantum = "24.11.0";
+            cusolvermp = "0.6.0";
+            cutensor = "2.1.0";
+            nppplus = "0.9.0";
+            nvjpeg2000 = "0.8.1";
+            nvpl = "25.1";
+            nvtiff = "0.4.0";
+          }
+          (mkIf config.hasJetsonTarget { tensorrt = "10.7.0"; })
+          (mkIf (!config.hasJetsonTarget) { tensorrt = "10.8.0"; })
+        ];
       };
     in
     {
       # NOTE: CUDA 12.2.2 was the last release to support Xaviers running on JetPack 5 through cuda_compat.
       # https://docs.nvidia.com/cuda/cuda-for-tegra-appnote/index.html#deployment-considerations-for-cuda-upgrade-package
       # TODO: are there changes required for 12.2.2?
-      "12.2.2" = common;
-      "12.6.3" = common;
+      "12.2.2" = mkMerge [
+        common
+        { redists.cusparselt = "0.6.3"; }
+      ];
+      "12.6.3" = mkMerge [
+        common
+        { redists.cusparselt = "0.6.3"; }
+      ];
+      "12.8.0" = mkMerge [
+        common
+        { redists.cusparselt = "0.7.0"; } # Requires CUDA 12.8.0
+      ];
     };
 }
