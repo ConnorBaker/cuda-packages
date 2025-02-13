@@ -79,27 +79,23 @@ let
       wheel
     ];
 
-    # TODO: Resume patching here for 10.8.0 release since the CMakeLists.txt in the python directory had some
-    # reformatting done -- will need to replace multiple lines.
     postPatch =
       ''
-        nixLog "patching CMakeLists.txt to use our supplied packages"
+        nixLog "patching $PWD/CMakeLists.txt to correct hints for python3"
         substituteInPlace CMakeLists.txt \
-        --replace-fail \
-          'find_path(PYBIND11_DIR pybind11/pybind11.h HINTS ''${EXT_PATH} ''${WIN_EXTERNALS} PATH_SUFFIXES pybind11/include)' \
-          'find_package(pybind11 REQUIRED CONFIG)' \
-        --replace-fail \
-          'PYBIND11_DIR' \
-          'pybind11_DIR' \
-        --replace-fail \
-          'find_path(PY_INCLUDE Python.h HINTS ''${EXT_PATH}/''${PYTHON} /usr/include/''${PYTHON} PATH_SUFFIXES include)' \
-          'find_path(PY_INCLUDE Python.h HINTS "${python3}/include/''${PYTHON}" PATH_SUFFIXES include)'
+          --replace-fail \
+            'HINTS ''${EXT_PATH}/''${PYTHON} /usr/include/''${PYTHON}' \
+            'HINTS "${python3}/include/''${PYTHON}"'
+        for script in packaging/bindings_wheel/tensorrt/plugin/_{lib,tensor,top_level}.py; do
+          nixLog "patching $PWD/$script to remove invalid escape sequence '\s'"
+          substituteInPlace "$script" --replace-fail '\s' 's'
+        done
       ''
       # Patch files in packaging
       # Largely taken from https://github.com/NVIDIA/TensorRT/blob/08ad45bf3df848e722dfdc7d01474b5ba2eff7e9/python/build.sh.
       + ''
         for file in $(find packaging -type f); do
-          nixLog "patching $file to include TensorRT version"
+          nixLog "patching $PWD/$file to include TensorRT version"
           substituteInPlace "$file" \
             --replace-quiet \
               '##TENSORRT_VERSION##' \
