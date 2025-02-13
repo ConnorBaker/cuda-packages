@@ -1,25 +1,6 @@
 {
   "libcutensor": {
     "packages": {
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "cudaVersionsInLib": [
-              "11",
-              "11.0",
-              "12"
-            ],
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static"
-            ]
-          },
-          "recursiveHash": "sha256-VKTwJgYhIbwL9Ugr2SNaWk/nlRYkxeiGhGoR4ymlwIY="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {

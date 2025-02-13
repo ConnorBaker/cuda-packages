@@ -13,18 +13,6 @@
           "recursiveHash": "sha256-Ud6nmTN1jnC//B6uss6nQ3jjkWbiTGq2p5OIl1ZR0dQ="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include"
-            ]
-          },
-          "recursiveHash": "sha256-Ud6nmTN1jnC//B6uss6nQ3jjkWbiTGq2p5OIl1ZR0dQ="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -94,21 +82,6 @@
           "recursiveHash": "sha256-NAShh55yIn5+4fkFScYTrtu6Nh7hnJQ2cmOBfDw+M6Y="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-TGL6D776GEATtcuCgeTYkFVOqL+rkl5XBjQo6Xihsos="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -160,17 +133,6 @@
           "recursiveHash": "sha256-t+LtLJDrHWuKwsrJM0KFdzdjnqV56FOj3oXnRzMNkKY="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin"
-            ]
-          },
-          "recursiveHash": "sha256-oJQR9Jb8S7S0yKbDvG533GDu+3hU8v47VpNDDLB5oac="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -215,20 +177,6 @@
             ]
           },
           "recursiveHash": "sha256-yKc/GLPptTDB+ExKdxgWblD3EceM3G9aaPzFVRtT+Yg="
-        }
-      },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "sample"
-            ]
-          },
-          "recursiveHash": "sha256-W/Il/HinRMzQ6xPwv65Lw4IUBbYIkSWhFB4S30tMhyI="
         }
       },
       "linux-sbsa": {
@@ -282,20 +230,6 @@
             ]
           },
           "recursiveHash": "sha256-EdjawPozyAABhVhsFgr2NU2NF/0S0B5UeZeBB9mAMtg="
-        }
-      },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin",
-              "dev",
-              "include",
-              "static"
-            ]
-          },
-          "recursiveHash": "sha256-yzeRO5cWRTM+pxOijuAK6nYi8A4gjyRzGnIPnHWBB9s="
         }
       },
       "linux-sbsa": {
@@ -366,16 +300,6 @@
           "recursiveHash": "sha256-W5unjMGwKhu7OiJxt2v8s5eb7kUKfYTgTRfip0FSoNk="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out"
-            ]
-          },
-          "recursiveHash": "sha256-W5unjMGwKhu7OiJxt2v8s5eb7kUKfYTgTRfip0FSoNk="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -417,17 +341,6 @@
           "recursiveHash": "sha256-YmZVKJ2v07MFfKI/VXGyoOKgrhg5UsMLo5lTljVxZ9U="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin"
-            ]
-          },
-          "recursiveHash": "sha256-hViTS7C0hKvgogbWvFTU8PfAMQ5bvl76UpG60xmm6xs="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -460,17 +373,6 @@
   },
   "cuda_nsight": {
     "packages": {
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin"
-            ]
-          },
-          "recursiveHash": "sha256-zhTDxZmxGbCLs9lGTloZ9DQGNzq1fFwbSDiaKl7D3Zk="
-        }
-      },
       "linux-x86_64": {
         "None": {
           "features": {
@@ -504,20 +406,6 @@
             ]
           },
           "recursiveHash": "sha256-VX5MJQH3DlgXO3SA17G3EUB8YYPy5JuccDMSenK5VRg="
-        }
-      },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin",
-              "dev",
-              "include",
-              "static"
-            ]
-          },
-          "recursiveHash": "sha256-uXk5Y+gvG4CoSih9mjATshhzMMZWnP397SqyY6MZ/R0="
         }
       },
       "linux-sbsa": {
@@ -569,17 +457,6 @@
           "recursiveHash": "sha256-7xWRfYCTgAKUx4ziVLyRUZzEap69boTyOBr3aHyra7Q="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin"
-            ]
-          },
-          "recursiveHash": "sha256-wY8mLqDAfNWKxXvHjqxJMYdOgn67Goib2sV+8vj/P0U="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -626,20 +503,6 @@
           "recursiveHash": "sha256-fXja648VWKZjnZZgGBNqEYkkMzXhNKaVJxr01ioqSDY="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-1EzQ3HwnMaZd8d7h49u+hmgb2Ku+U6Fr/p5qrgFSX/I="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -678,18 +541,6 @@
   },
   "cuda_nvprof": {
     "packages": {
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin",
-              "lib"
-            ]
-          },
-          "recursiveHash": "sha256-9rmfCGliSHPbMR4W/5GX3YPlEHRBI1ifW7W+e6u/hOg="
-        }
-      },
       "linux-x86_64": {
         "None": {
           "features": {
@@ -721,17 +572,6 @@
             ]
           },
           "recursiveHash": "sha256-iYXoMdW5pBYDR2sxZVX6ywhOrMyXHBWGr6RsvoVNzis="
-        }
-      },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin"
-            ]
-          },
-          "recursiveHash": "sha256-7L0xzcFJHp0t6h2UoCLEXtT9jJw75L37MLOpNOI+Lqk="
         }
       },
       "linux-sbsa": {
@@ -779,21 +619,6 @@
             ]
           },
           "recursiveHash": "sha256-iPbzKFqilnwJVOlccTHLBG0HfTmin3ydcLzKKi2ETrs="
-        }
-      },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-9pjiQiNdVOpVk+bmW735/iwaCmx1Qy0M8zHujp/Ij7I="
         }
       },
       "linux-sbsa": {
@@ -849,19 +674,6 @@
           "recursiveHash": "sha256-0IIMgJ6ux72opBiSgOlPvbWKBAg11/aDEQX1hzyN9PA="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib"
-            ]
-          },
-          "recursiveHash": "sha256-WFrGsJCEIlbJ24LyKxdzUeBUsUFjF5JV1H0CwSyeLnk="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -898,17 +710,6 @@
   },
   "cuda_nvvp": {
     "packages": {
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin"
-            ]
-          },
-          "recursiveHash": "sha256-rGA5TEi9uVu7Wu64oCzlubQmT0XwOm2xdR/iL5AaQCQ="
-        }
-      },
       "linux-x86_64": {
         "None": {
           "features": {
@@ -965,18 +766,6 @@
           "recursiveHash": "sha256-7IDiZ9LpRha2GIMO9Tpd6pPfMqqfbVj0t5luyVOSf1g="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include"
-            ]
-          },
-          "recursiveHash": "sha256-7IDiZ9LpRha2GIMO9Tpd6pPfMqqfbVj0t5luyVOSf1g="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -1020,17 +809,6 @@
             ]
           },
           "recursiveHash": "sha256-PnFBIng3NlcM7ujkWlpFrlY9HNypG/ay/uhAz2dTKjs="
-        }
-      },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin"
-            ]
-          },
-          "recursiveHash": "sha256-UakrTXMsaYXE8I0HMp8Ftye+99l6vchEjZxeqVx1oME="
         }
       },
       "linux-sbsa": {
@@ -1118,21 +896,6 @@
           "recursiveHash": "sha256-1mfiWmSN8ug4qvkCYCtT9iD44wQDeXZ6z6l83Kxmf0w="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-3AzCgT0OINQzeaEHyz6sWmotT1oU0bRJZ9yYoGBxRdU="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -1210,21 +973,6 @@
             ]
           },
           "recursiveHash": "sha256-VhbMvtOssQGGeZRCPDUtFeM5dqkQeXVz9K1dQ9fzcHE="
-        }
-      },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-BPlIZP53dXk2bJVEoCZKStVxW1MjptARIiP6Bevs6hc="
         }
       },
       "linux-sbsa": {
@@ -1337,21 +1085,6 @@
           "recursiveHash": "sha256-p9LFIQxP9d0VYwYwTfP2IrscbQnqcYtQp/RXwSXc+0c="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-OlMh4DwDMCQ75rXANqd8VcuqG+rlA4SaaXYDnmRtH1k="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -1405,21 +1138,6 @@
             ]
           },
           "recursiveHash": "sha256-xLypfi2f2TuShgafKyKdVJf50nxebhK9ICe269E/MMk="
-        }
-      },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-B76/G9yKrXI3/jwzQiIcljDvv5vnz2MvfbfRHA/SZvg="
         }
       },
       "linux-sbsa": {
@@ -1477,21 +1195,6 @@
           "recursiveHash": "sha256-ckO1tjspuh73NugxV6+eYXVjSq5CjXP5D/9Nts+zkZQ="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-2b6iW/0bdra6UPUTFNP/WSEj/XyKosWUKhT7cCjXCyI="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -1545,21 +1248,6 @@
             ]
           },
           "recursiveHash": "sha256-wkahj5rKuhNVPTpOjvVluRjyWgu5fTiRXpTsxkvMfrU="
-        }
-      },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-rXDbl4u5E8E4oS8zvFinYKnqN/jLO4KTjIogJy8kfTI="
         }
       },
       "linux-sbsa": {
@@ -1649,21 +1337,6 @@
           "recursiveHash": "sha256-jsALaK/BRlLlsEtGSNSLKlGRMLzoEuYu6VoocrOUJkA="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-O+i98zVHAyDW1UG1xeShm++dpVInCBm2XDYI7xbRZ7w="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -1719,21 +1392,6 @@
           "recursiveHash": "sha256-X1vCNUFT4ghrgXk+3mc8+sMvwIfVWPP1JeOTes8XHWg="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "dev",
-              "include",
-              "lib",
-              "static",
-              "stubs"
-            ]
-          },
-          "recursiveHash": "sha256-HZAlwpvoGq77gWGp7itRAUuvfaXkujDV+nNXVOYANj8="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -1785,17 +1443,6 @@
           "recursiveHash": "sha256-qNZo8IDqH9b/jYW7xlbe5K2HMKkzgUOA1TvKTCRj22Y="
         }
       },
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin"
-            ]
-          },
-          "recursiveHash": "sha256-sCRaRowfu8GS0ffOk7dgUfJo4NSDrWToWuMalb7BeTc="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -1828,17 +1475,6 @@
   },
   "nsight_systems": {
     "packages": {
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin"
-            ]
-          },
-          "recursiveHash": "sha256-1U4HWgo1fvUzMxtXVkiEaMW+v+g3bvuRFDKb7RIFaaA="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
@@ -1871,18 +1507,6 @@
   },
   "nvidia_driver": {
     "packages": {
-      "linux-ppc64le": {
-        "None": {
-          "features": {
-            "outputs": [
-              "out",
-              "bin",
-              "lib"
-            ]
-          },
-          "recursiveHash": "sha256-LWZosAHgLS9FZb9seuBvbfMHtfUlBoxK0CSe0io0i/k="
-        }
-      },
       "linux-sbsa": {
         "None": {
           "features": {
