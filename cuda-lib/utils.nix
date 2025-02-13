@@ -620,11 +620,6 @@ in
     => "linux-sbsa"
     ```
 
-    ```nix
-    cudaLib.utils.getRedistSystem false "powerpc64le-linux"
-    => "linux-ppc64le"
-    ```
-
     # Type
 
     ```

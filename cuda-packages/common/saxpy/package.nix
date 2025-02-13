@@ -45,7 +45,6 @@ stdenv.mkDerivation {
     mainProgram = "saxpy";
     platforms = [
       "aarch64-linux"
-      "ppc64le-linux"
       "x86_64-linux"
     ];
   };

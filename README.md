@@ -28,7 +28,6 @@ Top-level:
 
 ## Todo
 
-- remove `linux-ppc64le` to reduce size of JSON
 - docs/tests for `arrayUtilitiesHook`
 - docs for `deduplicateRunpathEntriesHook`
 - docs/tests for CUDA hooks using `arrayUtilitiesHook`

@@ -11,7 +11,6 @@
   redistSystems = [
     "linux-aarch64"
     "linux-all" # Taken to mean all other linux systems
-    "linux-ppc64le"
     "linux-sbsa"
     "linux-x86_64"
     "source" # Source-agnostic platform
