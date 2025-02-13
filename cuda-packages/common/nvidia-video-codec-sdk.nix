@@ -13,6 +13,9 @@ stdenv.mkDerivation (finalAttrs: {
   __structuredAttrs = true;
   strictDeps = true;
 
+  preferLocalBuild = true;
+  allowSubstitutes = false;
+
   # Name of downloaded file is upper-case for some reason.
   pname = "Video_Codec_SDK";
   version = "12.2.72";
