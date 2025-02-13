@@ -1,0 +1,49 @@
+{
+  "tensorrt": {
+    "packages": {
+      "linux-sbsa": {
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "lib",
+              "python",
+              "sample",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-BKkZabBTE0zNGSyl7iPKBrl4udd4FnHT36qzA0PxvQw=",
+          "relativePath": "tensorrt/10.8.0/tars/TensorRT-10.8.0.43.Linux.aarch64-gnu.cuda-12.8.tar.gz"
+        }
+      },
+      "linux-x86_64": {
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "lib",
+              "python",
+              "sample",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-/bYF5l6+EAaEBcTL0a7/kGII45+EABxVQmA3jKWkhfk=",
+          "relativePath": "tensorrt/10.8.0/tars/TensorRT-10.8.0.43.Linux.x86_64-gnu.cuda-12.8.tar.gz"
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "TensorRT",
+      "name": "NVIDIA TensorRT",
+      "version": "10.8.0.43"
+    }
+  }
+}

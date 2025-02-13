@@ -1,0 +1,50 @@
+{
+  "libcutensor": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "11",
+              "11.0",
+              "12"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-+B4jSOn0IGX5pE19Z+gR2jNTg5lQIsW/qS1KmnsCoeA="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "cudaVersionsInLib": [
+              "11",
+              "11.0",
+              "12"
+            ],
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-jLA2gGDYgITCehRH7GtrB6Z4RBBxYjRXjro3DDd6bxs="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "cuTensor",
+      "licensePath": "libcutensor/LICENSE.txt",
+      "name": "NVIDIA cuTENSOR",
+      "version": "2.1.0.9"
+    }
+  }
+}

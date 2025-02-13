@@ -1,0 +1,38 @@
+{
+  "libcusolvermp": {
+    "packages": {
+      "linux-sbsa": {
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-nOdiUTjGcDecPbxVRYQ1uuob37zPDsPxRvAlxIWFsVk="
+        }
+      },
+      "linux-x86_64": {
+        "cuda12": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-O1pN8Jy2ZG2F0zPth6neIZOs73PEV6rg3YTPOL9EbfM="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "libcusolvermp library",
+      "licensePath": "libcusolvermp/LICENSE.txt",
+      "name": "NVIDIA libcusolvermp library",
+      "version": "0.6.0.712"
+    }
+  }
+}

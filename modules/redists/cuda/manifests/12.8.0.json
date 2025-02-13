@@ -1,0 +1,1734 @@
+{
+  "cuda_cccl": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include"
+            ]
+          },
+          "recursiveHash": "sha256-QFoZhFxGhEODA8BFYo0mjzEc+7PEqioezhcOqFEUrL8="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include"
+            ]
+          },
+          "recursiveHash": "sha256-QFoZhFxGhEODA8BFYo0mjzEc+7PEqioezhcOqFEUrL8="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include"
+            ]
+          },
+          "recursiveHash": "sha256-QFoZhFxGhEODA8BFYo0mjzEc+7PEqioezhcOqFEUrL8="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_cccl/LICENSE.txt",
+      "name": "CXX Core Compute Libraries",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_compat": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-z0MlkXYAOMoj/3AwYEZZh4HPMzqc1JpEeeVEVv/nuJs="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_compat/LICENSE.txt",
+      "name": "CUDA compat L4T",
+      "version": "12.8.38905961"
+    }
+  },
+  "cuda_cudart": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-f4lU+zBxvrbAd/B7ineyle5Dbqasgt5wfgEwx+KVflQ="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-zp50U6N+3ausFSrc8zBOW1xt0MM2UHRy+qMOVo3gx1I="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-pXz2J/rMUyenp3rqDjIvrfw0aSUsbV/NggiHY0St/qQ="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_cudart/LICENSE.txt",
+      "name": "CUDA Runtime (cudart)",
+      "version": "12.8.57"
+    }
+  },
+  "cuda_cuobjdump": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-KX5AIihhlSMq7KqKO6Fa7baalcyNFJ9fOWlcjJMDh5Q="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-jUIElnlE1ad1ZcoRveyZWyzZJy260gKDw6hx6LOvmUs="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-R78oQEw5kBgCWrmXUj0P4dUyPTwerGSYwEn7OEG826E="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_cuobjdump/LICENSE.txt",
+      "name": "cuobjdump",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_cupti": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "sample"
+            ]
+          },
+          "recursiveHash": "sha256-2scVAzxdxn+yqdrMMWcrW4FCGuGOvMq0dbDxhCcUWuk="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "sample",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-nJN/retYf4Eft2d4Q5iWusrM4SyOy6Ie3zFcsxYbjRE="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "sample",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-zKHYYjvDq388qpgaLbkZp0n6XC2T5eePisHHgXVSxz0="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_cupti/LICENSE.txt",
+      "name": "CUPTI",
+      "version": "12.8.57"
+    }
+  },
+  "cuda_cuxxfilt": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-0t+50u21wGkiK909uDm+r/oDk84zpSfPVOxEcavvobM="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-br+4yTHsvlyYymzwxx6NjfCZffsUoPGWCruLl7rD26o="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-XDfKvx9JCzJilUbAD2DGLe+Og0/uyTjomk/fy0naGzs="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_cuxxfilt/LICENSE.txt",
+      "name": "CUDA cuxxfilt (demangler)",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_demo_suite": {
+    "packages": {
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-5y6Xd5jtMvNlskki3t5kYzLfoSvB2mR6CtcZwnacIE4="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_demo_suite/LICENSE.txt",
+      "name": "CUDA Demo Suite",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_documentation": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-wknnyQzDwox3FckSHKdEed1+PFH34yS8zlgxZYfPe3k="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-wknnyQzDwox3FckSHKdEed1+PFH34yS8zlgxZYfPe3k="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-wknnyQzDwox3FckSHKdEed1+PFH34yS8zlgxZYfPe3k="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_documentation/LICENSE.txt",
+      "name": "CUDA Documentation",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_gdb": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-zwVZnb4dqduOSQAvis5BSwmrKIukehXasPAKEibXnfw="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-epoByTPNzWacs6NUqrQeOKkVE0JS4NTGYjrzYJrFaCc="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-V9PeL7IISxpzCiD4aoHjCxLnvMg9cbdKQIBZBmBfS9M="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_gdb/LICENSE.txt",
+      "name": "CUDA GDB",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_nsight": {
+    "packages": {
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-DrlPrclTHRYRHWrfZy9LKncqxLs5NEIKKN5E8WF/fhU="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_nsight/LICENSE.txt",
+      "name": "Nsight Eclipse Edition Plugin",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_nvcc": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-fXofcW1gvnzCC1hAUAECHFHHyETwiRb693NRXIcK1w0="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-0CsjScOVs2lFjlF/zX3PCIuY8g0+qpR0WLxXbpksnvA="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-XpY/Xl732l5LySZ96Rh0d+nE5uRbYsoPpUU9uVA3SDA="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_nvcc/LICENSE.txt",
+      "name": "CUDA NVCC",
+      "version": "12.8.61"
+    }
+  },
+  "cuda_nvdisasm": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-dIMaWuW5xRTWos/u33XHk+7gJ+/yV/9h6USQgSAyvFU="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-qYGLWtFdfiMCNuDwA2G0EGHDJHNYTgf+DJ1EwvUxE7Q="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-s2rfHNiqpbRfsCAt0zIHp3foj8pzl7ZsZxTNeXyqxdQ="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_nvdisasm/LICENSE.txt",
+      "name": "CUDA nvdisasm",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_nvml_dev": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-FkZ7T1edmeQW3HlOIRiNj1MZv512G3LufwEhil2M7w8="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-4ZNfLtDlg1DMGQg5fGHxBXkn44Ciq0tHpC5t1C3mD8o="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-/ZT5dnLWARmvLu73BtkRIv813UrPxLwh7roUQ8Ah2lo="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_nvml_dev/LICENSE.txt",
+      "name": "CUDA NVML Headers",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_nvprof": {
+    "packages": {
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-/AydzTrrwT2PM5vK/ZS8+IUOlSjqY7V1V4uCzbbvcUA="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_nvprof/LICENSE.txt",
+      "name": "CUDA nvprof",
+      "version": "12.8.57"
+    }
+  },
+  "cuda_nvprune": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-YscKFROGt2lfyJTxf+pE78oMEr5PVtsKrez1iy9BOro="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-vDzyk5vVf8XeCyP9UkQvTAWgO/+7AsnPprdoK0c7/cE="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-0/U2h/OEiTF3M3+ULsqX+X2K8hhOeaGWIhXKZWLuVJY="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_nvprune/LICENSE.txt",
+      "name": "CUDA nvprune",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_nvrtc": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-g89SyFho2nQgyd1SXWRKCihbPZHqKjHZC6Iuzgsk7hI="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-ikrADEMIgaFDF9pwZoKU4+J5ELF++4+6ugzKCoo3za0="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-iE3TiFr1e2y8bOjP2E5dj43rM/GrVPyUu+T2FsLJZrI="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_nvrtc/LICENSE.txt",
+      "name": "CUDA NVRTC",
+      "version": "12.8.61"
+    }
+  },
+  "cuda_nvtx": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-lspO5IBFU0VfMaS4oJyU+HUgtSleyeBxlDpXK3uHogo="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-jnolyvtcL14pSyH9BnKDJzNUF+zhftquJSM8vLOQzH4="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-Ynop0ANN3xPfCEjTDiSE+BX2xKoT8n9K2XQjj9H8vHk="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_nvtx/LICENSE.txt",
+      "name": "CUDA NVTX",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_nvvp": {
+    "packages": {
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-x0tgACysuuUrlPXORhfZQRwV6rVjeQCniqWWCEjuDus="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_nvvp/LICENSE.txt",
+      "name": "CUDA NVVP",
+      "version": "12.8.57"
+    }
+  },
+  "cuda_opencl": {
+    "packages": {
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-n5u3FxwfuzWMbk1kKh4sswBphrZpwD1caDNTtZlKJl4="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_opencl/LICENSE.txt",
+      "name": "CUDA OpenCL",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_profiler_api": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include"
+            ]
+          },
+          "recursiveHash": "sha256-hkwGjSrpTOnrcujeva5CAJ3WAGO8ojbpnq66y6Wk7Og="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include"
+            ]
+          },
+          "recursiveHash": "sha256-hkwGjSrpTOnrcujeva5CAJ3WAGO8ojbpnq66y6Wk7Og="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include"
+            ]
+          },
+          "recursiveHash": "sha256-hkwGjSrpTOnrcujeva5CAJ3WAGO8ojbpnq66y6Wk7Og="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_profiler_api/LICENSE.txt",
+      "name": "CUDA Profiler API",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_sandbox_dev": {
+    "packages": {
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include"
+            ]
+          },
+          "recursiveHash": "sha256-l3hIJ3uMsWfiJmAAktsCORkEwJWq6ne5sz3FPCGiZ8o="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_sandbox_dev/LICENSE.txt",
+      "name": "CUDA nvsandboxutils Headers",
+      "version": "12.8.55"
+    }
+  },
+  "cuda_sanitizer_api": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-ailZBf6e77XG+X9yHHlYi4NK6MQdKMpC60xslNf39Iw="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-5MIHsvdut4e8kLT7uDt/K9hQ66KUNs7ctaeoauL3dn4="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-u4jxaQx90grTOGxrgbliSWGfFnwXsRao6T/5/dBURxg="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "cuda_sanitizer_api/LICENSE.txt",
+      "name": "CUDA Compute Sanitizer API",
+      "version": "12.8.55"
+    }
+  },
+  "driver_assistant": {
+    "packages": {
+      "linux-all": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-IEdqKbHsOuRy7Jf+umLggPUd9e6dxT6RyUlb7EMSXZk=",
+          "relativePath": "driver_assistant/source/driver_assistant-0.18.86.10-archive.tar.xz"
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "MIT",
+      "licensePath": "driver_assistant/LICENSE.txt",
+      "name": "NVIDIA Driver Assistant",
+      "version": "0.18.86.10"
+    }
+  },
+  "fabricmanager": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-fi9N3pCZyMFtnDNYX004gg3Ad7lZSg8e6oeHi7JiWbw="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-xgYtSzELqR/4sJQBTNqo2HXg35QEZapIL6VEXgsuXYo="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVIDIA Driver",
+      "licensePath": "fabricmanager/LICENSE.txt",
+      "name": "NVIDIA Fabric Manager",
+      "version": "570.86.10"
+    }
+  },
+  "imex": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-qo3Dt65o7toeZkbxpEMLgst+SRtZUs545iBwBfZ16N4=",
+          "relativePath": "imex/linux-sbsa/nvidia-imex-linux-sbsa-570.86.10-archive.tar.xz"
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-WqU5yG+EKZbzU/RH3yGLNq7uFONpQo8LQgEaq2+a+9E=",
+          "relativePath": "imex/linux-x86_64/nvidia-imex-linux-x86_64-570.86.10-archive.tar.xz"
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVIDIA Proprietary",
+      "licensePath": "imex/LICENSE.txt",
+      "name": "Nvidia-Imex",
+      "version": "570.86.10"
+    }
+  },
+  "libcublas": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-WiuQbdJcUl4NO1Be9uArHN90tcTP5ej6DwzQHYHDMdQ="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-pR9X1BiZ1jUG8ULivsYEwAfrs4d3g1VXGq5Evfy5RdU="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-3Px5Tmfn3rq1IhyxjKdMAznwL713pHtMhXo8nGARjI0="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libcublas/LICENSE.txt",
+      "name": "CUDA cuBLAS",
+      "version": "12.8.3.14"
+    }
+  },
+  "libcudla": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-McnDgL4hZ5Kf3jFb1tRoZpIL5jgLbBIOc/fgZLg6DjA="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libcudla/LICENSE.txt",
+      "name": "cuDLA",
+      "version": "12.8.55"
+    }
+  },
+  "libcufft": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-MF3cQO0Eb1NIWaARDlF8x7rROoFtCpIiQcQ4nU2ozvw="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-DFDFsWuj5mrcFfPZuEP2WFofEnAJLSt00e/lhKRz1Xg="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-vtQAvVwYlfgGIubqKxLFyh5qrQcGYibRw11KBpxD6s8="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libcufft/LICENSE.txt",
+      "name": "CUDA cuFFT",
+      "version": "11.3.3.41"
+    }
+  },
+  "libcufile": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-N4fPupwrHzn8KAHqq6WgekbpP8dt+I034qgSJ7kgFh0="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-4lMhpf0hf3tJLu3797QJ1fByvn/BGgw3UUwZgsEGrJ8="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static"
+            ]
+          },
+          "recursiveHash": "sha256-L4e9boniZE8c1L9TGSby1kBLTunvIcUSzILPkU3yIoE="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libcufile/LICENSE.txt",
+      "name": "CUDA cuFile",
+      "version": "1.13.0.11"
+    }
+  },
+  "libcurand": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-riyEAUALbE9UenYU4ZSBYnvsGRVpRV19y1/QRhKvDRs="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-wynbRIR7Q48gl1Bx+pQa2LTjC5yqpYT4lCkQ4v5RP1s="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-zF2RAosFLBhJ9vqtQrPHPoz+3+yqtAwxmDSxWknE3Jk="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libcurand/LICENSE.txt",
+      "name": "CUDA cuRAND",
+      "version": "10.3.9.55"
+    }
+  },
+  "libcusolver": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-trGwAcAT7ZP0/IXJYv8cRcRiJhqWI9Cx4uNzx9yHERc="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-Lt7ET0iv3uPHywlhmobDtI34DY635o4k41uEyuAUDR4="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-Q2zmsgDrMU2/QXvt21Ssvfk9+czCl6PAProKlmtMi3E="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libcusolver/LICENSE.txt",
+      "name": "CUDA cuSOLVER",
+      "version": "11.7.2.55"
+    }
+  },
+  "libcusparse": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-N6PdGMkbaKOJdIPgLg//wE5dOAB7QCedLZ+ta2AGDAY="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-o6XHYhziCU3xaHPmZ7j3pv8L5JniCCJq06qiECciPlE="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-j/EgCNwFZyIwCTg49z2VL2naAcewAS6/GGB98THzyg8="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libcusparse/LICENSE.txt",
+      "name": "CUDA cuSPARSE",
+      "version": "12.5.7.53"
+    }
+  },
+  "libnpp": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-0x1DD1VmJtOPjEKiL2NbC6o0UecqW+R4xtrrz4S9qm4="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-NlmZif8ByEXyuE5TUrTBRArpk6aN8MXQSpt/TQbVIC4="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-H0KJRNWo+S4wvzNKGXsAKY0iGjQddKGXZZp3vqk/LnU="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libnpp/LICENSE.txt",
+      "name": "CUDA NPP",
+      "version": "12.3.3.65"
+    }
+  },
+  "libnvfatbin": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-lOT1cA159oXkqifWIFfenfM+4n96BVt5eOMTkAgKaVM="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-1Y1yYiZUmk0DLE66TxoevrcxWIQq0j9dXEKP3ulapeU="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-W9jCPrf4tNekPKA2Z0yXGNU170qYBvkX2Vk1V2bR5V0="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libnvfatbin/LICENSE.txt",
+      "name": "NVIDIA compiler library for fatbin interaction",
+      "version": "12.8.55"
+    }
+  },
+  "libnvidia_nscq": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-nW8xGkMt1sN8beVEcymuX9o3gmJe2ScH2EE/0gKZ42I="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-iHJ/ePoLbY/u3l3SS5r4OMWsZGKdxVOvzK6CniLTgtk="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVIDIA Driver",
+      "licensePath": "libnvidia_nscq/LICENSE.txt",
+      "name": "NVIDIA NSCQ API",
+      "version": "570.86.10"
+    }
+  },
+  "libnvjitlink": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-B78JvmNND4y+JQRG4qkc5viNznnmAX+r707+6GGAbMc="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-wmj/hOmLiJNNcHbvq1O1JpaZmJpY2/Mh4s1mZ9FnX5o="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-KtSdCucZtCuGfwB3Zl2f4YvTHeiF8wrHf3MUqDwCzek="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libnvjitlink/LICENSE.txt",
+      "name": "NVIDIA compiler library for JIT LTO functionality",
+      "version": "12.8.61"
+    }
+  },
+  "libnvjpeg": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-rdAOrNoSVGn2GurMZJR3S/9reNFjFnf6ue3sjlgNmJI="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-/IlqqAgYyU8Hg+U+u/Op121SPCphlL14WCLm/eQkVP0="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "dev",
+              "include",
+              "lib",
+              "static",
+              "stubs"
+            ]
+          },
+          "recursiveHash": "sha256-IG+fTsY90dqU8VgWiy33agso8P6zo5F9KyRhSIiCmmQ="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "libnvjpeg/LICENSE.txt",
+      "name": "CUDA nvJPEG",
+      "version": "12.3.5.57"
+    }
+  },
+  "libnvsdm": {
+    "packages": {
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "dev",
+              "include",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-cKYNh8f/k01XsR5HOx5fcFFoObpDvnK66z33RdL1x2M="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVIDIA",
+      "licensePath": "libnvsdm/LICENSE.txt",
+      "name": "LIBNVSDM",
+      "version": "570.86.10"
+    }
+  },
+  "nsight_compute": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-chwvu4o61sMwPX4EbVpxLNxgW6wY2eqrPijnodpie50="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-WgBb1SqV6THjVX3zvpFBSNkfNe6YoQU0hzHp72ArYio="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-c+usPP5EgFRXjTBnBioO8wbmpHgl6L5NMTIL47xCXhQ="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVIDIA SLA",
+      "licensePath": "nsight_compute/LICENSE.txt",
+      "name": "Nsight Compute",
+      "version": "2025.1.0.14"
+    }
+  },
+  "nsight_systems": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-2fLuyZsjPs6EQ+ohbN/y3YlZfMhjw4a1JjwkgkI2wis="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin"
+            ]
+          },
+          "recursiveHash": "sha256-wahER4mLdmgfPzvcFcVxiDO3KSwGIwF4xsv5zGWWkVo="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVIDIA SLA",
+      "licensePath": "nsight_systems/LICENSE.txt",
+      "name": "Nsight Systems",
+      "version": "2024.6.2.225"
+    }
+  },
+  "nvidia_driver": {
+    "packages": {
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-WXyGMwMWetYekd/MFvxX6EHrINZ3bPRhKqS76+Js1Ts="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out",
+              "bin",
+              "lib"
+            ]
+          },
+          "recursiveHash": "sha256-i1gmKe+035yFa3gwhQAaPO4MQfh9XwIB3hmgXDve+c0="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "NVIDIA Driver",
+      "licensePath": "nvidia_driver/LICENSE.txt",
+      "name": "NVIDIA Linux Driver",
+      "version": "570.86.10"
+    }
+  },
+  "nvidia_fs": {
+    "packages": {
+      "linux-aarch64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-Ifkuoydu1RdApqoN1NlPm2Xz/sXEL0hRj5OBUOZ43s0="
+        }
+      },
+      "linux-sbsa": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-Ifkuoydu1RdApqoN1NlPm2Xz/sXEL0hRj5OBUOZ43s0="
+        }
+      },
+      "linux-x86_64": {
+        "None": {
+          "features": {
+            "outputs": [
+              "out"
+            ]
+          },
+          "recursiveHash": "sha256-Ifkuoydu1RdApqoN1NlPm2Xz/sXEL0hRj5OBUOZ43s0="
+        }
+      }
+    },
+    "releaseInfo": {
+      "license": "CUDA Toolkit",
+      "licensePath": "nvidia_fs/LICENSE.txt",
+      "name": "NVIDIA filesystem",
+      "version": "2.24.2"
+    }
+  }
+}
