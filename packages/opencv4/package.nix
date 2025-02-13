@@ -37,6 +37,7 @@
   enableVtk ? false,
   enableWebP ? true,
   fetchFromGitHub,
+  fetchpatch2,
   fetchurl,
   ffmpeg,
   gflags,
@@ -304,6 +305,23 @@ stdenv.mkDerivation (finalAttrs: {
   patches = [
     ./cmake-don-t-use-OpenCVFindOpenEXR.patch
     ./cuda_opt_flow.patch
+    # Patches from https://github.com/opencv/opencv/pull/26820 for Blackwell/Thor support
+    (fetchpatch2 {
+      name = "initial-blackwell-support.patch";
+      url = "https://github.com/opencv/opencv/commit/cd83daadb6103d0f0ac48e7c6e2587ccfe6cfe91.patch";
+      hash = "sha256-WRmHoLxFEqUnFT5anqx6Qcq3rdcURsBcD65sSZxloMA=";
+    })
+    (fetchpatch2 {
+      name = "adding-thor-support.patch";
+      url = "https://github.com/opencv/opencv/commit/221d1fe9ad4b62f754f1a81ca68e5c5a62f35026.patch";
+      hash = "sha256-rE60GFO+XCr6oNC6IjcjrWwNYU13uwKFZpIEezAM+u8=";
+    })
+    # Patch to fix deprecated capability detection
+    (fetchpatch2 {
+      name = "use-in-list-to-avoid-regex-matching-valid-capabilities.patch";
+      url = "https://github.com/opencv/opencv/commit/5200419ba5488328604f1366e9294bcc1bab0bc0.patch";
+      hash = "sha256-lLNBX1pHi4myLLHihbOUTeKZKTLj8h9Jp3snEkmtnWo=";
+    })
   ];
 
   prePatch =
