@@ -63,14 +63,14 @@ stdenv.mkDerivation (finalAttrs: {
     nixLog "patching $PWD/makefiles/common.mk to remove NVIDIA's ccbin declaration"
     substituteInPlace ./makefiles/common.mk \
       --replace-fail \
-        ' -ccbin $(CXX) ' \
-        ' '
+        '-ccbin $(CXX)' \
+        ""
 
     nixLog "patching $PWD/makefiles/common.mk to replace -std=c++11 with -std=c++14"
     substituteInPlace ./makefiles/common.mk \
       --replace-fail \
-        ' -std=c++11 ' \
-        ' -std=c++14 '
+        '-std=c++11' \
+        '-std=c++14'
   '';
 
   # TODO: This would likely break under cross; need to delineate between build and host packages.
