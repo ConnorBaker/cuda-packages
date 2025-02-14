@@ -21,6 +21,9 @@ let
 
   isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
 
+  # TODO: Are there other libraries which provide stubs which we should replace with the driver runpath?
+  # E.g., libnvidia-ml.so is provided by a stub library in cuda_nvml_dev.
+
   finalAttrs = {
     name = "cuda-runpath-fixup-hook";
 
