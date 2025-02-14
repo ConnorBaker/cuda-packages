@@ -1,6 +1,7 @@
 {
   autoreconfHook,
   cuda_cudart,
+  cuda_nvml_dev,
   cudaConfig,
   dbus,
   e2fsprogs,
@@ -274,6 +275,10 @@ finalAttrs: prevAttrs: {
     ++ optionals (finalAttrs.version == "2023.2.2.3") [
       gst-plugins-base
       gstreamer
+      libtiff_4_4 # libtiff.so.5
+    ]
+    ++ optionals (finalAttrs.version == "2025.1.0.14") [
+      cuda_nvml_dev
       libtiff_4_4 # libtiff.so.5
     ];
 
