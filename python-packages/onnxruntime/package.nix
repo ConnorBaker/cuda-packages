@@ -87,6 +87,18 @@ let
     # NOTE: Using newer version because nsync has been removed from the build system
     version = "1.20.1-unstable-2024-12-03";
 
+    # TODO: Currently failing with errors like:
+    #
+    # python3.12-onnxruntime> /build/source/onnxruntime/contrib_ops/cuda/bert/fastertransformer_decoder_attention/decoder_masked_multihead_attention_impl.h(24):
+    # error #20281-D: in whole program compilation mode ("-rdc=false"), a __global__ function template instantiation or specialization
+    # ("onnxruntime::contrib::cuda::masked_multihead_attention_kernel<float, (int)128, (int)4, (int)32, (int)64> ") will be required to have
+    # a definition in the current translation unit, when "-static-global-template-stub" will be set to "true" by default in the future. To
+    # resolve this issue, either use "-rdc=true", or explicitly set "-static-global-template-stub=false" (but see nvcc documentation about
+    # downsides of turning it off)
+    #
+    # This was fixed upstream by https://github.com/microsoft/onnxruntime/pull/23562, but uses separable compilation which doesn't work on NixOS for some reason.
+    # To fix this, we'll need to fix that.
+
     src = fetchFromGitHub {
       owner = "microsoft";
       repo = "onnxruntime";
