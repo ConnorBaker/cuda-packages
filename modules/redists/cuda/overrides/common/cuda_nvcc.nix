@@ -182,6 +182,7 @@ finalAttrs: prevAttrs: {
 
   passthru = prevAttrs.passthru or { } // {
     inherit nvccStdenv;
+    nvccHostCCMatchesStdenvCC = nvccStdenv.cc == stdenv.cc;
   };
 
   meta = prevAttrs.meta or { } // {

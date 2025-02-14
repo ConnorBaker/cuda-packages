@@ -7,9 +7,9 @@
   cudaConfig,
   lib,
   makeSetupHook,
-  stdenv,
 }:
 let
+  inherit (cuda_nvcc.passthru) nvccHostCCMatchesStdenvCC;
   inherit (cuda_nvcc.passthru.nvccStdenv) cc hostPlatform;
   inherit (cudaConfig) hostRedistSystem;
   inherit (lib.attrsets) attrValues;
@@ -32,9 +32,9 @@ let
     # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
     # path from nvccStdenv's host compiler. Generalize this to Clang as well!
     substitutions = {
+      inherit nvccHostCCMatchesStdenvCC;
       ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
       ccVersion = cc.version;
-      nvccHostCCMatchesStdenvCC = cc == stdenv.cc;
       # TODO: Setting cudaArchs means that we have to recompile a large number of packages because `cuda_nvcc`
       # propagates this hook, and so the input derivations change.
       # cudaArchs = cmakeCudaArchitecturesString;
