@@ -5,7 +5,6 @@
   config,
   cuda_nvcc,
   cudaConfig,
-  flags,
   lib,
   makeSetupHook,
   stdenv,
@@ -13,7 +12,6 @@
 let
   inherit (cuda_nvcc.passthru.nvccStdenv) cc hostPlatform;
   inherit (cudaConfig) hostRedistSystem;
-  inherit (flags) cmakeCudaArchitecturesString;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id;
@@ -37,7 +35,9 @@ let
       ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
       ccVersion = cc.version;
       nvccHostCCMatchesStdenvCC = cc == stdenv.cc;
-      cudaArchs = cmakeCudaArchitecturesString;
+      # TODO: Setting cudaArchs means that we have to recompile a large number of packages because `cuda_nvcc`
+      # propagates this hook, and so the input derivations change.
+      # cudaArchs = cmakeCudaArchitecturesString;
       hostPlatformConfig = hostPlatform.config;
       unwrappedCCRoot = cc.cc.outPath;
       unwrappedCCLibRoot = cc.cc.lib.outPath;

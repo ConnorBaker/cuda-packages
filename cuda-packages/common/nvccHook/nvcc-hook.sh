@@ -156,12 +156,14 @@ nvccSetupCMakeEnvironmentVariables() {
     nixLog "set CUDAHOSTCXX to $CUDAHOSTCXX"
   fi
 
+  # TODO: Setting cudaArchs means that we have to recompile a large number of packages because `cuda_nvcc`
+  # propagates this hook, and so the input derivations change.
   # Set CUDAARCHS if unset or null
   # https://cmake.org/cmake/help/latest/envvar/CUDAARCHS.html
-  if [[ -z ${CUDAARCHS:-} ]]; then
-    export CUDAARCHS="@cudaArchs@"
-    nixLog "set CUDAARCHS to $CUDAARCHS"
-  fi
+  # if [[ -z ${CUDAARCHS:-} ]]; then
+  #   export CUDAARCHS="@cudaArchs@"
+  #   nixLog "set CUDAARCHS to $CUDAARCHS"
+  # fi
 
   return 0
 }
