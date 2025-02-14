@@ -3,13 +3,14 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
+  flags,
   lib,
   libcublas,
   stdenv,
 }:
 let
   inherit (lib.fileset) toSource unions;
-  inherit (lib.strings) cmakeBool;
+  inherit (lib.strings) cmakeBool cmakeFeature;
 in
 stdenv.mkDerivation {
   pname = "saxpy";
@@ -36,6 +37,7 @@ stdenv.mkDerivation {
 
   cmakeFlags = [
     (cmakeBool "CMAKE_VERBOSE_MAKEFILE" true)
+    (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
   ];
 
   meta = {

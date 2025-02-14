@@ -39,6 +39,7 @@ let
     cudaOlder
     cudnn-frontend
     cudnn
+    flags
     libcublas # cublas_v2.h
     libcufft # cufft.h
     libcurand # curand.h
@@ -96,11 +97,8 @@ let
 
     pyproject = true;
 
-    env.NIX_CFLAGS_COMPILE = builtins.toString (
-      [ "-Wno-error=maybe-uninitialized" ]
-      # Clang generates many more warnings than GCC does, so we just disable erroring on warnings entirely.
-      ++ optionals isClang [ "-Wno-error" ]
-    );
+    # No one has time for your games, onnxruntime.
+    env.NIX_CFLAGS_COMPILE = builtins.toString [ "-Wno-error" ];
 
     # NOTE: Blocked moving to newer protobuf:
     # https://github.com/microsoft/onnxruntime/issues/21308
@@ -234,6 +232,7 @@ let
         (cmakeBool "onnxruntime_USE_TENSORRT_BUILTIN_PARSER" false) # Use onnx-tensorrt
         (cmakeBool "onnxruntime_USE_TENSORRT" true)
         (cmakeFeature "onnxruntime_NVCC_THREADS" "1")
+        (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
       ]
       # Our vendored libraries
       ++ [
