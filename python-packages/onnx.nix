@@ -62,13 +62,14 @@ let
 
     pname = "onnx";
 
-    version = "1.17.0";
+    version = "1.17.0-unstable-2024-08-27";
 
     src = fetchFromGitHub {
       owner = "onnx";
       repo = "onnx";
-      tag = "v${finalAttrs.version}";
-      hash = "sha256-9oORW0YlQ6SphqfbjcYb0dTlHc+1gzy9quH/Lj6By8Q=";
+      # Merge commit for https://github.com/onnx/onnx/pull/6283, which should be included in 1.18
+      rev = "f22a2ad78c9b8f3bd2bb402bfce2b0079570ecb6";
+      hash = "sha256-YcmVGMLDxc60OM5290f4EG6UXdRALftXRRyrcUIPrlQ=";
     };
 
     pyproject = true;
