@@ -1,24 +1,16 @@
 {
-  config,
   cudaLib,
   lib,
   ...
 }:
 let
-  inherit (cudaLib.types)
-    cudaCapability
-    redistSystem
-    ;
-  inherit (cudaLib.utils)
-    getJetsonTargets
-    getRedistSystem
-    mkOptions
-    ;
+  inherit (cudaLib.types) cudaCapability;
+  inherit (cudaLib.utils) mkOptions;
   inherit (lib.types) bool listOf nonEmptyStr;
 in
 {
   imports = [
-    ./cudaPackages.nix
+    ./cuda-packages.nix
     ./data
     ./redists
   ];
@@ -28,28 +20,18 @@ in
     # Options
     cudaCapabilities = {
       description = ''
-        The CUDA capabilities to target.
-        If empty, uses the default set of capabilities determined per-package set.
+        Sets the default CUDA capabilities to target across all CUDA package sets.
+        If empty, the default set of capabilities is determined per-package set.
       '';
       type = listOf cudaCapability;
+      default = [ ];
     };
     cudaForwardCompat = {
       description = ''
-        Whether to build with forward compatability enabled.
+        Sets the default value of the `cudaForwardCompat` configuration across all CUDA package sets.
       '';
       type = bool;
-    };
-    hasJetsonTarget = {
-      description = ''
-        Whether the target capabilities include a Jetson system.
-      '';
-      type = bool;
-    };
-    hostRedistSystem = {
-      description = ''
-        The redistributable system of the host platform, to be used for redistributable packages.
-      '';
-      type = redistSystem;
+      default = false;
     };
     hostNixSystem = {
       description = ''
@@ -57,11 +39,5 @@ in
       '';
       type = nonEmptyStr;
     };
-  };
-
-  # Set defaults for our use.
-  config = {
-    hasJetsonTarget = (getJetsonTargets config.data.gpus config.cudaCapabilities) != [ ];
-    hostRedistSystem = getRedistSystem config.hasJetsonTarget config.hostNixSystem;
   };
 }

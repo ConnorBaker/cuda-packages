@@ -3,21 +3,19 @@
   autoAddDriverRunpath,
   autoPatchelfHook,
   config,
-  cudaConfig,
   cudaLib,
   cudaMajorMinorVersion,
   cudaMajorMinorPatchVersion,
+  cudaPackagesConfig,
   cudaRunpathFixupHook,
-  flags,
   lib,
   markForCudatoolkitRootHook,
   cudaHook,
   stdenv,
 }:
 let
-  inherit (cudaConfig) hostRedistSystem;
+  inherit (cudaPackagesConfig) hasJetsonCudaCapability hostRedistSystem;
   inherit (cudaLib.utils) getLibPath;
-  inherit (flags) isJetsonBuild;
   inherit (lib)
     licenses
     sourceTypes
@@ -329,11 +327,13 @@ stdenv.mkDerivation (
         }
         // optionalAttrs (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isLinux) {
           "aarch64-linux support is limited to linux-sbsa (server ARM devices) which is not the current target" =
-            isRedistSystemSbsaExplicitlySupported && !isRedistSystemAarch64ExplicitlySupported && isJetsonBuild;
+            isRedistSystemSbsaExplicitlySupported
+            && !isRedistSystemAarch64ExplicitlySupported
+            && hasJetsonCudaCapability;
           "aarch64-linux support is limited to linux-aarch64 (Jetson devices) which is not the current target" =
             !isRedistSystemSbsaExplicitlySupported
             && isRedistSystemAarch64ExplicitlySupported
-            && !isJetsonBuild;
+            && !hasJetsonCudaCapability;
         };
     };
 

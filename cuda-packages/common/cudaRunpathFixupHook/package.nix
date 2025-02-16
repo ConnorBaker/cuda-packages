@@ -6,14 +6,12 @@
   config,
   cuda_compat,
   cuda_cudart,
-  cudaConfig,
-  flags,
+  cudaPackagesConfig,
   lib,
   makeSetupHook,
 }:
 let
-  inherit (cudaConfig) hostRedistSystem;
-  inherit (flags) isJetsonBuild;
+  inherit (cudaPackagesConfig) hasJetsonCudaCapability hostRedistSystem;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id;
@@ -35,7 +33,7 @@ let
 
     substitutions = {
       cudaCompatLibDir = optionalString (
-        isJetsonBuild && cuda_compat != null
+        hasJetsonCudaCapability && cuda_compat != null
       ) "${cuda_compat.outPath}/compat";
       # The stubs are symlinked from lib/stubs into lib so autoPatchelf can find them.
       cudaStubLibDir = "${cuda_cudart.stubs.outPath}/lib";

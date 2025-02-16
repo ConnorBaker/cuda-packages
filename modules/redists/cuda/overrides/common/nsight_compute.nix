@@ -2,7 +2,7 @@
   autoreconfHook,
   cuda_cudart,
   cuda_nvml_dev,
-  cudaConfig,
+  cudaPackagesConfig,
   dbus,
   e2fsprogs,
   fetchpatch,
@@ -28,7 +28,7 @@
   zlib,
 }:
 let
-  inherit (cudaConfig) hostRedistSystem;
+  inherit (cudaPackagesConfig) hostRedistSystem;
   inherit (lib.attrsets) getLib getOutput;
   inherit (lib.lists) optionals;
   inherit (lib.strings) optionalString;

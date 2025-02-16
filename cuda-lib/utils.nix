@@ -44,16 +44,20 @@ let
     drvAttrPathsStrategyImpl
     flattenAttrs
     getNixSystems
+    mkCmakeCudaArchitecturesString
     mkCudaPackagesCallPackage
     mkCudaPackagesOverrideAttrsDefaultsFn
     mkCudaPackagesScope
     mkCudaVariant
+    mkGencodeFlag
     mkOptions
+    mkRealArchitecture
     mkRedistConfig
     mkRedistUrl
     mkRedistUrlRelativePath
     mkVersionedManifests
     mkVersionedOverrides
+    mkVirtualArchitecture
     packageExprPathsFromDirectoryRecursive
     packagesFromDirectoryRecursive'
     readDirIfExists
@@ -68,12 +72,13 @@ let
     filter
     findFirst
     head
-    intersectLists
     last
     map
+    naturalSort
     optionals
     reverseList
     take
+    unique
     ;
   inherit (lib.modules) mkDefault mkIf;
   inherit (lib.options) mkOption;
@@ -101,10 +106,11 @@ in
   collectPackageConfigsForCudaVersion =
     cudaConfig: cudaMajorMinorPatchVersion:
     let
-      inherit (cudaConfig) hostRedistSystem;
+      inherit (cudaPackagesConfig) hostRedistSystem;
+      cudaPackagesConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion};
       backupCudaVariant = mkCudaVariant cudaMajorMinorPatchVersion;
       # Get the redist names and versions for our particular package set.
-      redistNameToRedistVersion = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion}.redists;
+      redistNameToRedistVersion = cudaPackagesConfig.redists;
     in
     concatMap (
       redistName:
@@ -628,18 +634,18 @@ in
 
     # Arguments
 
-    isJetsonBuild
-    : Whether the build is for a Jetson device
+    hasJetsonCudaCapability
+    : If configured for a Jetson device
 
     nixSystem
     : The Nix system
   */
   getRedistSystem =
-    isJetsonBuild: nixSystem:
+    hasJetsonCudaCapability: nixSystem:
     if nixSystem == "x86_64-linux" then
       "linux-x86_64"
     else if nixSystem == "aarch64-linux" then
-      if isJetsonBuild then "linux-aarch64" else "linux-sbsa"
+      if hasJetsonCudaCapability then "linux-aarch64" else "linux-sbsa"
     else
       "unsupported";
 
@@ -657,15 +663,15 @@ in
     ) (attrNames packages);
 
   /**
-    Returns whether a GPU should be built by default for a particular CUDA version.
+    Returns whether a capability should be built by default for a particular CUDA version.
 
     # Type
 
     ```
-    gpuIsDefault :: Version -> GpuInfo -> Bool
+    cudaCapabilityIsDefault :: Version -> CudaCapabilityInfo -> Bool
     ```
   */
-  gpuIsDefault =
+  cudaCapabilityIsDefault =
     cudaMajorMinorVersion:
     {
       dontDefaultAfterCudaMajorMinorVersion,
@@ -674,22 +680,22 @@ in
       ...
     }:
     let
-      recentGpu =
+      recentCapability =
         dontDefaultAfterCudaMajorMinorVersion == null
         || versionAtLeast dontDefaultAfterCudaMajorMinorVersion cudaMajorMinorVersion;
     in
-    recentGpu && !isJetson && !isAccelerated;
+    recentCapability && !isJetson && !isAccelerated;
 
   /**
-    Returns whether a GPU is supported for a particular CUDA version.
+    Returns whether a capability is supported for a particular CUDA version.
 
     # Type
 
     ```
-    gpuIsSupported :: Version -> GpuInfo -> Bool
+    cudaCapabilityIsSupported :: Version -> CudaCapabilityInfo -> Bool
     ```
   */
-  gpuIsSupported =
+  cudaCapabilityIsSupported =
     cudaMajorMinorVersion:
     { minCudaMajorMinorVersion, maxCudaMajorMinorVersion, ... }:
     let
@@ -891,22 +897,13 @@ in
   # TODO: DOCS
   mkCmakeCudaArchitecturesString = concatMapStringsSep ";" dropDots;
   mkGencodeFlag =
-    targetRealArch: cudaCapability:
+    archPrefix: cudaCapability:
     let
       cap = dropDots cudaCapability;
     in
-    "-gencode=arch=compute_${cap},code=${if targetRealArch then "sm" else "compute"}_${cap}";
+    "-gencode=arch=compute_${cap},code=${archPrefix}_${cap}";
   mkRealArchitecture = cudaCapability: "sm_" + dropDots cudaCapability;
   mkVirtualArchitecture = cudaCapability: "compute_" + dropDots cudaCapability;
-
-  getJetsonTargets =
-    gpus: cudaCapabilities:
-    let
-      allJetsonComputeCapabilities = concatMap (gpu: optionals gpu.isJetson [ gpu.cudaCapability ]) (
-        attrValues gpus
-      );
-    in
-    intersectLists allJetsonComputeCapabilities cudaCapabilities;
 
   # TODO: Document.
   addNameToFetchFromGitLikeArgs =
@@ -1339,4 +1336,85 @@ in
         item:
         if item.dep ? drvAttrs then map mkItem (getDepsFromValueSingleStep item.dep.drvAttrs) else [ ];
     });
+
+  # TODO: Copy these docs to the module system.
+
+  # Flags are determined based on your CUDA toolkit by default.  You may benefit
+  # from improved performance, reduced file size, or greater hardware support by
+  # passing a configuration based on your specific GPU environment.
+  #
+  # cudaCapabilities :: List Capability
+  # List of hardware generations to build.
+  # E.g. [ "8.0" ]
+  # Currently, the last item is considered the optional forward-compatibility arch,
+  # but this may change in the future.
+  #
+  # cudaForwardCompat :: Bool
+  # Whether to include the forward compatibility gencode (+PTX)
+  # to support future GPU generations.
+  # E.g. true
+  #
+  # Please see the accompanying documentation or https://github.com/NixOS/nixpkgs/pull/205351
+
+  formatCapabilities =
+    {
+      cudaCapabilityToInfo,
+      cudaCapabilities,
+      cudaForwardCompat ? true,
+    }:
+    let
+      # realArchs :: List String
+      # The real architectures are physical architectures supported by the CUDA version.
+      # E.g. [ "sm_75" "sm_86" ]
+      realArchs = map mkRealArchitecture cudaCapabilities;
+
+      # virtualArchs :: List String
+      # The virtual architectures are typically used for forward compatibility, when trying to support
+      # an architecture newer than the CUDA version allows.
+      # E.g. [ "compute_75" "compute_86" ]
+      virtualArchs = map mkVirtualArchitecture cudaCapabilities;
+
+      # gencode :: List String
+      # A list of CUDA gencode arguments to pass to NVCC.
+      # E.g. [ "-gencode=arch=compute_75,code=sm_75" ... "-gencode=arch=compute_86,code=compute_86" ]
+      gencode =
+        let
+          base = map (mkGencodeFlag "sm") cudaCapabilities;
+          forward = mkGencodeFlag "compute" (last cudaCapabilities);
+        in
+        base ++ optionals cudaForwardCompat [ forward ];
+    in
+    {
+      inherit
+        cudaCapabilities
+        cudaForwardCompat
+        gencode
+        realArchs
+        virtualArchs
+        ;
+
+      # archNames :: List String
+      # E.g. [ "Ampere" "Turing" ]
+      archNames = pipe cudaCapabilities [
+        (map (cudaCapability: cudaCapabilityToInfo.${cudaCapability}.archName))
+        unique
+        naturalSort
+      ];
+
+      # archs :: List String
+      # By default, build for all supported architectures and forward compatibility via a virtual
+      # architecture for the newest supported architecture.
+      # E.g. [ "sm_75" "sm_86" "compute_86" ]
+      archs = realArchs ++ optionals cudaForwardCompat [ (last virtualArchs) ];
+
+      # gencodeString :: String
+      # A space-separated string of CUDA gencode arguments to pass to NVCC.
+      # E.g. "-gencode=arch=compute_75,code=sm_75 ... -gencode=arch=compute_86,code=compute_86"
+      gencodeString = concatStringsSep " " gencode;
+
+      # cmakeCudaArchitecturesString :: String
+      # A semicolon-separated string of CUDA capabilities without dots, suitable for passing to CMake.
+      # E.g. "75;86"
+      cmakeCudaArchitecturesString = mkCmakeCudaArchitecturesString cudaCapabilities;
+    };
 }

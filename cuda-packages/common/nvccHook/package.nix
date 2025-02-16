@@ -4,14 +4,14 @@
   callPackages,
   config,
   cuda_nvcc,
-  cudaConfig,
+  cudaPackagesConfig,
   lib,
   makeSetupHook,
 }:
 let
   inherit (cuda_nvcc.passthru) nvccHostCCMatchesStdenvCC;
   inherit (cuda_nvcc.passthru.nvccStdenv) cc hostPlatform;
-  inherit (cudaConfig) hostRedistSystem;
+  inherit (cudaPackagesConfig) hostRedistSystem;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id;

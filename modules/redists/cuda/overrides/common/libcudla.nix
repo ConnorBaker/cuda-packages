@@ -1,11 +1,11 @@
-{ lib, flags }:
+{ cudaPackagesConfig, lib }:
 let
   inherit (lib.lists) optionals;
 in
 prevAttrs: {
   autoPatchelfIgnoreMissingDeps =
     prevAttrs.autoPatchelfIgnoreMissingDeps or [ ]
-    ++ optionals flags.isJetsonBuild [
+    ++ optionals cudaPackagesConfig.hasJetsonCudaCapability [
       "libnvcudla.so"
     ];
 }

@@ -14,7 +14,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "saxpy";
-  version = "unstable-2023-07-11";
+  version = "0-unstable-2023-07-11";
 
   src = toSource {
     root = ./.;

@@ -2,14 +2,15 @@
 
   cuda_cudart,
   cudaLib,
+  cudaPackagesConfig,
   cudnn,
-  flags,
   lib,
   libcudla ? null, # only for Jetson
   patchelf,
   stdenv,
 }:
 let
+  inherit (cudaPackagesConfig) hasJetsonCudaCapability;
   inherit (cudaLib.utils) majorMinorPatch;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) optionals;
@@ -25,7 +26,7 @@ finalAttrs: prevAttrs: {
       (getLib cudnn)
       cuda_cudart
     ]
-    ++ optionals flags.isJetsonBuild [ libcudla ];
+    ++ optionals hasJetsonCudaCapability [ libcudla ];
 
   preInstall =
     let
@@ -59,7 +60,7 @@ finalAttrs: prevAttrs: {
 
   autoPatchelfIgnoreMissingDeps =
     prevAttrs.autoPatchelfIgnoreMissingDeps or [ ]
-    ++ optionals flags.isJetsonBuild [
+    ++ optionals hasJetsonCudaCapability [
       "libnvdla_compiler.so"
     ];
 

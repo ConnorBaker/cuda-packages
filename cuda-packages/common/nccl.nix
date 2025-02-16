@@ -2,6 +2,7 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
+  cudaPackagesConfig,
   fetchFromGitHub,
   flags,
   lib,
@@ -12,6 +13,7 @@
   gitUpdater,
 }:
 let
+  inherit (cudaPackagesConfig) hasJetsonCudaCapability;
   inherit (lib.attrsets)
     getBin
     getLib
@@ -91,13 +93,13 @@ stdenv.mkDerivation (finalAttrs: {
     homepage = "https://developer.nvidia.com/nccl";
     license = licenses.bsd3;
     platforms =
-      optionals (!flags.isJetsonBuild) [
+      optionals (!hasJetsonCudaCapability) [
         "aarch64-linux"
       ]
       ++ [
         "x86_64-linux"
       ];
-    badPlatforms = optionals flags.isJetsonBuild [ "aarch64-linux" ];
+    badPlatforms = optionals hasJetsonCudaCapability [ "aarch64-linux" ];
     maintainers =
       (with maintainers; [
         mdaiter

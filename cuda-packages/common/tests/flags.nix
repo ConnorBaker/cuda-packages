@@ -1,21 +1,21 @@
 {
   cudaConfig,
-  flags,
+  cudaLib,
   lib,
   runCommand,
   stdenv,
 }:
 let
   inherit (builtins) deepSeq toJSON tryEval;
-  inherit (cudaConfig.data) gpus;
-  inherit (flags) formatCapabilities;
+  inherit (cudaConfig.data) cudaCapabilityToInfo;
+  inherit (cudaLib.utils) formatCapabilities;
   inherit (lib.asserts) assertMsg;
   inherit (stdenv) hostPlatform;
 in
 # When changing names or formats: pause, validate, and update the assert
 assert assertMsg (
-  gpus ? "7.5" && gpus ? "8.6"
-) "The following test requires both 7.5 and 8.6 be known GPUs";
+  cudaCapabilityToInfo ? "7.5" && cudaCapabilityToInfo ? "8.6"
+) "The following test requires both 7.5 and 8.6 be known CUDA capabilities";
 assert
   let
     expected = {
@@ -29,15 +29,15 @@ assert
         "Turing"
         "Ampere"
       ];
-      realArches = [
+      realArchs = [
         "sm_75"
         "sm_86"
       ];
-      virtualArches = [
+      virtualArchs = [
         "compute_75"
         "compute_86"
       ];
-      arches = [
+      archs = [
         "sm_75"
         "sm_86"
         "compute_86"
@@ -51,12 +51,9 @@ assert
       gencodeString = "-gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_86,code=compute_86";
 
       cmakeCudaArchitecturesString = "75;86";
-
-      isJetsonBuild = false;
-
-      isAcceleratedBuild = false;
     };
     actual = formatCapabilities {
+      inherit cudaCapabilityToInfo;
       cudaCapabilities = [
         "7.5"
         "8.6"
@@ -70,12 +67,13 @@ assert
   '';
 # Check mixed Jetson and non-Jetson devices
 assert assertMsg (
-  gpus ? "7.2" && gpus ? "7.5"
-) "The following test requires both 7.2 and 7.5 be known GPUs";
+  cudaCapabilityToInfo ? "7.2" && cudaCapabilityToInfo ? "7.5"
+) "The following test requires both 7.2 and 7.5 be known CUDA capabilities";
 assert
   let
     expected = false;
     actual = formatCapabilities {
+      inherit cudaCapabilityToInfo;
       cudaCapabilities = [
         "7.2"
         "7.5"
@@ -91,8 +89,8 @@ assert
   '';
 # Check Jetson-only
 assert assertMsg (
-  gpus ? "7.2" && gpus ? "8.7"
-) "The following test requires both 7.2 and 8.7 be known GPUs";
+  cudaCapabilityToInfo ? "7.2" && cudaCapabilityToInfo ? "8.7"
+) "The following test requires both 7.2 and 8.7 be known CUDA capabilities";
 assert
   let
     expected = {
@@ -106,15 +104,15 @@ assert
         "Volta"
         "Ampere"
       ];
-      realArches = [
+      realArchs = [
         "sm_72"
         "sm_87"
       ];
-      virtualArches = [
+      virtualArchs = [
         "compute_72"
         "compute_87"
       ];
-      arches = [
+      archs = [
         "sm_72"
         "sm_87"
         "compute_87"
@@ -128,12 +126,9 @@ assert
       gencodeString = "-gencode=arch=compute_72,code=sm_72 -gencode=arch=compute_87,code=sm_87 -gencode=arch=compute_87,code=compute_87";
 
       cmakeCudaArchitecturesString = "72;87";
-
-      isJetsonBuild = true;
-
-      isAcceleratedBuild = false;
     };
     actual = formatCapabilities {
+      inherit cudaCapabilityToInfo;
       cudaCapabilities = [
         "7.2"
         "8.7"
@@ -152,12 +147,13 @@ assert
     '';
 # Check mixed Accelerated and non-Accelerated devices
 assert assertMsg (
-  gpus ? "9.0" && gpus ? "9.0a"
-) "The following test requires both 9.0 and 9.0a be known GPUs";
+  cudaCapabilityToInfo ? "9.0" && cudaCapabilityToInfo ? "9.0a"
+) "The following test requires both 9.0 and 9.0a be known CUDA capabilities";
 assert
   let
     expected = false;
     actual = formatCapabilities {
+      inherit cudaCapabilityToInfo;
       cudaCapabilities = [
         "9.0"
         "9.0a"

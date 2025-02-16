@@ -144,7 +144,7 @@ let
               backendStdenv = stdenv;
               cudaVersion = cudaMajorMinorVersion;
               flags = finalCudaPackages.flags // {
-                cudaComputeCapabilityToName = finalCudaPackages.flags.cudaCapabilityToName;
+                cudaComputeCapabilityToName = finalCudaPackages.flags.cudaCapabilityToArchName;
                 dropDot = dropDots;
                 # cudaComputeCapabilityToName = warn "cudaPackages.flags.cudaComputeCapabilityToName is deprecated, use cudaPackages.flags.cudaCapabilityToName instead" cudaCapabilityToName;
                 # dropDot = warn "cudaPackages.flags.dropDot is deprecated, use cudaLibs.utils.dropDots instead" dropDots;
@@ -250,7 +250,8 @@ in
   cudaPackages_12_6 = final.cudaPackagesVersions.cudaPackages_12_6_3;
   cudaPackages_12_8 = final.cudaPackagesVersions.cudaPackages_12_8_0;
   # Package set aliases with a major component refer to an alias with a major and minor component in final.
-  cudaPackages_12 = final.cudaPackages_12_8;
+  # TODO: Deferring upgrade to CUDA 12.8 until separate compilation works.
+  cudaPackages_12 = final.cudaPackages_12_6;
   # Unversioned package set alias refers to an alias with a major component in final.
   cudaPackages = final.cudaPackages_12;
 
@@ -259,17 +260,17 @@ in
   # No, I can't think of a different way to force re-evaluation of the fixed point -- the problem being that
   # pkgs.config is not part of the fixed point.
   pkgsCuda = bimap mkRealArchitecture (
-    gpuInfo:
+    cudaCapabilityInfo:
     final.extend (
       _: prev:
       dontRecurseForDerivationsOrEvaluate {
         # Re-evaluate config
         config = prev.config // {
-          cudaCapabilities = [ gpuInfo.cudaCapability ];
+          cudaCapabilities = [ cudaCapabilityInfo.cudaCapability ];
         };
       }
     )
-  ) final.cudaConfig.data.gpus;
+  ) final.cudaConfig.data.cudaCapabilityToInfo;
 
   # Python packages extensions
   pythonPackagesExtensions = prev.pythonPackagesExtensions or [ ] ++ [

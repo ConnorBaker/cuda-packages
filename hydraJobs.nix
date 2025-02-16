@@ -135,7 +135,7 @@ let
 
       cudaPackages = pkgs.pkgsCuda.${realArch}.cudaPackagesVersions.${cudaPackagesVersionedName};
 
-      inherit (cudaPackages.flags) isJetsonBuild;
+      inherit (cudaPackages.cudaPackagesConfig) hasJetsonCudaCapability;
 
       realArch = mkRealArchitecture cudaCapability;
       cudaPackagesVersionedName = mkCudaPackagesVersionedName cudaMajorMinorPatchVersion;
@@ -165,10 +165,10 @@ let
           cudaPackages.cudnn-frontend
           cudaPackages.cutlass
           cudaPackages.libmathdx
-          cudaPackages.saxpy
+          cudaPackages.tests.saxpy
         ]
         # Non-Jetson packages
-        ++ optionals (!isJetsonBuild) [
+        ++ optionals (!hasJetsonCudaCapability) [
           cudaPackages.nccl # TODO: Exclude on jetson systems
           cudaPackages.nccl-tests
         ];

@@ -1,8 +1,9 @@
 {
-  flags,
+  cudaPackagesConfig,
   lib,
 }:
 let
+  inherit (cudaPackagesConfig) hasJetsonCudaCapability;
   inherit (lib.attrsets) recursiveUpdate;
   inherit (lib.lists) optionals;
 in
@@ -11,7 +12,7 @@ prevAttrs: {
 
   autoPatchelfIgnoreMissingDeps =
     prevAttrs.autoPatchelfIgnoreMissingDeps or [ ]
-    ++ optionals flags.isJetsonBuild [
+    ++ optionals hasJetsonCudaCapability [
       "libnvrm_gpu.so"
       "libnvrm_mem.so"
       "libnvdla_runtime.so"
@@ -20,7 +21,8 @@ prevAttrs: {
   passthru = recursiveUpdate (prevAttrs.passthru or { }) {
     # `cuda_compat` only works on aarch64-linux, and only when building for Jetson devices.
     badPlatformsConditions = {
-      "Trying to use cuda_compat on aarch64-linux targeting non-Jetson devices" = !flags.isJetsonBuild;
+      "Trying to use cuda_compat on aarch64-linux targeting non-Jetson devices" =
+        !hasJetsonCudaCapability;
     };
   };
 

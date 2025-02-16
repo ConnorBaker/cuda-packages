@@ -1,5 +1,5 @@
 {
-  flags,
+  cudaPackagesConfig,
   lib,
   libcublas,
   mpi,
@@ -7,7 +7,7 @@
 }:
 let
   inherit (builtins) placeholder;
-  inherit (flags) isJetsonBuild;
+  inherit (cudaPackagesConfig) hasJetsonCudaCapability;
   inherit (lib.lists) optionals;
 in
 prevAttrs: {
@@ -17,7 +17,7 @@ prevAttrs: {
       libcublas
     ]
     # MPI brings in NCCL dependency by way of UCC/UCX.
-    ++ optionals (!isJetsonBuild) [
+    ++ optionals (!hasJetsonCudaCapability) [
       mpi
       nccl
     ];

@@ -1,7 +1,7 @@
 {
   addDriverRunpath,
   cuda_compat,
-  flags,
+  cudaPackagesConfig,
   lib,
 }:
 let
@@ -25,7 +25,7 @@ prevAttrs: {
   # the host OS has a recent enough CUDA driver that the compatibility library isn't needed.
   propagatedBuildInputs =
     prevAttrs.propagatedBuildInputs or [ ]
-    ++ optionals (flags.isJetsonBuild && cuda_compat != null) [ cuda_compat ];
+    ++ optionals (cudaPackagesConfig.hasJetsonCudaCapability && cuda_compat != null) [ cuda_compat ];
 
   postPatch =
     prevAttrs.postPatch or ""

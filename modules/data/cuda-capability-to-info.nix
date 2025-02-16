@@ -1,24 +1,24 @@
 { cudaLib, lib, ... }:
 let
-  inherit (cudaLib.types) attrs cudaCapability gpuInfo;
+  inherit (cudaLib.types) attrs cudaCapability cudaCapabilityInfo;
   inherit (lib.options) mkOption;
 in
 {
-  options.data.gpus = mkOption {
+  options.data.cudaCapabilityToInfo = mkOption {
     description = ''
-      Attribute set of supported GPUs, mapping `cudaCapability` to information.
+      Attribute set of supported CUDA capability mapped to information about that capability.
 
       NOTE: Building with architecture-accelerated features (capabilities with an `a` suffix) is neither forward nor
-      backwards compatible with the base architecture. For example, building with `10.0a` will not work on a `10.0`
-      GPU, and vice versa.
+      backwards compatible with the base architecture. For example, device code targeting `10.0a` will not work on a
+      a device presenting as `10.0`, and vice versa.
 
       Many thanks to Arnon Shimoni for maintaining a list of these architectures and capabilities.
       Without your work, this would have been much more difficult.
       https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
     '';
-    type = attrs cudaCapability gpuInfo;
+    type = attrs cudaCapability cudaCapabilityInfo;
   };
-  config.data.gpus = {
+  config.data.cudaCapabilityToInfo = {
     "5.0" = {
       # Tesla/Quadro M series
       archName = "Maxwell";
