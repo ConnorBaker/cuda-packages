@@ -199,7 +199,7 @@ in
       cudaPackagesConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion};
     in
     {
-      packagesDirectories = [ ../cuda-packages/common ];
+      packagesDirectories = [ ../packages/common ];
       redists = {
         cublasmp = "0.3.1";
         cudnn = "9.7.1";

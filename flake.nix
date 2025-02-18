@@ -21,7 +21,7 @@
       inherit (inputs.flake-parts.lib) mkFlake;
       inherit (inputs.nixpkgs) lib;
       inherit (lib.attrsets) genAttrs;
-      cudaLib = import ./cuda-lib { inherit lib; };
+      cudaLib = import ./pkgs/development/cuda-modules/lib { inherit lib; };
       systems = [
         "aarch64-linux"
         "x86_64-linux"
@@ -29,7 +29,6 @@
       mkNixpkgs =
         system:
         import inputs.nixpkgs {
-          inherit system;
           # TODO: Due to the way Nixpkgs is built in stages, the config attribute set is not re-evaluated.
           # This is problematic for us because we use it to signal the CUDA capabilities to the overlay.
           # The only way I've found to combat this is to use pkgs.extend, which is not ideal.
@@ -39,7 +38,13 @@
             allowUnfree = true;
             cudaSupport = true;
           };
-          overlays = [ inputs.self.overlays.default ];
+          localSystem = { inherit system; };
+          overlays = [
+            (import ./mkOverlay.nix {
+              inherit lib;
+              nixpkgsSrc = inputs.nixpkgs;
+            })
+          ];
         };
       # Memoization through lambda lifting.
       nixpkgsInstances = genAttrs systems mkNixpkgs;
@@ -52,13 +57,10 @@
         inputs.git-hooks-nix.flakeModule
       ];
 
-      flake = {
-        inherit cudaLib;
-        overlays.default = import ./overlay.nix;
-        # NOTE: Unlike other flake attributes, hydraJobs is indexed by jobset name and *then* system name.
-        hydraJobs = import ./hydraJobs.nix {
-          inherit cudaLib lib nixpkgsInstances;
-        };
+      # NOTE: Unlike other flake attributes, hydraJobs is indexed by jobset name and *then* system name.
+      # But it doesn't matter, from what I can tell. `nix-eval-jobs` handles it all the same.
+      flake.hydraJobs = import ./hydraJobs.nix {
+        inherit cudaLib lib nixpkgsInstances;
       };
 
       perSystem =
