@@ -1,2 +1,6 @@
 # TODO: Shim for Nixpkgs
-(builtins.getFlake (builtins.toString ../.)).inputs.nixpkgs.lib
+let
+  flakeLock = builtins.fromJSON (builtins.readFile ../flake.lock);
+  nixpkgsSrc = builtins.fetchTree flakeLock.nodes.nixpkgs.locked;
+in
+import "${nixpkgsSrc}/lib"

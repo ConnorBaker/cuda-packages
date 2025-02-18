@@ -2,6 +2,10 @@
 
 Out of tree (Nixpkgs) experiments with packaging CUDA in an extensible way.
 
+> [!IMPORTANT]
+>
+> I am in the process of upstreaming this into Nixpkgs. This repository will be archived once that is complete.
+
 Most code lives in Nixpkgs and is copied/modified here for ease of development.
 
 Top-level:
