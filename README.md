@@ -37,6 +37,7 @@ TODO: `cudaCapabilities` was introduced to `cudaPackagesConfig` to enable per-pa
 
 ## Todo
 
+- continue switching from `mkCheckExpectedRunpath` to `testEqualArrayOrMap` and `testBuildFailure` to `testBuildFailure'`
 - docs/tests for `arrayUtilitiesHook`
 - docs for `deduplicateRunpathEntriesHook`
 - docs/tests for CUDA hooks using `arrayUtilitiesHook`

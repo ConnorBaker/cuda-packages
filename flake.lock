@@ -81,15 +81,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1738829317,
-        "narHash": "sha256-z2fQqtBM15tkYVP6dbwrnYErXWLJjo7DBJG2njrmR5k=",
-        "owner": "NixOS",
+        "lastModified": 1740014859,
+        "narHash": "sha256-qrDqSiAVzW2K5MzUiZJsZiQipPt4RQdrRNleGg0fbvs=",
+        "owner": "ConnorBaker",
         "repo": "nixpkgs",
-        "rev": "5cba040d6a321ff4a6092ce542ee3f4fb33cad12",
+        "rev": "18bd102e9e9a90560781b0f5f0cfa2a738c29080",
         "type": "github"
       },
       "original": {
-        "owner": "NixOS",
+        "owner": "ConnorBaker",
+        "ref": "feat/testEqualArrayOrMap-uses-testBuildFailurePrime",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -109,11 +110,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1738680491,
-        "narHash": "sha256-8X7tR3kFGkE7WEF5EXVkt4apgaN85oHZdoTGutCFs6I=",
+        "lastModified": 1739829690,
+        "narHash": "sha256-mL1szCeIsjh6Khn3nH2cYtwO5YXG6gBiTw1A30iGeDU=",
         "owner": "numtide",
         "repo": "treefmt-nix",
-        "rev": "64dbb922d51a42c0ced6a7668ca008dded61c483",
+        "rev": "3d0579f5cc93436052d94b73925b48973a104204",
         "type": "github"
       },
       "original": {
