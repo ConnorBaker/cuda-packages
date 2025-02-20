@@ -11,7 +11,7 @@ let
       name,
       value1,
       value2,
-      valuesArr,
+      valuesArray,
       shouldPass,
     }:
     runCommand {
@@ -19,7 +19,7 @@ let
         name
         value1
         value2
-        valuesArr
+        valuesArray
         shouldPass
         ;
       strictDeps = true;
@@ -30,11 +30,11 @@ let
       script = ''
         nixLog "using value1: '$value1'"
         nixLog "using value2: '$value2'"
-        nixLog "using valuesArr: $(declare -p valuesArr)"
+        nixLog "using valuesArray: $(declare -p valuesArray)"
         nixLog "using shouldPass: $((shouldPass))"
-        nixLog "running occursOnlyOrBeforeInArray with value1 value2 valuesArr"
+        nixLog "running occursOnlyOrBeforeInArray with value1 value2 valuesArray"
 
-        if occursOnlyOrBeforeInArray "$value1" "$value2" valuesArr; then
+        if occursOnlyOrBeforeInArray "$value1" "$value2" valuesArray; then
           if ((shouldPass)); then
             nixLog "Test passed as expected"
             touch $out
@@ -59,28 +59,28 @@ in
     name = "emptyArray";
     value1 = "apple";
     value2 = "bee";
-    valuesArr = [ ];
+    valuesArray = [ ];
     shouldPass = false;
   };
   emptyStringForValue1 = check {
     name = "emptyString";
     value1 = "";
     value2 = "bee";
-    valuesArr = [ "" ];
+    valuesArray = [ "" ];
     shouldPass = true;
   };
   singleton = check {
     name = "singleton";
     value1 = "apple";
     value2 = "bee";
-    valuesArr = [ "apple" ];
+    valuesArray = [ "apple" ];
     shouldPass = true;
   };
   occursBefore = check {
     name = "occursBefore";
     value1 = "apple";
     value2 = "bee";
-    valuesArr = [
+    valuesArray = [
       "apple"
       "bee"
     ];
@@ -90,14 +90,14 @@ in
     name = "occursOnly";
     value1 = "apple";
     value2 = "bee";
-    valuesArr = [ "apple" ];
+    valuesArray = [ "apple" ];
     shouldPass = true;
   };
   occursAfter = check {
     name = "occursAfter";
     value1 = "apple";
     value2 = "bee";
-    valuesArr = [
+    valuesArray = [
       "bee"
       "apple"
     ];
@@ -107,7 +107,7 @@ in
     name = "occursBeforeAlmostAtEnd";
     value1 = "apple";
     value2 = "cat";
-    valuesArr = [
+    valuesArray = [
       "bee"
       "apple"
       "cat"
@@ -118,7 +118,7 @@ in
     name = "value1DoesntMatchStringWithPrefix";
     value1 = "apple";
     value2 = "bee";
-    valuesArr = [
+    valuesArray = [
       "apple with spaces"
       "bee"
     ];
@@ -128,7 +128,7 @@ in
     name = "value1DoesntMatchStringWithSuffix";
     value1 = "apple";
     value2 = "bee";
-    valuesArr = [
+    valuesArray = [
       "apple in a tree"
       "bee"
     ];
@@ -138,7 +138,7 @@ in
     name = "value2DoesntMatchStringWithPrefix";
     value1 = "apple";
     value2 = "bee";
-    valuesArr = [
+    valuesArray = [
       "bee with spaces"
       "apple"
     ];
@@ -148,7 +148,7 @@ in
     name = "value2DoesntMatchStringWithSuffix";
     value1 = "apple";
     value2 = "bee";
-    valuesArr = [
+    valuesArray = [
       "bee in a tree"
       "apple"
     ];
@@ -164,7 +164,7 @@ in
       high
     '';
     value2 = "bee";
-    valuesArr = [
+    valuesArray = [
       "cat"
       ''
         apple
@@ -188,7 +188,7 @@ in
       high
     '';
     value2 = "bee";
-    valuesArr = [
+    valuesArray = [
       "cat"
       "bee"
       ''

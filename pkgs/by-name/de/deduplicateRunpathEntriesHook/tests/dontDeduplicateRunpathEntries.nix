@@ -16,14 +16,14 @@ in
   # Should deduplicate when dontDeduplicateRunpathEntries is not set.
   flag-unset = check.overrideAttrs {
     name = "flag-unset";
-    valuesArr = [
+    valuesArray = [
       "bee"
       "apple"
       "dog"
       "apple"
       "cat"
     ];
-    expectedArr = [
+    expectedArray = [
       "bee"
       "apple"
       "dog"
@@ -34,14 +34,14 @@ in
   # Should deduplicate when dontDeduplicateRunpathEntries is set to false.
   flag-set-false = check.overrideAttrs {
     name = "flag-set-false";
-    valuesArr = [
+    valuesArray = [
       "bee"
       "apple"
       "dog"
       "apple"
       "cat"
     ];
-    expectedArr = [
+    expectedArray = [
       "bee"
       "apple"
       "dog"
@@ -53,14 +53,14 @@ in
   # Should not deduplicate when dontDeduplicateRunpathEntries is set to true.
   flag-set-true = check.overrideAttrs {
     name = "flag-set-true";
-    valuesArr = [
+    valuesArray = [
       "bee"
       "apple"
       "dog"
       "apple"
       "cat"
     ];
-    expectedArr = [
+    expectedArray = [
       "bee"
       "apple"
       "dog"

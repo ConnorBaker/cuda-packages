@@ -1,66 +1,70 @@
 # NOTE: Tests related to deduplicateArray go here.
 {
   arrayUtilitiesHook,
-  mkCheckExpectedArrayAndMap,
   testers,
 }:
 let
-  inherit (testers) runCommand testBuildFailure;
-  check = mkCheckExpectedArrayAndMap.overrideAttrs (prevAttrs: {
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilitiesHook ];
-    checkSetupScript = ''
-      nixLog "running deduplicateArray with valuesArr to populate actualArr"
-      deduplicateArray valuesArr actualArr
-    '';
-  });
+  inherit (testers) testBuildFailure' testEqualArrayOrMap;
+  check =
+    args:
+    (testEqualArrayOrMap args).overrideAttrs (prevAttrs: {
+      nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilitiesHook ];
+      checkSetupScript =
+        # Should not pass checkSetupScript because we use our own.
+        assert !(args ? checkSetupScript);
+        ''
+          nixLog "running deduplicateArray with valuesArray to populate actualArray"
+          deduplicateArray valuesArray actualArray
+        '';
+    });
 in
 {
-  empty = check.overrideAttrs {
+  empty = check {
     name = "empty";
-    valuesArr = [ ];
-    expectedArr = [ ];
+    valuesArray = [ ];
+    expectedArray = [ ];
   };
-  singleton = check.overrideAttrs {
+  singleton = check {
     name = "singleton";
-    valuesArr = [ "apple" ];
-    expectedArr = [ "apple" ];
+    valuesArray = [ "apple" ];
+    expectedArray = [ "apple" ];
   };
-  allUniqueOrderPreserved = check.overrideAttrs {
+  allUniqueOrderPreserved = check {
     name = "allUniqueOrderPreserved";
-    valuesArr = [
+    valuesArray = [
       "apple"
       "bee"
     ];
-    expectedArr = [
+    expectedArray = [
       "apple"
       "bee"
     ];
   };
-  oneDuplicate = check.overrideAttrs {
+  oneDuplicate = check {
     name = "oneDuplicate";
-    valuesArr = [
+    valuesArray = [
       "apple"
       "apple"
     ];
-    expectedArr = [
+    expectedArray = [
       "apple"
     ];
   };
-  oneUniqueOrderPreserved = check.overrideAttrs {
+  oneUniqueOrderPreserved = check {
     name = "oneUniqueOrderPreserved";
-    valuesArr = [
+    valuesArray = [
       "bee"
       "apple"
       "bee"
     ];
-    expectedArr = [
+    expectedArray = [
       "bee"
       "apple"
     ];
   };
-  duplicatesWithSpacesAndLineBreaks = check.overrideAttrs {
+  duplicatesWithSpacesAndLineBreaks = check {
     name = "duplicatesWithSpacesAndLineBreaks";
-    valuesArr = [
+    valuesArray = [
       "dog"
       "bee"
       ''
@@ -78,7 +82,7 @@ in
         break
       ''
     ];
-    expectedArr = [
+    expectedArray = [
       "dog"
       "bee"
       ''
@@ -91,37 +95,23 @@ in
       "dog with spaces"
     ];
   };
-  failNoDeduplication = runCommand {
-    name = "failNoDeduplication";
-    failed = testBuildFailure (
-      check.overrideAttrs {
-        name = "failNoDeduplicationInner";
-        valuesArr = [
-          "bee"
-          "apple"
-          "bee"
-        ];
-        expectedArr = [
-          "bee"
-          "apple"
-          "bee"
-        ];
-      }
-    );
-    script = ''
-      nixLog "Checking for exit code 1"
-      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-      nixLog "Checking for first error message"
-      grep -F \
-        "ERROR: assertArraysAreEqual: arrays differ in length: expectedArrayRef has length 3 but actualArrayRef has length 2" \
-        "$failed/testBuildFailure.log"
-      nixLog "Checking for second error message"
-      grep -F \
-        "ERROR: assertArraysAreEqual: arrays differ at index 2: expected value is 'bee' but actual value would be out of bounds" \
-        "$failed/testBuildFailure.log"
-      nixLog "Test passed"
-      touch $out
-    '';
+  failNoDeduplication = testBuildFailure' {
+    drv = check {
+      name = "failNoDeduplication";
+      valuesArray = [
+        "bee"
+        "apple"
+        "bee"
+      ];
+      expectedArray = [
+        "bee"
+        "apple"
+        "bee"
+      ];
+    };
+    expectedBuilderLogEntries = [
+      "ERROR: assertEqualArray: arrays differ in length: expectedArray has length 3 but actualArray has length 2"
+      "ERROR: assertEqualArray: arrays differ at index 2: expectedArray has value 'bee' but actualArray has no such index"
+    ];
   };
-
 }

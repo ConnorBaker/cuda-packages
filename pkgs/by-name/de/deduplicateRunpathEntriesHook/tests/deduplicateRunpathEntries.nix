@@ -1,27 +1,32 @@
 # NOTE: Tests for deduplicateRunpathEntries go here.
 {
   deduplicateRunpathEntriesHook,
-  mkCheckExpectedRunpath,
+  testers,
 }:
 let
-  check = mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
-    nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ deduplicateRunpathEntriesHook ];
-    checkSetupScript = ''
-      nixLog "running deduplicateRunpathEntries on main"
-      deduplicateRunpathEntries main
-    '';
-  });
+  check =
+    args:
+    (testers.testEqualArrayOrMap args).overrideAttrs (prevAttrs: {
+      nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ deduplicateRunpathEntriesHook ];
+      checkSetupScript =
+        # Should not pass checkSetupScript because we use our own.
+        assert !(args ? checkSetupScript);
+        ''
+          nixLog "running deduplicateRunpathEntries on main"
+          deduplicateRunpathEntries main
+        '';
+    });
 in
 {
-  allUnique = check.overrideAttrs {
+  allUnique = check {
     name = "allUnique";
-    valuesArr = [
+    valuesArray = [
       "bee"
       "frog"
       "apple"
       "dog"
     ];
-    expectedArr = [
+    expectedArray = [
       "bee"
       "frog"
       "apple"
@@ -29,22 +34,22 @@ in
     ];
   };
 
-  oneUniqueOneDuplicate = check.overrideAttrs {
+  oneUniqueOneDuplicate = check {
     name = "oneUniqueOneDuplicate";
-    valuesArr = [
+    valuesArray = [
       "apple"
       "bee"
       "apple"
     ];
-    expectedArr = [
+    expectedArray = [
       "apple"
       "bee"
     ];
   };
 
-  allDuplicates = check.overrideAttrs {
+  allDuplicates = check {
     name = "duplicate-rpath-entries";
-    valuesArr = [
+    valuesArray = [
       "apple"
       "apple"
       "bee"
@@ -58,7 +63,7 @@ in
       "apple"
       "cat"
     ];
-    expectedArr = [
+    expectedArray = [
       "apple"
       "bee"
       "dog"

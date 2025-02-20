@@ -23,9 +23,9 @@ mkCheckExpectedArrayAndMap.overrideAttrs (prevAttrs: {
       nixLog "Removing any existing runpath entries from main"
       patchelf --remove-rpath main
 
-      nixLog "Adding runpath entries from valuesArr to main"
+      nixLog "Adding runpath entries from valuesArray to main"
       local entry
-      for entry in "''${valuesArr[@]}"; do
+      for entry in "''${valuesArray[@]}"; do
         nixLog "Adding rpath entry for $entry"
         patchelf --add-rpath "$entry" main
       done
@@ -34,8 +34,8 @@ mkCheckExpectedArrayAndMap.overrideAttrs (prevAttrs: {
 
   postCheckSetupScript =
     ''
-      nixLog "populating actualArr with main's runpath entries"
-      mapfile -d ':' -t actualArr < <(echo -n "$(patchelf --print-rpath main)")
+      nixLog "populating actualArray with main's runpath entries"
+      mapfile -d ':' -t actualArray < <(echo -n "$(patchelf --print-rpath main)")
     ''
     + prevAttrs.postCheckSetupScript or "";
 })
