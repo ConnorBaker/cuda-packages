@@ -37,6 +37,7 @@ TODO: `cudaCapabilities` was introduced to `cudaPackagesConfig` to enable per-pa
 
 ## Todo
 
+- update `cuda-redist` to accept path arguments
 - continue switching from `mkCheckExpectedRunpath` to `testEqualArrayOrMap` and `testBuildFailure` to `testBuildFailure'`
 - docs/tests for `arrayUtilitiesHook`
 - docs for `deduplicateRunpathEntriesHook`
