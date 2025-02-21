@@ -5,6 +5,18 @@ let
   inherit (lib.fixedPoints) composeManyExtensions;
 
   extraAutoCalledPackages = import "${nixpkgsSrc}/pkgs/top-level/by-name-overlay.nix" ./pkgs/by-name;
+  extraTesterPackages = final: prev: {
+    testers = prev.testers // {
+      testRunpath = import ./pkgs/build-support/testers/testRunpath/tester.nix {
+        inherit (final) lib patchelf stdenvNoCC;
+      };
+    };
+    tests = prev.tests // {
+      testers = prev.tests.testers // {
+        testRunpath = final.callPackages ./pkgs/build-support/testers/testRunpath/tests.nix { };
+      };
+    };
+  };
   extraPythonPackages = final: prev: {
     pythonPackagesExtensions = prev.pythonPackagesExtensions or [ ] ++ [
       (
@@ -27,6 +39,7 @@ let
 in
 composeManyExtensions [
   extraAutoCalledPackages
+  extraTesterPackages
   extraPythonPackages
   cudaPackages
 ]
