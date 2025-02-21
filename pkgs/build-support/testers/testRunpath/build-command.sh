@@ -32,7 +32,7 @@ isInDelimitedString() {
   local -r delimiter="$2"
   local -r string="$3"
 
-  [[ $delimiter$string$delimiter == *$delimiter$substring$delimiter* ]]
+  [[ $delimiter$string$delimiter == *"$delimiter$substring$delimiter"* ]]
 }
 
 isPrecededByInDelimitedString() {
@@ -41,8 +41,8 @@ isPrecededByInDelimitedString() {
   local -r delimiter="$3"
   local -r string="$4"
 
-  [[ $delimiter$string$delimiter == *$delimiter$preceding$delimiter*$delimiter$substring$delimiter* ||
-    $delimiter$string$delimiter == *$delimiter$preceding$delimiter$substring$delimiter* ]]
+  [[ $delimiter$string$delimiter == *"$delimiter$preceding$delimiter"*"$delimiter$substring$delimiter"* ||
+    $delimiter$string$delimiter == *"$delimiter$preceding$delimiter$substring$delimiter"* ]]
 }
 
 isSucceededByInDelimitedString() {
@@ -51,8 +51,8 @@ isSucceededByInDelimitedString() {
   local -r delimiter="$3"
   local -r string="$4"
 
-  [[ $delimiter$string$delimiter == *$delimiter$substring$delimiter*$delimiter$succeeding$delimiter* ||
-    $delimiter$string$delimiter == *$delimiter$substring$delimiter$succeeding$delimiter* ]]
+  [[ $delimiter$string$delimiter == *"$delimiter$substring$delimiter"*"$delimiter$succeeding$delimiter"* ||
+    $delimiter$string$delimiter == *"$delimiter$substring$delimiter$succeeding$delimiter"* ]]
 }
 
 gatherFiles() {
