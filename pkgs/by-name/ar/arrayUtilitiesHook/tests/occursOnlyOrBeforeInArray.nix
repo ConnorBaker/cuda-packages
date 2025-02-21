@@ -24,14 +24,13 @@ let
         ;
       strictDeps = true;
       __structuredAttrs = true;
-      nativeBuildInputs = [
-        arrayUtilitiesHook
-      ];
+      nativeBuildInputs = [ arrayUtilitiesHook ];
       script = ''
-        nixLog "using value1: '$value1'"
-        nixLog "using value2: '$value2'"
+        set -eu
+        nixLog "using value1: ''${value1@Q}"
+        nixLog "using value2: ''${value2@Q}"
         nixLog "using valuesArray: $(declare -p valuesArray)"
-        nixLog "using shouldPass: $((shouldPass))"
+        nixLog "using shouldPass: $shouldPass"
         nixLog "running occursOnlyOrBeforeInArray with value1 value2 valuesArray"
 
         if occursOnlyOrBeforeInArray "$value1" "$value2" valuesArray; then

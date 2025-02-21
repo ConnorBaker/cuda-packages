@@ -15,7 +15,20 @@ fi
 
 declare -ig arrayUtilitiesHookOnce=1
 
-# TODO: Will empty arrays be considered unset and have no type?
+# Tests if an array is declared.
+# NOTE: We must dereference the name ref to get the type of the underlying variable.
+isDeclaredArray() {
+  # shellcheck disable=SC2034
+  local -nr arrayRef="$1" && [[ ${!arrayRef@a} =~ a ]]
+}
+
+# Tests if a map is declared.
+# NOTE: We must dereference the name ref to get the type of the underlying variable.
+isDeclaredMap() {
+  # shellcheck disable=SC2034
+  local -nr mapRef="$1" && [[ ${!mapRef@a} =~ A ]]
+}
+
 arraysAreEqual() {
   if (($# != 2)); then
     nixErrorLog "expected two arguments!"
@@ -26,12 +39,12 @@ arraysAreEqual() {
   local -rn inputArr1Ref="$1"
   local -rn inputArr2Ref="$2"
 
-  if [[ ! ${inputArr1Ref@a} =~ a ]]; then
+  if ! isDeclaredArray inputArr1Ref; then
     nixErrorLog "first arugment inputArr1Ref must be an array reference"
     exit 1
   fi
 
-  if [[ ! ${inputArr2Ref@a} =~ a ]]; then
+  if ! isDeclaredArray inputArr2Ref; then
     nixErrorLog "second arugment inputArr2Ref must be an array reference"
     exit 1
   fi
@@ -56,7 +69,7 @@ occursOnlyOrBeforeInArray() {
   local -r inputElem2="$2"
   local -rn inputArrRef="$3"
 
-  if [[ ! ${inputArrRef@a} =~ a ]]; then
+  if ! isDeclaredArray inputArrRef; then
     nixErrorLog "third arugment inputArrRef must be an array reference"
     exit 1
   fi
@@ -89,7 +102,7 @@ occursOnlyOrAfterInArray() {
   local -r inputElem2="$2"
   local -rn inputArrRef="$3"
 
-  if [[ ! ${inputArrRef@a} =~ a ]]; then
+  if ! isDeclaredArray inputArrRef; then
     nixErrorLog "third arugment inputArrRef must be an array reference"
     exit 1
   fi
@@ -133,7 +146,7 @@ occursInArray() {
   local -r inputElem="$1"
   local -rn inputArrRef="$2"
 
-  if [[ ! ${inputArrRef@a} =~ a ]]; then
+  if ! isDeclaredArray inputArrRef; then
     nixErrorLog "second arugment inputArrRef must be an array reference"
     exit 1
   fi
@@ -158,12 +171,12 @@ sortArray() {
   local -rn inputArrRef="$1"
   local -rn outputArrRef="$2"
 
-  if [[ ! ${inputArrRef@a} =~ a ]]; then
+  if ! isDeclaredArray inputArrRef; then
     nixErrorLog "first arugment inputArrRef must be an array reference"
     exit 1
   fi
 
-  if [[ ! ${outputArrRef@a} =~ a ]]; then
+  if ! isDeclaredArray outputArrRef; then
     nixErrorLog "second arugment outputArrRef must be an array reference"
     exit 1
   fi
@@ -187,12 +200,12 @@ getMapKeys() {
   # Don't warn about outputArrRef being used as an array because it is an array.
   local -rn outputArrRef="$2"
 
-  if [[ ! ${inputMapRef@a} =~ A ]]; then
+  if ! isDeclaredMap inputMapRef; then
     nixErrorLog "first arugment inputMapRef must be an associative array reference"
     exit 1
   fi
 
-  if [[ ! ${outputArrRef@a} =~ a ]]; then
+  if ! isDeclaredArray outputArrRef; then
     nixErrorLog "second arugment outputArrRef must be an array reference"
     exit 1
   fi
@@ -214,7 +227,7 @@ occursInMapKeys() {
   local -r inputElem="$1"
   local -rn inputMapRef="$2"
 
-  if [[ ! ${inputMapRef@a} =~ A ]]; then
+  if ! isDeclaredMap inputMapRef; then
     nixErrorLog "second arugment inputMapRef must be an associative array reference"
     exit 1
   fi
@@ -227,7 +240,6 @@ occursInMapKeys() {
   return $? # Return the result of occursInArray
 }
 
-# TODO: Will empty arrays be considered unset and have no type?
 mapIsSubmap() {
   if (($# != 2)); then
     nixErrorLog "expected two arguments!"
@@ -238,12 +250,12 @@ mapIsSubmap() {
   local -rn submapRef="$1"
   local -rn supermapRef="$2"
 
-  if [[ ! ${submapRef@a} =~ A ]]; then
+  if ! isDeclaredMap submapRef; then
     nixErrorLog "first arugment submapRef must be an associative array reference"
     exit 1
   fi
 
-  if [[ ! ${supermapRef@a} =~ A ]]; then
+  if ! isDeclaredMap supermapRef; then
     nixErrorLog "second arugment supermapRef must be an associative array reference"
     exit 1
   fi
@@ -256,7 +268,6 @@ mapIsSubmap() {
   return 0
 }
 
-# TODO: Will empty arrays be considered unset and have no type?
 mapsAreEqual() {
   if (($# != 2)); then
     nixErrorLog "expected two arguments!"
@@ -267,17 +278,17 @@ mapsAreEqual() {
   local -rn inputMap1Ref="$1"
   local -rn inputMap2Ref="$2"
 
-  if [[ ! ${inputMap1Ref@a} =~ A ]]; then
+  if ! isDeclaredMap inputMap1Ref; then
     nixErrorLog "first arugment inputMap1Ref must be an associative array reference"
     exit 1
   fi
 
-  if [[ ! ${inputMap2Ref@a} =~ A ]]; then
+  if ! isDeclaredMap inputMap2Ref; then
     nixErrorLog "second arugment inputMap2Ref must be an associative array reference"
     exit 1
   fi
 
-  if ((${#inputArr1Ref[@]} != ${#inputArr2Ref[@]})) ||
+  if ((${#inputMap1Ref[@]} != ${#inputMap2Ref[@]})) ||
     ! mapIsSubmap inputMap1Ref inputMap2Ref ||
     ! mapIsSubmap inputMap2Ref inputMap1Ref; then
     return 1
@@ -304,20 +315,19 @@ computeFrequencyMap() {
   local -rn inputArrRef="$1"
   local -rn outputMapRef="$2"
 
-  if [[ ! ${inputArrRef@a} =~ a ]]; then
+  if ! isDeclaredArray inputArrRef; then
     nixErrorLog "first arugment inputArrRef must be an array reference"
     exit 1
   fi
 
-  if [[ ! ${outputMapRef@a} =~ A ]]; then
+  if ! isDeclaredMap outputMapRef; then
     nixErrorLog "second arugment outputMapRef must be an associative array reference"
     exit 1
   fi
 
   local -i numTimesSeen
   for entry in "${inputArrRef[@]}"; do
-    # NOTE: Unset values inside arithmetic expressions default to zero.
-    numTimesSeen=$((${outputMapRef["$entry"]} + 1))
+    numTimesSeen=$((${outputMapRef["$entry"]-0} + 1))
     outputMapRef["$entry"]=$numTimesSeen
   done
 
@@ -351,25 +361,24 @@ deduplicateArray() {
   # don't warn about outputMapRef being used as an array because it is an array.
   local -rn outputMapRef="${3:-outputMap}"
 
-  if [[ ! ${inputArrRef@a} =~ a ]]; then
+  if ! isDeclaredArray inputArrRef; then
     nixErrorLog "first arugment inputArrRef must be an array reference"
     exit 1
   fi
 
-  if [[ ! ${outputArrRef@a} =~ a ]]; then
+  if ! isDeclaredArray outputArrRef; then
     nixErrorLog "second arugment outputArrRef must be an array reference"
     exit 1
   fi
 
-  if [[ ! ${outputMapRef@a} =~ A ]]; then
+  if ! isDeclaredMap outputMapRef; then
     nixErrorLog "third arugment outputMapRef must be an associative array reference when present"
     exit 1
   fi
 
   local -i numTimesSeen
   for entry in "${inputArrRef[@]}"; do
-    # NOTE: Unset values inside arithmetic expressions default to zero.
-    numTimesSeen=$((${outputMapRef["$entry"]} + 1))
+    numTimesSeen=$((${outputMapRef["$entry"]-0} + 1))
     outputMapRef["$entry"]=$numTimesSeen
 
     if ((numTimesSeen <= 1)); then

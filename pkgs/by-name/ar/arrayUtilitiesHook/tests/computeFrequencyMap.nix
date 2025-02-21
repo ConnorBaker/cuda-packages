@@ -7,16 +7,19 @@ let
   inherit (testers) testBuildFailure' testEqualArrayOrMap;
   check =
     args:
-    (testEqualArrayOrMap args).overrideAttrs (prevAttrs: {
-      nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilitiesHook ];
-      checkSetupScript =
-        # Should not pass checkSetupScript because we use our own.
-        assert !(args ? checkSetupScript);
-        ''
+    (testEqualArrayOrMap (
+      args
+      // {
+        script = ''
+          set -eu
           nixLog "running computeFrequencyMap with valuesArray to populate actualMap"
           computeFrequencyMap valuesArray actualMap
         '';
-    });
+      }
+    )).overrideAttrs
+      (prevAttrs: {
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilitiesHook ];
+      });
 in
 {
   empty = check {
@@ -134,13 +137,13 @@ in
         expectedMap = { };
       }).overrideAttrs
         (prevAttrs: {
-          checkSetupScript =
+          script =
             ''
               nixLog "unsetting and re-declaring actualMap to be an array"
               unset actualMap
               declare -ag actualMap=()
             ''
-            + prevAttrs.checkSetupScript;
+            + prevAttrs.script;
         });
     expectedBuilderLogEntries = [
       "ERROR: computeFrequencyMap: second arugment outputMapRef must be an associative array reference"
@@ -154,13 +157,13 @@ in
         expectedMap = { };
       }).overrideAttrs
         (prevAttrs: {
-          checkSetupScript =
+          script =
             ''
               nixLog "unsetting and re-declaring actualMap to be a string"
               unset actualMap
               declare -g actualMap="hello!"
             ''
-            + prevAttrs.checkSetupScript;
+            + prevAttrs.script;
         });
     expectedBuilderLogEntries = [
       "ERROR: computeFrequencyMap: second arugment outputMapRef must be an associative array reference"

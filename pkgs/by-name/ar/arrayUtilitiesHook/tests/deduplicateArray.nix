@@ -7,16 +7,19 @@ let
   inherit (testers) testBuildFailure' testEqualArrayOrMap;
   check =
     args:
-    (testEqualArrayOrMap args).overrideAttrs (prevAttrs: {
-      nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilitiesHook ];
-      checkSetupScript =
-        # Should not pass checkSetupScript because we use our own.
-        assert !(args ? checkSetupScript);
-        ''
+    (testEqualArrayOrMap (
+      args
+      // {
+        script = ''
+          set -eu
           nixLog "running deduplicateArray with valuesArray to populate actualArray"
           deduplicateArray valuesArray actualArray
         '';
-    });
+      }
+    )).overrideAttrs
+      (prevAttrs: {
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilitiesHook ];
+      });
 in
 {
   empty = check {
