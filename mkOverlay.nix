@@ -7,10 +7,13 @@ let
   extraAutoCalledPackages = import "${nixpkgsSrc}/pkgs/top-level/by-name-overlay.nix" ./pkgs/by-name;
   extraSetupHooks = final: prev: {
     arrayUtilities = final.callPackage ./pkgs/build-support/setup-hooks/array-utilities { };
+    tests = prev.tests // {
+      arrayUtilities = final.arrayUtilities.passthru.tests;
+    };
   };
   extraTesterPackages = final: prev: {
     testers = prev.testers // {
-      testRunpath = import ./pkgs/build-support/testers/testRunpath/tester.nix {
+      testRunpath = import ./pkgs/build-support/testers/testRunpath {
         inherit (final) lib patchelf stdenvNoCC;
       };
     };

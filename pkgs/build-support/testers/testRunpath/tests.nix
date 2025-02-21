@@ -3,13 +3,14 @@
 # it produces an output containing the exit code, logs, and other things. Since `testers.runCommand` expects the empty
 # derivation, it produces a hash mismatch.
 {
+  lib,
   patchelf,
   runCommand,
   runCommandCC,
   testers,
-  ...
 }:
 let
+  inherit (lib.attrsets) recurseIntoAttrs;
   inherit (testers) testBuildFailure' testRunpath;
   main =
     runCommandCC "build-main"
@@ -73,7 +74,7 @@ let
     "/c"
   ];
 in
-{
+recurseIntoAttrs {
   a = testRunpath {
     drv = a;
     included = [ "/a" ];

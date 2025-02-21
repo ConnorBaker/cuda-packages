@@ -19,7 +19,7 @@ let
       inherit valuesArray expectedArray;
       name = "${cudaRunpathFixupHook.name}-${name}";
       nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ cudaRunpathFixupHook ];
-      checkSetupScript = ''
+      script = ''
         nixLog "running cudaRunpathFixup on main"
         cudaRunpathFixup main
       '';

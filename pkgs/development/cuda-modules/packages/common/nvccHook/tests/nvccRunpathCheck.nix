@@ -28,7 +28,7 @@ let
       inherit valuesArray expectedArray;
       name = "${nvccHook.name}-${name}";
       nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ nvccHook ];
-      checkSetupScript = ''
+      script = ''
         nixLog "running nvccRunpathCheck on main"
         nvccRunpathCheck main
       '';

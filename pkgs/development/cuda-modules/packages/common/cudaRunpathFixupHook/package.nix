@@ -1,6 +1,6 @@
 {
   addDriverRunpath,
-  arrayUtilitiesHook,
+  arrayUtilities,
   autoFixElfFiles,
   callPackages,
   config,
@@ -28,7 +28,7 @@ let
     propagatedBuildInputs = [
       # Used in the setup hook
       autoFixElfFiles
-      arrayUtilitiesHook
+      arrayUtilities
     ];
 
     substitutions = {

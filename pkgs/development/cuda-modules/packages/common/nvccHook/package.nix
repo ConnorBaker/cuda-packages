@@ -1,5 +1,5 @@
 {
-  arrayUtilitiesHook,
+  arrayUtilities,
   autoFixElfFiles,
   callPackages,
   config,
@@ -26,7 +26,7 @@ let
     propagatedBuildInputs = [
       # Used in the setup hook
       autoFixElfFiles
-      arrayUtilitiesHook
+      arrayUtilities
     ];
 
     # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler

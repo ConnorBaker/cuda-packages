@@ -8,9 +8,9 @@ let
     args:
     (testers.testEqualArrayOrMap args).overrideAttrs (prevAttrs: {
       nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ deduplicateRunpathEntriesHook ];
-      checkSetupScript =
-        # Should not pass checkSetupScript because we use our own.
-        assert !(args ? checkSetupScript);
+      script =
+        # Should not pass script because we use our own.
+        assert !(args ? script);
         ''
           nixLog "running deduplicateRunpathEntries on main"
           deduplicateRunpathEntries main

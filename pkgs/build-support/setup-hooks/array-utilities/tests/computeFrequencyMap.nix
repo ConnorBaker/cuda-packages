@@ -1,9 +1,11 @@
 # NOTE: Tests related to computeFrequencyMap go here.
 {
   arrayUtilities,
+  lib,
   testers,
 }:
 let
+  inherit (lib.attrsets) recurseIntoAttrs;
   inherit (testers) testBuildFailure' testEqualArrayOrMap;
   check =
     args:
@@ -21,7 +23,7 @@ let
         nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilities ];
       });
 in
-{
+recurseIntoAttrs {
   empty = check {
     name = "empty";
     valuesArray = [ ];

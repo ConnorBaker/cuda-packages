@@ -1,9 +1,11 @@
 # NOTE: Tests related to occursOnlyOrBeforeInArray go here.
 {
   arrayUtilities,
+  lib,
   testers,
 }:
 let
+  inherit (lib.attrsets) recurseIntoAttrs;
   inherit (testers) runCommand;
 
   check =
@@ -53,7 +55,7 @@ let
       '';
     };
 in
-{
+recurseIntoAttrs {
   emptyArray = check {
     name = "emptyArray";
     value1 = "apple";
