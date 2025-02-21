@@ -58,42 +58,52 @@ let
         nixLog "Installing main to $out/bin"
         install -Dm755 main "$out/bin/main"
       '';
+
+  a = mainWithRunpath [ "/a" ];
+  b = mainWithRunpath [ "/b" ];
+  c = mainWithRunpath [ "/c" ];
+  a-b-c = mainWithRunpath [
+    "/a"
+    "/b"
+    "/c"
+  ];
+  b-a-c = mainWithRunpath [
+    "/b"
+    "/a"
+    "/c"
+  ];
 in
 {
-  inherit main;
-
   a = testRunpath {
-    drv = mainWithRunpath [ "/a" ];
+    drv = a;
     included = [ "/a" ];
     excluded = [ "/b" ];
   };
 
   b = testRunpath {
-    drv = mainWithRunpath [ "/b" ];
+    drv = b;
     included = [ "/b" ];
   };
 
   c = testRunpath {
-    drv = mainWithRunpath [ "/c" ];
+    drv = c;
     included = [ "/c" ];
     excluded = [ "/a" ];
   };
 
   a-b-c = testRunpath {
-    drv = mainWithRunpath [
-      "/a"
-      "/b"
-      "/c"
-    ];
+    drv = a-b-c;
     # Order doesn't matter
     included = [
       "/b"
       "/a"
     ];
+    # Preceds and succeeds are conditioned on existence
     precedes = {
       "/a" = [
         "/c"
         "/b"
+        "/d" # Doesn't exist
       ];
       "/b" = [ "/c" ];
     };
@@ -101,204 +111,65 @@ in
       "/c" = [
         "/a"
         "/b"
+        "/d" # Doesn't exist
       ];
       "/b" = [ "/a" ];
     };
   };
 
-  a-when-not-d-positive = testRunpath {
-    drv = mainWithRunpath [ "/a" ];
-    includedWhenAnyIncluded = {
-      "/a" = [ "/d" ];
-    };
-  };
-
-  a-when-not-d-negative = testBuildFailure' {
-    drv = mainWithRunpath [ "/a" ];
-    includedWhenAnyIncluded = {
-      "/a" = [ "/d" ];
+  b-a-c-failure = testBuildFailure' {
+    drv = testRunpath {
+      drv = b-a-c;
+      included = [ "/d" ];
+      excluded = [
+        "/a"
+        "/b"
+        "/c"
+      ];
+      precedes = {
+        "/a" = [
+          "/a"
+          "/b"
+        ];
+        "/b" = [ "/b" ];
+        "/c" = [
+          "/a"
+          "/b"
+          "/c"
+        ];
+      };
+      succeeds = {
+        "/a" = [
+          "/a"
+          "/c"
+        ];
+        "/b" = [
+          "/b"
+          "/a"
+          "/c"
+        ];
+        "/c" = [ "/c" ];
+      };
     };
     expectedBuilderLogEntries = [
-      "ERROR: runpath entry '/a' is present when any of the following are present: '/d'"
+      "ERROR: testIncluded: /d not found in runpath of ${b-a-c}/bin/main"
+      "ERROR: testExcluded: /a found in runpath of ${b-a-c}/bin/main"
+      "ERROR: testExcluded: /b found in runpath of ${b-a-c}/bin/main"
+      "ERROR: testExcluded: /c found in runpath of ${b-a-c}/bin/main"
+      "ERROR: testPrecedes: /a does not precede /a in runpath of ${b-a-c}/bin/main"
+      "ERROR: testPrecedes: /a does not precede /b in runpath of ${b-a-c}/bin/main"
+      "ERROR: testPrecedes: /b does not precede /b in runpath of ${b-a-c}/bin/main"
+      "ERROR: testPrecedes: /c does not precede /a in runpath of ${b-a-c}/bin/main"
+      "ERROR: testPrecedes: /c does not precede /b in runpath of ${b-a-c}/bin/main"
+      "ERROR: testPrecedes: /c does not precede /c in runpath of ${b-a-c}/bin/main"
+      "ERROR: testSucceeds: /a does not succeed /a in runpath of ${b-a-c}/bin/main"
+      "ERROR: testSucceeds: /a does not succeed /c in runpath of ${b-a-c}/bin/main"
+      "ERROR: testSucceeds: /b does not succeed /b in runpath of ${b-a-c}/bin/main"
+      "ERROR: testSucceeds: /b does not succeed /a in runpath of ${b-a-c}/bin/main"
+      "ERROR: testSucceeds: /b does not succeed /c in runpath of ${b-a-c}/bin/main"
+      "ERROR: testSucceeds: /c does not succeed /c in runpath of ${b-a-c}/bin/main"
     ];
   };
-  # # NOTE: This particular test is used in the docs:
-  # # See https://nixos.org/manual/nixpkgs/unstable/#tester-testEqualArrayOrMap
-  # # or doc/build-helpers/testers.chapter.md
-  # docs-test-function-add-cowbell = testEqualArrayOrMap {
-  #   name = "test-function-add-cowbell";
-  #   valuesArray = [
-  #     "cowbell"
-  #     "cowbell"
-  #   ];
-  #   expectedArray = [
-  #     "cowbell"
-  #     "cowbell"
-  #     "cowbell"
-  #   ];
-  #   script = ''
-  #     addCowbell() {
-  #       local -rn arrayNameRef="$1"
-  #       arrayNameRef+=( "cowbell" )
-  #     }
 
-  #     nixLog "appending all values in valuesArray to actualArray"
-  #     for value in "''${valuesArray[@]}"; do
-  #       actualArray+=( "$value" )
-  #     done
-
-  #     nixLog "applying addCowbell"
-  #     addCowbell actualArray
-  #   '';
-  # };
-  # array-append = testEqualArrayOrMap {
-  #   name = "testEqualArrayOrMap-array-append";
-  #   valuesArray = [
-  #     "apple"
-  #     "bee"
-  #     "cat"
-  #   ];
-  #   expectedArray = [
-  #     "apple"
-  #     "bee"
-  #     "cat"
-  #     "dog"
-  #   ];
-  #   script = ''
-  #     ${concatValuesArrayToActualArray}
-  #     actualArray+=( "dog" )
-  #   '';
-  # };
-  # array-prepend = testEqualArrayOrMap {
-  #   name = "testEqualArrayOrMap-array-prepend";
-  #   valuesArray = [
-  #     "apple"
-  #     "bee"
-  #     "cat"
-  #   ];
-  #   expectedArray = [
-  #     "dog"
-  #     "apple"
-  #     "bee"
-  #     "cat"
-  #   ];
-  #   script = ''
-  #     actualArray+=( "dog" )
-  #     ${concatValuesArrayToActualArray}
-  #   '';
-  # };
-  # array-empty = testEqualArrayOrMap {
-  #   name = "testEqualArrayOrMap-array-empty";
-  #   valuesArray = [
-  #     "apple"
-  #     "bee"
-  #     "cat"
-  #   ];
-  #   expectedArray = [ ];
-  #   script = ''
-  #     # doing nothing
-  #   '';
-  # };
-  # array-missing-value = testBuildFailure' {
-  #   drv = testEqualArrayOrMap {
-  #     name = "testEqualArrayOrMap-array-missing-value";
-  #     valuesArray = [ "apple" ];
-  #     expectedArray = [ ];
-  #     script = concatValuesArrayToActualArray;
-  #   };
-  #   expectedBuilderLogEntries = [
-  #     "ERROR: assertEqualArray: arrays differ in length: expectedArray has length 0 but actualArray has length 1"
-  #     "ERROR: assertEqualArray: arrays differ at index 0: expectedArray has no such index but actualArray has value 'apple'"
-  #   ];
-  # };
-  # map-insert = testEqualArrayOrMap {
-  #   name = "testEqualArrayOrMap-map-insert";
-  #   valuesMap = {
-  #     apple = "0";
-  #     bee = "1";
-  #     cat = "2";
-  #   };
-  #   expectedMap = {
-  #     apple = "0";
-  #     bee = "1";
-  #     cat = "2";
-  #     dog = "3";
-  #   };
-  #   script = ''
-  #     ${concatValuesMapToActualMap}
-  #     actualMap["dog"]="3"
-  #   '';
-  # };
-  # map-remove = testEqualArrayOrMap {
-  #   name = "testEqualArrayOrMap-map-remove";
-  #   valuesMap = {
-  #     apple = "0";
-  #     bee = "1";
-  #     cat = "2";
-  #     dog = "3";
-  #   };
-  #   expectedMap = {
-  #     apple = "0";
-  #     cat = "2";
-  #     dog = "3";
-  #   };
-  #   script = ''
-  #     ${concatValuesMapToActualMap}
-  #     unset 'actualMap[bee]'
-  #   '';
-  # };
-  # map-missing-key = testBuildFailure' {
-  #   drv = testEqualArrayOrMap {
-  #     name = "testEqualArrayOrMap-map-missing-key";
-  #     valuesMap = {
-  #       bee = "1";
-  #       cat = "2";
-  #       dog = "3";
-  #     };
-  #     expectedMap = {
-  #       apple = "0";
-  #       bee = "1";
-  #       cat = "2";
-  #       dog = "3";
-  #     };
-  #     script = concatValuesMapToActualMap;
-  #   };
-  #   expectedBuilderLogEntries = [
-  #     "ERROR: assertEqualMap: maps differ in length: expectedMap has length 4 but actualMap has length 3"
-  #     "ERROR: assertEqualMap: maps differ at key 'apple': expectedMap has value '0' but actualMap has no such key"
-  #   ];
-  # };
-  # map-missing-key-with-empty = testBuildFailure' {
-  #   drv = testEqualArrayOrMap {
-  #     name = "testEqualArrayOrMap-map-missing-key-with-empty";
-  #     valuesArray = [ ];
-  #     expectedMap.apple = 1;
-  #     script = "";
-  #   };
-  #   expectedBuilderLogEntries = [
-  #     "ERROR: assertEqualMap: maps differ in length: expectedMap has length 1 but actualMap has length 0"
-  #     "ERROR: assertEqualMap: maps differ at key 'apple': expectedMap has value '1' but actualMap has no such key"
-  #   ];
-  # };
-  # map-extra-key = testBuildFailure' {
-  #   drv = testEqualArrayOrMap {
-  #     name = "testEqualArrayOrMap-map-extra-key";
-  #     valuesMap = {
-  #       apple = "0";
-  #       bee = "1";
-  #       cat = "2";
-  #       dog = "3";
-  #     };
-  #     expectedMap = {
-  #       apple = "0";
-  #       bee = "1";
-  #       dog = "3";
-  #     };
-  #     script = concatValuesMapToActualMap;
-  #   };
-  #   expectedBuilderLogEntries = [
-  #     "ERROR: assertEqualMap: maps differ in length: expectedMap has length 3 but actualMap has length 4"
-  #     "ERROR: assertEqualMap: maps differ at key 'cat': expectedMap has no such key but actualMap has value '2'"
-  #   ];
-  # };
+  # TODO: Tests for conditional includes/excludes.
 }

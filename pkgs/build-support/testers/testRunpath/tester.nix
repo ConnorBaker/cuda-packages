@@ -7,7 +7,7 @@
 let
   inherit (builtins) toString;
   inherit (lib) maintainers;
-  inherit (lib.attrsets) attrValues genAttrs mapAttrs;
+  inherit (lib.attrsets) mapAttrs;
   inherit (lib.customisation) makeOverridable;
   inherit (lib.trivial) const;
 
@@ -16,7 +16,6 @@ let
   testRunpath =
     {
       drv,
-      outputs ? drv.outputs, # The outputs of the derivation to test
       name ? "testRunpath-${drv.name}", # The name of the test
 
       includeGlob ? "*", # Files matching this pattern are included in tested
@@ -43,52 +42,7 @@ let
       script ? "", # Additional checks run per-output
     }:
     let
-      testRunpathForOutput =
-        output:
-        let
-          testRunpathRoot = drv.${output}.outPath;
-        in
-        stdenvNoCC.mkDerivation {
-          __structuredAttrs = true;
-          strictDeps = true;
-
-          name = "${name}-${output}";
-
-          nativeBuildInputs = [
-            patchelf
-            # Specify the outPath specifically to ensure the desired output is used.
-            testRunpathRoot
-          ];
-
-          inherit testRunpathRoot;
-
-          inherit includeGlob excludeGlob;
-
-          # TODO: Map over this to convert to strings and discard contexts to avoid pulling in
-          # additional dependencies?
-          inherit included excluded;
-          includedWhenAnyIncluded = attrValuesToStrings includedWhenAnyIncluded;
-          includedWhenAllIncluded = attrValuesToStrings includedWhenAllIncluded;
-          includedWhenAnyExcluded = attrValuesToStrings includedWhenAnyExcluded;
-          includedWhenAllExcluded = attrValuesToStrings includedWhenAllExcluded;
-          excludedWhenAnyIncluded = attrValuesToStrings excludedWhenAnyIncluded;
-          excludedWhenAllIncluded = attrValuesToStrings excludedWhenAllIncluded;
-          excludedWhenAnyExcluded = attrValuesToStrings excludedWhenAnyExcluded;
-          excludedWhenAllExcluded = attrValuesToStrings excludedWhenAllExcluded;
-          precedes = attrValuesToStrings precedes;
-          succeeds = attrValuesToStrings succeeds;
-
-          inherit script;
-
-          buildCommandPath = ./build-command.sh;
-
-          meta = {
-            description = "TODO";
-            maintainers = [ maintainers.connorbaker ];
-          };
-        };
-
-      testPerOutput = genAttrs outputs testRunpathForOutput;
+      testRunpathRoot = drv.outPath;
     in
     stdenvNoCC.mkDerivation {
       __structuredAttrs = true;
@@ -96,18 +50,33 @@ let
 
       inherit name;
 
-      # Add tests on each output to nativeBuildInputs
-      nativeBuildInputs = attrValues testPerOutput;
+      nativeBuildInputs = [
+        patchelf
+        # Specify the outPath specifically to ensure the desired output is used.
+        testRunpathRoot
+      ];
 
-      buildCommand = ''
-        set -eu
-        touch "$out"
-      '';
+      inherit testRunpathRoot;
 
-      # Allows building the test for each output
-      passthru = {
-        inherit testPerOutput;
-      };
+      inherit includeGlob excludeGlob;
+
+      # TODO: Map over this to convert to strings and discard contexts to avoid pulling in
+      # additional dependencies?
+      inherit included excluded;
+      includedWhenAnyIncluded = attrValuesToStrings includedWhenAnyIncluded;
+      includedWhenAllIncluded = attrValuesToStrings includedWhenAllIncluded;
+      includedWhenAnyExcluded = attrValuesToStrings includedWhenAnyExcluded;
+      includedWhenAllExcluded = attrValuesToStrings includedWhenAllExcluded;
+      excludedWhenAnyIncluded = attrValuesToStrings excludedWhenAnyIncluded;
+      excludedWhenAllIncluded = attrValuesToStrings excludedWhenAllIncluded;
+      excludedWhenAnyExcluded = attrValuesToStrings excludedWhenAnyExcluded;
+      excludedWhenAllExcluded = attrValuesToStrings excludedWhenAllExcluded;
+      precedes = attrValuesToStrings precedes;
+      succeeds = attrValuesToStrings succeeds;
+
+      inherit script;
+
+      buildCommandPath = ./build-command.sh;
 
       meta = {
         description = "TODO";
