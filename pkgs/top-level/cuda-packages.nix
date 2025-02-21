@@ -113,6 +113,7 @@ let
               # Core
               callPackages = callPackagesWith (pkgs // finalCudaPackages);
               cudaMajorMinorVersion = majorMinor cudaMajorMinorPatchVersion;
+              cudaMajorVersion = major cudaMajorMinorPatchVersion;
 
               # Utilities
               cudaAtLeast = versionAtLeast cudaMajorMinorPatchVersion;
