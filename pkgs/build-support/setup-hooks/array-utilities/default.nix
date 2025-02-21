@@ -4,7 +4,7 @@
   makeSetupHook,
 }:
 makeSetupHook {
-  name = "array-utilities-hook";
+  name = "array-utilities";
   passthru.tests = {
     computeFrequencyMap = callPackages ./tests/computeFrequencyMap.nix { };
     deduplicateArray = callPackages ./tests/deduplicateArray.nix { };
@@ -14,4 +14,4 @@ makeSetupHook {
     description = "Adds common array utilities";
     maintainers = lib.teams.cuda.members;
   };
-} ./array-utilities-hook.sh
+} ./array-utilities.sh

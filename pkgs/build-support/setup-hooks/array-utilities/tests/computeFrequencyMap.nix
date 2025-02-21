@@ -1,6 +1,6 @@
 # NOTE: Tests related to computeFrequencyMap go here.
 {
-  arrayUtilitiesHook,
+  arrayUtilities,
   testers,
 }:
 let
@@ -18,7 +18,7 @@ let
       }
     )).overrideAttrs
       (prevAttrs: {
-        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilitiesHook ];
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilities ];
       });
 in
 {

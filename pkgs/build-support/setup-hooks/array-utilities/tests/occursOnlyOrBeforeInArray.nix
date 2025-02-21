@@ -1,6 +1,6 @@
 # NOTE: Tests related to occursOnlyOrBeforeInArray go here.
 {
-  arrayUtilitiesHook,
+  arrayUtilities,
   testers,
 }:
 let
@@ -24,7 +24,7 @@ let
         ;
       strictDeps = true;
       __structuredAttrs = true;
-      nativeBuildInputs = [ arrayUtilitiesHook ];
+      nativeBuildInputs = [ arrayUtilities ];
       script = ''
         set -eu
         nixLog "using value1: ''${value1@Q}"

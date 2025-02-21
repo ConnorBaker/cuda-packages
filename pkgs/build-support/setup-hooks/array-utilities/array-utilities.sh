@@ -3,7 +3,7 @@
 # Only run the hook from nativeBuildInputs
 # shellcheck disable=SC2154
 if ((hostOffset == -1 && targetOffset == 0)); then
-  nixInfoLog "sourcing array-utilities-hook.sh"
+  nixInfoLog "sourcing array-utilities.sh"
 else
   return 0
 fi

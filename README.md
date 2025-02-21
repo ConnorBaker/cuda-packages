@@ -40,9 +40,9 @@ TODO: `cudaCapabilities` was introduced to `cudaPackagesConfig` to enable per-pa
 - `src` selection and merging handled by module system instead of fuctions in `cudaLib`?
 - update `cuda-redist` to accept path arguments
 - continue switching from `mkCheckExpectedRunpath` to `testEqualArrayOrMap` and `testBuildFailure` to `testBuildFailure'`
-- docs/tests for `arrayUtilitiesHook`
+- docs/tests for `arrayUtilities`
 - docs for `deduplicateRunpathEntriesHook`
-- docs/tests for CUDA hooks using `arrayUtilitiesHook`
+- docs/tests for CUDA hooks using `arrayUtilities`
 - think about creating `noRunpathAmbiguityHook` -- a runpath is considered "ambiguous" if it has multiple paths to the same library name
   - This is a sign that the package is linking against the same library multiple times (different versions?), which might be a source of undefined behavior depending on the order paths are resolved
 - `cuda_compat` should only be used when the host driver is not equal to the version of the CUDA package set currently being used.
