@@ -39,12 +39,12 @@ arraysAreEqual() {
   local -rn inputArr1Ref="$1"
   local -rn inputArr2Ref="$2"
 
-  if ! isDeclaredArray inputArr1Ref; then
+  if ! isDeclaredArray "${!inputArr1Ref}"; then
     nixErrorLog "first arugment inputArr1Ref must be an array reference"
     exit 1
   fi
 
-  if ! isDeclaredArray inputArr2Ref; then
+  if ! isDeclaredArray "${!inputArr2Ref}"; then
     nixErrorLog "second arugment inputArr2Ref must be an array reference"
     exit 1
   fi
@@ -69,7 +69,7 @@ occursOnlyOrBeforeInArray() {
   local -r inputElem2="$2"
   local -rn inputArrRef="$3"
 
-  if ! isDeclaredArray inputArrRef; then
+  if ! isDeclaredArray "${!inputArrRef}"; then
     nixErrorLog "third arugment inputArrRef must be an array reference"
     exit 1
   fi
@@ -79,6 +79,7 @@ occursOnlyOrBeforeInArray() {
     exit 1
   fi
 
+  local entry
   for entry in "${inputArrRef[@]}"; do
     # Early return on finding inputElem1
     [[ $entry == "$inputElem1" ]] && return 0
@@ -102,7 +103,7 @@ occursOnlyOrAfterInArray() {
   local -r inputElem2="$2"
   local -rn inputArrRef="$3"
 
-  if ! isDeclaredArray inputArrRef; then
+  if ! isDeclaredArray "${!inputArrRef}"; then
     nixErrorLog "third arugment inputArrRef must be an array reference"
     exit 1
   fi
@@ -114,6 +115,7 @@ occursOnlyOrAfterInArray() {
 
   local -i seenInputElem1=0
   local -i seenInputElem2=0
+  local entry
   for entry in "${inputArrRef[@]}"; do
     if [[ $entry == "$inputElem1" ]]; then
       # If we've already seen inputElem2, then inputElem1 occurs after inputElem2 and we can return success.
@@ -146,11 +148,12 @@ occursInArray() {
   local -r inputElem="$1"
   local -rn inputArrRef="$2"
 
-  if ! isDeclaredArray inputArrRef; then
+  if ! isDeclaredArray "${!inputArrRef}"; then
     nixErrorLog "second arugment inputArrRef must be an array reference"
     exit 1
   fi
 
+  local entry
   for entry in "${inputArrRef[@]}"; do
     [[ $entry == "$inputElem" ]] && return 0
   done
@@ -161,6 +164,7 @@ occursInArray() {
 # TODO: Would it be a mistake to provided an occursInSortedArray?
 
 # Sorts inputArrRef and stores the result in outputArrRef.
+# TODO: Is it safe for inputArrRef and outputArrRef to be the same?
 sortArray() {
   if (($# != 2)); then
     nixErrorLog "expected two arguments!"
@@ -171,19 +175,26 @@ sortArray() {
   local -rn inputArrRef="$1"
   local -rn outputArrRef="$2"
 
-  if ! isDeclaredArray inputArrRef; then
+  if ! isDeclaredArray "${!inputArrRef}"; then
     nixErrorLog "first arugment inputArrRef must be an array reference"
     exit 1
   fi
 
-  if ! isDeclaredArray outputArrRef; then
+  if ! isDeclaredArray "${!outputArrRef}"; then
     nixErrorLog "second arugment outputArrRef must be an array reference"
     exit 1
   fi
 
+  # Early return for empty array, as empty array will expand to nothing, but printf will still see it as an argument,
+  # producing an empty string.
+  if ((${#inputArrRef[@]} == 0)); then
+    outputArrRef=()
+    return 0
+  fi
+
   # NOTE from sort manpage: The locale specified by the environment affects sort order. Set LC_ALL=C to get the
   # traditional sort order that uses native byte values.
-  mapfile -d '' -t outputArrRef < <(printf '%s\0' "${inputArrRef[@]}" | LC_ALL=C sort --stable --zero-terminated)
+  mapfile -d $'\0' -t outputArrRef < <(printf '%s\0' "${inputArrRef[@]}" | LC_ALL=C sort --stable --zero-terminated)
   return 0
 }
 
@@ -200,23 +211,25 @@ getMapKeys() {
   # Don't warn about outputArrRef being used as an array because it is an array.
   local -rn outputArrRef="$2"
 
-  if ! isDeclaredMap inputMapRef; then
+  if ! isDeclaredMap "${!inputMapRef}"; then
     nixErrorLog "first arugment inputMapRef must be an associative array reference"
     exit 1
   fi
 
-  if ! isDeclaredArray outputArrRef; then
+  if ! isDeclaredArray "${!outputArrRef}"; then
     nixErrorLog "second arugment outputArrRef must be an array reference"
     exit 1
   fi
 
   # TODO: Should we hide mutation from the caller?
   outputArrRef=("${!inputMapRef[@]}")
-  sortArray outputArrRef outputArrRef
+  sortArray "${!outputArrRef}" "${!outputArrRef}"
   return 0
 }
 
 # Returns 0 if inputElem occurs in the keys of inputMapRef, 1 otherwise.
+# NOTE: This is O(n) in the size of the map, but allows testing for keys with values which
+# are empty strings (normally considered unset).
 occursInMapKeys() {
   if (($# != 2)); then
     nixErrorLog "expected two arguments!"
@@ -227,7 +240,7 @@ occursInMapKeys() {
   local -r inputElem="$1"
   local -rn inputMapRef="$2"
 
-  if ! isDeclaredMap inputMapRef; then
+  if ! isDeclaredMap "${!inputMapRef}"; then
     nixErrorLog "second arugment inputMapRef must be an associative array reference"
     exit 1
   fi
@@ -235,7 +248,7 @@ occursInMapKeys() {
   # shellcheck disable=SC2034
   # keys is used in getMapKeys
   local -a keys
-  getMapKeys inputMapRef keys
+  getMapKeys "${!inputMapRef}" keys
   occursInArray "$inputElem" keys
   return $? # Return the result of occursInArray
 }
@@ -250,12 +263,12 @@ mapIsSubmap() {
   local -rn submapRef="$1"
   local -rn supermapRef="$2"
 
-  if ! isDeclaredMap submapRef; then
+  if ! isDeclaredMap "${!submapRef}"; then
     nixErrorLog "first arugment submapRef must be an associative array reference"
     exit 1
   fi
 
-  if ! isDeclaredMap supermapRef; then
+  if ! isDeclaredMap "${!supermapRef}"; then
     nixErrorLog "second arugment supermapRef must be an associative array reference"
     exit 1
   fi
@@ -278,19 +291,19 @@ mapsAreEqual() {
   local -rn inputMap1Ref="$1"
   local -rn inputMap2Ref="$2"
 
-  if ! isDeclaredMap inputMap1Ref; then
+  if ! isDeclaredMap "${!inputMap1Ref}"; then
     nixErrorLog "first arugment inputMap1Ref must be an associative array reference"
     exit 1
   fi
 
-  if ! isDeclaredMap inputMap2Ref; then
+  if ! isDeclaredMap "${!inputMap2Ref}"; then
     nixErrorLog "second arugment inputMap2Ref must be an associative array reference"
     exit 1
   fi
 
   if ((${#inputMap1Ref[@]} != ${#inputMap2Ref[@]})) ||
-    ! mapIsSubmap inputMap1Ref inputMap2Ref ||
-    ! mapIsSubmap inputMap2Ref inputMap1Ref; then
+    ! mapIsSubmap "${!inputMap1Ref}" "${!inputMap2Ref}" ||
+    ! mapIsSubmap "${!inputMap2Ref}" "${!inputMap1Ref}"; then
     return 1
   fi
 
@@ -315,17 +328,18 @@ computeFrequencyMap() {
   local -rn inputArrRef="$1"
   local -rn outputMapRef="$2"
 
-  if ! isDeclaredArray inputArrRef; then
+  if ! isDeclaredArray "${!inputArrRef}"; then
     nixErrorLog "first arugment inputArrRef must be an array reference"
     exit 1
   fi
 
-  if ! isDeclaredMap outputMapRef; then
+  if ! isDeclaredMap "${!outputMapRef}"; then
     nixErrorLog "second arugment outputMapRef must be an associative array reference"
     exit 1
   fi
 
   local -i numTimesSeen
+  local entry
   for entry in "${inputArrRef[@]}"; do
     numTimesSeen=$((${outputMapRef["$entry"]-0} + 1))
     outputMapRef["$entry"]=$numTimesSeen
@@ -361,28 +375,141 @@ deduplicateArray() {
   # don't warn about outputMapRef being used as an array because it is an array.
   local -rn outputMapRef="${3:-outputMap}"
 
-  if ! isDeclaredArray inputArrRef; then
+  if ! isDeclaredArray "${!inputArrRef}"; then
     nixErrorLog "first arugment inputArrRef must be an array reference"
     exit 1
   fi
 
-  if ! isDeclaredArray outputArrRef; then
+  if ! isDeclaredArray "${!outputArrRef}"; then
     nixErrorLog "second arugment outputArrRef must be an array reference"
     exit 1
   fi
 
-  if ! isDeclaredMap outputMapRef; then
+  if ! isDeclaredMap "${!outputMapRef}"; then
     nixErrorLog "third arugment outputMapRef must be an associative array reference when present"
     exit 1
   fi
 
   local -i numTimesSeen
+  local entry
   for entry in "${inputArrRef[@]}"; do
     numTimesSeen=$((${outputMapRef["$entry"]-0} + 1))
     outputMapRef["$entry"]=$numTimesSeen
 
     if ((numTimesSeen <= 1)); then
       outputArrRef+=("$entry")
+    fi
+  done
+
+  return 0
+}
+
+# arrayDifference
+# Computes the difference of two arrays.
+# Arguments:
+# - inputArr1Ref: a reference to an array (not mutated)
+# - inputArr2Ref: a reference to an array (not mutated)
+# - outputArrRef: a reference to an array (mutated)
+# Returns 0.
+arrayDifference() {
+  if (($# != 3)); then
+    nixErrorLog "expected three arguments!"
+    nixErrorLog "usage: arrayDifference inputArr1Ref inputArr2Ref outputArrRef"
+    exit 1
+  fi
+
+  local -rn inputArr1Ref="$1"
+  local -rn inputArr2Ref="$2"
+  # shellcheck disable=SC2178
+  # don't warn about outputArrRef being used as an array because it is an array.
+  local -rn outputArrRef="$3"
+
+  if ! isDeclaredArray "${!inputArr1Ref}"; then
+    nixErrorLog "first arugment inputArr1Ref must be an array reference"
+    exit 1
+  fi
+
+  if ! isDeclaredArray "${!inputArr2Ref}"; then
+    nixErrorLog "second arugment inputArr2Ref must be an array reference"
+    exit 1
+  fi
+
+  if ! isDeclaredArray "${!outputArrRef}"; then
+    nixErrorLog "third arugment outputArrRef must be an array reference"
+    exit 1
+  fi
+
+  # TODO: Use an O(n) algorithm instead of O(n^2).
+  local entry
+  for entry in "${inputArr1Ref[@]}"; do
+    if ! occursInArray "$entry" "${!inputArr2Ref}"; then
+      outputArrRef+=("$entry")
+    fi
+  done
+
+  return 0
+}
+
+# arrayReplace
+# Replaces all occurrences of each key of inputMapRef in inputArrRef with the values provided by the delimted string in
+# the corresponding value of inputMapRef.
+# Arguments:
+# - inputArrRef: a reference to an array (not mutated)
+# - inputMapRef: a reference to an associative array (not mutated)
+# - delimiter: a character used to delimit the values in inputMapRef
+# - outputArrRef: a reference to an array (mutated)
+arrayReplace() {
+  if (($# != 4)); then
+    nixErrorLog "expected four arguments!"
+    nixErrorLog "usage: arrayReplace inputArrRef inputMapRef delimiter outputArrRef"
+    exit 1
+  fi
+
+  local -rn inputArrRef="$1"
+  local -rn inputMapRef="$2"
+  local -r delimiter="$3"
+  # shellcheck disable=SC2178
+  local -rn outputArrRef="$4"
+
+  if ! isDeclaredArray "${!inputArrRef}"; then
+    nixErrorLog "first arugment inputArrRef must be an array reference"
+    exit 1
+  fi
+
+  if ! isDeclaredMap "${!inputMapRef}"; then
+    nixErrorLog "second arugment inputMapRef must be an associative array reference"
+    exit 1
+  fi
+
+  if ! isDeclaredArray "${!outputArrRef}"; then
+    nixErrorLog "third arugment outputArrRef must be an array reference"
+    exit 1
+  fi
+
+  # Early return for empty array and replacement map.
+  if ((${#inputArrRef[@]} == 0)); then
+    outputArrRef=()
+    return 0
+  elif ((${#inputMapRef[@]} == 0)); then
+    outputArrRef=("${inputArrRef[@]}")
+    return 0
+  fi
+
+  local elem
+  local replacementString
+  local -a replacementElemArray=()
+  for elem in "${inputArrRef[@]}"; do
+    # NOTE: We must use the slow check for key presence because we need to be able to discern between the key being
+    # absent and the key being present with an empty string as the value.
+    if occursInMapKeys "$elem" "${!inputMapRef}"; then
+      replacementString="${inputMapRef["$elem"]}"
+      replacementElemArray=()
+      if [[ -n $replacementString ]]; then
+        mapfile -d "$delimiter" -t replacementElemArray < <(echo -n "$replacementString")
+      fi
+      outputArrRef+=("${replacementElemArray[@]}")
+    else
+      outputArrRef+=("$elem")
     fi
   done
 
