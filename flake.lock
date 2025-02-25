@@ -81,11 +81,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1740162797,
-        "narHash": "sha256-kZtcUvbXmsfiEuzaLPH+/3N8jhNgK9/biKk7P57bB2c=",
+        "lastModified": 1740523704,
+        "narHash": "sha256-vRhpapCvS9zo62HIgGxRJU4n4SP1UUyPiQ2lvhiaSYM=",
         "owner": "ConnorBaker",
         "repo": "nixpkgs",
-        "rev": "552e6129a5b04bb76c76ffe01c0499e8a30768fc",
+        "rev": "49fecd727c51e9fd4e9f20b5d42831c9b4995da0",
         "type": "github"
       },
       "original": {
