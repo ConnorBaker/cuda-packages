@@ -1,6 +1,6 @@
 # NOTE: Tests related to deduplicateArray go here.
 {
-  arrayUtilities,
+  deduplicateArray,
   lib,
   testers,
 }:
@@ -20,7 +20,7 @@ let
       }
     )).overrideAttrs
       (prevAttrs: {
-        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilities ];
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ deduplicateArray ];
       });
 in
 recurseIntoAttrs {

@@ -1,14 +1,20 @@
 # This is largely a shim for Nixpkgs.
 { lib, nixpkgsSrc }:
 let
-  inherit (lib.attrsets) genAttrs;
+  inherit (lib.attrsets) concatMapAttrs genAttrs optionalAttrs;
   inherit (lib.fixedPoints) composeManyExtensions;
 
   extraAutoCalledPackages = import "${nixpkgsSrc}/pkgs/top-level/by-name-overlay.nix" ./pkgs/by-name;
   extraSetupHooks = final: prev: {
-    arrayUtilities = final.callPackage ./pkgs/build-support/setup-hooks/array-utilities { };
+    arrayUtilities = final.callPackage ./pkgs/build-support/setup-hooks/arrayUtilities { };
+    runpathFixup = final.callPackage ./pkgs/build-support/setup-hooks/runpath-fixup { };
     tests = prev.tests // {
-      arrayUtilities = final.arrayUtilities.passthru.tests;
+      arrayUtilities = concatMapAttrs (
+        name: value:
+        optionalAttrs (value ? passthru.tests) {
+          ${name} = value.passthru.tests;
+        }
+      ) final.arrayUtilities;
     };
   };
   extraTesterPackages = final: prev: {

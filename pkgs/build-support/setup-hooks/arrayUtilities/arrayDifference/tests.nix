@@ -1,6 +1,6 @@
 # NOTE: Tests related to arrayDifference go here.
 {
-  arrayUtilities,
+  arrayDifference,
   lib,
   testers,
 }:
@@ -26,8 +26,8 @@ let
       }
     )).overrideAttrs
       (prevAttrs: {
-        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilities ];
         inherit (args) valuesToRemoveArray;
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayDifference ];
       });
 in
 recurseIntoAttrs {

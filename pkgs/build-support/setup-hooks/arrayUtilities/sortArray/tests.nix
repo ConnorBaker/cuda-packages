@@ -1,7 +1,7 @@
 # NOTE: Tests related to sortArray go here.
 {
-  arrayUtilities,
   lib,
+  sortArray,
   testers,
 }:
 let
@@ -20,7 +20,7 @@ let
       }
     )).overrideAttrs
       (prevAttrs: {
-        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilities ];
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ sortArray ];
       });
 in
 recurseIntoAttrs {

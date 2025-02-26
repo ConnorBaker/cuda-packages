@@ -1,6 +1,6 @@
 # NOTE: Tests related to computeFrequencyMap go here.
 {
-  arrayUtilities,
+  computeFrequencyMap,
   lib,
   testers,
 }:
@@ -20,7 +20,7 @@ let
       }
     )).overrideAttrs
       (prevAttrs: {
-        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilities ];
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ computeFrequencyMap ];
       });
 in
 recurseIntoAttrs {

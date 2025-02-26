@@ -1,6 +1,6 @@
 # NOTE: Tests related to arrayReplace go here.
 {
-  arrayUtilities,
+  arrayReplace,
   lib,
   testers,
 }:
@@ -20,7 +20,7 @@ let
       }
     )).overrideAttrs
       (prevAttrs: {
-        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayUtilities ];
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ arrayReplace ];
         inherit (args) delimiter;
       });
 in
