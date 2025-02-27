@@ -24,7 +24,7 @@ let
       }
     );
     makeSetupHook' = final.callPackage ./pkgs/build-support/setup-hooks/makeSetupHookPrime { };
-    runpathFixup = final.callPackage ./pkgs/build-support/setup-hooks/runpath-fixup { };
+    runpathFixup = final.callPackage ./pkgs/build-support/setup-hooks/runpathFixup { };
     sourceGuard = final.callPackage ./pkgs/build-support/setup-hooks/sourceGuard { };
     tests = prev.tests // {
       arrayUtilities = concatMapAttrs (

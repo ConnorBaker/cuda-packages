@@ -14,15 +14,6 @@ declare -ag testers=()
   ((${#included[@]})) && testers+=(testIncluded)
   ((${#excluded[@]})) && testers+=(testExcluded)
 
-  ((${#includedWhenAnyIncluded[@]})) && testers+=(testIncludedWhenAnyIncluded)
-  ((${#includedWhenAllIncluded[@]})) && testers+=(testIncludedWhenAllIncluded)
-  ((${#includedWhenAnyExcluded[@]})) && testers+=(testIncludedWhenAnyExcluded)
-  ((${#includedWhenAllExcluded[@]})) && testers+=(testIncludedWhenAllExcluded)
-  ((${#excludedWhenAnyIncluded[@]})) && testers+=(testExcludedWhenAnyIncluded)
-  ((${#excludedWhenAllIncluded[@]})) && testers+=(testExcludedWhenAllIncluded)
-  ((${#excludedWhenAnyExcluded[@]})) && testers+=(testExcludedWhenAnyExcluded)
-  ((${#excludedWhenAllExcluded[@]})) && testers+=(testExcludedWhenAllExcluded)
-
   ((${#precedes[@]})) && testers+=(testPrecedes)
   ((${#succeeds[@]})) && testers+=(testSucceeds)
 }
@@ -60,7 +51,8 @@ gatherFiles() {
   # shellcheck disable=SC2154
   nixLog "searching for files in ${testRunpathRoot:?} using includeGlob=${includeGlob@Q} and excludeGlob=${excludeGlob@Q}"
 
-  while IFS= read -r -d '' file; do
+  local file
+  while IFS= read -r -d $'\0' file; do
     # We need globbing
     # shellcheck disable=SC2053
     if [[ $file != ${includeGlob?} ]]; then
@@ -91,6 +83,7 @@ testIncluded() {
   local -r file="$1"
   local -r runpath="$2"
   local -i hasFailed=0
+  local entry
 
   # shellcheck disable=SC2154
   for entry in "${included[@]}"; do
@@ -107,6 +100,7 @@ testExcluded() {
   local -r file="$1"
   local -r runpath="$2"
   local -i hasFailed=0
+  local entry
 
   # shellcheck disable=SC2154
   for entry in "${excluded[@]}"; do
@@ -123,11 +117,13 @@ testPrecedes() {
   local -r file="$1"
   local -r runpath="$2"
   local -i hasFailed=0
+  local preceding
+  local entry
 
   # shellcheck disable=SC2154
   for preceding in "${!precedes[@]}"; do
     # Space-delimited list of entries to be preceded by $preceding
-    for entry in ${precedes[$preceding]}; do
+    for entry in ${precedes["$preceding"]}; do
       if isInDelimitedString "$entry" : "$runpath" && ! isPrecededByInDelimitedString "$entry" "$preceding" : "$runpath"; then
         nixErrorLog "$preceding does not precede $entry in runpath of $file"
         hasFailed=1
@@ -142,11 +138,13 @@ testSucceeds() {
   local -r file="$1"
   local -r runpath="$2"
   local -i hasFailed=0
+  local succeeding
+  local entry
 
   # shellcheck disable=SC2154
   for succeeding in "${!succeeds[@]}"; do
     # Space-delimited list of entries to be succeeded by $succeeding
-    for entry in ${succeeds[$succeeding]}; do
+    for entry in ${succeeds["$succeeding"]}; do
       if isInDelimitedString "$entry" : "$runpath" && ! isSucceededByInDelimitedString "$entry" "$succeeding" : "$runpath"; then
         nixErrorLog "$succeeding does not succeed $entry in runpath of $file"
         hasFailed=1
@@ -158,10 +156,13 @@ testSucceeds() {
 }
 
 scriptPhase() {
-  runHook preScript
-
   local -i hasFailed=0
   local runpath
+  local file
+  local tester
+
+  runHook preScript
+
   for file in "${files[@]}"; do
     runpath="$(echo -n "$(patchelf --print-rpath "$file")")"
     nixLog "running testers ${testers[*]} against $file with runpath $runpath"

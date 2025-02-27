@@ -24,20 +24,8 @@ let
       included ? [ ], # Runpath entires; each entry must be present
       excluded ? [ ], # Runpath entries; each entry which must be absent
 
-      includedWhenAnyIncluded ? { }, # Runpath entry to list of entries; entry e is present if any entry e' in the list is present
-      includedWhenAllIncluded ? { }, # Runpath entry to list of entries; entry e is present if all entries e' in the list are present
-      includedWhenAnyExcluded ? { }, # Runpath entry to list of entries; entry e is present if any entry e' in the list is absent
-      includedWhenAllExcluded ? { }, # Runpath entry to list of entries; entry e is present if all entries e' in the list are absent
-
-      excludedWhenAnyIncluded ? { }, # Runpath entry to list of entries; entry e is absent if any entry e' in the list is present
-      excludedWhenAllIncluded ? { }, # Runpath entry to list of entries; entry e is absent if all entries e' in the list are present
-      excludedWhenAnyExcluded ? { }, # Runpath entry to list of entries; entry e is absent if any entry e' in the list is absent
-      excludedWhenAllExcluded ? { }, # Runpath entry to list of entries; entry e is absent if all entries e' in the list are absent
-
       precedes ? { }, # Runpath entry to list of entries; entry e precedes each present entry e' in the list
       succeeds ? { }, # Runpath entry to list of entries; entry e succeeds each present entry e' in the list
-
-      # TODO: No way to express conditional precedes/succeeds
 
       script ? "", # Additional checks run per-output
     }:
@@ -63,14 +51,6 @@ let
       # TODO: Map over this to convert to strings and discard contexts to avoid pulling in
       # additional dependencies?
       inherit included excluded;
-      includedWhenAnyIncluded = attrValuesToStrings includedWhenAnyIncluded;
-      includedWhenAllIncluded = attrValuesToStrings includedWhenAllIncluded;
-      includedWhenAnyExcluded = attrValuesToStrings includedWhenAnyExcluded;
-      includedWhenAllExcluded = attrValuesToStrings includedWhenAllExcluded;
-      excludedWhenAnyIncluded = attrValuesToStrings excludedWhenAnyIncluded;
-      excludedWhenAllIncluded = attrValuesToStrings excludedWhenAllIncluded;
-      excludedWhenAnyExcluded = attrValuesToStrings excludedWhenAnyExcluded;
-      excludedWhenAllExcluded = attrValuesToStrings excludedWhenAllExcluded;
       precedes = attrValuesToStrings precedes;
       succeeds = attrValuesToStrings succeeds;
 

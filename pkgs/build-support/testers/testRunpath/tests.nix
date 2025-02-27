@@ -76,23 +76,27 @@ let
 in
 recurseIntoAttrs {
   a = testRunpath {
+    name = "testRunpath-a";
     drv = a;
     included = [ "/a" ];
     excluded = [ "/b" ];
   };
 
   b = testRunpath {
+    name = "testRunpath-b";
     drv = b;
     included = [ "/b" ];
   };
 
   c = testRunpath {
+    name = "testRunpath-c";
     drv = c;
     included = [ "/c" ];
     excluded = [ "/a" ];
   };
 
   a-b-c = testRunpath {
+    name = "testRunpath-a-b-c";
     drv = a-b-c;
     # Order doesn't matter
     included = [
@@ -120,6 +124,7 @@ recurseIntoAttrs {
 
   b-a-c-failure = testBuildFailure' {
     drv = testRunpath {
+      name = "testRunpath-b-a-c-failure";
       drv = b-a-c;
       included = [ "/d" ];
       excluded = [
@@ -171,6 +176,4 @@ recurseIntoAttrs {
       "ERROR: testSucceeds: /c does not succeed /c in runpath of ${b-a-c}/bin/main"
     ];
   };
-
-  # TODO: Tests for conditional includes/excludes.
 }
