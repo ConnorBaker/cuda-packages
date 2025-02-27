@@ -1,13 +1,31 @@
 # This is largely a shim for Nixpkgs.
 { lib, nixpkgsSrc }:
 let
-  inherit (lib.attrsets) concatMapAttrs genAttrs optionalAttrs;
+  inherit (lib.attrsets)
+    concatMapAttrs
+    genAttrs
+    optionalAttrs
+    recurseIntoAttrs
+    ;
+  inherit (lib.customisation) callPackagesWith makeScope;
+  inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions;
 
   extraAutoCalledPackages = import "${nixpkgsSrc}/pkgs/top-level/by-name-overlay.nix" ./pkgs/by-name;
   extraSetupHooks = final: prev: {
-    arrayUtilities = final.callPackage ./pkgs/build-support/setup-hooks/arrayUtilities { };
+    arrayUtilities = makeScope final.newScope (
+      finalArrayUtilities:
+      recurseIntoAttrs {
+        callPackages = callPackagesWith (final // finalArrayUtilities);
+      }
+      // packagesFromDirectoryRecursive {
+        inherit (finalArrayUtilities) callPackage;
+        directory = ./pkgs/build-support/setup-hooks/arrayUtilities;
+      }
+    );
+    makeBashFunction = final.callPackage ./pkgs/build-support/setup-hooks/makeBashFunction { };
     runpathFixup = final.callPackage ./pkgs/build-support/setup-hooks/runpath-fixup { };
+    sourceGuard = final.callPackage ./pkgs/build-support/setup-hooks/sourceGuard { };
     tests = prev.tests // {
       arrayUtilities = concatMapAttrs (
         name: value:
@@ -19,6 +37,8 @@ let
   };
   extraTesterPackages = final: prev: {
     testers = prev.testers // {
+      shellcheck = final.callPackage ./pkgs/build-support/testers/shellcheck { };
+      shfmt = final.callPackage ./pkgs/build-support/testers/shfmt { };
       testRunpath = import ./pkgs/build-support/testers/testRunpath {
         inherit (final) lib patchelf stdenvNoCC;
       };
