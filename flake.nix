@@ -4,7 +4,7 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
       url = "github:hercules-ci/flake-parts";
     };
-    nixpkgs.url = "github:ConnorBaker/nixpkgs/feat/testEqualArrayOrMap-uses-testBuildFailurePrime";
+    nixpkgs.url = "github:ConnorBaker/nixpkgs/feat/testEqualArrayOrMap";
     git-hooks-nix = {
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:cachix/git-hooks.nix";
