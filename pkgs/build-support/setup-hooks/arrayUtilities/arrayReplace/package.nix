@@ -1,7 +1,7 @@
 {
   callPackages,
   lib,
-  makeBashFunction,
+  makeSetupHook',
   isDeclaredArray,
   isDeclaredMap,
   occursInMapKeys,
@@ -9,7 +9,7 @@
 let
   inherit (lib.teams) cuda;
 in
-makeBashFunction {
+makeSetupHook' {
   name = "arrayReplace";
   script = ./arrayReplace.bash;
   propagatedBuildInputs = [

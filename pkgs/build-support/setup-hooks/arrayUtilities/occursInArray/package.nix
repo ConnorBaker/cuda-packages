@@ -1,12 +1,12 @@
 {
   isDeclaredArray,
   lib,
-  makeBashFunction,
+  makeSetupHook',
 }:
 let
   inherit (lib.teams) cuda;
 in
-makeBashFunction {
+makeSetupHook' {
   name = "occursInArray";
   script = ./occursInArray.bash;
   propagatedBuildInputs = [ isDeclaredArray ];

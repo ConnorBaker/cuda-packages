@@ -2,13 +2,13 @@
   isDeclaredArray,
   isDeclaredMap,
   lib,
-  makeBashFunction,
+  makeSetupHook',
   sortArray,
 }:
 let
   inherit (lib.teams) cuda;
 in
-makeBashFunction {
+makeSetupHook' {
   name = "getMapKeys";
   script = ./getMapKeys.bash;
   propagatedBuildInputs = [

@@ -23,7 +23,7 @@ let
         directory = ./pkgs/build-support/setup-hooks/arrayUtilities;
       }
     );
-    makeBashFunction = final.callPackage ./pkgs/build-support/setup-hooks/makeBashFunction { };
+    makeSetupHook' = final.callPackage ./pkgs/build-support/setup-hooks/makeSetupHookPrime { };
     runpathFixup = final.callPackage ./pkgs/build-support/setup-hooks/runpath-fixup { };
     sourceGuard = final.callPackage ./pkgs/build-support/setup-hooks/sourceGuard { };
     tests = prev.tests // {

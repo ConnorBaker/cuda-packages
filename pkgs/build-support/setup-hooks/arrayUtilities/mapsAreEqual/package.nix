@@ -1,13 +1,13 @@
 {
   isDeclaredMap,
   lib,
-  makeBashFunction,
+  makeSetupHook',
   mapIsSubmap,
 }:
 let
   inherit (lib.teams) cuda;
 in
-makeBashFunction {
+makeSetupHook' {
   name = "mapsAreEqual";
   script = ./mapsAreEqual.bash;
   propagatedBuildInputs = [

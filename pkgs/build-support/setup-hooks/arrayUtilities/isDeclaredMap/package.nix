@@ -1,11 +1,11 @@
 {
   lib,
-  makeBashFunction,
+  makeSetupHook',
 }:
 let
   inherit (lib.teams) cuda;
 in
-makeBashFunction {
+makeSetupHook' {
   name = "isDeclaredMap";
   script = ./isDeclaredMap.bash;
   # passthru.tests = callPackages ./tests.nix {};

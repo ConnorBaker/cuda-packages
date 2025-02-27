@@ -3,12 +3,12 @@
   isDeclaredArray,
   isDeclaredMap,
   lib,
-  makeBashFunction,
+  makeSetupHook',
 }:
 let
   inherit (lib.teams) cuda;
 in
-makeBashFunction {
+makeSetupHook' {
   name = "deduplicateArray";
   script = ./deduplicateArray.bash;
   propagatedBuildInputs = [

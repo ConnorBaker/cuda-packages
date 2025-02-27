@@ -2,12 +2,12 @@
   callPackages,
   isDeclaredArray,
   lib,
-  makeBashFunction,
+  makeSetupHook',
 }:
 let
   inherit (lib.teams) cuda;
 in
-makeBashFunction {
+makeSetupHook' {
   name = "arraysAreEqual";
   script = ./arraysAreEqual.bash;
   propagatedBuildInputs = [ isDeclaredArray ];

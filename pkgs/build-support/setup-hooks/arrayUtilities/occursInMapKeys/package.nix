@@ -2,13 +2,13 @@
   isDeclaredMap,
   getMapKeys,
   lib,
-  makeBashFunction,
+  makeSetupHook',
   occursInArray,
 }:
 let
   inherit (lib.teams) cuda;
 in
-makeBashFunction {
+makeSetupHook' {
   name = "occursInMapKeys";
   script = ./occursInMapKeys.bash;
   propagatedBuildInputs = [

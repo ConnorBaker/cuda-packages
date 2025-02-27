@@ -2,13 +2,13 @@
   callPackages,
   isDeclaredArray,
   lib,
-  makeBashFunction,
+  makeSetupHook',
   occursInArray,
 }:
 let
   inherit (lib.teams) cuda;
 in
-makeBashFunction {
+makeSetupHook' {
   name = "arrayDifference";
   script = ./arrayDifference.bash;
   propagatedBuildInputs = [
