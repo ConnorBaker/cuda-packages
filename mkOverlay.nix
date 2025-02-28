@@ -25,7 +25,6 @@ let
     );
     makeSetupHook' = final.callPackage ./pkgs/build-support/setup-hooks/makeSetupHookPrime { };
     runpathFixup = final.callPackage ./pkgs/build-support/setup-hooks/runpathFixup { };
-    sourceGuard = final.callPackage ./pkgs/build-support/setup-hooks/sourceGuard { };
     tests = prev.tests // {
       arrayUtilities = concatMapAttrs (
         name: value:
@@ -33,6 +32,7 @@ let
           ${name} = value.passthru.tests;
         }
       ) final.arrayUtilities;
+      # TODO: Add tests for makeSetupHook' and sourceGuard.bash.
     };
   };
   extraTesterPackages = final: prev: {

@@ -9,7 +9,7 @@ in
 makeSetupHook' {
   name = "occursOnlyOrAfterInArray";
   script = ./occursOnlyOrAfterInArray.bash;
-  propagatedBuildInputs = [ isDeclaredArray ];
+  scriptNativeBuildInputs = [ isDeclaredArray ];
   # passthru.tests = callPackages ./tests.nix {};
   meta = {
     description = "Adds common array utilities";

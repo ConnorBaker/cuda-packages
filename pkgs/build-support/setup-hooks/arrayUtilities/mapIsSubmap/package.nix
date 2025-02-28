@@ -9,7 +9,7 @@ in
 makeSetupHook' {
   name = "mapIsSubmap";
   script = ./mapIsSubmap.bash;
-  propagatedBuildInputs = [ isDeclaredMap ];
+  scriptNativeBuildInputs = [ isDeclaredMap ];
   # passthru.tests = callPackages ./tests.nix {};
   meta = {
     description = "Adds common array utilities";

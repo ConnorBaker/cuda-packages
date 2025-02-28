@@ -11,7 +11,7 @@ in
 makeSetupHook' {
   name = "deduplicateArray";
   script = ./deduplicateArray.bash;
-  propagatedBuildInputs = [
+  scriptNativeBuildInputs = [
     isDeclaredArray
     isDeclaredMap
   ];

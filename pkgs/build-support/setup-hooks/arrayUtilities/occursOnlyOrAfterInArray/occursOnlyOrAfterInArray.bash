@@ -46,3 +46,6 @@ occursOnlyOrAfterInArray() {
   # If we haven't seen inputElem1, it doesn't matter if we've seen inputElem2 or not -- we return failure.
   return $((1 - seenInputElem1))
 }
+
+# Prevent re-declaration
+readonly -f occursOnlyOrAfterInArray

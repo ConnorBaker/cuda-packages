@@ -11,7 +11,7 @@ in
 makeSetupHook' {
   name = "computeFrequencyMap";
   script = ./computeFrequencyMap.bash;
-  propagatedBuildInputs = [
+  scriptNativeBuildInputs = [
     isDeclaredArray
     isDeclaredMap
   ];

@@ -33,3 +33,6 @@ occursOnlyOrBeforeInArray() {
 
   return 1
 }
+
+# Prevent re-declaration
+readonly -f occursOnlyOrBeforeInArray

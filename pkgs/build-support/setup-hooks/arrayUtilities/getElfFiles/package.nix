@@ -10,7 +10,7 @@ in
 makeSetupHook' {
   name = "getElfFiles";
   script = ./getElfFiles.bash;
-  propagatedBuildInputs = [
+  scriptNativeBuildInputs = [
     isDeclaredArray
     patchelf
   ];

@@ -28,3 +28,6 @@ getMapKeys() {
   sortArray "${!outputArrRef}" "${!outputArrRef}"
   return 0
 }
+
+# Prevent re-declaration
+readonly -f getMapKeys

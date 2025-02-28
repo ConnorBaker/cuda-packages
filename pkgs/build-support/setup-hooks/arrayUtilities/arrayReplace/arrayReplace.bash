@@ -65,3 +65,6 @@ arrayReplace() {
 
   return 0
 }
+
+# Prevent re-declaration
+readonly -f arrayReplace

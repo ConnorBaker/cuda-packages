@@ -25,3 +25,6 @@ occursInMapKeys() {
   occursInArray "$inputElem" keys
   return $? # Return the result of occursInArray
 }
+
+# Prevent re-declaration
+readonly -f occursInMapKeys

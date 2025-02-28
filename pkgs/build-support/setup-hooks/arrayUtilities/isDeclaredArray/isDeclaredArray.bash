@@ -6,3 +6,6 @@ isDeclaredArray() {
   # shellcheck disable=SC2034
   local -nr arrayRef="$1" && [[ ${!arrayRef@a} =~ a ]]
 }
+
+# Prevent re-declaration
+readonly -f isDeclaredArray

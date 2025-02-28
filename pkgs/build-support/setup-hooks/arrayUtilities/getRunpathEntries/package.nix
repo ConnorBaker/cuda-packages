@@ -10,7 +10,7 @@ in
 makeSetupHook' {
   name = "getRunpathEntries";
   script = ./getRunpathEntries.bash;
-  propagatedBuildInputs = [
+  scriptNativeBuildInputs = [
     isDeclaredArray
     patchelf
   ];

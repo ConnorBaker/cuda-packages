@@ -36,3 +36,6 @@ sortArray() {
   mapfile -d $'\0' -t "${!outputArrRef}" < <(printf '%s\0' "${inputArrRef[@]}" | LC_ALL=C sort --stable --zero-terminated)
   return 0
 }
+
+# Prevent re-declaration
+readonly -f sortArray

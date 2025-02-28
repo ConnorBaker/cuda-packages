@@ -11,7 +11,7 @@ in
 makeSetupHook' {
   name = "occursInMapKeys";
   script = ./occursInMapKeys.bash;
-  propagatedBuildInputs = [
+  scriptNativeBuildInputs = [
     isDeclaredMap
     getMapKeys
     occursInArray

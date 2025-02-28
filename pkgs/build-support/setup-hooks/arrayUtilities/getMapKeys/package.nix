@@ -11,7 +11,7 @@ in
 makeSetupHook' {
   name = "getMapKeys";
   script = ./getMapKeys.bash;
-  propagatedBuildInputs = [
+  scriptNativeBuildInputs = [
     isDeclaredArray
     isDeclaredMap
     sortArray

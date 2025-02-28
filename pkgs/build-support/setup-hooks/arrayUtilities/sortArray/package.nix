@@ -10,7 +10,7 @@ in
 makeSetupHook' {
   name = "sortArray";
   script = ./sortArray.bash;
-  propagatedBuildInputs = [ isDeclaredArray ];
+  scriptNativeBuildInputs = [ isDeclaredArray ];
   passthru.tests = callPackages ./tests.nix { };
   meta = {
     description = "Adds common array utilities";

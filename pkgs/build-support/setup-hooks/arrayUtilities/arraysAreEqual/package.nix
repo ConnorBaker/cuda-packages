@@ -10,7 +10,7 @@ in
 makeSetupHook' {
   name = "arraysAreEqual";
   script = ./arraysAreEqual.bash;
-  propagatedBuildInputs = [ isDeclaredArray ];
+  scriptNativeBuildInputs = [ isDeclaredArray ];
   passthru.tests = callPackages ./tests.nix { };
   meta = {
     description = "Tests if two arrays are equal";

@@ -28,3 +28,6 @@ mapsAreEqual() {
 
   return 0
 }
+
+# Prevent re-declaration
+readonly -f mapsAreEqual

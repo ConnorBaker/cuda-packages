@@ -12,7 +12,7 @@ in
 makeSetupHook' {
   name = "arrayReplace";
   script = ./arrayReplace.bash;
-  propagatedBuildInputs = [
+  scriptNativeBuildInputs = [
     isDeclaredArray
     isDeclaredMap
     occursInMapKeys

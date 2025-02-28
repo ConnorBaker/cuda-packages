@@ -11,7 +11,7 @@ in
 makeSetupHook' {
   name = "arrayDifference";
   script = ./arrayDifference.bash;
-  propagatedBuildInputs = [
+  scriptNativeBuildInputs = [
     isDeclaredArray
     occursInArray
   ];

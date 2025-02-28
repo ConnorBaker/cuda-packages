@@ -23,3 +23,6 @@ occursInArray() {
 
   return 1
 }
+
+# Prevent re-declaration
+readonly -f occursInArray

@@ -6,3 +6,6 @@ isDeclaredMap() {
   # shellcheck disable=SC2034
   local -nr mapRef="$1" && [[ ${!mapRef@a} =~ A ]]
 }
+
+# Prevent re-declaration
+readonly -f isDeclaredMap

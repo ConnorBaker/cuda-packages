@@ -10,7 +10,7 @@ in
 makeSetupHook' {
   name = "mapsAreEqual";
   script = ./mapsAreEqual.bash;
-  propagatedBuildInputs = [
+  scriptNativeBuildInputs = [
     isDeclaredMap
     mapIsSubmap
   ];
