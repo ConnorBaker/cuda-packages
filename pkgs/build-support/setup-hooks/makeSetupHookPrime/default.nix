@@ -1,6 +1,7 @@
 {
   lib,
   replaceVarsWith,
+  sourceGuard,
   stdenvNoCC,
   testers,
   writeTextFile,
@@ -49,6 +50,13 @@ lib.makeOverridable (
     src = null;
     dontUnpack = true;
 
+    # Perhaps due to the order in which Nix loads dependencies (current node, then dependencies), we need to add sourceGuard
+    # as a dependency in with a slightly earlier dependency offset.
+    # Adding sourceGuard to `propagatedBuildInputs` causes our `setupHook` to fail to run with a `sourceGuard: command not found`
+    # error.
+    # See https://github.com/NixOS/nixpkgs/pull/31414.
+    depsHostHostPropagated = [ sourceGuard ];
+
     # Since we're producing a setup hook which will be used in nativeBuildInputs, all of our dependency propagation is
     # understood to be shifted by one to the right -- that is, the script's nativeBuildInputs corresponds to this
     # derivation's propagatedBuildInputs, and the script's buildInputs corresponds to this derivation's
@@ -57,9 +65,8 @@ lib.makeOverridable (
     depsTargetTargetPropagated = scriptBuildInputs;
 
     setupHook = writeTextFile {
-      name = "makeSetupHookPrime-${templatedScriptName}";
+      name = "sourceGuard-${templatedScriptName}";
       text = ''
-        source ${lib.escapeShellArg "${./sourceGuard.bash}"}
         sourceGuard ${lib.escapeShellArg name} ${lib.escapeShellArg templatedScript}
       '';
       derivationArgs = {
