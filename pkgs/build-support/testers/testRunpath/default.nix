@@ -1,5 +1,6 @@
 # NOTE: Must be `import`-ed rather than `callPackage`-d to preserve the `override` attribute.
 {
+  arrayUtilities,
   lib,
   patchelf,
   stdenvNoCC,
@@ -39,6 +40,7 @@ let
       inherit name;
 
       nativeBuildInputs = [
+        arrayUtilities.getRunpathEntries
         patchelf
         # Specify the outPath specifically to ensure the desired output is used.
         testRunpathRoot

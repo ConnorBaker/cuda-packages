@@ -1,45 +1,18 @@
 # This is largely a shim for Nixpkgs.
 { lib, nixpkgsSrc }:
 let
-  inherit (lib.attrsets)
-    concatMapAttrs
-    genAttrs
-    optionalAttrs
-    recurseIntoAttrs
-    ;
-  inherit (lib.customisation) callPackagesWith makeScope;
-  inherit (lib.filesystem) packagesFromDirectoryRecursive;
+  inherit (lib.attrsets) genAttrs;
   inherit (lib.fixedPoints) composeManyExtensions;
 
   extraAutoCalledPackages = import "${nixpkgsSrc}/pkgs/top-level/by-name-overlay.nix" ./pkgs/by-name;
   extraSetupHooks = final: prev: {
-    arrayUtilities = makeScope final.newScope (
-      finalArrayUtilities:
-      recurseIntoAttrs {
-        callPackages = callPackagesWith (final // finalArrayUtilities);
-      }
-      // packagesFromDirectoryRecursive {
-        inherit (finalArrayUtilities) callPackage;
-        directory = ./pkgs/build-support/setup-hooks/arrayUtilities;
-      }
-    );
-    makeSetupHook' = final.callPackage ./pkgs/build-support/setup-hooks/makeSetupHookPrime { };
-    sourceGuard = final.callPackage ./pkgs/build-support/setup-hooks/sourceGuard { };
     runpathFixup = final.callPackage ./pkgs/build-support/setup-hooks/runpathFixup { };
     tests = prev.tests // {
-      arrayUtilities = concatMapAttrs (
-        name: value:
-        optionalAttrs (value ? passthru.tests) {
-          ${name} = value.passthru.tests;
-        }
-      ) final.arrayUtilities;
-      sourceGuard = final.sourceGuard.passthru.tests;
+      runpathFixup = final.runpathFixup.passthru.tests;
     };
   };
   extraTesterPackages = final: prev: {
     testers = prev.testers // {
-      shellcheck = final.callPackage ./pkgs/build-support/testers/shellcheck { };
-      shfmt = final.callPackage ./pkgs/build-support/testers/shfmt { };
       testRunpath = import ./pkgs/build-support/testers/testRunpath {
         inherit (final) lib patchelf stdenvNoCC;
       };

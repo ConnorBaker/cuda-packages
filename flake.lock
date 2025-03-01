@@ -81,16 +81,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1740681760,
-        "narHash": "sha256-5/3YJtaugrBDeGT84zsAhyn1zjrM2wt0FvbKu2iZm5k=",
+        "lastModified": 1740790621,
+        "narHash": "sha256-WyyPS6EEu8FjOBPbVzjBToDxPGEbqZ7RnYfGPFsz2Dk=",
         "owner": "ConnorBaker",
         "repo": "nixpkgs",
-        "rev": "179b96b9f000b4c3aadff465d2fe9efdd1d4a065",
+        "rev": "40ec963a7af8d0171061ac698c715fe30c1b410b",
         "type": "github"
       },
       "original": {
         "owner": "ConnorBaker",
-        "ref": "feat/testEqualArrayOrMap",
+        "ref": "feat/arrayUtilities",
         "repo": "nixpkgs",
         "type": "github"
       }

@@ -157,6 +157,7 @@ testSucceeds() {
 
 scriptPhase() {
   local -i hasFailed=0
+  local -a runpathEntries=()
   local runpath
   local file
   local tester
@@ -164,7 +165,7 @@ scriptPhase() {
   runHook preScript
 
   for file in "${files[@]}"; do
-    runpath="$(echo -n "$(patchelf --print-rpath "$file")")"
+    getRunpathEntries "$file" runpathEntries
     nixLog "running testers ${testers[*]} against $file with runpath $runpath"
     for tester in "${testers[@]}"; do
       "$tester" "$file" "$runpath" || hasFailed=1
