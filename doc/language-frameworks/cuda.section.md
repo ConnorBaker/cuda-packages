@@ -255,3 +255,36 @@ services:
                 - nvidia.com/gpu=0
                 - nvidia.com/gpu=1
 ```
+
+## TODO(@ConnorBaker): Improve packaging experience
+
+- Ease packaging out-of-package-set CUDA applications.
+  - Why does `cudaPackages` have `backendStdenv`?
+    - NVCC has a supported range of host compilers (GCC and Clang).
+    - NVCC wraps the host compiler and presents as it while doing C-preprocessing/C++ templating.
+    - NVCC implements its own functionality for CUDA source files, but otherwise delegates to the host compiler.
+    - NVCC is very tightly coupled to GCC/Clang, thus supported version constrained.
+      - e.g. NVCC C/C++ pre-processor may not be able to parse or use libc/libcpp headers from newer host compilers when then use new language functionality.
+    - `backendStdenv` makes sure that NVCC has supported host compiler available and that host compiler links against the same glibc/glibcxx the rest of the Nixpkgs does.
+      - Ref. diamond dependency problem
+
+## TODO(@ConnorBaker): NVCC Usage Patterns and Their Tradeoffs
+
+1. Wrap NVCC
+   - Pros
+     - Compatible host compiler is visible only to NVCC.
+     - No change to `stdenv` (user can just pull in `cuda_nvcc` into `nativeBuildInputs` and it just works).
+     - No need for `backendStdenv`.
+   - Cons
+     - Breaks LTO because linker cannot work across object files produced by different compilers or compiler versions.
+   - Details
+     - Requires setup hook to prevent and check for NVCC host compiler leakage (e.g. host compiler's libc shows up in output through runpaths).
+2. `backendStdenv`
+   - Pros
+     - NVCC host compiler is default for entire derivation.
+     - LTO works
+   - Cons
+     - Requires all consumers of NVCC to know of and use `backendStdenv`.
+   - Details
+     - Requires overriding old `stdenv` to use compiler libs from default version of `stdenv`.
+     - Requires setup hook to prevent and check for NVCC host compiler leakage (e.g. host compiler's libc shows up in output through runpaths).
