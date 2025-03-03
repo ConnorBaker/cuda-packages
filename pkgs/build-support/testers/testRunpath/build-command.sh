@@ -157,6 +157,7 @@ testSucceeds() {
 
 scriptPhase() {
   local -i hasFailed=0
+  # shellcheck disable=SC2034
   local -a runpathEntries=()
   local runpath
   local file
