@@ -1,19 +1,5 @@
 # shellcheck shell=bash
 
-# Only run the hook from nativeBuildInputs
-# shellcheck disable=SC2154
-if ((hostOffset == -1 && targetOffset == 0)); then
-  nixLog "sourcing nvcc-hook.sh"
-else
-  return 0
-fi
-
-if ((${nvccHookOnce:-0})); then
-  nixWarnLog "skipping because the hook has been propagated more than once"
-  return 0
-fi
-
-declare -ig nvccHookOnce=1
 declare -ig nvccHostCCMatchesStdenvCC="@nvccHostCCMatchesStdenvCC@"
 declare -ig dontCompressCudaFatbin=${dontCompressCudaFatbin:-0}
 declare -ig dontNvccFixHookOrder=${dontNvccFixHookOrder:-0}
@@ -156,15 +142,6 @@ nvccSetupCMakeEnvironmentVariables() {
     nixLog "set CUDAHOSTCXX to $CUDAHOSTCXX"
   fi
 
-  # TODO: Setting cudaArchs means that we have to recompile a large number of packages because `cuda_nvcc`
-  # propagates this hook, and so the input derivations change.
-  # Set CUDAARCHS if unset or null
-  # https://cmake.org/cmake/help/latest/envvar/CUDAARCHS.html
-  # if [[ -z ${CUDAARCHS:-} ]]; then
-  #   export CUDAARCHS="@cudaArchs@"
-  #   nixLog "set CUDAARCHS to $CUDAARCHS"
-  # fi
-
   return 0
 }
 
@@ -191,21 +168,17 @@ nvccRunpathCheck() {
   fi
 
   local -r path="$1"
-  local -r rpath="$(patchelf --print-rpath "$path")"
-
-  local -a rpathEntries
   # shellcheck disable=SC2034
-  # rpathEntries is used in computeFrequencyMap
-  mapfile -d ":" -t rpathEntries < <(echo -n "$rpath")
-
-  local -A rpathEntryOccurrences
+  local -a rpathEntries=()
+  getRunpathEntries "$path" rpathEntries
+  local -A rpathEntryOccurrences=()
   computeFrequencyMap rpathEntries rpathEntryOccurrences
 
   # NOTE: We do not automatically patch out the offending entry because it is typically a sign of a larger issue.
   local -i hasForbiddenEntry=0
   for forbiddenEntry in "${nvccForbiddenHostCompilerRunpathEntries[@]}"; do
     if ((rpathEntryOccurrences["$forbiddenEntry"])); then
-      nixErrorLog "forbidden path $forbiddenEntry exists in run path of $path: $rpath"
+      nixErrorLog "forbidden path $forbiddenEntry exists in run path of $path"
       hasForbiddenEntry=1
     fi
   done

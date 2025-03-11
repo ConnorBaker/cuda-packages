@@ -6,7 +6,7 @@
   cuda_nvcc,
   cudaPackagesConfig,
   lib,
-  makeSetupHook,
+  makeSetupHook',
 }:
 let
   inherit (cuda_nvcc.passthru) nvccHostCCMatchesStdenvCC;
@@ -16,35 +16,43 @@ let
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id;
 
-  isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
+  # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
+  # path from nvccStdenv's host compiler. Generalize this to Clang as well!
+  replacements = {
+    inherit nvccHostCCMatchesStdenvCC;
+    ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
+    ccVersion = cc.version;
+    # TODO: Setting cudaArchs means that we have to recompile a large number of packages because `cuda_nvcc`
+    # propagates this hook, and so the input derivations change.
+    # cudaArchs = cmakeCudaArchitecturesString;
+    hostPlatformConfig = hostPlatform.config;
+    unwrappedCCRoot = cc.cc.outPath;
+    unwrappedCCLibRoot = cc.cc.lib.outPath;
+  };
+in
+# TODO: Document breaking change of move from cudaDontCompressFatbin to dontCompressCudaFatbin.
+makeSetupHook' (
+  finalAttrs:
+  let
+    isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
+  in
+  {
+    name = "nvccHook";
 
-  # TODO: Document breaking change of move from cudaDontCompressFatbin to dontCompressCudaFatbin.
+    script = ./nvccHook.bash;
 
-  finalAttrs = {
-    name = "nvcc-hook";
-
-    propagatedBuildInputs = [
+    nativeBuildInputs = [
       # Used in the setup hook
       autoFixElfFiles
-      arrayUtilities
+      arrayUtilities.occursOnlyOrAfterInArray
+      arrayUtilities.computeFrequencyMap
+      arrayUtilities.getRunpathEntries
     ];
 
-    # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
-    # path from nvccStdenv's host compiler. Generalize this to Clang as well!
-    substitutions = {
-      inherit nvccHostCCMatchesStdenvCC;
-      ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
-      ccVersion = cc.version;
-      # TODO: Setting cudaArchs means that we have to recompile a large number of packages because `cuda_nvcc`
-      # propagates this hook, and so the input derivations change.
-      # cudaArchs = cmakeCudaArchitecturesString;
-      hostPlatformConfig = hostPlatform.config;
-      unwrappedCCRoot = cc.cc.outPath;
-      unwrappedCCLibRoot = cc.cc.lib.outPath;
-    };
+    inherit replacements;
 
     passthru = {
-      inherit (finalAttrs) substitutions;
+      inherit replacements;
       badPlatformsConditions = {
         "CUDA support is not enabled" = !config.cudaSupport;
         "Platform is not supported" = hostRedistSystem == "unsupported";
@@ -65,6 +73,5 @@ let
       badPlatforms = optionals isBadPlatform finalAttrs.meta.platforms;
       maintainers = lib.teams.cuda.members;
     };
-  };
-in
-makeSetupHook finalAttrs ./nvcc-hook.sh
+  }
+)

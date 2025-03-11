@@ -4,18 +4,22 @@
   config,
   cudaPackagesConfig,
   lib,
-  makeSetupHook,
+  makeSetupHook',
 }:
 let
   inherit (cudaPackagesConfig) hostRedistSystem;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id;
-
-  isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
-
-  finalAttrs = {
-    name = "mark-for-cudatoolkit-root-hook";
+in
+makeSetupHook' (
+  finalAttrs:
+  let
+    isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
+  in
+  {
+    name = "markForCudaToolkitRootHook";
+    script = ./markForCudaToolkitRootHook.bash;
     passthru.badPlatformsConditions = {
       "CUDA support is not enabled" = !config.cudaSupport;
       "Platform is not supported" = hostRedistSystem == "unsupported";
@@ -29,6 +33,5 @@ let
       badPlatforms = optionals isBadPlatform finalAttrs.meta.platforms;
       maintainers = lib.teams.cuda.members;
     };
-  };
-in
-makeSetupHook finalAttrs ./mark-for-cudatoolkit-root-hook.sh
+  }
+)

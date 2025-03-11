@@ -91,7 +91,7 @@ let
       cudaNamePrefix = "cuda${majorMinor cudaMajorMinorPatchVersion}";
 
       overrideAttrsDefaultsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
-        inherit (final) deduplicateRunpathEntriesHook;
+        # inherit (final) deduplicateRunpathEntriesHook;
         inherit cudaNamePrefix;
       };
 

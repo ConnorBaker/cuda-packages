@@ -8,8 +8,8 @@
 }:
 let
   inherit (lib.attrsets) optionalAttrs;
-  inherit (nvccHook.passthru.substitutions) nvccHostCCMatchesStdenvCC;
-  inherit (testers) runCommand testBuildFailure;
+  inherit (nvccHook.passthru.replacements) nvccHostCCMatchesStdenvCC;
+  inherit (testers) testBuildFailure';
 
   check =
     drvArgs@{ name, ... }:
@@ -32,26 +32,19 @@ optionalAttrs (!nvccHostCCMatchesStdenvCC) {
     nativeBuildInputs = [ nvccHook ];
   };
 
-  before-autoPatchelfHook-no-fixup = runCommand {
+  before-autoPatchelfHook-no-fixup = testBuildFailure' {
     name = "${nvccHook.name}-before-autoPatchelfHook-no-fixup";
-    failed = testBuildFailure (check {
+    drv = check {
       name = "before-autoPatchelfHook-no-fixup-inner";
       dontNvccFixHookOrder = true;
       nativeBuildInputs = [
         nvccHook
         autoPatchelfHook
       ];
-    });
-    script = ''
-      nixLog "Checking for exit code 1"
-      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-      nixLog "Checking for error message"
-      grep -F \
-        "ERROR: nvccHookOrderCheck: autoPatchelfPostFixup must run before 'autoFixElfFiles nvccRunpathCheck'" \
-        "$failed/testBuildFailure.log"
-      nixLog "Test passed"
-      touch $out
-    '';
+    };
+    expectedBuilderLogEntries = [
+      "ERROR: nvccHookOrderCheck: autoPatchelfPostFixup must run before 'autoFixElfFiles nvccRunpathCheck'"
+    ];
   };
 
   before-autoPatchelfHook-with-fixup = check {

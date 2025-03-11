@@ -1,19 +1,5 @@
 # shellcheck shell=bash
 
-# Only run the hook from nativeBuildInputs
-# shellcheck disable=SC2154
-if ((hostOffset == -1 && targetOffset == 0)); then
-  nixLog "sourcing cuda-runpath-fixup-hook.sh"
-else
-  return 0
-fi
-
-if ((${cudaRunpathFixupHookOnce:-0})); then
-  nixWarnLog "skipping because the hook has been propagated more than once"
-  return 0
-fi
-
-declare -ig cudaRunpathFixupHookOnce=1
 declare -ig dontCudaRunpathFixHookOrder=${dontCudaRunpathFixHookOrder:-0}
 
 # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.

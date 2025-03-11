@@ -9,7 +9,7 @@
   cudaPackagesConfig,
   cudaRunpathFixupHook,
   lib,
-  markForCudatoolkitRootHook,
+  markForCudaToolkitRootHook,
   cudaHook,
   stdenv,
 }:
@@ -149,7 +149,7 @@ stdenv.mkDerivation (
         # directory to the rpath of all ELF binaries.
         # Check e.g. with `patchelf --print-rpath path/to/my/binary
         autoAddDriverRunpath
-        markForCudatoolkitRootHook
+        markForCudaToolkitRootHook
       ]
       ++ optionals (finalAttrs.pname != "cuda_compat" && finalAttrs.pname != "cuda_cudart") [
         cudaRunpathFixupHook

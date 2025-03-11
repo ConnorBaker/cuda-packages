@@ -744,9 +744,9 @@ in
       inherit (finalCudaPackages) newScope;
       overrideAttrsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
         inherit (finalCudaPackages) cudaNamePrefix;
-        inherit (finalCudaPackages.pkgs)
-          deduplicateRunpathEntriesHook
-          ;
+        # inherit (finalCudaPackages.pkgs)
+        #   deduplicateRunpathEntriesHook
+        #   ;
       };
     in
     fn: args:
@@ -762,7 +762,7 @@ in
   mkCudaPackagesOverrideAttrsDefaultsFn =
     {
       cudaNamePrefix,
-      deduplicateRunpathEntriesHook,
+    # deduplicateRunpathEntriesHook,
     }:
     let
       conditionallyAddHooks =
@@ -770,11 +770,11 @@ in
         let
           prevDepList = prevAttrs.${depListName} or [ ];
         in
-        prevDepList
-        # We add a hook to deduplicate runpath entries.
-        ++ optionals (!(elem deduplicateRunpathEntriesHook prevDepList)) [
-          deduplicateRunpathEntriesHook
-        ];
+        prevDepList;
+      # We add a hook to deduplicate runpath entries.
+      # ++ optionals (!(elem deduplicateRunpathEntriesHook prevDepList)) [
+      #   deduplicateRunpathEntriesHook
+      # ];
     in
     finalAttrs: prevAttrs: {
       # Default __structuredAttrs and strictDeps to true.

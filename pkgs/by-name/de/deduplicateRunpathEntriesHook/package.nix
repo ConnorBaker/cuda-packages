@@ -3,21 +3,24 @@
   autoFixElfFiles,
   callPackages,
   lib,
-  makeSetupHook,
+  makeSetupHook',
   patchelf,
 }:
 # TODO(@connorbaker): This functionality should be subsumed by runpathFixup.
-makeSetupHook {
-  name = "deduplicate-runpath-entries-hook";
-  propagatedBuildInputs = [
+makeSetupHook' {
+  name = "deduplicateRunpathEntriesHook";
+  nativeBuildInputs = [
     # Used in the setup hook
-    arrayUtilities
+    arrayUtilities.getRunpathEntries
+    arrayUtilities.occursOnlyOrAfterInArray
+    arrayUtilities.deduplicateArray
     # Used in the setup hook
     autoFixElfFiles
     # Use in the setup hook
     patchelf
   ];
-  passthru.tests = {
+  script = ./deduplicateRunpathEntriesHook.bash;
+  passthru.tests = lib.recurseIntoAttrs {
     deduplicateRunpathEntries = callPackages ./tests/deduplicateRunpathEntries.nix { };
     deduplicateRunpathEntriesHookOrderCheckPhase =
       callPackages ./tests/deduplicateRunpathEntriesHookOrderCheckPhase.nix
@@ -28,4 +31,4 @@ makeSetupHook {
     description = "Checks for and optionally removes duplicate runpath entries within outputs";
     maintainers = lib.teams.cuda.members;
   };
-} ./deduplicate-runpath-entries-hook.sh
+}

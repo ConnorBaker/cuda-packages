@@ -1,19 +1,5 @@
 # shellcheck shell=bash
 
-# Only run the hook from nativeBuildInputs
-# shellcheck disable=SC2154
-if ((hostOffset == -1 && targetOffset == 0)); then
-  nixLog "sourcing deduplicate-runpath-entries-hook.sh"
-else
-  return 0
-fi
-
-if ((${deduplicateRunpathEntriesHookOnce:-0})); then
-  nixWarnLog "skipping because the hook has been propagated more than once"
-  return 0
-fi
-
-declare -ig deduplicateRunpathEntriesHookOnce=1
 declare -ig dontDeduplicateRunpathEntries=${dontDeduplicateRunpathEntries:-0}
 declare -ig dontDeduplicateRunpathEntriesFixHookOrder=${dontDeduplicateRunpathEntriesFixHookOrder:-0}
 
@@ -35,6 +21,7 @@ deduplicateRunpathEntriesHookOrderCheck() {
 
 deduplicateRunpathEntriesFixHookOrder() {
   nixErrorLog "attempting to fix the hook order"
+  local hook
   local -a newPostFixupHooks=()
   # We know that:
   # 1. 'autoFixElfFiles addDriverRunpath' is in postFixupHooks.
@@ -91,31 +78,27 @@ deduplicateRunpathEntries() {
   fi
 
   local -r path="$1"
-
-  # shellcheck disable=SC2155
-  local -r originalRunpathString="$(patchelf --print-rpath "$path")"
-
-  local -a originalRunpathEntries
-  # shellcheck disable=SC2034
-  # originalRunpathEntries is used.
-  mapfile -d ':' -t originalRunpathEntries < <(echo -n "$originalRunpathString")
+  local -i hasChanges=0
+  local -a originalRunpathEntries=()
+  local runpathEntry
+  getRunpathEntries "$path" originalRunpathEntries
 
   # observedRunpathEntries is a map from runpath entry to the number of times it has been seen *in
   # originalRunpathEntries*.
   local -A observedRunpathEntries=()
   local -a newRunpathEntries=()
-
   deduplicateArray originalRunpathEntries newRunpathEntries observedRunpathEntries
 
   # TODO: Should this be info-level and above?
   if ((${#newRunpathEntries[@]} < ${#originalRunpathEntries[@]})); then
-    nixErrorLog "found duplicate runpath entries in $path: $originalRunpathString"
+    nixErrorLog "found duplicate runpath entries in $path"
     for runpathEntry in "${newRunpathEntries[@]}"; do
       runpathEntryTimesSeen=${observedRunpathEntries["$runpathEntry"]}
       if ((runpathEntryTimesSeen > 1)); then
         nixErrorLog "runpath entry $runpathEntry seen $runpathEntryTimesSeen times"
       fi
     done
+    hasChanges=1
   fi
 
   if ((dontDeduplicateRunpathEntries)); then
@@ -124,8 +107,8 @@ deduplicateRunpathEntries() {
   fi
 
   local -r newRunpathString="$(concatStringsSep ":" newRunpathEntries)"
-  if [[ $originalRunpathString != "$newRunpathString" ]]; then
-    nixLog "replacing $originalRunpathString with $newRunpathString"
+  if ((hasChanges)); then
+    nixLog "replacing runpath entires in $path with $newRunpathString"
     patchelf --set-rpath "$newRunpathString" "$path"
   fi
 

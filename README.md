@@ -39,7 +39,7 @@ TODO: `cudaCapabilities` was introduced to `cudaPackagesConfig` to enable per-pa
 
 - `src` selection and merging handled by module system instead of fuctions in `cudaLib`?
 - update `cuda-redist` to accept path arguments
-- continue switching from `mkCheckExpectedRunpath` to `testEqualArrayOrMap` and `testBuildFailure` to `testBuildFailure'`
+- continue switching from `testBuildFailure` to `testBuildFailure'`
 - docs/tests for `arrayUtilities`
 - docs for `deduplicateRunpathEntriesHook`
 - docs/tests for CUDA hooks using `arrayUtilities`

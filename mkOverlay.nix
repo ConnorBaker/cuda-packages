@@ -5,6 +5,11 @@ let
   inherit (lib.fixedPoints) composeManyExtensions;
 
   extraAutoCalledPackages = import "${nixpkgsSrc}/pkgs/top-level/by-name-overlay.nix" ./pkgs/by-name;
+  extraAutoCalledPackagesTests = final: prev: {
+    tests = prev.tests // {
+      deduplicateRunpathEntriesHook = final.deduplicateRunpathEntriesHook.passthru.tests;
+    };
+  };
   extraSetupHooks = final: prev: {
     runpathFixup = final.callPackage ./pkgs/build-support/setup-hooks/runpathFixup { };
     tests = prev.tests // {
@@ -13,12 +18,14 @@ let
   };
   extraTesterPackages = final: prev: {
     testers = prev.testers // {
-      testRunpath = import ./pkgs/build-support/testers/testRunpath {
-        inherit (final) lib patchelf stdenvNoCC;
-      };
+      makeMainWithRunpath = final.callPackage ./pkgs/build-support/testers/makeMainWithRunpath { };
+      testRunpath = final.callPackage ./pkgs/build-support/testers/testRunpath { };
     };
     tests = prev.tests // {
       testers = prev.tests.testers // {
+        makeMainWithRunpath =
+          final.callPackages ./pkgs/build-support/testers/makeMainWithRunpath/tests.nix
+            { };
         testRunpath = final.callPackages ./pkgs/build-support/testers/testRunpath/tests.nix { };
       };
     };
@@ -45,6 +52,7 @@ let
 in
 composeManyExtensions [
   extraAutoCalledPackages
+  extraAutoCalledPackagesTests
   extraTesterPackages
   extraSetupHooks
   extraPythonPackages

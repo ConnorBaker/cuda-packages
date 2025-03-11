@@ -1,17 +1,20 @@
 # NOTE: Tests for nvccRunpathCheck go here.
 {
-  mkCheckExpectedRunpath,
+  arrayUtilities,
+  hello,
   nvccHook,
+  patchelf,
   testers,
 }:
 let
-  inherit (nvccHook.passthru.substitutions)
+  inherit (arrayUtilities) getRunpathEntries;
+  inherit (nvccHook.passthru.replacements)
     ccVersion
     hostPlatformConfig
     unwrappedCCRoot
     unwrappedCCLibRoot
     ;
-  inherit (testers) runCommand testBuildFailure;
+  inherit (testers) makeMainWithRunpath testBuildFailure' testEqualArrayOrMap;
 
   libDir = "${unwrappedCCRoot}/lib";
   lib64Dir = "${unwrappedCCRoot}/lib64";
@@ -21,110 +24,88 @@ let
   check =
     {
       name,
-      valuesArray,
-      expectedArray,
+      runpathEntries,
+      expectedRunpathEntries ? runpathEntries, # default to runpathEntries
     }:
-    mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
-      inherit valuesArray expectedArray;
+    (testEqualArrayOrMap {
       name = "${nvccHook.name}-${name}";
-      nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ nvccHook ];
+      valuesArray = runpathEntries;
+      expectedArray = expectedRunpathEntries;
       script = ''
+        nixLog "installing main"
+        install -Dm677 "${makeMainWithRunpath { inherit runpathEntries; }}/bin/main" main
         nixLog "running nvccRunpathCheck on main"
         nvccRunpathCheck main
+        nixLog "populating actualArray"
+        getRunpathEntries main actualArray
       '';
-    });
+    }).overrideAttrs
+      (prevAttrs: {
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
+          getRunpathEntries
+          nvccHook
+        ];
+      });
 in
 {
   no-leak-empty = check {
     name = "no-leak-empty";
-    valuesArray = [ ];
-    expectedArray = [ ];
+    runpathEntries = [ ];
   };
 
   no-leak-singleton = check {
     name = "no-leak-singleton";
-    valuesArray = [ "cat" ];
-    expectedArray = [ "cat" ];
+    runpathEntries = [ "cat" ];
   };
 
-  leak-singleton = runCommand {
+  leak-singleton = testBuildFailure' {
     name = "${nvccHook.name}-leak-singleton";
-    failed = testBuildFailure (check {
+    drv = check {
       name = "leak-singleton-inner";
-      valuesArray = [ lib64Dir ];
-      expectedArray = [ ];
-    });
-    script = ''
-      nixLog "Checking for exit code 1"
-      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-      nixLog "Checking for error message"
-      grep -F \
-        "forbidden path ${lib64Dir} exists" \
-        "$failed/testBuildFailure.log"
-      nixLog "Test passed"
-      touch $out
-    '';
+      runpathEntries = [ lib64Dir ];
+      expectedRunpathEntries = [ ];
+    };
+    expectedBuilderLogEntries = [
+      "forbidden path ${lib64Dir} exists"
+    ];
   };
 
-  leak-all = runCommand {
+  leak-all = testBuildFailure' {
     name = "${nvccHook.name}-leak-all";
-    failed = testBuildFailure (check {
+    drv = check {
       name = "leak-all-inner";
-      valuesArray = [
+      runpathEntries = [
         libDir
         lib64Dir
         gccDir
         ccLibDir
       ];
-      expectedArray = [ ];
-    });
-    script = ''
-      nixLog "Checking for exit code 1"
-      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-      nixLog "Checking for error message for libDir"
-      grep -F \
-        "forbidden path ${libDir} exists" \
-        "$failed/testBuildFailure.log"
-      nixLog "Checking for error message for lib64Dir"
-      grep -F \
-        "forbidden path ${lib64Dir} exists" \
-        "$failed/testBuildFailure.log"
-      nixLog "Checking for error message for gccDir"
-      grep -F \
-        "forbidden path ${gccDir} exists" \
-        "$failed/testBuildFailure.log"
-      nixLog "Checking for error message for ccLibDir"
-      grep -F \
-        "forbidden path ${ccLibDir} exists" \
-        "$failed/testBuildFailure.log"
-      nixLog "Test passed"
-      touch $out
-    '';
+      expectedRunpathEntries = [ ];
+    };
+    expectedBuilderLogEntries = [
+      "forbidden path ${libDir} exists"
+      "forbidden path ${lib64Dir} exists"
+      "forbidden path ${gccDir} exists"
+      "forbidden path ${ccLibDir} exists"
+    ];
   };
 
-  leak-between-valid = runCommand {
+  leak-between-valid = testBuildFailure' {
     name = "${nvccHook.name}-leak-between-valid";
-    failed = testBuildFailure (check {
+    drv = check {
       name = "leak-between-valid-inner";
-      valuesArray = [
+      runpathEntries = [
         "cat"
         libDir
         "bee"
       ];
-      expectedArray = [
+      expectedRunpathEntries = [
         "cat"
         "bee"
       ];
-    });
-    script = ''
-      nixLog "Checking for exit code 1"
-      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-      nixLog "Checking for error message for libDir"
-      grep -F \
-        "forbidden path ${libDir} exists" \
-        "$failed/testBuildFailure.log"
-      nixLog "Test passed"
-      touch $out
-    '';
+    };
+    expectedBuilderLogEntries = [
+      "forbidden path ${libDir} exists"
+    ];
   };
 }

@@ -8,7 +8,7 @@
   cuda_cudart,
   cudaPackagesConfig,
   lib,
-  makeSetupHook,
+  makeSetupHook',
 }:
 let
   inherit (cudaPackagesConfig) hasJetsonCudaCapability hostRedistSystem;
@@ -17,31 +17,37 @@ let
   inherit (lib.trivial) id;
   inherit (lib.strings) optionalString;
 
-  isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
+  replacements = {
+    cudaCompatLibDir = optionalString (
+      hasJetsonCudaCapability && cuda_compat != null
+    ) "${cuda_compat.outPath}/compat";
+    # The stubs are symlinked from lib/stubs into lib so autoPatchelf can find them.
+    cudaStubLibDir = "${cuda_cudart.stubs.outPath}/lib";
+    driverLibDir = "${addDriverRunpath.driverLink}/lib";
+  };
+in
+# TODO: Are there other libraries which provide stubs which we should replace with the driver runpath?
+# E.g., libnvidia-ml.so is provided by a stub library in cuda_nvml_dev.
+makeSetupHook' (
+  finalAttrs:
+  let
+    isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
+  in
+  {
+    name = "cudaRunpathFixupHook";
 
-  # TODO: Are there other libraries which provide stubs which we should replace with the driver runpath?
-  # E.g., libnvidia-ml.so is provided by a stub library in cuda_nvml_dev.
+    script = ./cudaRunpathFixupHook.bash;
 
-  finalAttrs = {
-    name = "cuda-runpath-fixup-hook";
-
-    propagatedBuildInputs = [
+    nativeBuildInputs = [
       # Used in the setup hook
       autoFixElfFiles
-      arrayUtilities
+      arrayUtilities.occursOnlyOrAfterInArray
     ];
 
-    substitutions = {
-      cudaCompatLibDir = optionalString (
-        hasJetsonCudaCapability && cuda_compat != null
-      ) "${cuda_compat.outPath}/compat";
-      # The stubs are symlinked from lib/stubs into lib so autoPatchelf can find them.
-      cudaStubLibDir = "${cuda_cudart.stubs.outPath}/lib";
-      driverLibDir = "${addDriverRunpath.driverLink}/lib";
-    };
+    inherit replacements;
 
     passthru = {
-      inherit (finalAttrs) substitutions;
+      inherit replacements;
       badPlatformsConditions = {
         "CUDA support is not enabled" = !config.cudaSupport;
         "Platform is not supported" = hostRedistSystem == "unsupported";
@@ -63,6 +69,5 @@ let
       badPlatforms = optionals isBadPlatform finalAttrs.meta.platforms;
       maintainers = lib.teams.cuda.members;
     };
-  };
-in
-makeSetupHook finalAttrs ./cuda-runpath-fixup-hook.sh
+  }
+)

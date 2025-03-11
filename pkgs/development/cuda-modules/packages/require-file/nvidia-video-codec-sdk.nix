@@ -1,6 +1,6 @@
 {
   lib,
-  markForCudatoolkitRootHook,
+  markForCudaToolkitRootHook,
   requireFile,
   stdenv,
   unzip,
@@ -26,7 +26,7 @@ stdenv.mkDerivation (finalAttrs: {
   };
 
   nativeBuildInputs = [
-    markForCudatoolkitRootHook
+    markForCudaToolkitRootHook
     unzip
   ];
 

@@ -10,7 +10,7 @@ in
 makeSetupHook' {
   name = "runpathFixup";
   script = ./runpathFixup.bash;
-  propagatedBuildInputs = [
+  nativeBuildInputs = [
     arrayUtilities.arrayDifference
     arrayUtilities.arrayReplace
     arrayUtilities.arraysAreEqual

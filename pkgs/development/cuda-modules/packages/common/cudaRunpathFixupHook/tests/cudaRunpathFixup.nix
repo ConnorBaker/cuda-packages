@@ -1,48 +1,53 @@
 # NOTE: Tests for cudaRunpathFixup go here.
 {
+  arrayUtilities,
   cudaRunpathFixupHook,
   lib,
-  mkCheckExpectedRunpath,
+  testers,
 }:
 let
-  inherit (cudaRunpathFixupHook.passthru.substitutions) cudaCompatLibDir cudaStubLibDir driverLibDir;
+  inherit (arrayUtilities) getRunpathEntries;
+  inherit (cudaRunpathFixupHook.passthru.replacements) cudaCompatLibDir cudaStubLibDir driverLibDir;
   inherit (lib.attrsets) optionalAttrs;
   inherit (lib.lists) optionals;
+  inherit (testers) makeMainWithRunpath testEqualArrayOrMap;
 
   check =
     {
       name,
-      valuesArray,
-      expectedArray,
+      runpathEntries,
+      expectedRunpathEntries ? runpathEntries, # default to runpathEntries
     }:
-    mkCheckExpectedRunpath.overrideAttrs (prevAttrs: {
-      inherit valuesArray expectedArray;
+    (testEqualArrayOrMap {
       name = "${cudaRunpathFixupHook.name}-${name}";
-      nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ cudaRunpathFixupHook ];
+      valuesArray = runpathEntries;
+      expectedArray = expectedRunpathEntries;
       script = ''
+        nixLog "installing main"
+        install -Dm677 "${makeMainWithRunpath { inherit runpathEntries; }}/bin/main" main
         nixLog "running cudaRunpathFixup on main"
         cudaRunpathFixup main
+        nixLog "populating actualArray"
+        getRunpathEntries main actualArray
       '';
-    });
+    }).overrideAttrs
+      (prevAttrs: {
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
+          getRunpathEntries
+          cudaRunpathFixupHook
+        ];
+      });
 in
 # TODO: Jetson tests (cudaCompatLibDir).
 {
   no-rpath-change = check {
     name = "no-rpath-change";
-    valuesArray = [ "cat" ];
-    expectedArray = [ "cat" ];
+    runpathEntries = [ "cat" ];
   };
 
   no-deduplication-of-non-cuda-entries = check {
     name = "no-deduplication-of-non-cuda-entries";
-    valuesArray = [
-      "bee"
-      "apple"
-      "dog"
-      "apple"
-      "cat"
-    ];
-    expectedArray = [
+    runpathEntries = [
       "bee"
       "apple"
       "dog"
@@ -53,12 +58,12 @@ in
 
   cudaStubLibDir-is-replaced-with-driverLibDir = check {
     name = "cudaStubLibDir-is-replaced-with-driverLibDir";
-    valuesArray = [
+    runpathEntries = [
       "cat"
       cudaStubLibDir
       "cat"
     ];
-    expectedArray =
+    expectedRunpathEntries =
       [ "cat" ]
       # cudaCompat is present before driverLibDir if it is in the package set
       ++ optionals (cudaCompatLibDir != "") [ cudaCompatLibDir ]
@@ -70,7 +75,7 @@ in
 
   cudaStubLibDir-is-replaced-with-driverLibDir-and-deduplicated = check {
     name = "cudaStubLibDir-is-replaced-with-driverLibDir-and-deduplicated";
-    valuesArray = [
+    runpathEntries = [
       "dog"
       cudaStubLibDir
       "bee"
@@ -79,7 +84,7 @@ in
       "frog"
     ];
     # driverLibDir is before bee because it was transformed from the cudaStubLibDir entry.
-    expectedArray =
+    expectedRunpathEntries =
       [ "dog" ]
       # cudaCompat is present before driverLibDir if it is in the package set
       ++ optionals (cudaCompatLibDir != "") [ cudaCompatLibDir ]
@@ -92,25 +97,27 @@ in
 
   driverLibDir-first-then-cudaStubLibDir = check {
     name = "driverLibDir-first-then-cudaStubLibDir";
-    valuesArray = [
+    runpathEntries = [
       driverLibDir
       cudaStubLibDir
     ];
     # cudaCompat is present before driverLibDir if it is in the package set
-    expectedArray = optionals (cudaCompatLibDir != "") [ cudaCompatLibDir ] ++ [ driverLibDir ];
+    expectedRunpathEntries = optionals (cudaCompatLibDir != "") [ cudaCompatLibDir ] ++ [
+      driverLibDir
+    ];
   };
 }
 // optionalAttrs (cudaCompatLibDir != "") {
   cudaCompatLibDir-is-placed-before-driverLibDir = check {
     name = "cudaCompatLibDir-is-placed-before-driverLibDir";
-    valuesArray = [
+    runpathEntries = [
       "cat"
       driverLibDir
       "dog"
       cudaCompatLibDir
     ];
     # No extra cudaCompatLibDir due to deduplication.
-    expectedArray = [
+    expectedRunpathEntries = [
       "cat"
       cudaCompatLibDir
       driverLibDir

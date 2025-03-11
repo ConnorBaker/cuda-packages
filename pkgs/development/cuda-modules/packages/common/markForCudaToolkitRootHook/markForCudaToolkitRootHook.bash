@@ -1,17 +1,9 @@
 # shellcheck shell=bash
 
-# Only run the hook from nativeBuildInputs
-# shellcheck disable=SC2154
-if ((hostOffset == -1 && targetOffset == 0)); then
-  nixLog "sourcing mark-for-cudatoolkit-root-hook.sh"
-else
-  return 0
-fi
+fixupOutputHooks+=(markForCudaToolkitRoot)
+nixLog "added markForCudaToolkitRoot to fixupOutputHooks"
 
-fixupOutputHooks+=(markForCUDAToolkit_ROOT)
-nixLog "added markForCUDAToolkit_ROOT to fixupOutputHooks"
-
-markForCUDAToolkit_ROOT() {
+markForCudaToolkitRoot() {
   nixDebugLog "creating ${prefix:?}/nix-support if it doesn't exist"
   mkdir -p "${prefix:?}/nix-support"
   local -r markerFile="include-in-cudatoolkit-root"

@@ -7,7 +7,7 @@
   testers,
 }:
 let
-  inherit (testers) runCommand testBuildFailure;
+  inherit (testers) testBuildFailure';
 
   check =
     drvArgs@{ name, ... }:
@@ -29,26 +29,19 @@ in
     nativeBuildInputs = [ cudaRunpathFixupHook ];
   };
 
-  before-autoPatchelfHook-no-fixup = runCommand {
+  before-autoPatchelfHook-no-fixup = testBuildFailure' {
     name = "${cudaRunpathFixupHook.name}-before-autoPatchelfHook-no-fixup";
-    failed = testBuildFailure (check {
+    drv = check {
       name = "before-autoPatchelfHook-no-fixup-inner";
       dontCudaRunpathFixHookOrder = true;
       nativeBuildInputs = [
         cudaRunpathFixupHook
         autoPatchelfHook
       ];
-    });
-    script = ''
-      nixLog "Checking for exit code 1"
-      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-      nixLog "Checking for error message"
-      grep -F \
-        "ERROR: cudaRunpathFixupHookOrderCheck: autoPatchelfPostFixup must run before 'autoFixElfFiles cudaRunpathFixup'" \
-        "$failed/testBuildFailure.log"
-      nixLog "Test passed"
-      touch $out
-    '';
+    };
+    expectedBuilderLogEntries = [
+      "ERROR: cudaRunpathFixupHookOrderCheck: autoPatchelfPostFixup must run before 'autoFixElfFiles cudaRunpathFixup'"
+    ];
   };
 
   before-autoPatchelfHook-with-fixup = check {
@@ -72,26 +65,19 @@ in
     nativeBuildInputs = [ cudaRunpathFixupHook ];
   };
 
-  before-autoAddDriverRunpath-no-fixup = runCommand {
+  before-autoAddDriverRunpath-no-fixup = testBuildFailure' {
     name = "${cudaRunpathFixupHook.name}-before-autoAddDriverRunpath-no-fixup";
-    failed = testBuildFailure (check {
+    drv = check {
       name = "before-autoAddDriverRunpath-no-fixup-inner";
       dontCudaRunpathFixHookOrder = true;
       nativeBuildInputs = [
         cudaRunpathFixupHook
         autoAddDriverRunpath
       ];
-    });
-    script = ''
-      nixLog "Checking for exit code 1"
-      (( 1 == "$(cat "$failed/testBuildFailure.exit")" ))
-      nixLog "Checking for error message"
-      grep -F \
-        "ERROR: cudaRunpathFixupHookOrderCheck: 'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles cudaRunpathFixup'" \
-        "$failed/testBuildFailure.log"
-      nixLog "Test passed"
-      touch $out
-    '';
+    };
+    expectedBuilderLogEntries = [
+      "ERROR: cudaRunpathFixupHookOrderCheck: 'autoFixElfFiles addDriverRunpath' must run before 'autoFixElfFiles cudaRunpathFixup'"
+    ];
   };
 
   before-autoAddDriverRunpath-with-fixup = check {
