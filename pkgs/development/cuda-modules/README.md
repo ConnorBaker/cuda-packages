@@ -7,9 +7,12 @@ This is the index of developer-facing documentation for Nixpkgs' CUDA packaging.
 - [Architecture](./doc/architecture.md)
 - [Implementation](./doc/implementation.md)
 - [FAQ](./doc/faq.md)
+- [Digressions](./doc/digressions/README.md)
 - [Glossary](./doc/glossary.md)
 
 ## Digression: Setup Hooks
+
+TODO(@connorbaker): Throw this into Digressions.
 
 - Executable arbitrary Bash throughout the run of `stdenv.mkDerivation`.
   - Because `mkDerivation` is implemented by `setup.sh`, setup hooks let you do arbitrary stuff inside `mkDerivation`.
