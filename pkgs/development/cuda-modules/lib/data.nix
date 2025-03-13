@@ -1,11 +1,11 @@
 {
   /**
-    A list of redistributable systems to use in creation of the redistSystem type.
+    A list of redistributable systems to use in creation of the `redistSystem` option type.
 
     # Type
 
     ```
-    redistSystems :: List String
+    redistSystems :: [String]
     ```
   */
   redistSystems = [
@@ -17,12 +17,12 @@
   ];
 
   /**
-    A list of redistributable names to use in creation of the redistName type.
+    A list of redistributable names to use in creation of the `redistName` option type.
 
     # Type
 
     ```
-    redistNames :: List String
+    redistNames :: [String]
     ```
   */
   redistNames = [

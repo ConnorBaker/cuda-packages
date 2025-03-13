@@ -48,6 +48,25 @@ let
     unspecified
     ;
 in
+# TODO(@connorbaker):
+# Updating docs:
+# - Type comes first
+# - Arguments is now Inputs and follows Type
+# - Input names should be in code blocks
+# - Use `[]` instead of List
+# - Give names to positional arguments
+# - Examples should look like:
+#     Examples
+#     :::{.example}
+#     ## `lib.attrsets.mapAttrsToList` usage example
+#
+#     ```nix
+#     mapAttrsToList (name: value: name + value)
+#         { x = "a"; y = "b"; }
+#     => [ "xa" "yb" ]
+#     ```
+#
+#     :::
 {
   /**
     The option type of an attribute set with typed keys and values.
@@ -55,15 +74,17 @@ in
     # Type
 
     ```
-    attrs :: OptionType -> OptionType -> OptionType
+    attrs :: (nameType :: OptionType) -> (valueType :: OptionType) -> OptionType
     ```
 
-    # Arguments
+    # Inputs
 
-    nameType
+    `nameType`
+
     : The option type of the names of the attribute set
 
-    valueType
+    `valueType`
+
     : The option type of the values of the attribute set
   */
   attrs =
@@ -472,8 +493,6 @@ in
     name = "versionedOverrides";
   };
 
-  # TODO: Better organize/alphabetize.
-
   /**
     The option type of a CUDA capability.
 
@@ -483,22 +502,19 @@ in
     cudaCapability :: OptionType
     ```
   */
-  # TODO: Possible improvement for error messages?
-  # error: attribute 'deprecationMessage' missing
-  #    at /nix/store/djw90qs3g3awfpcd7rhx80017620nm07-source/lib/modules.nix:805:17:
-  #       804|       warnDeprecation =
-  #       805|         warnIf (opt.type.deprecationMessage != null)
-  #          |                 ^
-  #       806|           "The type `types.${opt.type.name}' of option `${showOption loc}' defined in ${showFiles opt.declarations} is deprecated. ${opt.type.deprecationMessage}";
-  #
-  # When we leave off mkOption on cudaCapability, we get that error. However, as `options.types` is defined as a submodule
-  # of freeformType = optionType, it should instead provide an error message about how cudaCapability is not a valid option type.
-  # NOTE: I can't think of a way to actually improve this error message, because we would need to do type-checking on the options attribute set,
-  # not the config attribute set (which is where checks are performed).
   cudaCapability = strMatching "^[[:digit:]]+\\.[[:digit:]]+[a-z]?$" // {
     name = "cudaCapability";
   };
 
+  /**
+    The option type of a configuration for NVCC.
+
+    # Type
+
+    ```
+    nvccConfig :: OptionType
+    ```
+  */
   nvccConfig =
     submodule (mkOptionsModule {
       hostStdenv = {
@@ -514,7 +530,20 @@ in
       name = "nvccConfig";
     };
 
-  # TODO: Used in overlay.nix to create arguments for `redist-builder`.
+  /**
+    The option type of a package configuration.
+
+    # Type
+
+    ```
+    packageConfig :: OptionType
+    ```
+
+    # Note
+
+    This option type is used primarily for creating a core set of attributes to provide to `redist-builder`, leveraging
+    the module system's priority system and ability to merge configurations.
+  */
   packageConfig =
     submodule (mkOptionsModule {
       redistName.type = redistName;
@@ -546,7 +575,15 @@ in
       name = "packageConfig";
     };
 
-  # TODO: Docs
+  /**
+    The option type of a CUDA package set configuration.
+
+    # Type
+
+    ```
+    cudaPackagesConfig :: OptionType
+    ```
+  */
   cudaPackagesConfig =
     submodule (mkOptionsModule {
       # NOTE: assertions vendored from https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/misc/assertions.nix
@@ -752,12 +789,13 @@ in
     # Type
 
     ```
-    versionWithNumComponents :: Integer -> OptionType
+    versionWithNumComponents :: (numComponents :: Integer) -> OptionType
     ```
 
-    # Arguments
+    # Inputs
 
-    numComponents
+    `numComponents`
+
     : The number of components in the version
   */
   versionWithNumComponents =

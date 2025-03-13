@@ -102,7 +102,40 @@ let
   inherit (lib.versions) major majorMinor splitVersion;
 in
 {
-  # TODO: DOCS
+  /**
+    Given a `cudaConfig` and `cudaMajorMinorPatchVersion`, this function traverses the redistributable tree,
+    flattening and collecting the package information for each package in the tree.
+
+    The resulting list should be provided as a value to `config`, so the module system can merge the values within
+    and produce a single attribute set.
+
+    # Type
+
+    ```
+    collectPackageConfigsForCudaVersion
+      :: (cudaConfig :: CudaConfig)
+      -> (cudaMajorMinorPatchVersion :: Version)
+      -> [AttrSet]
+    ```
+
+    # Inputs
+
+    `cudaConfig`
+
+    : The CUDA configuration to use
+
+    `cudaMajorMinorPatchVersion`
+
+    : The CUDA version to use
+  */
+  # NOTE:
+  #   A great deal of the complexity in this function is a result of the decision to check in a minimal amount of
+  #   JSON needed to create the CUDA package sets -- this required floating out common package information and resulted
+  #   in deeply nested JSON.
+  #
+  #   The remainder of the complexity could (perhaps) be alleviated by further leveraging the module system, assigning
+  #   priorities to values based on `redistSystem` and `cudaVariant`, and using the module system to handle selection
+  #   of the correct attribute set.
   collectPackageConfigsForCudaVersion =
     cudaConfig: cudaMajorMinorPatchVersion:
     let
@@ -185,12 +218,13 @@ in
     # Type
 
     ```
-    mkOptions :: AttrSet -> AttrSet
+    mkOptions :: (attrs :: AttrSet) -> AttrSet
     ```
 
-    # Arguments
+    # Inputs
 
-    attrs
+    `attrs`
+
     : The attribute set to map over
   */
   mkOptions = mapAttrs (const mkOption);
@@ -202,12 +236,13 @@ in
     # Type
 
     ```
-    mkOptionsModule :: AttrSet -> AttrSet
+    mkOptionsModule :: (attrs :: AttrSet) -> AttrSet
     ```
 
-    # Arguments
+    # Inputs
 
-    attrs
+    `attrs`
+
     : An attribute set
   */
   mkOptionsModule = attrs: { options = mkOptions attrs; };
@@ -218,12 +253,13 @@ in
     # Type
 
     ```
-    mkRedistConfig :: Path -> RedistConfig
+    mkRedistConfig :: (path :: Path) -> RedistConfig
     ```
 
-    # Arguments
+    # Inputs
 
-    path
+    `path`
+
     : The path to the redistributable directory containing a `manifests` directory and (optionally) an `overrides`
       directory.
   */
@@ -238,6 +274,23 @@ in
       versionedOverrides = mkVersionedOverrides versions (path + "/overrides");
     };
 
+  /**
+    Function to generate a set of redistributable configurations.
+
+    NOTE: See `mkRedistConfig` for the expected directory structure.
+
+    # Type
+
+    ```
+    mkRedistConfigs :: (path :: Directory) -> RedistConfigs
+    ```
+
+    # Inputs
+
+    `path`
+
+    : The path to a directory of redistributable directories.
+  */
   mkRedistConfigs =
     path:
     foldlAttrs (
@@ -257,15 +310,17 @@ in
     # Type
 
     ```
-    mkRedistUrl :: RedistName -> NonEmptyStr -> RedistUrl
+    mkRedistUrl :: (redistName :: RedistName) -> (relativePath :: NonEmptyStr) -> RedistUrl
     ```
 
-    # Arguments
+    # Inputs
 
-    redistName
+    `redistName`
+
     : The name of the redistributable
 
-    relativePath
+    `relativePath`
+
     : The relative path to a file in the redistributable tree
   */
   mkRedistUrl =
@@ -305,24 +360,30 @@ in
       -> String
     ```
 
-    # Arguments
+    # Inputs
 
-    cudaVariant
+    `cudaVariant`
+
     : The CUDA variant of the package
 
-    packageName
+    `packageName`
+
     : The name of the package
 
-    redistSystem
+    `redistSystem`
+
     : The redist system of the package
 
-    redistName
+    `redistName`
+
     : The name of the redistributable
 
-    relativePath
+    `relativePath`
+
     : An optional relative path to the redistributable, defaults to null
 
-    releaseInfo
+    `releaseInfo`
+
     : The release information of the package
   */
   mkRedistUrlRelativePath =
@@ -356,20 +417,21 @@ in
     # Type
 
     ```
-    mkVersionedManifests :: Directory -> VersionedManifests
+    mkVersionedManifests :: (directory :: Path) -> VersionedManifests
     ```
 
-    # Arguments
+    # Inputs
 
-    directory
+    `directory`
+
     : Path to directory containing manifests
   */
   mkVersionedManifests =
-    path:
+    directory:
     mapAttrs' (
       pathName: pathType:
       let
-        cursor = path + "/${pathName}";
+        cursor = directory + "/${pathName}";
         fileName = removeSuffix ".json" pathName;
       in
       assert assertMsg (
@@ -382,7 +444,7 @@ in
         name = removeSuffix ".json" pathName;
         value = importJSON cursor;
       }
-    ) (readDir path);
+    ) (readDir directory);
 
   /**
     Function to produce `versionedOverrides`.
@@ -390,15 +452,17 @@ in
     # Type
 
     ```
-    mkVersionedOverrides :: Directory -> VersionedOverrides
+    mkVersionedOverrides :: (versions :: [Version]) -> (directory :: Path) -> VersionedOverrides
     ```
 
-    # Arguments
+    # Inputs
 
-    versions
+    `versions`
+
     : Versions to populate with `common` in the case the directory contains only `common`
 
-    directory
+    `directory`
+
     : Path to directory containing overrides grouped by version.
       May optionally contain a `common` directory which is shared between all versions, where overrides from a version
       take priority.
@@ -433,9 +497,32 @@ in
       common // overrides
     );
 
-  # Vendored from:
-  # https://github.com/NixOS/nixpkgs/blob/eb82888147a6aecb8ae6ee5a685ecdf021b8ed33/lib/filesystem.nix#L385-L416
-  # Modified to wrap result of directory traversal in a `recurseIntoAttrs` call and to take arguments positionally.
+  /**
+    A variant of `packagesFromDirectoryRecursive` which takes positional arguments and wraps the result of the
+    directory traversal in a `recurseIntoAttrs` call.
+
+    NOTE: This function is largely taken from
+    https://github.com/NixOS/nixpkgs/blob/eb82888147a6aecb8ae6ee5a685ecdf021b8ed33/lib/filesystem.nix#L385-L416
+
+    # Type
+
+    ```
+    packagesFromDirectoryRecursive'
+      :: (callPackage :: Path | (AttrSet -> AttrSet) -> AttrSet)
+      -> (directory :: Path)
+      -> AttrSet
+    ```
+
+    # Inputs
+
+    `callPackage`
+
+    : A function to call on the leaves of the directory traversal which matches the signature of `callPackage`.
+
+    `directory`
+
+    : The directory to recurse into
+  */
   packagesFromDirectoryRecursive' =
     callPackage: directory:
     let
@@ -477,12 +564,13 @@ in
     # Type
 
     ```
-    packageExprPathsFromDirectoryRecursive :: Directory -> Attrs
+    packageExprPathsFromDirectoryRecursive :: (directory :: Path) -> AttrSet
     ```
 
-    # Arguments
+    # Inputs
 
-    directory
+    `directory`
+
     : The directory to recurse into
   */
   packageExprPathsFromDirectoryRecursive =
@@ -499,12 +587,13 @@ in
     # Type
 
     ```
-    packageExprsFromDirectoryRecursive :: Directory -> Attrs
+    packageExprsFromDirectoryRecursive :: (directory :: Path) -> AttrSet
     ```
 
-    # Arguments
+    # Inputs
 
-    directory
+    `directory`
+
     : The directory to recurse into
   */
   packageExprsFromDirectoryRecursive =
@@ -514,39 +603,46 @@ in
       callPackage = path: _: import path;
     };
 
-  # TODO: Alphabetize
-
   /**
     Returns the path to the CUDA library directory for a given version or null if no such version exists.
 
     Implementation note: Find the first libPath in the list of cudaVersionsInLib that is a prefix of the current cuda
     version.
 
-    # Example
+    # Type
+
+    ```
+    getLibPath
+      :: (fullCudaVersion :: Version)
+      -> (cudaVersionsInLib :: Null | [Version])
+      -> Null | Version
+    ```
+
+    # Inputs
+
+    `fullCudaVersion`
+
+    : The full version of CUDA
+
+    `cudaVersionsInLib`
+
+    : `null` or the list of CUDA versions in the lib directory
+
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.getLibPath` usage examples
 
     ```nix
-    cudaLib.utils.getLibPath "11.0" null
+    getLibPath "11.0" null
     => null
     ```
 
     ```nix
-    cudaLib.utils.getLibPath "11.0" [ "10.2" "11" "11.0" "12" ]
+    getLibPath "11.0" [ "10.2" "11" "11.0" "12" ]
     => "11.0"
     ```
-
-    # Type
-
-    ```
-    getLibPath :: Version -> NullOr (List Version) -> NullOr Version
-    ```
-
-    # Arguments
-
-    fullCudaVersion
-    : The full version of CUDA
-
-    cudaVersionsInLib
-    : Null or the list of CUDA versions in the lib directory
+    :::
   */
   getLibPath =
     fullCudaVersion:
@@ -565,28 +661,33 @@ in
     `all-packages.nix`, which is evaluated on all systems. As such, we need to handle unsupported
     systems gracefully.
 
-    # Example
-
-    ```nix
-    cudaLib.utils.getNixSystems "linux-sbsa"
-    => [ "aarch64-linux" ]
-    ```
-
-    ```nix
-    cudaLib.utils.getNixSystems "linux-aarch64"
-    => [ "aarch64-linux" ]
-    ```
-
     # Type
 
     ```
-    getNixSystems :: RedistSystem -> List String
+    getNixSystems :: (redistSystem :: RedistSystem) -> [String]
     ```
 
-    # Arguments
+    # Inputs
 
-    redistSystem
+    `redistSystem`
+
     : The NVIDIA redistributable system
+
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.getNixSystems` usage examples
+
+    ```nix
+    getNixSystems "linux-sbsa"
+    => [ "aarch64-linux" ]
+    ```
+
+    ```nix
+    getNixSystems "linux-aarch64"
+    => [ "aarch64-linux" ]
+    ```
+    :::
   */
   getNixSystems =
     redistSystem:
@@ -614,31 +715,37 @@ in
     `all-packages.nix`, which is evaluated on all systems. As such, we need to handle unsupported
     systems gracefully.
 
-    # Example
+    # Type
+
+    ```
+    getRedistSystem :: (hasJetsonCudaCapability :: Bool) -> (nixSystem :: String) -> String
+    ```
+
+    # Inputs
+
+    `hasJetsonCudaCapability`
+
+    : If configured for a Jetson device
+
+    `nixSystem`
+
+    : The Nix system
+
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.getRedistSystem` usage examples
 
     ```nix
-    cudaLib.utils.getRedistSystem true "aarch64-linux"
+    getRedistSystem true "aarch64-linux"
     => "linux-aarch64"
     ```
 
     ```nix
-    cudaLib.utils.getRedistSystem false "aarch64-linux"
+    getRedistSystem false "aarch64-linux"
     => "linux-sbsa"
     ```
-
-    # Type
-
-    ```
-    getRedistSystem :: Bool -> String -> String
-    ```
-
-    # Arguments
-
-    hasJetsonCudaCapability
-    : If configured for a Jetson device
-
-    nixSystem
-    : The Nix system
+    :::
   */
   getRedistSystem =
     hasJetsonCudaCapability: nixSystem:
@@ -650,7 +757,44 @@ in
       "unsupported";
 
   /**
-    TODO:
+    Returns a list of supported redistributable systems given a `Packages` value and a CUDA variant.
+
+    # Type
+
+    ```
+    getSupportedRedistSystems
+      :: (packages :: Packages)
+      -> (desiredCudaVariant :: CudaVariant)
+      -> [RedistSystem]
+    ```
+
+    # Inputs
+
+    `packages`
+
+    : The attribute set of packages to check
+
+    `desiredCudaVariant`
+
+    : The CUDA variant to check for
+
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.getSupportedRedistSystems` usage examples
+
+    ```nix
+    getSupportedRedistSystems {
+      linux-x86_64 = { None = { }; };
+      linux-sbsa = {
+        cuda11 = { };
+        cuda12 = { };
+      };
+      linux-aarch64 = { cuda12 = { }; };
+    } "cuda11"
+    => [ "linux-x86_64" "linux-sbsa" ]
+    ```
+    :::
   */
   getSupportedRedistSystems =
     packages: desiredCudaVariant:
@@ -668,23 +812,30 @@ in
     # Type
 
     ```
-    cudaCapabilityIsDefault :: Version -> CudaCapabilityInfo -> Bool
+    cudaCapabilityIsDefault
+      :: (cudaMajorMinorVersion :: Version)
+      -> (cudaCapabilityInfo :: CudaCapabilityInfo)
+      -> Bool
     ```
+
+    # Inputs
+
+    `cudaMajorMinorVersion`
+
+    : The CUDA version to check
+
+    `cudaCapabilityInfo`
+
+    : The capability information to check
   */
   cudaCapabilityIsDefault =
-    cudaMajorMinorVersion:
-    {
-      dontDefaultAfterCudaMajorMinorVersion,
-      isAccelerated,
-      isJetson,
-      ...
-    }:
+    cudaMajorMinorVersion: cudaCapabilityInfo:
     let
       recentCapability =
-        dontDefaultAfterCudaMajorMinorVersion == null
-        || versionAtLeast dontDefaultAfterCudaMajorMinorVersion cudaMajorMinorVersion;
+        cudaCapabilityInfo.dontDefaultAfterCudaMajorMinorVersion == null
+        || versionAtLeast cudaCapabilityInfo.dontDefaultAfterCudaMajorMinorVersion cudaMajorMinorVersion;
     in
-    recentCapability && !isJetson && !isAccelerated;
+    recentCapability && !cudaCapabilityInfo.isJetson && !cudaCapabilityInfo.isAccelerated;
 
   /**
     Returns whether a capability is supported for a particular CUDA version.
@@ -692,40 +843,57 @@ in
     # Type
 
     ```
-    cudaCapabilityIsSupported :: Version -> CudaCapabilityInfo -> Bool
+    cudaCapabilityIsSupported
+      :: (cudaMajorMinorVersion :: Version)
+      -> (cudaCapabilityInfo :: CudaCapabilityInfo)
+      -> Bool
     ```
+
+    # Inputs
+
+    `cudaMajorMinorVersion`
+
+    : The CUDA version to check
+
+    `cudaCapabilityInfo`
+
+    : The capability information to check
   */
   cudaCapabilityIsSupported =
-    cudaMajorMinorVersion:
-    { minCudaMajorMinorVersion, maxCudaMajorMinorVersion, ... }:
+    cudaMajorMinorVersion: cudaCapabilityInfo:
     let
-      lowerBoundSatisfied = versionAtLeast cudaMajorMinorVersion minCudaMajorMinorVersion;
+      lowerBoundSatisfied = versionAtLeast cudaMajorMinorVersion cudaCapabilityInfo.minCudaMajorMinorVersion;
       upperBoundSatisfied =
-        (maxCudaMajorMinorVersion == null)
-        || (versionAtLeast maxCudaMajorMinorVersion cudaMajorMinorVersion);
+        (cudaCapabilityInfo.maxCudaMajorMinorVersion == null)
+        || (versionAtLeast cudaCapabilityInfo.maxCudaMajorMinorVersion cudaMajorMinorVersion);
     in
     lowerBoundSatisfied && upperBoundSatisfied;
 
   /**
     Generates a CUDA variant name from a version.
 
-    # Example
-
-    ```nix
-    cudaLib.utils.mkCudaVariant "11.0"
-    => "cuda11"
-    ```
-
     # Type
 
     ```
-    mkCudaVariant :: String -> String
+    mkCudaVariant :: (version :: String) -> String
     ```
 
-    # Arguments
+    # Inputs
 
-    version
+    `version`
+
     : The version string
+
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.mkCudaVariant` usage examples
+
+    ```nix
+    mkCudaVariant "11.0"
+    => "cuda11"
+    ```
+    :::
   */
   mkCudaVariant = version: "cuda${major version}";
 
@@ -758,7 +926,6 @@ in
   /**
     TODO:
   */
-  # TODO(@connorbaker):
   mkCudaPackagesOverrideAttrsDefaultsFn =
     {
       cudaNamePrefix,
@@ -771,11 +938,11 @@ in
           prevDepList = prevAttrs.${depListName} or [ ];
         in
         prevDepList;
-      # We add a hook to deduplicate runpath entries.
-      # ++ optionals (!(elem deduplicateRunpathEntriesHook prevDepList)) [
-      #   deduplicateRunpathEntriesHook
-      # ];
     in
+    # We add a hook to deduplicate runpath entries.
+    # ++ optionals (!(elem deduplicateRunpathEntriesHook prevDepList)) [
+    #   deduplicateRunpathEntriesHook
+    # ];
     finalAttrs: prevAttrs: {
       # Default __structuredAttrs and strictDeps to true.
       __structuredAttrs = prevAttrs.__structuredAttrs or true;
@@ -827,7 +994,22 @@ in
     evaluation sets allowBroken to true, which means we can't rely on brokenConditions to prevent evaluation of
     a package with missing dependencies.
 
-    # Example
+    # Type
+
+    ```
+    mkMissingPackagesBadPlatformsConditions :: (attrs :: AttrSet) -> AttrSet
+    ```
+
+    # Inputs
+
+    `attrs`
+
+    : The attributes to check for null
+
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.mkMissingPackagesBadPlatformsConditions` usage examples
 
     ```nix
     {
@@ -846,17 +1028,7 @@ in
       };
     }
     ```
-
-    # Type
-
-    ```
-    mkMissingPackagesBadPlatformsConditions :: AttrSet -> AttrSet
-    ```
-
-    # Arguments
-
-    attrs
-    : The attributes to check for null
+    :::
   */
   mkMissingPackagesBadPlatformsConditions = flip pipe [
     # Take the attributes that are null.
@@ -871,41 +1043,114 @@ in
     # Type
 
     ```
-    dotsToUnderscores :: String -> String
+    dotsToUnderscores :: (str :: String) -> String
     ```
 
-    # Arguments
+    # Inputs
 
-    str
+    `str`
+
     : The string for which dots shall be replaced by underscores
 
-    # Example
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.dotsToUnderscores` usage examples
 
     ```nix
-    cudaLib.utils.dotsToUnderscores "1.2.3"
+    dotsToUnderscores "1.2.3"
     => "1_2_3"
     ```
+    :::
   */
   dotsToUnderscores = replaceStrings [ "." ] [ "_" ];
 
-  # TODO: Docs
+  /**
+    Create a versioned CUDA package set name from a CUDA version.
+
+    # Type
+
+    ```
+    mkCudaPackagesVersionedName :: (cudaVersion :: Version) -> String
+    ```
+
+    # Inputs
+
+    `cudaVersion`
+
+    : The CUDA version to use
+
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.mkCudaPackagesVersionedName` usage examples
+
+    ```nix
+    mkCudaPackagesVersionedName "1.2.3"
+    => "cudaPackages_1_2_3"
+    ```
+    :::
+  */
   mkCudaPackagesVersionedName = cudaVersion: "cudaPackages_${dotsToUnderscores cudaVersion}";
 
-  # TODO: Docs
-  bimap = f: g: mapAttrs' (name: value: nameValuePair (f name) (g value));
+  /**
+    Map over an attribute set, applying a function to each attribute name and value.
 
-  # TODO: DOCS
+    # Type
+
+    ```
+    bimap
+      :: (nameFunc :: String -> String)
+      -> (valueFunc :: Any -> Any)
+      -> (attrs :: AttrSet)
+      -> AttrSet
+    ```
+
+    # Inputs
+
+    `nameFunc`
+
+    : A function to apply to each attribute name
+
+    `valueFunc`
+
+    : A function to apply to each attribute value
+
+    `attrs`
+
+    : The attribute set to map over
+  */
+  bimap =
+    nameFunc: valueFunc: mapAttrs' (name: value: nameValuePair (nameFunc name) (valueFunc value));
+
+  /**
+    TODO:
+  */
   mkCmakeCudaArchitecturesString = concatMapStringsSep ";" dropDots;
+
+  /**
+    TODO:
+  */
   mkGencodeFlag =
     archPrefix: cudaCapability:
     let
       cap = dropDots cudaCapability;
     in
     "-gencode=arch=compute_${cap},code=${archPrefix}_${cap}";
+
+  /**
+    TODO:
+  */
   mkRealArchitecture = cudaCapability: "sm_" + dropDots cudaCapability;
+
+  /**
+    TODO:
+  */
   mkVirtualArchitecture = cudaCapability: "compute_" + dropDots cudaCapability;
 
-  # TODO: Document.
+  /**
+    TODO:
+  */
   addNameToFetchFromGitLikeArgs =
     fetcher:
     let
@@ -963,34 +1208,34 @@ in
     # Type
 
     ```
-    readDirIfExists :: Path -> AttrSet
+    readDirIfExists :: (path :: Path) -> AttrSet
     ```
 
-    # Arguments
+    # Inputs
 
-    path
+    `path`
+
     : A path to a directory
 
-    # Returns
+    # Examples
 
-    An attribute set containing the contents of the directory mapped to file type if it exists, otherwise an empty
-    attribute set.
-
-    # Example
+    :::{.example}
+    ## `cudaLib.utils.readDirIfExists` usage examples
 
     Assume the directory `./foo` exists and contains the files `bar` and `baz`.
 
     ```nix
-    cudaLib.utils.readDirIfExists ./foo
+    readDirIfExists ./foo
     => { bar = "regular"; baz = "regular"; }
     ```
 
     Assume the directory `./oops` does not exist.
 
     ```nix
-    cudaLib.utils.readDirIfExists ./oops
+    readDirIfExists ./oops
     => { }
     ```
+    :::
   */
   readDirIfExists = path: optionalAttrs (pathExists path) (readDir path);
 
@@ -1000,43 +1245,53 @@ in
     # Type
 
     ```
-    dropDots :: String -> String
+    dropDots :: (str :: String) -> String
     ```
 
-    # Arguments
+    # Inputs
 
-    str
+    `str`
+
     : The string to remove dots from
 
-    # Example
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.dropDots` usage examples
 
     ```nix
-    cudaLib.utils.dropDots "1.2.3"
+    dropDots "1.2.3"
     => "123"
     ```
+    :::
   */
   dropDots = replaceStrings [ "." ] [ "" ];
 
   /**
     Extracts the major, minor, and patch version from a string.
 
-    # Example
-
-    ```nix
-    cudaLib.utils.majorMinorPatch "11.0.3.4"
-    => "11.0.3"
-    ```
-
     # Type
 
     ```
-    majorMinorPatch :: String -> String
+    majorMinorPatch :: (version :: String) -> String
     ```
 
-    # Arguments
+    # Inputs
 
-    version
+    `version`
+
     : The version string
+
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.majorMinorPatch` usage examples
+
+    ```nix
+    majorMinorPatch "11.0.3.4"
+    => "11.0.3"
+    ```
+    :::
   */
   majorMinorPatch = trimComponents 3;
 
@@ -1046,33 +1301,37 @@ in
     # Type
 
     ```
-    trimComponents :: Integer -> String -> String
+    trimComponents :: (numComponents :: Integer) -> (version :: String) -> String
     ```
 
-    # Arguments
+    # Inputs
 
-    n
+    `numComponents`
     : A positive integer corresponding to the maximum number of components to keep
 
-    v
+    `version`
     : A version string
 
-    # Example
+    # Examples
+
+    :::{.example}
+    ## `cudaLib.utils.trimComponents` usage examples
 
     ```nix
-    cudaLib.utils.trimComponents 1 "1.2.3.4"
+    trimComponents 1 "1.2.3.4"
     => "1"
     ```
 
     ```nix
-    cudaLib.utils.trimComponents 3 "1.2.3.4"
+    trimComponents 3 "1.2.3.4"
     => "1.2.3"
     ```
 
     ```nix
-    cudaLib.utils.trimComponents 9 "1.2.3.4"
+    trimComponents 9 "1.2.3.4"
     => "1.2.3.4"
     ```
+    :::
   */
   trimComponents =
     n: v:
@@ -1088,35 +1347,43 @@ in
     # Type
 
     ```
-    attrPaths :: { includeCond :: List String -> Any -> Bool
-                 , recurseCond :: List String -> Any -> Bool
-                 , trace :: ?Bool = false
+    attrPaths :: { includeCond :: [String] -> Any -> Bool
+                 , recurseCond :: [String] -> Any -> Bool
+                 , doTrace :: Bool = false
                  }
-              -> AttrSet
-              -> List (List String)
+              -> (attrs :: AttrSet)
+              -> [[String]]
     ```
 
-    # Arguments
+    # Inputs
 
-    includeCond
+    `includeCond`
+
     : A function that takes an attribute path and a value and returns a boolean, controlling whether the attribute
-    path should be included in the output.
+      path should be included in the output.
 
-    recurseCond
+    `recurseCond`
+
     : A function that takes an attribute path and a value and returns a boolean, controlling whether the attribute
-    path should be recursed into.
+      path should be recursed into.
 
-    attrs
+    `doTrace`
+
+    : A boolean controlling whether to print debug information.
+      Defaults to `false`.
+
+    `attrs`
+
     : The attribute set to generate attribute paths for.
   */
   attrPaths =
     {
       includeCond,
       recurseCond,
-      trace ? false,
+      doTrace ? false,
     }:
     let
-      maybeTrace = traceIf trace;
+      maybeTrace = traceIf doTrace;
       go =
         parentAttrPath: parentAttrs:
         concatMap (
@@ -1129,22 +1396,22 @@ in
           in
           (
             if include then
-              maybeTrace "lib.attrsets.attrPaths: including attribute ${showAttrPath attrPath}" [ attrPath ]
+              maybeTrace "cudaLib.utils.attrPaths: including attribute ${showAttrPath attrPath}" [ attrPath ]
             else
-              maybeTrace "lib.attrsets.attrPaths: excluding attribute ${showAttrPath attrPath}" [ ]
+              maybeTrace "cudaLib.utils.attrPaths: excluding attribute ${showAttrPath attrPath}" [ ]
           )
           ++ (
             if recurse then
-              maybeTrace "lib.attrsets.attrPaths: recursing into attribute ${showAttrPath attrPath}" (
+              maybeTrace "cudaLib.utils.attrPaths: recursing into attribute ${showAttrPath attrPath}" (
                 go attrPath value
               )
             else
-              maybeTrace "lib.attrsets.attrPaths: not recursing into attribute ${showAttrPath attrPath}" [ ]
+              maybeTrace "cudaLib.utils.attrPaths: not recursing into attribute ${showAttrPath attrPath}" [ ]
           )
         ) (attrNames parentAttrs);
     in
     attrs:
-    assert assertMsg (isAttrs attrs) "lib.attrsets.attrPaths: `attrs` must be an attribute set";
+    assert assertMsg (isAttrs attrs) "cudaLib.utils.attrPaths: `attrs` must be an attribute set";
     go [ ] attrs;
 
   # Credit for this strategy goes to Adam Joseph and is taken from their work on
@@ -1267,13 +1534,34 @@ in
     # Type
 
     ```
-    flattenAttrs :: { includeCond :: List String -> Any -> Bool
-                    , recurseCond :: List String -> Any -> Bool
-                    , trace :: ?Bool = false
+    flattenAttrs :: { includeCond :: [String] -> Any -> Bool
+                    , recurseCond :: [String] -> Any -> Bool
+                    , doTrace :: Bool = false
                     }
-                 -> AttrSet
+                 -> (attrs :: AttrSet)
                  -> AttrSet
     ```
+
+    # Inputs
+
+    `includeCond`
+
+    : A function that takes an attribute path and a value and returns a boolean, controlling whether the value
+      should be included in the output.
+
+    `recurseCond`
+
+    : A function that takes an attribute path and a value and returns a boolean, controlling whether the value
+      should be recursed into.
+
+    `doTrace`
+
+    : A boolean controlling whether to print debug information.
+      Defaults to `false`.
+
+    `attrs`
+
+    : The attribute set to generate attribute paths for.
   */
   flattenAttrs =
     strategy: attrs:
@@ -1289,8 +1577,14 @@ in
     # Type
 
     ```
-    flattenDrvTree :: AttrSet -> AttrSet
+    flattenDrvTree :: (attrs :: AttrSet) -> AttrSet
     ```
+
+    # Inputs
+
+    `attrs`
+
+    : The attribute set to flatten.
   */
   flattenDrvTree = flattenAttrs drvAttrPathsStrategy;
 
