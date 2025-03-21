@@ -1,16 +1,45 @@
 # CUDA {#cuda}
 
-CUDA-only packages are stored in the `cudaPackages` packages set. This set
-includes the `cudatoolkit`, portions of the toolkit in separate derivations,
-`cudnn`, `cutensor` and `nccl`.
+Compute Unified Device Architecture (CUDA) is a parallel computing platform and
+application programming interface (API) model created by NVIDIA. It's commonly used to accelerate computationally intensive problems and has been widely adopted for High Performance Computing (HPC) and Machine Learning (ML) applications.
 
-A package set is available for each CUDA version, so for example
-`cudaPackages_11_6`. Within each set is a matching version of the above listed
-packages. Additionally, other versions of the packages that are packaged and
-compatible are available as well. For example, there can be a
-`cudaPackages.cudnn_8_3` package.
+CUDA-only packages are stored in the `cudaPackages` packages sets. Nixpkgs provides a number of different CUDA package sets, each based on a different CUDA release. All of these package sets include common CUDA packages like `libcublas`, `cudnn`, `tensorrt`, and `nccl`.
 
-To use one or more CUDA packages in an expression, give the expression a `cudaPackages` parameter, and in case CUDA is optional
+## Configuring Nixpkgs for CUDA {#configuring-nixpkgs-for-cuda}
+
+CUDA support is not enabled by default in Nixpkgs. To enable CUDA support, make sure Nixpkgs is imported with a configuration similar to the following:
+
+```nix
+{
+  allowUnfree = true;
+  cudaSupport = true;
+  cudaCapabilities = [ ... ];
+}
+```
+
+The majority of CUDA packages are unfree, so `allowUnfree` should be set to `true` in order to use them.
+
+The `cudaSupport` configuration option is used by packages to conditionally enable CUDA-specific functionality. This configuration option is commonly used by packages which can be built with or without CUDA support.
+
+The `cudaCapabilities` configuration option specifies a list of CUDA capabilities. Packages may use this option to control device code generation to take advantage of architecture-specific functionality, speed up compile times by producing less device code, or slim package closures. As an example, one can build for Ada Lovelace GPUs with `cudaCapabilities = [ "8.9" ];`. If `cudaCapabilities` is not provided, the default value is calculated per-package set, derived from a list of GPUs supported by that version of CUDA. Please consult [supported GPUs](https://en.wikipedia.org/wiki/CUDA#GPUs_supported) for your specific card(s). Library maintainers should consult [NVCC Docs](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/) and its release notes.
+
+The `cudaForwardCompat` boolean configuration option determines whether PTX support for future hardware is enabled.
+
+### CUDA Package set configuration {#cuda-package-set-configuration}
+
+CUDA package sets can be further configured through the `pkgs.cudaModules` attribute.
+
+TODO(@connorbaker): Document the `pkgs.cudaModules` attribute and give an example.
+
+## Using CUDA packages {#using-cuda-packages}
+
+TODO(@connorbaker): Document how certain functionality relies on setup hooks and will not function in a `devShell` without manually invoking phases.
+
+TODO(@connorbaker): Document `cudaStdenv` and `cuda_nvcc`.
+
+Nixpkgs makes CUDA package sets available under a number of attributes. While versioned package sets are available (e.g., `cudaPackages_12_2`), it is recommended to use the unversioned `cudaPackages` attribute, which is an alias to the latest version, as versioned attributes are periodically removed.
+
+To use one or more CUDA packages in an expression, give the expression a `cudaPackages` parameter, and in case CUDA support is optional, add a `config` and `cudaSupport` parameter:
 
 ```nix
 { config
@@ -21,13 +50,15 @@ To use one or more CUDA packages in an expression, give the expression a `cudaPa
 ```
 
 When using `callPackage`, you can choose to pass in a different variant, e.g.
-when a different version of the toolkit suffices
+when a package requires a specific version of CUDA:
 
 ```nix
 {
-  mypkg = callPackage { cudaPackages = cudaPackages_11_5; };
+  mypkg = callPackage { cudaPackages = cudaPackages_12_2; };
 }
 ```
+
+TODO(@connorbaker): Multiple versions of packages within the same package set are no longer supported.
 
 If another version of say `cudnn` or `cutensor` is needed, you can override the
 package set to make it the default. This guarantees you get a consistent package
@@ -45,22 +76,6 @@ set.
 
 The CUDA NVCC compiler requires flags to determine which hardware you
 want to target for in terms of SASS (real hardware) or PTX (JIT kernels).
-
-Nixpkgs tries to target support real architecture defaults based on the
-CUDA toolkit version with PTX support for future hardware. Experienced
-users may optimize this configuration for a variety of reasons such as
-reducing binary size and compile time, supporting legacy hardware, or
-optimizing for specific hardware.
-
-You may provide capabilities to add support or reduce binary size through
-`config` using `cudaCapabilities = [ "6.0" "7.0" ];` and
-`cudaForwardCompat = true;` if you want PTX support for future hardware.
-
-Please consult [GPUs supported](https://en.wikipedia.org/wiki/CUDA#GPUs_supported)
-for your specific card(s).
-
-Library maintainers should consult [NVCC Docs](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/)
-and release notes for their software package.
 
 ## Adding a new CUDA release {#adding-a-new-cuda-release}
 
