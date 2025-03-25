@@ -6,7 +6,7 @@
   cuda_nvcc,
   cudaPackagesConfig,
   lib,
-  makeSetupHook',
+  makeSetupHook,
 }:
 let
   inherit (cuda_nvcc.passthru) nvccHostCCMatchesStdenvCC;
@@ -18,7 +18,7 @@ let
 
   # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
   # path from nvccStdenv's host compiler. Generalize this to Clang as well!
-  replacements = {
+  substitutions = {
     inherit nvccHostCCMatchesStdenvCC;
     ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
     ccVersion = cc.version;
@@ -29,49 +29,44 @@ let
     unwrappedCCRoot = cc.cc.outPath;
     unwrappedCCLibRoot = cc.cc.lib.outPath;
   };
+
+  platforms = [
+    "aarch64-linux"
+    "x86_64-linux"
+  ];
+  badPlatforms = optionals isBadPlatform platforms;
+  badPlatformsConditions = {
+    "CUDA support is not enabled" = !config.cudaSupport;
+    "Platform is not supported" = hostRedistSystem == "unsupported";
+  };
+  isBadPlatform = any id (attrValues badPlatformsConditions);
 in
 # TODO: Document breaking change of move from cudaDontCompressFatbin to dontCompressCudaFatbin.
-makeSetupHook' (
-  finalAttrs:
-  let
-    isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
-  in
-  {
-    name = "nvccHook";
+makeSetupHook {
+  name = "nvccHook";
 
-    script = ./nvccHook.bash;
+  propagatedBuildInputs = [
+    # Used in the setup hook
+    autoFixElfFiles
+    arrayUtilities.occursOnlyOrAfterInArray
+    arrayUtilities.computeFrequencyMap
+    arrayUtilities.getRunpathEntries
+  ];
 
-    nativeBuildInputs = [
-      # Used in the setup hook
-      autoFixElfFiles
-      arrayUtilities.occursOnlyOrAfterInArray
-      arrayUtilities.computeFrequencyMap
-      arrayUtilities.getRunpathEntries
-    ];
+  inherit substitutions;
 
-    inherit replacements;
-
-    passthru = {
-      inherit replacements;
-      badPlatformsConditions = {
-        "CUDA support is not enabled" = !config.cudaSupport;
-        "Platform is not supported" = hostRedistSystem == "unsupported";
-      };
-      tests = {
-        dontCompressCudaFatbin = callPackages ./tests/dontCompressCudaFatbin.nix { };
-        nvccHookOrderCheckPhase = callPackages ./tests/nvccHookOrderCheckPhase.nix { };
-        nvccRunpathCheck = callPackages ./tests/nvccRunpathCheck.nix { };
-      };
+  passthru = {
+    inherit badPlatformsConditions substitutions;
+    tests = {
+      dontCompressCudaFatbin = callPackages ./tests/dontCompressCudaFatbin.nix { };
+      nvccHookOrderCheckPhase = callPackages ./tests/nvccHookOrderCheckPhase.nix { };
+      nvccRunpathCheck = callPackages ./tests/nvccRunpathCheck.nix { };
     };
+  };
 
-    meta = {
-      description = "Setup hook which prevents leaking NVCC host compiler libs into binaries";
-      platforms = [
-        "aarch64-linux"
-        "x86_64-linux"
-      ];
-      badPlatforms = optionals isBadPlatform finalAttrs.meta.platforms;
-      maintainers = lib.teams.cuda.members;
-    };
-  }
-)
+  meta = {
+    description = "Setup hook which prevents leaking NVCC host compiler libs into binaries";
+    inherit badPlatforms platforms;
+    maintainers = lib.teams.cuda.members;
+  };
+} ./nvccHook.bash

@@ -7,7 +7,7 @@
 }:
 let
   inherit (arrayUtilities) getRunpathEntries;
-  inherit (cudaRunpathFixupHook.passthru.replacements) cudaCompatLibDir cudaStubLibDir driverLibDir;
+  inherit (cudaRunpathFixupHook.passthru.substitutions) cudaCompatLibDir cudaStubLibDir driverLibDir;
   inherit (lib.attrsets) optionalAttrs;
   inherit (lib.lists) optionals;
   inherit (testers) makeMainWithRunpath testEqualArrayOrMap;

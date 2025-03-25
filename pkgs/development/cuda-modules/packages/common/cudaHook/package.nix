@@ -3,39 +3,36 @@
   config,
   cudaPackagesConfig,
   lib,
-  makeSetupHook',
+  makeSetupHook,
 }:
 let
   inherit (cudaPackagesConfig) hostRedistSystem;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any;
   inherit (lib.trivial) id;
+  isBadPlatform = any id (attrValues badPlatformsConditions);
+  platforms = [
+    "aarch64-linux"
+    "x86_64-linux"
+  ];
+  badPlatforms = lib.optionals isBadPlatform platforms;
+  badPlatformsConditions = {
+    "CUDA support is not enabled" = !config.cudaSupport;
+    "Platform is not supported" = hostRedistSystem == "unsupported";
+  };
 in
-makeSetupHook' (
-  finalAttrs:
-  let
-    isBadPlatform = any id (attrValues finalAttrs.passthru.badPlatformsConditions);
-  in
-  {
-    name = "cudaHook";
+makeSetupHook {
+  name = "cudaHook";
 
-    script = ./cudaHook.bash;
+  substitutions.cudaHook = placeholder "out";
 
-    replacements.cudaHook = placeholder "out";
+  passthru = {
+    inherit badPlatformsConditions;
+  };
 
-    passthru.badPlatformsConditions = {
-      "CUDA support is not enabled" = !config.cudaSupport;
-      "Platform is not supported" = hostRedistSystem == "unsupported";
-    };
-
-    meta = {
-      description = "Setup hook for CUDA packages";
-      platforms = [
-        "aarch64-linux"
-        "x86_64-linux"
-      ];
-      badPlatforms = lib.optionals isBadPlatform finalAttrs.meta.platforms;
-      maintainers = lib.teams.cuda.members;
-    };
-  }
-)
+  meta = {
+    description = "Setup hook for CUDA packages";
+    inherit badPlatforms platforms;
+    maintainers = lib.teams.cuda.members;
+  };
+} ./cudaHook.bash

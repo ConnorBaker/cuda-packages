@@ -2,15 +2,14 @@
   arrayUtilities,
   lib,
   patchelf,
-  makeSetupHook',
+  makeSetupHook,
 }:
 let
   inherit (lib.teams) cuda;
 in
-makeSetupHook' {
+makeSetupHook {
   name = "runpathFixup";
-  script = ./runpathFixup.bash;
-  nativeBuildInputs = [
+  propagatedBuildInputs = [
     arrayUtilities.arrayDifference
     arrayUtilities.arrayReplace
     arrayUtilities.arraysAreEqual
@@ -26,4 +25,4 @@ makeSetupHook' {
     description = "Perform runpath fixups";
     maintainers = cuda.members;
   };
-}
+} ./runpathFixup.bash

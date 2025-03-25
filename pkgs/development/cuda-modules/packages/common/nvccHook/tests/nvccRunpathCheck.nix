@@ -8,7 +8,7 @@
 }:
 let
   inherit (arrayUtilities) getRunpathEntries;
-  inherit (nvccHook.passthru.replacements)
+  inherit (nvccHook.passthru.substitutions)
     ccVersion
     hostPlatformConfig
     unwrappedCCRoot

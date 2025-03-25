@@ -8,7 +8,7 @@
 }:
 let
   inherit (lib.attrsets) optionalAttrs;
-  inherit (nvccHook.passthru.replacements) nvccHostCCMatchesStdenvCC;
+  inherit (nvccHook.passthru.substitutions) nvccHostCCMatchesStdenvCC;
   inherit (testers) testBuildFailure';
 
   check =
