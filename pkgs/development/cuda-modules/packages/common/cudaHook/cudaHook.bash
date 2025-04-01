@@ -52,10 +52,6 @@ cudaSetupEnvironmentVariables() {
   for path in "${!cudaHostPathsSeen[@]}"; do
     addToSearchPathWithCustomDelimiter ";" CUDAToolkit_ROOT "$path"
     nixLog "added $path to CUDAToolkit_ROOT"
-    if [[ -d "$path/include" ]]; then
-      addToSearchPathWithCustomDelimiter ";" CUDAToolkit_INCLUDE_DIRS "$path/include"
-      nixLog "added $path/include to CUDAToolkit_INCLUDE_DIRS"
-    fi
   done
 
   return 0
@@ -67,23 +63,8 @@ cudaSetupCMakeFlags() {
     return 0
   fi
 
-  if [[ -z ${cudaDisableCmakeFindCudaToolkitSupport:-} ]]; then
-    appendToVar cmakeFlags "-DCUDAToolkit_INCLUDE_DIRS=${CUDAToolkit_INCLUDE_DIRS:-}"
-    nixLog "appended -DCUDAToolkit_INCLUDE_DIRS=${CUDAToolkit_INCLUDE_DIRS:-} to cmakeFlags"
-
-    appendToVar cmakeFlags "-DCUDAToolkit_ROOT=${CUDAToolkit_ROOT:-}"
-    nixLog "appended -DCUDAToolkit_ROOT=${CUDAToolkit_ROOT:-} to cmakeFlags"
-
-    appendToVar cmakeFlags "-DCMAKE_POLICY_DEFAULT_CMP0074=NEW"
-    nixLog "appended -DCMAKE_POLICY_DEFAULT_CMP0074=NEW to cmakeFlags"
-  else
-    # Support the legacy flag -DCUDA_TOOLKIT_ROOT_DIR
-    appendToVar cmakeFlags "-DCUDA_TOOLKIT_ROOT_DIR=${CUDAToolkit_ROOT:-}"
-    nixLog "appended -DCUDA_TOOLKIT_ROOT_DIR=${CUDAToolkit_ROOT:-} to cmakeFlags"
-
-    appendToVar cmakeFlags "-DCMAKE_POLICY_DEFAULT_CMP0074=OLD"
-    nixLog "appended -DCMAKE_POLICY_DEFAULT_CMP0074=OLD to cmakeFlags"
-  fi
+  appendToVar cmakeFlags "-DCMAKE_POLICY_DEFAULT_CMP0074=NEW"
+  nixLog "appended -DCMAKE_POLICY_DEFAULT_CMP0074=NEW to cmakeFlags"
 
   return 0
 }
