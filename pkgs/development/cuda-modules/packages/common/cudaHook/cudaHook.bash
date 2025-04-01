@@ -15,6 +15,9 @@ postFixupHooks+=(cudaPropagateLibraries)
 nixLog "added cudaPropagateLibraries to postFixupHooks"
 
 cudaFindAvailablePackages() {
+  local dependency
+  local dependencyArrayName
+  local -n dependencyArray
   # These names are all guaranteed to be arrays (though they may be empty), with or without __structuredAttrs set.
   # TODO: This function should record *where* it saw each CUDA marker so we can ensure the device offsets are correct.
   # Currently, it lumps them all into the same array, and we use that array to set environment variables.
@@ -29,7 +32,7 @@ cudaFindAvailablePackages() {
 
   for dependencyArrayName in "${dependencyArrayNames[@]}"; do
     nixInfoLog "searching dependencies in $dependencyArrayName for CUDA markers"
-    local -n dependencyArray="$dependencyArrayName"
+    dependencyArray="$dependencyArrayName"
     for dependency in "${dependencyArray[@]}"; do
       nixInfoLog "checking $dependency for CUDA markers"
       if [[ -f "$dependency/nix-support/include-in-cudatoolkit-root" ]]; then
@@ -43,6 +46,7 @@ cudaFindAvailablePackages() {
 }
 
 cudaSetupEnvironmentVariables() {
+  local path
   nixInfoLog "running with cudaHostPathsSeen=${!cudaHostPathsSeen[*]}"
 
   for path in "${!cudaHostPathsSeen[@]}"; do
@@ -95,6 +99,7 @@ cudaPropagateLibraries() {
   nixLog "added cudaHook to the propagatedNativeBuildInputs of output $cudaPropagateToOutput"
 
   local propagatedBuildInputs=("${!cudaHostPathsSeen[@]}")
+  local output
   for output in $(getAllOutputNames); do
     if [[ $output != "$cudaPropagateToOutput" ]]; then
       propagatedBuildInputs+=("${!output}")
