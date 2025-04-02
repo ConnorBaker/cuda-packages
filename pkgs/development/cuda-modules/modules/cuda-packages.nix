@@ -12,15 +12,15 @@ let
     majorMinorPatchVersion
     ;
   inherit (cudaLib.utils)
-    collectPackageConfigsForCudaVersion
     cudaCapabilityIsDefault
     cudaCapabilityIsSupported
     getRedistSystem
     mkOptionsModule
     ;
-  inherit (lib.attrsets) genAttrs;
+  inherit (lib.attrsets) attrNames genAttrs;
   inherit (lib.options) mkOption;
   inherit (lib.lists)
+    concatMap
     filter
     foldl'
     intersectLists
@@ -42,6 +42,7 @@ let
 
   mkWarningsString = foldl' (warningsString: warning: warningsString + "\n- " + warning) "";
 
+  # TODO(@connorbaker): Rename to reflect that packageConfigs is a list of redistBuilderArgs
   mkPackageConfigsAssertWarn =
     cudaPackagesConfig:
     let
@@ -49,7 +50,15 @@ let
       failedAssertionsString = mkFailedAssertionsString assertions;
       warningsString = mkWarningsString warnings;
       packageConfigs = mkMerge (
-        collectPackageConfigsForCudaVersion cudaConfig cudaMajorMinorPatchVersion
+        concatMap (
+          redistName:
+          let
+            redistVersion = cudaPackagesConfig.redists.${redistName};
+          in
+          # One benefit of using mkMerge is that, becuase all entries have the same priority, we should get errors
+          # if there are collisions between package names across redists.
+          [ cudaConfig.redists.${redistName}.${redistVersion} ]
+        ) (attrNames cudaPackagesConfig.redists)
       );
     in
     if failedAssertionsString != "" then

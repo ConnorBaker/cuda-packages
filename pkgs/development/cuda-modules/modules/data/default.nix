@@ -81,7 +81,7 @@ in
       cudaCapability: config.data.cudaCapabilityToInfo.${cudaCapability}.archName
     ) config.data.allCudaCapabilities;
     cudaCapabilities = groupedCudaCapabilities.cudaCapabilities or [ ];
-    cudaMajorMinorPatchVersions = sort versionOlder (attrNames config.redists.cuda.versionedManifests);
+    cudaMajorMinorPatchVersions = sort versionOlder (attrNames config.manifests.cuda);
     jetsonCudaCapabilities = groupedCudaCapabilities.jetsonCudaCapabilities or [ ];
   };
 }

@@ -4,26 +4,14 @@ let
   inherit (cudaLib.types)
     attrs
     cudaCapability
-    cudaVariant
-    features
     majorMinorVersion
     majorMinorPatchVersion
-    manifest
     nvccConfig
-    packageConfig
-    packageInfo
+    redistBuilderArgs
     packageName
-    packages
-    packageVariants
     redistSystem
-    redistConfig
     redistName
-    release
-    releaseInfo
-    sriHash
     version
-    versionedManifests
-    versionedOverrides
     versionWithNumComponents
     ;
   inherit (cudaLib.utils) mkOptionsModule;
@@ -128,79 +116,6 @@ in
   };
 
   /**
-    The option type of a features attribute set.
-
-    # Type
-
-    ```
-    features :: OptionType
-    ```
-  */
-  features =
-    submodule (mkOptionsModule {
-      cudaVersionsInLib = {
-        description = "Subdirectories of the `lib` directory which are named after CUDA versions";
-        type = nullOr (nonEmptyListOf (strMatching "^[[:digit:]]+(\.[[:digit:]]+)?$"));
-        default = null;
-      };
-      outputs = {
-        description = ''
-          The outputs provided by a package.
-
-          A `bin` output requires that we have a non-empty `bin` directory containing at least one file with the
-          executable bit set.
-
-          A `dev` output requires that we have at least one of the following non-empty directories:
-
-          - `lib/pkgconfig`
-          - `share/pkgconfig`
-          - `lib/cmake`
-          - `share/aclocal`
-
-          NOTE: Absent from this list is `include`, which is handled by the `include` output. This is because the `dev`
-          output in Nixpkgs is used for development files and is selected as the default output to install if present.
-          Since we want to be able to access only the header files, they are present in a separate output.
-
-          A `doc` output requires that we have at least one of the following non-empty directories:
-
-          - `share/info`
-          - `share/doc`
-          - `share/gtk-doc`
-          - `share/devhelp`
-          - `share/man`
-
-          An `include` output requires that we have a non-empty `include` directory.
-
-          A `lib` output requires that we have a non-empty lib directory containing at least one shared library.
-
-          A `python` output requires that we have a non-empty `python` directory.
-
-          A `sample` output requires that we have a non-empty `samples` directory.
-
-          A `static` output requires that we have a non-empty lib directory containing at least one static library.
-
-          A `stubs` output requires that we have a non-empty `lib/stubs` or `stubs` directory containing at least one
-          shared or static library.
-        '';
-        type = nonEmptyListOf (enum [
-          "out" # Always present
-          "bin"
-          "dev"
-          "doc"
-          "include"
-          "lib"
-          "python"
-          "sample"
-          "static"
-          "stubs"
-        ]);
-      };
-    })
-    // {
-      name = "features";
-    };
-
-  /**
     The option type of information about a CUDA capability.
 
     # Type
@@ -268,61 +183,6 @@ in
     };
 
   /**
-    The option type of a manifest attribute set.
-
-    # Type
-
-    ```
-    manifest :: OptionType
-    ```
-  */
-  manifest = attrs packageName release // {
-    name = "manifest";
-  };
-
-  /**
-    The option type of a package info attribute set.
-
-    # Type
-
-    ```
-    packageInfo :: OptionType
-    ```
-  */
-  packageInfo =
-    submodule (mkOptionsModule {
-      features = {
-        description = "Features the package provides";
-        type = features;
-      };
-      recursiveHash = {
-        description = "Recursive NAR hash of the unpacked tarball";
-        type = sriHash;
-      };
-      relativePath = {
-        description = "The path to the package in the redistributable tree or null if it can be reconstructed.";
-        type = nullOr nonEmptyStr;
-        default = null;
-      };
-    })
-    // {
-      name = "packageInfo";
-    };
-
-  /**
-    The option type of a `packages` attribute set.
-
-    # Type
-
-    ```
-    packages :: OptionType
-    ```
-  */
-  packages = attrs redistSystem packageVariants // {
-    name = "packages";
-  };
-
-  /**
     The option type of a package name in a CUDA package set.
 
     # Type
@@ -333,19 +193,6 @@ in
   */
   packageName = strMatching "^[[:alnum:]_-]+$" // {
     name = "packageName";
-  };
-
-  /**
-    The option type of a package variant attribute set.
-
-    # Type
-
-    ```
-    packageVariants :: OptionType
-    ```
-  */
-  packageVariants = attrs cudaVariant packageInfo // {
-    name = "packageVariants";
   };
 
   /**
@@ -361,32 +208,30 @@ in
     name = "redistSystem";
   };
 
-  /**
-    The option type of an attribute set configuring the way in which a redistributable suite is made into packages.
-
-    # Type
-
-    ```
-    redistName :: OptionType
-    ```
-  */
-  redistConfig =
+  # TODO(@connorbaker): Docs
+  redistBuilderArgs =
     submodule (mkOptionsModule {
-      versionedOverrides = {
-        description = ''
-          Overrides for packages provided by the redistributable.
-        '';
-        type = versionedOverrides;
+      redistName = {
+        description = "The name of the redistributable to which this package belongs";
+        type = redistName;
       };
-      versionedManifests = {
-        description = ''
-          Data required to produce packages for (potentially multiple) versions of CUDA.
-        '';
-        type = versionedManifests;
+      packageName = {
+        description = "The name of the package";
+        type = packageName;
+      };
+      outputs = {
+        description = "The outputs available for the package";
+        type = nonEmptyListOf nonEmptyStr;
+        default = [ "out" ];
+      };
+      fixupFn = {
+        description = "An expression to be callPackage'd and then provided to overrideAttrs";
+        type = raw;
+        default = null;
       };
     })
     // {
-      name = "redistConfig";
+      name = "redistBuilderArgs";
     };
 
   /**
@@ -411,86 +256,8 @@ in
     redists :: OptionType
     ```
   */
-  redists = attrs redistName redistConfig // {
+  redists = attrs redistName (attrs version (attrs packageName redistBuilderArgs)) // {
     name = "redists";
-  };
-
-  /**
-    The option type of a release attribute set.
-
-    # Type
-
-    ```
-    release :: OptionType
-    ```
-  */
-  release =
-    submodule (mkOptionsModule {
-      releaseInfo.type = releaseInfo;
-      packages.type = packages;
-    })
-    // {
-      name = "release";
-    };
-
-  /**
-    The option type of a release info attribute set.
-
-    # Type
-
-    ```
-    releaseInfo :: OptionType
-    ```
-  */
-  releaseInfo =
-    submodule (mkOptionsModule {
-      licensePath = {
-        description = "The path to the license file in the redistributable tree";
-        type = nullOr nonEmptyStr;
-        default = null;
-      };
-      license = {
-        description = "The license of the redistributable";
-        type = nullOr nonEmptyStr;
-      };
-      name = {
-        description = "The full name of the redistributable";
-        type = nullOr nonEmptyStr;
-      };
-      version = {
-        description = "The version of the redistributable";
-        type = version;
-      };
-    })
-    // {
-      name = "releaseInfo";
-    };
-
-  /**
-    The option type of a versioned manifest attribute set.
-
-    # Type
-
-    ```
-    versionedManifests :: OptionType
-    ```
-  */
-  versionedManifests = attrs version manifest // {
-    name = "versionedManifests";
-  };
-
-  /**
-    The option type of a versioned override attribute set.
-
-    # Type
-
-    ```
-    versionedOverrides :: OptionType
-    ```
-  */
-  # NOTE: `raw` in our case is typically a path to a nix expression.
-  versionedOverrides = attrs version (attrs packageName raw) // {
-    name = "versionedOverrides";
   };
 
   /**
@@ -528,51 +295,6 @@ in
     })
     // {
       name = "nvccConfig";
-    };
-
-  /**
-    The option type of a package configuration.
-
-    # Type
-
-    ```
-    packageConfig :: OptionType
-    ```
-
-    # Note
-
-    This option type is used primarily for creating a core set of attributes to provide to `redist-builder`, leveraging
-    the module system's priority system and ability to merge configurations.
-  */
-  packageConfig =
-    submodule (mkOptionsModule {
-      redistName.type = redistName;
-      releaseInfo.type = releaseInfo;
-      packageInfo.type = packageInfo;
-      supportedNixSystemAttrs.type = attrs nonEmptyStr (enum [ null ]);
-      supportedRedistSystemAttrs.type = attrs redistSystem (enum [ null ]);
-      callPackageOverrider = {
-        description = ''
-          A value which, if non-null, is `callPackage`-d and then provided to a package's `overrideAttrs` function.
-        '';
-        default = null;
-        type = nullOr raw;
-      };
-      srcArgs = {
-        description = ''
-          If non-null, arguments to pass to `fetchzip` to fetch the redistributable.
-        '';
-        default = null;
-        type = nullOr (
-          submodule (mkOptionsModule {
-            url.type = nonEmptyStr;
-            hash.type = nonEmptyStr;
-          })
-        );
-      };
-    })
-    // {
-      name = "packageConfig";
     };
 
   /**
@@ -693,10 +415,10 @@ in
       };
       packageConfigs = {
         description = ''
-          Maps package names from redists to package configurations, which are used with `redist-builder` to create
+          Maps package names from redists to redistBuilderArgs, which are used with `redist-builder` to create
           packages.
         '';
-        type = attrs packageName packageConfig;
+        type = attrs packageName redistBuilderArgs;
       };
     })
     // {

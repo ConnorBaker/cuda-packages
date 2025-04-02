@@ -3,7 +3,6 @@ let
 
   lib = import ../../lib;
   inherit (lib.attrsets)
-    attrNames
     mapAttrs
     recursiveUpdate
     ;
@@ -15,8 +14,6 @@ let
   inherit (lib.trivial)
     const
     flip
-    mapNullable
-    pipe
     ;
   inherit (lib.versions) major majorMinor;
 
@@ -139,45 +136,7 @@ let
               markForCudatoolkitRootHook = mkAlias "cudaPackages.markForCudatoolkitRootHook has moved, use cudaPackages.markForCudaToolkitRootHook instead" finalCudaPackages.markForCudaToolkitRootHook;
             }
             # Redistributable packages
-            // mapAttrs (
-              packageName:
-              {
-                callPackageOverrider,
-                packageInfo,
-                redistName,
-                releaseInfo,
-                srcArgs,
-                supportedNixSystemAttrs,
-                supportedRedistSystemAttrs,
-              }:
-              pipe
-                {
-                  inherit
-                    packageInfo
-                    packageName
-                    redistName
-                    releaseInfo
-                    ;
-                  src = mapNullable final.fetchzip srcArgs;
-                  # NOTE: Don't need to worry about sorting the attribute names because Nix already does that.
-                  supportedNixSystems = attrNames supportedNixSystemAttrs;
-                  supportedRedistSystems = attrNames supportedRedistSystemAttrs;
-                }
-                [
-                  # Build the package
-                  finalCudaPackages.redist-builder
-                  # Apply our defaults
-                  (pkg: pkg.overrideAttrs overrideAttrsDefaultsFn)
-                  # Apply optional fixups
-                  (
-                    pkg:
-                    if callPackageOverrider == null then
-                      pkg
-                    else
-                      pkg.overrideAttrs (finalCudaPackages.callPackage callPackageOverrider { })
-                  )
-                ]
-            ) cudaPackagesConfig.packageConfigs
+            // mapAttrs (const finalCudaPackages.redist-builder) cudaPackagesConfig.packageConfigs
           )
           # CUDA version-specific packages
           (

@@ -13,6 +13,7 @@ in
     ./cuda-packages.nix
     ./data
     ./redists
+    ./manifests
   ];
 
   # Allow users extending CUDA package sets to specify the redist version to use.

@@ -19,8 +19,6 @@ let
     attrValues
     catAttrs
     filterAttrs
-    foldlAttrs
-    genAttrs
     getAttr
     getAttrFromPath
     hasAttr
@@ -34,7 +32,6 @@ let
     showAttrPath
     ;
   inherit (cudaLib.data) redistUrlPrefix;
-  inherit (cudaLib.types) redistName version;
   inherit (cudaLib.utils)
     attrPaths
     bimap
@@ -43,24 +40,15 @@ let
     drvAttrPathsStrategy
     drvAttrPathsStrategyImpl
     flattenAttrs
-    getNixSystems
     mkCmakeCudaArchitecturesString
     mkCudaPackagesCallPackage
     mkCudaPackagesOverrideAttrsDefaultsFn
     mkCudaPackagesScope
-    mkCudaVariant
     mkGencodeFlag
     mkOptions
     mkRealArchitecture
-    mkRedistConfig
-    mkRedistUrl
-    mkRedistUrlRelativePath
-    mkVersionedManifests
-    mkVersionedOverrides
     mkVirtualArchitecture
-    packageExprPathsFromDirectoryRecursive
     packagesFromDirectoryRecursive'
-    readDirIfExists
     trimComponents
     ;
   inherit (lib.debug) traceIf;
@@ -68,19 +56,14 @@ let
   inherit (lib.fixedPoints) extends makeExtensible;
   inherit (lib.lists)
     concatMap
-    elem
-    filter
-    findFirst
     head
     last
     map
     naturalSort
     optionals
-    reverseList
     take
     unique
     ;
-  inherit (lib.modules) mkDefault mkIf;
   inherit (lib.options) mkOption;
   inherit (lib.strings)
     concatMapStringsSep
@@ -88,130 +71,17 @@ let
     hasPrefix
     hasSuffix
     removePrefix
-    removeSuffix
     replaceStrings
     versionAtLeast
     ;
   inherit (lib.trivial)
     const
     flip
-    importJSON
-    mapNullable
     pipe
     ;
-  inherit (lib.versions) major majorMinor splitVersion;
+  inherit (lib.versions) major splitVersion;
 in
 {
-  /**
-    Given a `cudaConfig` and `cudaMajorMinorPatchVersion`, this function traverses the redistributable tree,
-    flattening and collecting the package information for each package in the tree.
-
-    The resulting list should be provided as a value to `config`, so the module system can merge the values within
-    and produce a single attribute set.
-
-    # Type
-
-    ```
-    collectPackageConfigsForCudaVersion
-      :: (cudaConfig :: CudaConfig)
-      -> (cudaMajorMinorPatchVersion :: Version)
-      -> [AttrSet]
-    ```
-
-    # Inputs
-
-    `cudaConfig`
-
-    : The CUDA configuration to use
-
-    `cudaMajorMinorPatchVersion`
-
-    : The CUDA version to use
-  */
-  # NOTE:
-  #   A great deal of the complexity in this function is a result of the decision to check in a minimal amount of
-  #   JSON needed to create the CUDA package sets -- this required floating out common package information and resulted
-  #   in deeply nested JSON.
-  #
-  #   The remainder of the complexity could (perhaps) be alleviated by further leveraging the module system, assigning
-  #   priorities to values based on `redistSystem` and `cudaVariant`, and using the module system to handle selection
-  #   of the correct attribute set.
-  collectPackageConfigsForCudaVersion =
-    cudaConfig: cudaMajorMinorPatchVersion:
-    let
-      inherit (cudaPackagesConfig) hostRedistSystem;
-      cudaPackagesConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion};
-      backupCudaVariant = mkCudaVariant cudaMajorMinorPatchVersion;
-      # Get the redist names and versions for our particular package set.
-      redistNameToRedistVersion = cudaPackagesConfig.redists;
-    in
-    concatMap (
-      redistName:
-      let
-        redistVersion = redistNameToRedistVersion.${redistName};
-        redistManifest = cudaConfig.redists.${redistName}.versionedManifests.${redistVersion};
-        redistCallPackageOverriders = cudaConfig.redists.${redistName}.versionedOverrides.${redistVersion};
-      in
-      concatMap (
-        packageName:
-        let
-          inherit (redistManifest.${packageName}) releaseInfo packages;
-        in
-        concatMap (
-          redistSystem:
-          let
-            packageVariants = packages.${redistSystem};
-            # Always show preference to the "source", then "linux-all" redistSystem if they are available, as they are
-            # the most general.
-            nixSystemIsSupported =
-              redistSystem == "source"
-              || redistSystem == "linux-all"
-              || (
-                redistSystem == hostRedistSystem && !hasAttr "source" packages && !hasAttr "linux-all" packages
-              );
-          in
-          map (
-            cudaVariant:
-            let
-              # Always show preference to the "None" cudaVariant if it is available, as it is the most general.
-              packageInfo = packageVariants.${cudaVariant};
-              cudaVariantIsSupported =
-                cudaVariant == "None" || (cudaVariant == backupCudaVariant && !hasAttr "None" packageVariants);
-            in
-            # If the package variant is supported for this CUDA version, include information about it --
-            # it means the package is available for *some* system.
-            {
-              ${packageName} = mkIf cudaVariantIsSupported {
-                inherit redistName releaseInfo;
-                # Attribute set handles deduplication for us; we use this to create platforms in meta.
-                supportedNixSystemAttrs = genAttrs (getNixSystems redistSystem) (const null);
-                supportedRedistSystemAttrs.${redistSystem} = null;
-                # We want packageInfo to be default here so it can be successfully replaced by the chosen
-                # package variant, if it exists.
-                packageInfo = if nixSystemIsSupported then packageInfo else mkDefault packageInfo;
-                callPackageOverrider = mkIf nixSystemIsSupported (
-                  redistCallPackageOverriders.${packageName} or null
-                );
-                srcArgs = mkIf nixSystemIsSupported {
-                  url = mkRedistUrl redistName (mkRedistUrlRelativePath {
-                    inherit
-                      cudaVariant
-                      packageName
-                      redistSystem
-                      redistName
-                      releaseInfo
-                      ;
-                    inherit (packageInfo) relativePath;
-                  });
-                  hash = packageInfo.recursiveHash;
-                };
-              };
-            }
-          ) (attrNames packageVariants)
-        ) (attrNames packages)
-      ) (attrNames redistManifest)
-    ) (attrNames redistNameToRedistVersion);
-
   /**
     Maps `mkOption` over the values of an attribute set.
 
@@ -246,63 +116,6 @@ in
     : An attribute set
   */
   mkOptionsModule = attrs: { options = mkOptions attrs; };
-
-  /**
-    Helper function to build a `redistConfig`.
-
-    # Type
-
-    ```
-    mkRedistConfig :: (path :: Path) -> RedistConfig
-    ```
-
-    # Inputs
-
-    `path`
-
-    : The path to the redistributable directory containing a `manifests` directory and (optionally) an `overrides`
-      directory.
-  */
-  mkRedistConfig =
-    path:
-    let
-      versionedManifests = mkVersionedManifests (path + "/manifests");
-      versions = attrNames versionedManifests;
-    in
-    {
-      inherit versionedManifests;
-      versionedOverrides = mkVersionedOverrides versions (path + "/overrides");
-    };
-
-  /**
-    Function to generate a set of redistributable configurations.
-
-    NOTE: See `mkRedistConfig` for the expected directory structure.
-
-    # Type
-
-    ```
-    mkRedistConfigs :: (path :: Directory) -> RedistConfigs
-    ```
-
-    # Inputs
-
-    `path`
-
-    : The path to a directory of redistributable directories.
-  */
-  mkRedistConfigs =
-    path:
-    foldlAttrs (
-      acc: pathName: pathType:
-      acc
-      // optionalAttrs (pathType == "directory") (
-        assert assertMsg (redistName.check pathName) "Expected a redist name but got ${pathName}";
-        {
-          ${pathName} = mkRedistConfig (path + "/${pathName}");
-        }
-      )
-    ) { } (readDir path);
 
   /**
     Function to generate a URL for something in the redistributable tree.
@@ -412,92 +225,6 @@ in
       ];
 
   /**
-    Function to produce `versionedManifests`.
-
-    # Type
-
-    ```
-    mkVersionedManifests :: (directory :: Path) -> VersionedManifests
-    ```
-
-    # Inputs
-
-    `directory`
-
-    : Path to directory containing manifests
-  */
-  mkVersionedManifests =
-    directory:
-    mapAttrs' (
-      pathName: pathType:
-      let
-        cursor = directory + "/${pathName}";
-        fileName = removeSuffix ".json" pathName;
-      in
-      assert assertMsg (
-        pathType == "regular"
-      ) "mkRedistConfig: expected a file at ${cursor} but found ${pathType}";
-      assert assertMsg (hasSuffix ".json" pathName) "mkRedistConfig: expected a JSON file at ${cursor}";
-      assert assertMsg (version.check fileName)
-        "mkRedistConfig: expected file name ${fileName} at ${cursor} to be a version";
-      {
-        name = removeSuffix ".json" pathName;
-        value = importJSON cursor;
-      }
-    ) (readDir directory);
-
-  /**
-    Function to produce `versionedOverrides`.
-
-    # Type
-
-    ```
-    mkVersionedOverrides :: (versions :: [Version]) -> (directory :: Path) -> VersionedOverrides
-    ```
-
-    # Inputs
-
-    `versions`
-
-    : Versions to populate with `common` in the case the directory contains only `common`
-
-    `directory`
-
-    : Path to directory containing overrides grouped by version.
-      May optionally contain a `common` directory which is shared between all versions, where overrides from a version
-      take priority.
-  */
-  mkVersionedOverrides =
-    versions: path:
-    let
-      overridesDir = readDirIfExists path;
-      # Special handling for `common`, which is shared with all versions.
-      common = optionalAttrs (overridesDir ? common) (
-        let
-          cursor = path + "/common";
-        in
-        assert assertMsg (
-          overridesDir.common == "directory"
-        ) "mkRedistConfig: expected a directory at ${cursor} but found ${overridesDir.common}";
-        packageExprPathsFromDirectoryRecursive cursor
-      );
-    in
-    genAttrs versions (
-      version:
-      let
-        cursor = path + "/${version}";
-        # If null, `pathType` indicates we should use only `common`.
-        pathType = overridesDir.${version} or null;
-        overrides = optionalAttrs (pathType != null) (packageExprPathsFromDirectoryRecursive cursor);
-      in
-      assert assertMsg (
-        pathType == null || pathType == "directory"
-      ) "mkRedistConfig: expected a directory at ${cursor} but found ${pathType}";
-      # NOTE: Overrides for the specific version take precedence over those in `common`.
-      common // overrides
-    );
-
-  /**
     A variant of `packagesFromDirectoryRecursive` which takes positional arguments and wraps the result of the
     directory traversal in a `recurseIntoAttrs` call.
 
@@ -604,54 +331,6 @@ in
     };
 
   /**
-    Returns the path to the CUDA library directory for a given version or null if no such version exists.
-
-    Implementation note: Find the first libPath in the list of cudaVersionsInLib that is a prefix of the current cuda
-    version.
-
-    # Type
-
-    ```
-    getLibPath
-      :: (fullCudaVersion :: Version)
-      -> (cudaVersionsInLib :: Null | [Version])
-      -> Null | Version
-    ```
-
-    # Inputs
-
-    `fullCudaVersion`
-
-    : The full version of CUDA
-
-    `cudaVersionsInLib`
-
-    : `null` or the list of CUDA versions in the lib directory
-
-    # Examples
-
-    :::{.example}
-    ## `cudaLib.utils.getLibPath` usage examples
-
-    ```nix
-    getLibPath "11.0" null
-    => null
-    ```
-
-    ```nix
-    getLibPath "11.0" [ "10.2" "11" "11.0" "12" ]
-    => "11.0"
-    ```
-    :::
-  */
-  getLibPath =
-    fullCudaVersion:
-    mapNullable (
-      cudaVersionsInLib:
-      findFirst (flip hasPrefix (majorMinor fullCudaVersion)) null (reverseList cudaVersionsInLib)
-    );
-
-  /**
     Maps a NVIDIA redistributable system to Nix systems.
 
     NOTE: This function returns a list of systems because the redistributable systems `"linux-all"` and
@@ -755,56 +434,6 @@ in
       if hasJetsonCudaCapability then "linux-aarch64" else "linux-sbsa"
     else
       "unsupported";
-
-  /**
-    Returns a list of supported redistributable systems given a `Packages` value and a CUDA variant.
-
-    # Type
-
-    ```
-    getSupportedRedistSystems
-      :: (packages :: Packages)
-      -> (desiredCudaVariant :: CudaVariant)
-      -> [RedistSystem]
-    ```
-
-    # Inputs
-
-    `packages`
-
-    : The attribute set of packages to check
-
-    `desiredCudaVariant`
-
-    : The CUDA variant to check for
-
-    # Examples
-
-    :::{.example}
-    ## `cudaLib.utils.getSupportedRedistSystems` usage examples
-
-    ```nix
-    getSupportedRedistSystems {
-      linux-x86_64 = { None = { }; };
-      linux-sbsa = {
-        cuda11 = { };
-        cuda12 = { };
-      };
-      linux-aarch64 = { cuda12 = { }; };
-    } "cuda11"
-    => [ "linux-x86_64" "linux-sbsa" ]
-    ```
-    :::
-  */
-  getSupportedRedistSystems =
-    packages: desiredCudaVariant:
-    filter (
-      redistSystem:
-      let
-        packageVariants = packages.${redistSystem};
-      in
-      hasAttr "None" packageVariants || hasAttr desiredCudaVariant packageVariants
-    ) (attrNames packages);
 
   /**
     Returns whether a capability should be built by default for a particular CUDA version.
