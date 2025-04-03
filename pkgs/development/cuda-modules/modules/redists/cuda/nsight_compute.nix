@@ -210,7 +210,7 @@ finalAttrs: prevAttrs: {
           nixLog "directory $kind does not exist, skipping"
           continue
         fi
-        pushd "$kind"
+        pushd "$kind" >/dev/null
         for dir in *; do
           case "${hostRedistSystem}" in
           linux-aarch64|linux-sbsa)
@@ -228,7 +228,7 @@ finalAttrs: prevAttrs: {
           *) nixLogError "unknown host redist system: ${hostRedistSystem}" && exit 1;;
           esac
         done
-        popd
+        popd >/dev/null
       done
 
       patchShebangs .

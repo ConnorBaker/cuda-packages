@@ -1,5 +1,6 @@
 {
   cudaAtLeast,
+  cudaStdenv,
   cudaConfig,
   cudaMajorMinorPatchVersion,
   cudaMajorMinorVersion,
@@ -10,29 +11,13 @@
   stdenv,
   stdenvAdapters,
 }:
-let
-  inherit (lib.lists) optionals;
-  inherit (lib.strings) concatStringsSep optionalString;
-
-  # This is what nvcc uses as a backend,
-  # and it has to be an officially supported one (e.g. gcc11 for cuda11).
-  #
-  # It, however, propagates current stdenv's libstdc++ to avoid "GLIBCXX_* not found errors"
-  # when linked with other C++ libraries.
-  # E.g. for cudaPackages_11_8 we use gcc11 with gcc12's libstdc++
-  # Cf. https://github.com/NixOS/nixpkgs/pull/218265 for context
-  nvccStdenv =
-    let
-      defaultNvccHostCompilerMajorVersion =
-        cudaConfig.data.nvccCompatibilities.${cudaMajorMinorVersion}.gcc.maxMajorVersion;
-      defaultNvccHostStdenv = pkgs."gcc${defaultNvccHostCompilerMajorVersion}Stdenv";
-      nvccConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion}.nvcc;
-      nvccHostStdenv =
-        if nvccConfig.hostStdenv != null then nvccConfig.hostStdenv else defaultNvccHostStdenv;
-    in
-    stdenvAdapters.useLibsFrom stdenv nvccHostStdenv;
-in
 finalAttrs: prevAttrs: {
+  # Entries here will be in nativeBuildInputs when cuda_nvcc is
+  propagatedBuildInputs = prevAttrs.propagatedBuildInputs or [ ] ++ [
+    nvccHook
+    cudaStdenv.cc
+  ];
+
   # Patch the nvcc.profile.
   # Syntax:
   # - `=` for assignment,
@@ -82,40 +67,13 @@ finalAttrs: prevAttrs: {
   # CUDAFE_FLAGS    +=
   # PTXAS_FLAGS     +=
 
-  # NOTE(@connorbaker):
-  # While the postInstall phase is fairly gnarly and repetitive, it's necessary to ensure we're able to add
-  # dependencies to *specific* outputs generated as by the multiple-output setup hook. Barring this method of
-  # manipulating the files in `nix-support` in the respective outputs, I'm not sure there is a way to do per-output
-  # manipulation of dependencies. If there is, I'd love to hear about it!
   postInstall =
     prevAttrs.postInstall or ""
-    + optionalString finalAttrs.finalPackage.meta.available (
+    + lib.optionalString finalAttrs.finalPackage.meta.available (
       # Always move the nvvm directory to the bin output.
       ''
         moveToOutput "nvvm" "''${!outputBin:?}"
-        nixLog "moving nvvm/lib64 to nvvm/lib"
-        mv "''${!outputBin:?}/nvvm/lib64" "''${!outputBin:?}/nvvm/lib"
-      ''
-      # Create a directory for our manual propagation.
-      + ''
-        mkdir -p "''${!outputBin:?}/nix-support"
-      ''
-      # Add nvccHook to the propagatedBuildInputs of the bin output.
-      # NOTE(@connorbaker):
-      # Though it might seem odd or counter-intuitive to add the setup hook to `propagatedBuildInputs` instead of
-      # `propagatedNativeBuildInputs`, it is necessary! If you move the setup hook from `propagatedBuildInputs` to
-      # `propagatedNativeBuildInputs`, it stops being propagated to downstream packages during their build because
-      # setup hooks in `propagatedNativeBuildInputs` are not designed to affect the runtime or build environment of
-      # dependencies; they are only meant to affect the build environment of the package that directly includes them.
-      + ''
-        nixLog "adding setupCudaHook to propagatedBuildInputs of ''${!outputBin:?}"
-        printWords "${nvccHook}" >> "''${!outputBin:?}/nix-support/propagated-build-inputs"
-      ''
-      # Add the dependency on nvccStdenv.cc to the nvcc.profile and native-propagated-build-inputs.
-      # NOTE: No need to add a dependency on `newNvvmDir` since it's already in the bin output.
-      + ''
-        nixLog "adding nvccStdenv.cc to nativePropagatedBuildInputs of ''${outputBin:?}"
-        printWords "${nvccStdenv.cc}" >> "''${!outputBin:?}/nix-support/native-propagated-build-inputs"
+        mv --verbose --no-clobber "''${!outputBin:?}/nvvm/lib64" "''${!outputBin:?}/nvvm/lib"
       ''
       # Unconditional patching to remove the use of $(_TARGET_SIZE_) since we don't use lib64 in Nixpkgs
       + ''
@@ -134,19 +92,14 @@ finalAttrs: prevAttrs: {
             '$(TOP)/$(_TARGET_DIR_)/include' \
             "''${!outputInclude:?}/include"
       ''
-      # Add the dependency on the include output to the nvcc.profile.
-      + ''
-        nixLog "adding ''${!outputInclude:?} to propagatedBuildInputs of ''${!outputBin:?}"
-        printWords "''${!outputInclude:?}" >> "''${!outputBin:?}/nix-support/native-propagated-build-inputs"
-      ''
       # Fixup the nvcc.profile to use the correct paths for the backend compiler and NVVM.
       + (
         let
           # TODO: Should we also patch the LIBRARIES line's use of $(TOP)/$(_TARGET_DIR_)?
-          oldNvvmDir = concatStringsSep "/" (
+          oldNvvmDir = lib.concatStringsSep "/" (
             [ "$(TOP)" ]
-            ++ optionals (cudaOlder "12.5") [ "$(_NVVM_BRANCH_)" ]
-            ++ optionals (cudaAtLeast "12.5") [ "nvvm" ]
+            ++ lib.optionals (cudaOlder "12.5") [ "$(_NVVM_BRANCH_)" ]
+            ++ lib.optionals (cudaAtLeast "12.5") [ "nvvm" ]
           );
           newNvvmDir = ''''${!outputBin:?}/nvvm'';
         in
@@ -160,14 +113,14 @@ finalAttrs: prevAttrs: {
               '${oldNvvmDir}/' \
               "${newNvvmDir}/"
         ''
-        # Add the dependency on nvccStdenv.cc and the new NVVM directories to the nvcc.profile.
+        # Add the dependency on cudaStdenv.cc and the new NVVM directories to the nvcc.profile.
         # NOTE: Escape the dollar sign in the variable expansion to prevent early expansion.
         + ''
-          nixLog "adding nvccStdenv.cc and ${newNvvmDir} to nvcc.profile"
+          nixLog "adding cudaStdenv.cc and ${newNvvmDir} to nvcc.profile"
           cat << EOF >> "''${!outputBin:?}/bin/nvcc.profile"
 
           # Fix a compatible backend compiler
-          PATH += "${nvccStdenv.cc}/bin":
+          PATH += "${cudaStdenv.cc}/bin":
 
           # Expose the split-out nvvm
           LIBRARIES =+ \$(_SPACE_) "-L${newNvvmDir}/lib"
@@ -181,8 +134,8 @@ finalAttrs: prevAttrs: {
   allowFHSReferences = true;
 
   passthru = prevAttrs.passthru or { } // {
-    inherit nvccStdenv;
-    nvccHostCCMatchesStdenvCC = nvccStdenv.cc == stdenv.cc;
+    inherit cudaStdenv;
+    nvccHostCCMatchesStdenvCC = cudaStdenv.cc == stdenv.cc;
   };
 
   meta = prevAttrs.meta or { } // {

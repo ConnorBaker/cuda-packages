@@ -17,6 +17,11 @@ in
 #   hash = "sha256-nSzDzjSH8yfL0r67AbwJ47aBz59Ib4e/sgyNtI7zg4M=";
 # };
 stdenv.mkDerivation (finalAttrs: {
+  __structuredAttrs = true;
+  strictDeps = true;
+
+  # NOTE: Does not depend on the CUDA package set, so do not use cudaNamePrefix to avoid causing
+  # unnecessary / duplicate store paths.
   pname = "libmathdx";
   version = "0.1.1";
 

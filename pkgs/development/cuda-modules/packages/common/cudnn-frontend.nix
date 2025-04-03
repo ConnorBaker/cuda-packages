@@ -6,6 +6,7 @@
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
+  cudaNamePrefix,
   cudnn,
   fetchFromGitHub,
   gitUpdater,
@@ -26,6 +27,11 @@ in
 
 # TODO(@connorbaker): This should be a hybrid C++/Python package.
 stdenv.mkDerivation (finalAttrs: {
+  __structuredAttrs = true;
+  strictDeps = true;
+
+  # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
+  name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "cudnn-frontend";
   version = "1.10.0";
 

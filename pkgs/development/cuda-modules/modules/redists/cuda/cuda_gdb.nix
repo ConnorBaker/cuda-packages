@@ -34,7 +34,7 @@ prevAttrs: {
     prevAttrs.postInstall or ""
     # Remove binaries requiring Python3 versions we do not have
     + optionalString (cudaAtLeast "12.5") ''
-      pushd "''${!outputBin}/bin"
+      pushd "''${!outputBin}/bin" >/dev/null
       nixLog "removing cuda-gdb-python*-tui binaries for Python 3 versions other than ${python3MajorMinorVersion}"
       for pygdb in cuda-gdb-python*-tui; do
         if [[ "$pygdb" == "cuda-gdb-python${python3MajorMinorVersion}-tui" ]]; then
@@ -43,7 +43,8 @@ prevAttrs: {
         nixLog "removing $pygdb"
         rm -rf "$pygdb"
       done
-      popd
+      unset -v pygdb
+      popd >/dev/null
     '';
 
   passthru = recursiveUpdate (prevAttrs.passthru or { }) {

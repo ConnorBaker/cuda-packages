@@ -18,7 +18,7 @@ let
     {
       redistName,
       fixupFnDir,
-      genericConfig,
+      mkGenericRedistBuilderArgs,
     }:
     let
       fixupFnDirContents = readDir fixupFnDir;
@@ -27,14 +27,14 @@ let
       config.redists.${redistName} = mapAttrs (
         manifestVersion: manifest:
         mapAttrs
-          (packageName: redistBuilderArgs: {
+          (packageName: redistBuilderArg: {
             inherit redistName;
-            packageName = redistBuilderArgs.packageName or packageName;
-            outputs = redistBuilderArgs.outputs or [ "out" ];
+            packageName = redistBuilderArg.packageName or packageName;
+            outputs = redistBuilderArg.outputs or [ "out" ];
             fixupFn =
-              # Use the fixup function from the redistBuilderArgs if it exists.
-              if redistBuilderArgs.fixupFn or null != null then
-                redistBuilderArgs.fixupFn
+              # Use the fixup function from the redistBuilderArg if it exists.
+              if redistBuilderArg.fixupFn or null != null then
+                redistBuilderArg.fixupFn
               # Otherwise, use fixup function of the same name if it exists as a nix expression.
               else if fixupFnDirContents.${packageName + ".nix"} or null == "regular" then
                 fixupFnDir + "/${packageName}.nix"
@@ -47,7 +47,7 @@ let
                   { }
                 );
           })
-          (genericConfig {
+          (mkGenericRedistBuilderArgs {
             inherit
               config
               lib
@@ -70,14 +70,14 @@ in
         (mkRedistConfigs {
           redistName = pathName;
           fixupFnDir = ./. + "/${pathName}";
-          genericConfig = import (./. + "/${pathName}");
+          mkGenericRedistBuilderArgs = import (./. + "/${pathName}/mkGenericRedistBuilderArgs.nix");
         })
       ]
     )
   ) (attrNames dir);
 
   options.redists = mkOption {
-    description = "A mapping from redist name to manifest version to redistBuilderArgs configurations";
+    description = "A mapping from redist name to manifest version to redistBuilderArgs";
     type = redists;
     default = { };
   };

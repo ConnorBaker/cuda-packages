@@ -26,7 +26,6 @@ let
     isAttrs
     attrNames
     optionalAttrs
-    recursiveUpdate
     ;
   inherit (lib.fixedPoints) composeManyExtensions toExtension;
   inherit (lib.lists)
@@ -116,8 +115,11 @@ let
   extension = composeManyExtensions [
     genericOverrideAttrsArg
     (_: prevAttrs: {
-      passthru = recursiveUpdate (prevAttrs.passthru or { }) {
-        redistBuilderArgs = {
+      # NOTE: We cannot use recursiveUpdate here because it will evaluate the left-hand-side to see if
+      # it is an attribute set and should do recursive merging -- that will cause the builtins.throw
+      # we set as defaults to be forced.
+      passthru = prevAttrs.passthru or { } // {
+        redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
           inherit redistName;
 
           # The full package name, for use in meta.description

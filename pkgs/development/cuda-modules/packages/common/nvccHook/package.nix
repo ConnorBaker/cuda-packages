@@ -4,20 +4,25 @@
   callPackages,
   config,
   cuda_nvcc,
+  cudaNamePrefix,
   cudaPackagesConfig,
+  cudaStdenv,
   lib,
   makeSetupHook,
 }:
 let
   inherit (cuda_nvcc.passthru) nvccHostCCMatchesStdenvCC;
-  inherit (cuda_nvcc.passthru.nvccStdenv) cc hostPlatform;
   inherit (cudaPackagesConfig) hostRedistSystem;
+  inherit (cudaStdenv) cc hostPlatform;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
-  inherit (lib.trivial) id;
+  inherit (lib.trivial) id warnIfNot;
+
+  # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
+  name = "${cudaNamePrefix}-nvccHook";
 
   # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
-  # path from nvccStdenv's host compiler. Generalize this to Clang as well!
+  # path from cudaStdenv's host compiler. Generalize this to Clang as well!
   substitutions = {
     inherit nvccHostCCMatchesStdenvCC;
     ccFullPath = "${cc}/bin/${cc.targetPrefix}c++";
@@ -43,7 +48,7 @@ let
 in
 # TODO: Document breaking change of move from cudaDontCompressFatbin to dontCompressCudaFatbin.
 makeSetupHook {
-  name = "nvccHook";
+  inherit name;
 
   propagatedBuildInputs = [
     # Used in the setup hook
@@ -57,6 +62,7 @@ makeSetupHook {
 
   passthru = {
     inherit badPlatformsConditions substitutions;
+    brokenConditions = { };
     tests = {
       dontCompressCudaFatbin = callPackages ./tests/dontCompressCudaFatbin.nix { };
       nvccHookOrderCheckPhase = callPackages ./tests/nvccHookOrderCheckPhase.nix { };
@@ -67,6 +73,10 @@ makeSetupHook {
   meta = {
     description = "Setup hook which prevents leaking NVCC host compiler libs into binaries";
     inherit badPlatforms platforms;
+    broken =
+      warnIfNot config.cudaSupport
+        "CUDA support is disabled and you are building a CUDA package (${name}); expect breakage!"
+        false;
     maintainers = lib.teams.cuda.members;
   };
 } ./nvccHook.bash

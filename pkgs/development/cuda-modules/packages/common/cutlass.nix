@@ -4,6 +4,7 @@
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
+  cudaNamePrefix,
   cudnn,
   fetchFromGitHub,
   flags,
@@ -29,6 +30,11 @@ in
 # TODO: Tests.
 assert assertMsg (!enableTools) "enableTools is not yet implemented";
 stdenv.mkDerivation (finalAttrs: {
+  __structuredAttrs = true;
+  strictDeps = true;
+
+  # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
+  name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "cutlass";
   version = "3.6.0";
 

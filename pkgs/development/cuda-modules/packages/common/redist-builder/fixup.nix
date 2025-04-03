@@ -3,12 +3,14 @@
   autoAddDriverRunpath,
   autoPatchelfHook,
   config,
+  cudaHook,
   cudaMajorMinorVersion,
+  cudaMajorVersion,
+  cudaNamePrefix,
   cudaPackagesConfig,
   cudaRunpathFixupHook,
   lib,
   markForCudaToolkitRootHook,
-  cudaHook,
   stdenv,
 }:
 let
@@ -29,25 +31,29 @@ let
     unique
     ;
   inherit (lib.strings) concatMapStringsSep;
-  inherit (lib.trivial) id warnIfNot;
+  inherit (lib.trivial) flip id warnIfNot;
 
   hasAnyTrueValue = attrs: any id (attrValues attrs);
 in
 # We need finalAttrs, so even if prevAttrs isn't used we still need to take it as an argument (see https://noogle.dev/f/lib/fixedPoints/toExtension).
 finalAttrs: _:
 let
-  inherit (finalAttrs.passthru) redistBuilderArgs;
+  inherit (finalAttrs.passthru) redistBuilderArg;
+  hasOutput = flip elem finalAttrs.outputs;
 in
 {
   __structuredAttrs = true;
   strictDeps = true;
 
+  # Name should be prefixed by cudaNamePrefix to create more descriptive path names.
+  name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
+
   # NOTE: Even though there's no actual buildPhase going on here, the derivations of the
   # redistributables are sensitive to the compiler flags provided to stdenv. The patchelf package
   # is sensitive to the compiler flags provided to stdenv, and we depend on it. As such, we are
   # also sensitive to the compiler flags provided to stdenv.
-  pname = redistBuilderArgs.packageName;
-  version = redistBuilderArgs.releaseVersion;
+  pname = redistBuilderArg.packageName;
+  version = redistBuilderArg.releaseVersion;
 
   # We should only have the output `out` when `src` is null.
   # lists.intersectLists iterates over the second list, checking if the elements are in the first list.
@@ -56,7 +62,7 @@ in
     if finalAttrs.src == null then
       [ "out" ]
     else
-      intersectLists redistBuilderArgs.outputs finalAttrs.passthru.expectedOutputs;
+      intersectLists redistBuilderArg.outputs finalAttrs.passthru.expectedOutputs;
 
   # NOTE: Because the `dev` output is special in Nixpkgs -- make-derivation.nix uses it as the default if
   # it is present -- we must ensure that it brings in the expected dependencies. For us, this means that `dev`
@@ -71,14 +77,42 @@ in
   ] finalAttrs.outputs;
 
   # We have a separate output for include files; don't use the dev output.
-  # NOTE: We must set outputInclude using the utility function provided by multiple-outputs.sh or else we
-  # don't get fallback to other outputs if the `include` output doesn't exist.
-  postHook = ''
-    _overrideFirst outputInclude "include" "''${outputDev:?}"
-  '';
+  # NOTE: We must set outputInclude carefully to ensure we get fallback to other outputs if the `include` output
+  # doesn't exist.
+  outputInclude =
+    if hasOutput "include" then
+      "include"
+    else if hasOutput "dev" then
+      "dev"
+    else
+      "out";
+
+  outputStubs = if hasOutput "stubs" then "stubs" else "out";
 
   # src :: null | Derivation
-  src = redistBuilderArgs.releaseSource;
+  src = redistBuilderArg.releaseSource;
+
+  postUnpack = ''
+    nixLog "checking for $NIX_BUILD_TOP/$sourceRoot/lib/${cudaMajorVersion}..."
+    if [[ -d "$NIX_BUILD_TOP/$sourceRoot/lib/${cudaMajorVersion}" ]]; then
+      pushd "$NIX_BUILD_TOP/$sourceRoot" >/dev/null
+      mv \
+        --verbose \
+        --no-clobber \
+        "$PWD/lib/${cudaMajorVersion}" \
+        "$PWD/lib-new"
+      rm --recursive "$PWD/lib" || {
+        nixErrorLog "could not delete $PWD/lib: $(ls -laR "$PWD/lib")"
+        exit 1
+      }
+      mv \
+        --verbose \
+        --no-clobber \
+        "$PWD/lib-new" \
+        "$PWD/lib"
+      popd >/dev/null
+    fi
+  '';
 
   postPatch =
     # Pkg-config's setup hook expects configuration files in $out/share/pkgconfig
@@ -198,12 +232,41 @@ in
   allowFHSReferences = false;
   postInstallCheck = ''
     if [[ -z "''${allowFHSReferences-}" ]]; then
-      nixLog "Checking for FHS references"
+      nixLog "checking for FHS references..."
       firstMatches="$(grep --max-count=5 --recursive --exclude=LICENSE /usr/ "''${outputPaths[@]}")" || true
       if [[ -n "$firstMatches" ]]; then
         nixErrorLog "Detected the references to /usr: $firstMatches"
         exit 1
       fi
+      unset -v firstMatches
+    fi
+
+    for output in $(getAllOutputNames); do
+      [[ "''${!output:?}" == "out" ]] && continue
+      nixLog "checking if "''${!output:?}" contains non nix-support directories..."
+      case "$(find "''${!output:?}" -mindepth 1 -maxdepth 1 -type d)" in
+      "" | "''${!output:?}/nix-support/")
+        nixErrorLog "output $output is empty (excluding nix-support)!"
+        nixErrorLog "this typically indicates a failure in packaging or moveToOutput ordering"
+        ls -laR "''${!output:?}"
+        exit 1
+        ;;
+      *) ;;
+      esac
+    done
+    unset -v output
+
+    if [[ -d "''${!outputLib:?}/lib" ]]; then
+      nixLog "checking for .so files in ''${!outputLib:?}/lib..."
+      case "$(find "''${!outputLib:?}/lib" -mindepth 1 -maxdepth 1 -name '*.so*')" in
+      "")
+        nixErrorLog "directory ''${!outputLib:?}/lib contains no .so files!"
+        nixErrorLog "this typically indicates a failure in packaging or raising lib subpaths"
+        ls -laR "''${!outputLib:?}/lib"
+        exit 1
+        ;;
+      *) ;;
+      esac
     fi
   '';
 
@@ -222,9 +285,6 @@ in
       mkdir -p "$out/nix-support"
     ''
     # NOTE: We must use printWords to ensure the output is a single line.
-    # See addPkg in ./pkgs/build-support/buildenv/builder.pl -- it splits on spaces.
-    # TODO: The comment in the for-loop says to skip out and dev, but the code only skips out.
-    # Since `dev` depends on `out` by default, wouldn't this cause a cycle?
     + ''
       for output in $(getAllOutputNames); do
         # Skip out and dev outputs
@@ -233,51 +293,52 @@ in
         nixLog "adding output ''${output:?} to output out's propagated-build-inputs"
         printWords "''${!output:?}" >> "$out/nix-support/propagated-build-inputs"
       done
+      unset -v output
     '';
 
   passthru = {
-    redistBuilderArgs = {
+    redistBuilderArg = {
       # The name of the redistributable to which this package belongs.
-      # redistName = builtins.throw "redistBuilderArgs.redistName must be set";
+      redistName = builtins.throw "redistBuilderArg.redistName must be set";
 
       # The full package name, for use in meta.description
       # e.g., "CXX Core Compute Libraries"
-      # releaseName = builtins.throw "redistBuilderArgs.releaseName must be set";
+      releaseName = builtins.throw "redistBuilderArg.releaseName must be set";
 
       # The package version
       # e.g., "12.2.140"
-      # releaseVersion = builtins.throw "redistBuilderArgs.releaseVersion must be set";
+      releaseVersion = builtins.throw "redistBuilderArg.releaseVersion must be set";
 
       # The path to the license, or null
       # e.g., "cuda_cccl/LICENSE.txt"
-      # licensePath = builtins.throw "redistBuilderArgs.licensePath must be set";
+      licensePath = builtins.throw "redistBuilderArg.licensePath must be set";
 
       # The short name of the package
       # e.g., "cuda_cccl"
-      # packageName = builtins.throw "redistBuilderArgs.packageName must be set";
+      packageName = builtins.throw "redistBuilderArg.packageName must be set";
 
       # Package source, or null
-      # releaseSource = builtins.throw "redistBuilderArgs.releaseSource must be set";
+      releaseSource = builtins.throw "redistBuilderArg.releaseSource must be set";
 
       # The outputs provided by this package.
-      # outputs = builtins.throw "redistBuilderArgs.outputs must be set";
+      outputs = builtins.throw "redistBuilderArg.outputs must be set";
 
       # TODO(@connorbaker): Document these
-      # supportedRedistSystems = builtins.throw "redistBuilderArgs.supportedRedistSystems must be set";
-      # supportedNixSystems = builtins.throw "redistBuilderArgs.supportedNixSystems must be set";
+      supportedRedistSystems = builtins.throw "redistBuilderArg.supportedRedistSystems must be set";
+      supportedNixSystems = builtins.throw "redistBuilderArg.supportedNixSystems must be set";
     };
 
     # Order is important here so we use a list.
     expectedOutputs = [
       "out"
-      "bin"
-      "include"
-      "lib"
-      "static"
-      "dev"
       "doc"
       "sample"
       "python"
+      "bin"
+      "dev"
+      "include"
+      "lib"
+      "static"
       "stubs"
     ];
 
@@ -286,7 +347,6 @@ in
     outputToPatterns = {
       bin = [ "bin" ];
       dev = [
-        "share/pkgconfig"
         "**/*.pc"
         "**/*.cmake"
       ];
@@ -335,7 +395,6 @@ in
         isRedistSystemAarch64ExplicitlySupported = elem "linux-aarch64" finalAttrs.passthru.supportedRedistSystems;
       in
       {
-        "CUDA support is not enabled" = !config.cudaSupport;
         "Platform is not supported" =
           finalAttrs.src == null || hostRedistSystem == "unsupported" || finalAttrs.meta.platforms == [ ];
       }
@@ -352,13 +411,13 @@ in
   };
 
   meta = {
-    description = "${redistBuilderArgs.releaseName}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";
+    description = "${redistBuilderArg.releaseName}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";
     sourceProvenance = [ sourceTypes.binaryNativeCode ];
     broken =
       warnIfNot config.cudaSupport
         "CUDA support is disabled and you are building a CUDA package (${finalAttrs.finalPackage.name}); expect breakage!"
         (hasAnyTrueValue finalAttrs.passthru.brokenConditions);
-    platforms = redistBuilderArgs.supportedNixSystems;
+    platforms = redistBuilderArg.supportedNixSystems;
     badPlatforms = optionals (hasAnyTrueValue finalAttrs.passthru.badPlatformsConditions) (unique [
       stdenv.buildPlatform.system
       stdenv.hostPlatform.system
@@ -368,12 +427,12 @@ in
       url =
         let
           licensePath =
-            if redistBuilderArgs.licensePath != null then
-              redistBuilderArgs.licensePath
+            if redistBuilderArg.licensePath != null then
+              redistBuilderArg.licensePath
             else
-              "${redistBuilderArgs.packageName}/LICENSE.txt";
+              "${redistBuilderArg.packageName}/LICENSE.txt";
         in
-        "https://developer.download.nvidia.com/compute/${redistBuilderArgs.redistName}/redist/${licensePath}";
+        "https://developer.download.nvidia.com/compute/${redistBuilderArg.redistName}/redist/${licensePath}";
     };
     maintainers = teams.cuda.members;
   };

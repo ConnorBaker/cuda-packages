@@ -7,6 +7,7 @@ let
     majorMinorVersion
     majorMinorPatchVersion
     nvccConfig
+    redistBuilderArg
     redistBuilderArgs
     packageName
     redistSystem
@@ -209,7 +210,7 @@ in
   };
 
   # TODO(@connorbaker): Docs
-  redistBuilderArgs =
+  redistBuilderArg =
     submodule (mkOptionsModule {
       redistName = {
         description = "The name of the redistributable to which this package belongs";
@@ -231,8 +232,12 @@ in
       };
     })
     // {
-      name = "redistBuilderArgs";
+      name = "redistBuilderArg";
     };
+
+  redistBuilderArgs = attrs packageName redistBuilderArg // {
+    name = "redistBuilderArgs";
+  };
 
   /**
     The option type of a redistributable name.
@@ -256,7 +261,7 @@ in
     redists :: OptionType
     ```
   */
-  redists = attrs redistName (attrs version (attrs packageName redistBuilderArgs)) // {
+  redists = attrs redistName (attrs version redistBuilderArgs) // {
     name = "redists";
   };
 
@@ -413,12 +418,11 @@ in
         type = attrs redistName version;
         default = { };
       };
-      packageConfigs = {
+      redistBuilderArgs = {
         description = ''
-          Maps package names from redists to redistBuilderArgs, which are used with `redist-builder` to create
-          packages.
+          A flattened collection of redistBuilderArgs from all redists configured for this instance of the package set.
         '';
-        type = attrs packageName redistBuilderArgs;
+        type = redistBuilderArgs;
       };
     })
     // {

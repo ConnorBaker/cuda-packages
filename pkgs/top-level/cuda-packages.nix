@@ -6,7 +6,7 @@ let
     mapAttrs
     recursiveUpdate
     ;
-  inherit (lib.customisation) callPackagesWith;
+  inherit (lib.customisation) callPackagesWith makeScope;
   inherit (lib.fixedPoints) composeManyExtensions extends;
   inherit (lib.lists) all foldl' map;
   inherit (lib.modules) evalModules;
@@ -22,8 +22,6 @@ let
     addNameToFetchFromGitLikeArgs
     bimap
     dropDots
-    mkCudaPackagesOverrideAttrsDefaultsFn
-    mkCudaPackagesScope
     mkCudaPackagesVersionedName
     mkRealArchitecture
     packagesFromDirectoryRecursive'
@@ -87,11 +85,6 @@ let
 
       cudaNamePrefix = "cuda${majorMinor cudaMajorMinorPatchVersion}";
 
-      overrideAttrsDefaultsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
-        # inherit (final) deduplicateRunpathEntriesHook;
-        inherit cudaNamePrefix;
-      };
-
       # Our package set is either built from a fixed-point function (AKA self-map), or from recursively merging attribute sets.
       # I choose recursively merging attribute sets because our scope is not flat, and with access to only the fixed point,
       # we cannot build nested scopes incrementally (like adding aliases) because later definitions would overwrite earlier ones.
@@ -128,7 +121,7 @@ let
                 dropDot = mkAlias "cudaPackages.flags.dropDot is deprecated, use cudaLibs.utils.dropDots instead" dropDots;
                 isJetsonBuild = mkAlias "cudaPackages.flags.isJetsonBuild is deprecated, use cudaPackages.cudaPackagesConfig.hasJetsonCudaCapability instead" cudaPackagesConfig.hasJetsonCudaCapability;
               };
-              backendStdenv = mkAlias "cudaPackages.backendStdenv has been removed, use stdenv instead" final.stdenv;
+              backendStdenv = mkAlias "cudaPackages.backendStdenv has been removed, use cudaPackages.cudaStdenv instead" finalCudaPackages.cudaStdenv;
               cudaVersion = mkAlias "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" finalCudaPackages.cudaMajorMinorVersion;
               cudaMajorMinorPatchVersion = mkAlias "cudaPackages.cudaMajorMinorPatchVersion is an implementation detail, please use cudaPackages.cudaMajorMinorVersion instead" cudaPackagesConfig.cudaMajorMinorPatchVersion;
               cudaFlags = mkAlias "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
@@ -136,14 +129,14 @@ let
               markForCudatoolkitRootHook = mkAlias "cudaPackages.markForCudatoolkitRootHook has moved, use cudaPackages.markForCudaToolkitRootHook instead" finalCudaPackages.markForCudaToolkitRootHook;
             }
             # Redistributable packages
-            // mapAttrs (const finalCudaPackages.redist-builder) cudaPackagesConfig.packageConfigs
+            // mapAttrs (const finalCudaPackages.redist-builder) cudaPackagesConfig.redistBuilderArgs
           )
           # CUDA version-specific packages
           (
             map (packagesFromDirectoryRecursive' finalCudaPackages.callPackage) cudaPackagesConfig.packagesDirectories
           );
     in
-    mkCudaPackagesScope pkgs.newScope (
+    makeScope pkgs.newScope (
       # User additions are included through cudaPackagesExtensions
       extends (composeManyExtensions final.cudaPackagesExtensions) cudaPackagesFixedPoint
     );

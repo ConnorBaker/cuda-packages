@@ -4,6 +4,7 @@
   cudaLib,
   cudaPackagesConfig,
   cudnn,
+  cuda_nvrtc,
   lib,
   libcudla ? null, # only for Jetson
   patchelf,
@@ -14,16 +15,18 @@ let
   inherit (cudaLib.utils) majorMinorPatch;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) optionals;
-  inherit (lib.meta) getExe;
   inherit (lib.strings) concatStringsSep;
 in
 finalAttrs: prevAttrs: {
   allowFHSReferences = true;
 
+  nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ patchelf ];
+
   buildInputs =
     prevAttrs.buildInputs or [ ]
     ++ [
       (getLib cudnn)
+      (getLib cuda_nvrtc)
       cuda_cudart
     ]
     ++ optionals hasJetsonCudaCapability [ libcudla ];
@@ -43,19 +46,21 @@ finalAttrs: prevAttrs: {
     + ''
       for dir in bin lib; do
         [[ -L "$dir" ]] || continue
-        nixLog "replacing symlink $dir with targets/${targetString}/$dir"
-        rm "$dir"
-        mv "targets/${targetString}/$dir" "$dir"
+        nixLog "replacing symlink $NIX_BUILD_TOP/$sourceRoot/$dir with $NIX_BUILD_TOP/$sourceRoot/targets/${targetString}/$dir"
+        rm --verbose "$NIX_BUILD_TOP/$sourceRoot/$dir"
+        mv --verbose --no-clobber "$NIX_BUILD_TOP/$sourceRoot/targets/${targetString}/$dir" "$NIX_BUILD_TOP/$sourceRoot/$dir"
       done
+      unset -v dir
     ''
     # Remove symlinks if they exist
     + ''
       for dir in include samples; do
-        if [[ -L "targets/${targetString}/$dir" ]]; then
-          nixLog "removing symlink targets/${targetString}/$dir"
-          rm "targets/${targetString}/$dir"
+        if [[ -L "$NIX_BUILD_TOP/$sourceRoot/targets/${targetString}/$dir" ]]; then
+          nixLog "removing symlink $NIX_BUILD_TOP/$sourceRoot/targets/${targetString}/$dir"
+          rm --verbose "$NIX_BUILD_TOP/$sourceRoot/targets/${targetString}/$dir"
         fi
       done
+      unset -v dir
     '';
 
   autoPatchelfIgnoreMissingDeps =
@@ -70,16 +75,16 @@ finalAttrs: prevAttrs: {
     # NOTE(@connorbaker): This is shared with the tensorrt-oss package, with the `out` output swapped with `include`.
     # When updating one, check if the other should be updated.
     + ''
-      mkdir "$include/include/onnx"
-      pushd "$include/include"
+      mkdir "''${!outputInclude:?}/include/onnx"
+      pushd "''${!outputInclude:?}/include" >/dev/null
       nixLog "creating symlinks for Onnx header files"
-      ln -srt "$include/include/onnx/" NvOnnx*.h
-      popd
+      ln -srt "''${!outputInclude:?}/include/onnx/" NvOnnx*.h
+      popd >/dev/null
     ''
-    # Move the python directory, which contains header files to the include output.
+    # Move the python directory, which contains header files, to the include output.
     + ''
       nixLog "moving python directory to include output"
-      mv "$out/python" "$include/python"
+      moveToOutput python "''${!outputInclude:?}"
     '';
 
   # Tell autoPatchelf about runtime dependencies.
@@ -89,10 +94,17 @@ finalAttrs: prevAttrs: {
     in
     prevAttrs.postFixup or ""
     + ''
-      "${getExe patchelf}" --add-needed libnvinfer.so \
-        "$lib/lib/libnvinfer.so.${versionTriple}" \
-        "$lib/lib/libnvinfer_plugin.so.${versionTriple}" \
-        "$lib/lib/libnvinfer_builder_resource.so.${versionTriple}"
+      nixLog "patchelf-ing ''${!outputLib:?}/lib/libnvinfer.so.* with runtime dependencies"
+      patchelf \
+        --add-needed libnvinfer.so \
+        "''${!outputLib:?}/lib/libnvinfer.so.${versionTriple}" \
+        "''${!outputLib:?}/lib/libnvinfer_plugin.so.${versionTriple}" \
+        "''${!outputLib:?}/lib/libnvinfer_builder_resource.so.${versionTriple}"
+      nixLog "patchelf-ing ''${!outputLib:?}/lib/libnvinfer.so with runtime dependencies"
+      patchelf \
+        "''${!outputLib:?}/lib/libnvinfer.so" \
+        --add-needed libnvrtc.so \
+        --add-needed libnvrtc-builtins.so
     '';
 
   passthru = prevAttrs.passthru or { } // {

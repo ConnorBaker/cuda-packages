@@ -143,17 +143,16 @@ let
 
       # TODO: Document requirement that hooks both have an attribute path ending with `Hook` and a `name` attribute
       # ending with `-hook`, and that setup hooks are all top-level.
-      setup-hooks = concatMap (
-        attrName:
-        let
-          attrValue = cudaPackages.${attrName};
-        in
-        optionals (hasSuffix "Hook" attrName && hasSuffix "-hook" attrValue.name) [ attrValue ]
-      ) (attrNames cudaPackages);
+      setup-hooks = [
+        cudaPackages.cudaHook
+        cudaPackages.cudaRunpathFixupHook
+        cudaPackages.markForCudaToolkitRootHook
+        cudaPackages.nvccHook
+      ];
 
       redists = pipe cudaPackages [
-        # Keep only the attribute names in cudaPackages which come from packageConfigs
-        (intersectAttrs cudaPackages.cudaPackagesConfig.packageConfigs)
+        # Keep only the attribute names in cudaPackages which come from redistBuilderArgs
+        (intersectAttrs cudaPackages.cudaPackagesConfig.redistBuilderArgs)
         attrValues
         # Filter out packages unavailable for the platform
         (filter (pkg: pkg.meta.available))

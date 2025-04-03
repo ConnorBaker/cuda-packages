@@ -10,7 +10,11 @@ let
   inherit (cudaPackagesConfig) hostRedistSystem;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
-  inherit (lib.trivial) id;
+  inherit (lib.trivial) id warnIfNot;
+
+  # NOTE: Does not depend on the CUDA package set, so do not use cudaNamePrefix to avoid causing
+  # unnecessary / duplicate store paths.
+  name = "markForCudaToolkitRootHook";
 
   platforms = [
     "aarch64-linux"
@@ -24,11 +28,18 @@ let
   isBadPlatform = any id (attrValues badPlatformsConditions);
 in
 makeSetupHook {
-  name = "markForCudaToolkitRootHook";
-  passthru = { inherit badPlatformsConditions; };
+  inherit name;
+  passthru = {
+    inherit badPlatformsConditions;
+    brokenConditions = { };
+  };
   meta = {
     description = "Setup hook which marks CUDA packages for inclusion in CUDA environment variables";
     inherit badPlatforms platforms;
+    broken =
+      warnIfNot config.cudaSupport
+        "CUDA support is disabled and you are building a CUDA package (${name}); expect breakage!"
+        false;
     maintainers = lib.teams.cuda.members;
   };
 } ./markForCudaToolkitRootHook.bash

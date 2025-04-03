@@ -26,7 +26,7 @@ prevAttrs: {
   postFixup =
     prevAttrs.postFixup or ""
     + ''
-      pushd "$dev/lib/cmake/cudss"
+      pushd "''${!outputDev:?}/lib/cmake/cudss" >/dev/null
 
       nixLog "patching cudss-config.cmake to fix relative paths"
       substituteInPlace cudss-config.cmake \
@@ -43,6 +43,6 @@ prevAttrs: {
           '"''${cudss_LIBRARY_DIR}/libcudss_static.a"' \
           '"${placeholder "static"}/lib/libcudss_static.a"'
 
-      popd
+      popd >/dev/null
     '';
 }

@@ -42,14 +42,13 @@ let
 
   mkWarningsString = foldl' (warningsString: warning: warningsString + "\n- " + warning) "";
 
-  # TODO(@connorbaker): Rename to reflect that packageConfigs is a list of redistBuilderArgs
-  mkPackageConfigsAssertWarn =
+  mkRedistBuilderArgsAssertWarn =
     cudaPackagesConfig:
     let
       inherit (cudaPackagesConfig) assertions cudaMajorMinorPatchVersion warnings;
       failedAssertionsString = mkFailedAssertionsString assertions;
       warningsString = mkWarningsString warnings;
-      packageConfigs = mkMerge (
+      redistBuilderArgs = mkMerge (
         concatMap (
           redistName:
           let
@@ -64,9 +63,9 @@ let
     if failedAssertionsString != "" then
       throw "\nFailed assertions when constructing CUDA ${cudaMajorMinorPatchVersion} package set:${failedAssertionsString}"
     else if warningsString != "" then
-      warn "\nWarnings when constructing CUDA ${cudaMajorMinorPatchVersion} package set:${warningsString}" packageConfigs
+      warn "\nWarnings when constructing CUDA ${cudaMajorMinorPatchVersion} package set:${warningsString}" redistBuilderArgs
     else
-      packageConfigs;
+      redistBuilderArgs;
 
   mkCudaPackagesConfig =
     cudaPackagesConfig:
@@ -177,7 +176,7 @@ let
       hasAcceleratedCudaCapability = requestedAcceleratedCudaCapabilities != [ ];
       hostRedistSystem = getRedistSystem cudaPackagesConfig.hasJetsonCudaCapability cudaConfig.hostNixSystem;
       redists.cuda = cudaPackagesConfig.cudaMajorMinorPatchVersion;
-      packageConfigs = mkPackageConfigsAssertWarn cudaPackagesConfig;
+      redistBuilderArgs = mkRedistBuilderArgsAssertWarn cudaPackagesConfig;
     };
 in
 {

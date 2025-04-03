@@ -2,6 +2,7 @@
   cmake,
   cuda_cudart,
   cuda_nvcc,
+  cudaStdenv,
   fetchpatch2,
   flags,
   lib,
@@ -10,7 +11,7 @@
   stdenvNoCC,
 }:
 let
-  inherit (cuda_nvcc.passthru.nvccStdenv) cc;
+  inherit (cudaStdenv) cc;
   inherit (lib.attrsets) mapAttrs optionalAttrs recurseIntoAttrs;
   inherit (lib.fixedPoints) composeExtensions toExtension;
   inherit (lib.lists) optionals;

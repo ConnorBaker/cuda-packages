@@ -63,7 +63,8 @@ let
   ];
 in
 symlinkJoin {
-  pname = "cudatoolkit";
+  # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
+  pname = "${cudaNamePrefix}-cudatoolkit";
   version = cudaMajorMinorVersion;
   paths = concatMap getAllOutputs allPackages;
 

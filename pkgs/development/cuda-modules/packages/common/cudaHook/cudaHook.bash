@@ -11,6 +11,8 @@ nixLog "added cudaSetupEnvironmentVariables to preConfigureHooks"
 preConfigureHooks+=(cudaSetupCMakeFlags)
 nixLog "added cudaSetupCMakeFlags to preConfigureHooks"
 
+# NOTE: setup.sh uses recordPropagatedDependencies in fixupPhase, which overwrites dependency files, so we must run
+# in postFixup.
 postFixupHooks+=(cudaPropagateLibraries)
 nixLog "added cudaPropagateLibraries to postFixupHooks"
 
@@ -70,27 +72,27 @@ cudaSetupCMakeFlags() {
 }
 
 cudaPropagateLibraries() {
-  nixInfoLog "running with cudaPropagateToOutput=$cudaPropagateToOutput cudaHostPathsSeen=${!cudaHostPathsSeen[*]}"
+  nixInfoLog "running with cudaPropagateToOutput=${cudaPropagateToOutput:-} cudaHostPathsSeen=${!cudaHostPathsSeen[*]}"
 
   [[ -z ${cudaPropagateToOutput:-} ]] && return 0
 
-  mkdir -p "${!cudaPropagateToOutput}/nix-support"
+  mkdir -p "${!cudaPropagateToOutput:?}/nix-support"
   # One'd expect this should be propagated-bulid-build-deps, but that doesn't seem to work
-  printWords "@cudaHook@" >>"${!cudaPropagateToOutput}/nix-support/propagated-native-build-inputs"
-  nixLog "added cudaHook to the propagatedNativeBuildInputs of output $cudaPropagateToOutput"
+  printWords "@cudaHook@" >>"${!cudaPropagateToOutput:?}/nix-support/propagated-native-build-inputs"
+  nixLog "added cudaHook to the propagatedNativeBuildInputs of output ${!cudaPropagateToOutput:?}"
 
   local propagatedBuildInputs=("${!cudaHostPathsSeen[@]}")
   local output
   for output in $(getAllOutputNames); do
-    if [[ $output != "$cudaPropagateToOutput" ]]; then
-      propagatedBuildInputs+=("${!output}")
+    if [[ $output != "${cudaPropagateToOutput:?}" ]]; then
+      propagatedBuildInputs+=("${!output:?}")
     fi
     break
   done
 
   # One'd expect this should be propagated-host-host-deps, but that doesn't seem to work
-  printWords "${propagatedBuildInputs[@]}" >>"${!cudaPropagateToOutput}/nix-support/propagated-build-inputs"
-  nixLog "added ${propagatedBuildInputs[*]} to the propagatedBuildInputs of output $cudaPropagateToOutput"
+  printWords "${propagatedBuildInputs[@]}" >>"${!cudaPropagateToOutput:?}/nix-support/propagated-build-inputs"
+  nixLog "added ${propagatedBuildInputs[*]} to the propagatedBuildInputs of output ${!cudaPropagateToOutput:?}"
 
   return 0
 }

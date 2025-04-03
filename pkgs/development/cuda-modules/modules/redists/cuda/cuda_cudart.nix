@@ -47,7 +47,7 @@ prevAttrs: {
         nixLog "patching $path"
         sed -i \
           -e "s|^cudaroot\s*=.*\$||" \
-          -e "s|^libdir\s*=.*/lib\$|libdir=''${stubs:?}/lib/stubs|" \
+          -e "s|^libdir\s*=.*/lib\$|libdir=''${!outputStubs:?}/lib/stubs|" \
           -e "s|^includedir\s*=.*/include\$|includedir=''${!outputInclude:?}/include|" \
           -e "s|^Libs\s*:\(.*\)\$|Libs: \1 -Wl,-rpath,${addDriverRunpath.driverLink}/lib|" \
           "$path"
@@ -63,13 +63,13 @@ prevAttrs: {
     # Cf. https://gitlab.kitware.com/cmake/cmake/-/issues/25536
     # NOTE: Add symlinks inside $stubs/lib so autoPatchelfHook can find them -- it doesn't recurse into subdirectories.
     + ''
-      pushd "$stubs/lib/stubs"
+      pushd "''${!outputStubs:?}/lib/stubs" >/dev/null
       if [[ -f libcuda.so && ! -f libcuda.so.1 ]]; then
         nixLog "creating versioned symlink for libcuda.so stub"
         ln -sr libcuda.so libcuda.so.1
       fi
       nixLog "creating symlinks for stubs in lib directory"
-      ln -srt "$stubs/lib/" *.so *.so.*
-      popd
+      ln -srt "''${!outputStubs:?}/lib/" *.so *.so.*
+      popd >/dev/null
     '';
 }

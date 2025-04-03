@@ -41,9 +41,6 @@ let
     drvAttrPathsStrategyImpl
     flattenAttrs
     mkCmakeCudaArchitecturesString
-    mkCudaPackagesCallPackage
-    mkCudaPackagesOverrideAttrsDefaultsFn
-    mkCudaPackagesScope
     mkGencodeFlag
     mkOptions
     mkRealArchitecture
@@ -525,89 +522,6 @@ in
     :::
   */
   mkCudaVariant = version: "cuda${major version}";
-
-  /**
-    TODO:
-  */
-  # TODO(@connorbaker):
-  # - Aliases for backendStdenv, backendStdenv.cc.
-  # - Remove stdenv = cudaStdenv and update comment for __structuredAttrs = false.
-  # Manual definition of callPackage which will set certain attributes for us within the package set.
-  # Definition comes from the implementation of lib.customisation.makeScope:
-  # https://github.com/NixOS/nixpkgs/blob/9f4fd5626d7aa9a376352fc244600c894b5a0c79/lib/customisation.nix#L608
-  mkCudaPackagesCallPackage =
-    finalCudaPackages:
-    let
-      inherit (finalCudaPackages) newScope;
-      overrideAttrsFn = mkCudaPackagesOverrideAttrsDefaultsFn {
-        inherit (finalCudaPackages) cudaNamePrefix;
-        # inherit (finalCudaPackages.pkgs)
-        #   deduplicateRunpathEntriesHook
-        #   ;
-      };
-    in
-    fn: args:
-    let
-      result = newScope { } fn args;
-    in
-    if isAttrs result && isDerivation result then result.overrideAttrs overrideAttrsFn else result;
-
-  /**
-    TODO:
-  */
-  mkCudaPackagesOverrideAttrsDefaultsFn =
-    {
-      cudaNamePrefix,
-    # deduplicateRunpathEntriesHook,
-    }:
-    let
-      conditionallyAddHooks =
-        prevAttrs: depListName:
-        let
-          prevDepList = prevAttrs.${depListName} or [ ];
-        in
-        prevDepList;
-    in
-    # We add a hook to deduplicate runpath entries.
-    # ++ optionals (!(elem deduplicateRunpathEntriesHook prevDepList)) [
-    #   deduplicateRunpathEntriesHook
-    # ];
-    finalAttrs: prevAttrs: {
-      # Default __structuredAttrs and strictDeps to true.
-      __structuredAttrs = prevAttrs.__structuredAttrs or true;
-      strictDeps = prevAttrs.strictDeps or true;
-
-      # Name should be prefixed by cudaNamePrefix to create more descriptive path names.
-      name =
-        if finalAttrs ? pname && finalAttrs ? version then
-          "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}"
-        # TODO(@connorbaker): Can't make the final name depend on itself.
-        else if (!(hasPrefix cudaNamePrefix prevAttrs.name)) then
-          "${cudaNamePrefix}-${prevAttrs.name}"
-        else
-          prevAttrs.name;
-
-      nativeBuildInputs = conditionallyAddHooks prevAttrs "nativeBuildInputs";
-
-      propagatedBuildInputs = conditionallyAddHooks prevAttrs "propagatedBuildInputs";
-    };
-
-  /**
-    TODO:
-  */
-  # Taken and modified from:
-  # https://github.com/NixOS/nixpkgs/blob/9f4fd5626d7aa9a376352fc244600c894b5a0c79/lib/customisation.nix#L603-L613
-  mkCudaPackagesScope =
-    newScope: f:
-    let
-      finalCudaPackages = f finalCudaPackages // {
-        newScope = scope: newScope (finalCudaPackages // scope);
-        callPackage = mkCudaPackagesCallPackage finalCudaPackages;
-        overrideScope = g: mkCudaPackagesScope newScope (extends g f);
-        packages = f;
-      };
-    in
-    finalCudaPackages;
 
   /**
     Utility function to generate a set of badPlatformsConditions for missing packages.

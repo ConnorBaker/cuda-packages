@@ -1,4 +1,19 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  manifest,
+  ...
+}:
+let
+  fullLib = [
+    "out"
+    "dev"
+    "include"
+    "lib"
+    "static"
+  ];
+  fullLibWithStubs = fullLib ++ [ "stubs" ];
+in
 {
   cuda_cccl.outputs = [
     "out"
@@ -7,29 +22,12 @@
     "lib"
   ];
   cuda_compat = { };
-  cuda_cudart.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
+  cuda_cudart.outputs = fullLibWithStubs;
   cuda_cuobjdump.outputs = [
     "out"
     "bin"
   ];
-  cuda_cupti.outputs =
-    [
-      "out"
-      "dev"
-      "include"
-      "lib"
-      "sample"
-    ]
-    ++ lib.optionals (config.hostNixSystem == "x86_64-linux") [
-      "static"
-    ];
+  cuda_cupti.outputs = fullLib ++ lib.optionals (config.hostNixSystem == "x86_64-linux") [ "static" ];
   cuda_cuxxfilt.outputs = [
     "out"
     "bin"
@@ -76,14 +74,7 @@
     "out"
     "bin"
   ];
-  cuda_nvrtc.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
+  cuda_nvrtc.outputs = fullLibWithStubs;
   cuda_nvtx.outputs = [
     "out"
     "dev"
@@ -116,15 +107,7 @@
     "include"
     "lib"
   ];
-  imex = { };
-  libcublas.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
+  libcublas.outputs = fullLibWithStubs;
   libcudla.outputs = [
     "out"
     "dev"
@@ -132,85 +115,23 @@
     "lib"
     "stubs"
   ];
-  libcufft.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
-  libcufile.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "sample"
-    "static"
-  ];
-  libcurand.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
-  libcusolver.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
-  libcusparse.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
-  libnpp.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
+  libcufft.outputs = fullLibWithStubs;
+  libcufile.outputs = fullLib ++ [ "sample" ];
+  libcurand.outputs = fullLibWithStubs;
+  libcusolver.outputs = fullLibWithStubs;
+  libcusparse.outputs = fullLibWithStubs;
+  libnpp.outputs = fullLibWithStubs;
   libnvidia_nscq.outputs = [
     "out"
     "lib"
   ];
-  libnvjitlink.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
-  libnvjpeg.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
+  libnvjitlink.outputs = fullLibWithStubs;
+  libnvjpeg.outputs = fullLibWithStubs;
   nsight_compute.outputs = [
     "out"
     "bin"
   ];
-  nsight_systems.outputs = [
-    "out"
-    "dev"
-    "include"
-    "lib"
-    "static"
-    "stubs"
-  ];
+  nsight_systems.outputs = fullLibWithStubs;
   nvidia_fs = { };
 }
+// lib.optionalAttrs (manifest ? imex) { imex = { }; }

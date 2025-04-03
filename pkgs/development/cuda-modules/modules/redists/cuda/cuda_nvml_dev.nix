@@ -15,7 +15,7 @@ finalAttrs: prevAttrs: {
   postInstall =
     prevAttrs.postInstall or ""
     + optionalString (elem "stubs" finalAttrs.outputs) ''
-      pushd "$stubs/lib/stubs"
+      pushd "''${!outputStubs:?}/lib/stubs" >/dev/null
       if [[ -f libnvidia-ml.so && ! -f libnvidia-ml.so.1 ]]; then
         nixLog "creating versioned symlink for libnvidia-ml.so stub"
         ln -sr libnvidia-ml.so libnvidia-ml.so.1
@@ -25,7 +25,7 @@ finalAttrs: prevAttrs: {
         ln -sr libnvidia-ml.a libnvidia-ml.a.1
       fi
       nixLog "creating symlinks for stubs in lib directory"
-      ln -srt "$stubs/lib/" *.so *.so.*
-      popd
+      ln -srt "''${!outputStubs:?}/lib/" *.so *.so.*
+      popd >/dev/null
     '';
 }

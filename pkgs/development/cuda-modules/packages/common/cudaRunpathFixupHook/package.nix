@@ -6,6 +6,7 @@
   config,
   cuda_compat,
   cuda_cudart,
+  cudaNamePrefix,
   cudaPackagesConfig,
   lib,
   makeSetupHook,
@@ -14,8 +15,11 @@ let
   inherit (cudaPackagesConfig) hasJetsonCudaCapability hostRedistSystem;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
-  inherit (lib.trivial) id;
+  inherit (lib.trivial) id warnIfNot;
   inherit (lib.strings) optionalString;
+
+  # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
+  name = "${cudaNamePrefix}-cudaRunpathFixupHook";
 
   substitutions = {
     cudaCompatLibDir = optionalString (
@@ -40,7 +44,7 @@ in
 # TODO: Are there other libraries which provide stubs which we should replace with the driver runpath?
 # E.g., libnvidia-ml.so is provided by a stub library in cuda_nvml_dev.
 makeSetupHook {
-  name = "cudaRunpathFixupHook";
+  inherit name;
 
   propagatedBuildInputs = [
     # Used in the setup hook
@@ -52,6 +56,7 @@ makeSetupHook {
 
   passthru = {
     inherit badPlatformsConditions substitutions;
+    brokenConditions = { };
     tests = {
       cudaRunpathFixup = callPackages ./tests/cudaRunpathFixup.nix { };
       cudaRunpathFixupHookOrderCheckPhase =
@@ -63,6 +68,10 @@ makeSetupHook {
   meta = {
     description = "Setup hook which ensures correct ordering of CUDA-related runpaths";
     inherit badPlatforms platforms;
+    broken =
+      warnIfNot config.cudaSupport
+        "CUDA support is disabled and you are building a CUDA package (${name}); expect breakage!"
+        false;
     maintainers = lib.teams.cuda.members;
   };
 } ./cudaRunpathFixupHook.bash

@@ -6,6 +6,7 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
+  cudaNamePrefix,
   fetchFromGitHub,
   gitUpdater,
   lib,
@@ -20,6 +21,11 @@ let
   inherit (lib.lists) optionals;
 in
 stdenv.mkDerivation (finalAttrs: {
+  __structuredAttrs = true;
+  strictDeps = true;
+
+  # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
+  name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "nccl-tests";
   version = "2.13.12";
 
