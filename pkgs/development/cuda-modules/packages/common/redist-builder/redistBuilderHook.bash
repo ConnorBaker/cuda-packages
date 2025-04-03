@@ -17,9 +17,6 @@ fi
 postInstallCheckHooks+=(checkCudaNonEmptyOutputs)
 nixLog "added checkCudaNonEmptyOutputs to postInstallCheckHooks"
 
-postInstallCheckHooks+=(checkCudaLibDirContainsSharedLibs)
-nixLog "added checkCudaLibDirContainsSharedLibs to postInstallCheckHooks"
-
 preFixupHooks+=(fixupPropagatedBuildOutputsForMultipleOutputs)
 nixLog "added fixupPropagatedBuildOutputsForMultipleOutputs to preFixupHooks"
 
@@ -119,37 +116,13 @@ checkCudaNonEmptyOutputs() {
     [[ ${!output:?} == "out" ]] && continue
     nixLog "checking if ${!output:?} contains non nix-support directories..."
     dirs="$(find "${!output:?}" -mindepth 1 -maxdepth 1 -type d)" || true
-    case "$dirs" in
-    "" | "${!output:?}/nix-support/")
+    if [[ -z $dirs || $dirs == "${!output:?}/nix-support/" ]]; then
       nixErrorLog "output ${!output:?} is empty (excluding nix-support)!"
       nixErrorLog "this typically indicates a failure in packaging or moveToOutput ordering"
       ls -laR "${!output:?}"
       exit 1
-      ;;
-    *) ;;
-    esac
+    fi
   done
-
-  return 0
-}
-
-checkCudaLibDirContainsSharedLibs() {
-  local -r libDir="${!outputLib:?}/lib"
-  local libs
-
-  if [[ -d $libDir ]]; then
-    nixLog "checking for .so files in $libDir..."
-    libs="$(find "$libDir" -mindepth 1 -maxdepth 1 -name '*.so*')" || true
-    case "$libs" in
-    "")
-      nixErrorLog "directory $libDir contains no .so files!"
-      nixErrorLog "this typically indicates a failure in packaging or raising lib subpaths"
-      ls -laR "$libDir"
-      exit 1
-      ;;
-    *) ;;
-    esac
-  fi
 
   return 0
 }

@@ -24,6 +24,7 @@ cudaRunpathFixupHookOrderCheck() {
 
 cudaRunpathFixHookOrder() {
   nixErrorLog "attempting to fix the hook order"
+  local hook
   local -a newPostFixupHooks=()
   # We know that:
   # 1. autoPatchelfPostFixup or 'autoFixElfFiles addDriverRunpath' is in postFixupHooks.

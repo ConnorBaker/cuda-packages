@@ -56,26 +56,27 @@ in
 
   # An ad hoc replacement for
   # https://github.com/ConnorBaker/cuda-redist-find-features/issues/11
-  env = prevAttrs.env or { } // {
-    rmPatterns = toString [
-      "nsight-systems/*/*/lib{arrow,jpeg}*"
-      "nsight-systems/*/*/lib{ssl,ssh,crypto}*"
-      "nsight-systems/*/*/libboost*"
-      "nsight-systems/*/*/libexec"
-      "nsight-systems/*/*/libQt6*"
-      "nsight-systems/*/*/libstdc*"
-      "nsight-systems/*/*/Mesa"
-      "nsight-systems/*/*/python/bin/python"
-    ];
-  };
+  rmPatterns = [
+    "nsight-systems/*/*/lib{arrow,jpeg}*"
+    "nsight-systems/*/*/lib{ssl,ssh,crypto}*"
+    "nsight-systems/*/*/libboost*"
+    "nsight-systems/*/*/libexec"
+    "nsight-systems/*/*/libQt6*"
+    "nsight-systems/*/*/libstdc*"
+    "nsight-systems/*/*/Mesa"
+    "nsight-systems/*/*/python/bin/python"
+  ];
 
   postPatch =
     prevAttrs.postPatch or ""
     + ''
-      for path in $rmPatterns; do
-        nixLog "deleting files matching $path"
-        rm -r "$path"
+      for pattern in "''${rmPatterns[@]}"; do
+        for path in $pattern; do
+          rm -rv $path
+        done
       done
+      unset -v path
+      unset -v pattern
       patchShebangs nsight-systems
     '';
 
@@ -125,14 +126,14 @@ in
     prevAttrs.postInstall or ""
     # Patch bin output
     + ''
-      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/host-linux-*' "$bin"
-      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/target-linux-*' "$bin"
+      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/host-linux-*' "''${!outputBin:?}"
+      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/target-linux-*' "''${!outputBin:?}"
       nixLog "patching nsight-systems wrapper scripts"
-      substituteInPlace "$bin/bin/nsys" "$bin/bin/nsys-ui" \
+      substituteInPlace "''${!outputBin:?}/bin/nsys" "''${!outputBin:?}/bin/nsys-ui" \
         --replace-fail \
           "nsight-systems-#VERSION_RSPLIT#" \
           "nsight-systems/${majorMinorPatchVersion}"
-      for qtlib in "$bin/nsight-systems/${majorMinorPatchVersion}/host-linux-x64/Plugins"/*/libq*.so; do
+      for qtlib in "''${!outputBin:?}/nsight-systems/${majorMinorPatchVersion}/host-linux-x64/Plugins"/*/libq*.so; do
         qtdir="$(basename "$(dirname "$qtlib")")"
         filename="$(basename "$qtlib")"
         for qtpkgdir in ${
@@ -149,16 +150,20 @@ in
           fi
         done
       done
+      unset -v qtlib
+      unset -v qtdir
+      unset -v filename
+      unset -v qtpkgdir
     ''
     # Move docs to doc output
     + ''
-      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/docs' "$doc"
+      moveToOutput 'nsight-systems/${majorMinorPatchVersion}/docs' "''${!outputDoc:?}"
     ''
     # Remove symlinks in default output. Do so by binary name, so we get an error from rmdir if the binary directory
     # isn't empty.
     + ''
       nixLog "removing symlinks in default output"
-      rm "$out/nsight-systems/${majorMinorPatchVersion}/bin/"nsys*
-      rmdir "$out/nsight-systems/${majorMinorPatchVersion}/bin"
+      rm "''${out:?}/nsight-systems/${majorMinorPatchVersion}/bin/"nsys*
+      rmdir "''${out:?}/nsight-systems/${majorMinorPatchVersion}/bin"
     '';
 }

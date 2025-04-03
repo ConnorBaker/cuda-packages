@@ -52,6 +52,7 @@ nvccHookOrderCheck() {
 
 nvccFixHookOrder() {
   nixErrorLog "attempting to fix the hook order"
+  local hook
   local -a newPostFixupHooks=()
   # We know that:
   # 1. autoPatchelfPostFixup is in postFixupHooks.
@@ -173,12 +174,13 @@ nvccRunpathCheck() {
   getRunpathEntries "$path" rpathEntries
   local -A rpathEntryOccurrences=()
   computeFrequencyMap rpathEntries rpathEntryOccurrences
+  local forbiddenEntry
 
   # NOTE: We do not automatically patch out the offending entry because it is typically a sign of a larger issue.
   local -i hasForbiddenEntry=0
   for forbiddenEntry in "${nvccForbiddenHostCompilerRunpathEntries[@]}"; do
     if ((rpathEntryOccurrences["$forbiddenEntry"])); then
-      nixErrorLog "forbidden path $forbiddenEntry exists in run path of $path"
+      nixErrorLog "forbidden path $forbiddenEntry exists in run path of $path: ${rpathEntries[*]}"
       hasForbiddenEntry=1
     fi
   done
