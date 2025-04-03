@@ -92,74 +92,15 @@ in
   # src :: null | Derivation
   src = redistBuilderArg.releaseSource;
 
-  postUnpack = ''
-    nixLog "checking for $NIX_BUILD_TOP/$sourceRoot/lib/${cudaMajorVersion}..."
-    if [[ -d "$NIX_BUILD_TOP/$sourceRoot/lib/${cudaMajorVersion}" ]]; then
-      pushd "$NIX_BUILD_TOP/$sourceRoot" >/dev/null
-      mv \
-        --verbose \
-        --no-clobber \
-        "$PWD/lib/${cudaMajorVersion}" \
-        "$PWD/lib-new"
-      rm --recursive "$PWD/lib" || {
-        nixErrorLog "could not delete $PWD/lib: $(ls -laR "$PWD/lib")"
-        exit 1
-      }
-      mv \
-        --verbose \
-        --no-clobber \
-        "$PWD/lib-new" \
-        "$PWD/lib"
-      popd >/dev/null
-    fi
-  '';
-
-  postPatch =
-    # Pkg-config's setup hook expects configuration files in $out/share/pkgconfig
-    ''
-      for path in "$NIX_BUILD_TOP/$sourceRoot"/{pkg-config,pkgconfig}; do
-        [[ -d $path ]] || continue
-        mkdir -p "$NIX_BUILD_TOP/$sourceRoot/share/pkgconfig"
-        mv \
-          --verbose \
-          --no-clobber \
-          --target-directory "$NIX_BUILD_TOP/$sourceRoot/share/pkgconfig" \
-          "$path"/*
-        rm --recursive --dir "$path" || {
-          nixErrorLog "$path contains non-empty directories: $(ls -laR "$path")"
-          exit 1
-        }
-      done
-      unset -v path
-    ''
-    # Rewrite FHS paths with store paths
-    # NOTE: output* fall back to out if the corresponding output isn't defined.
-    + ''
-      for pc in "$NIX_BUILD_TOP/$sourceRoot"/share/pkgconfig/*.pc; do
-        nixLog "patching $pc"
-        sed -i \
-          -e "s|^cudaroot\s*=.*\$|cudaroot=''${!outputDev:?}|" \
-          -e "s|^libdir\s*=.*/lib\$|libdir=''${!outputLib:?}/lib|" \
-          -e "s|^includedir\s*=.*/include\$|includedir=''${!outputDev:?}/include|" \
-          "$pc"
-      done
-      unset -v pc
-    ''
-    # Generate unversioned names.
-    # E.g. cuda-11.8.pc -> cuda.pc
-    + ''
-      for pc in "$NIX_BUILD_TOP/$sourceRoot"/share/pkgconfig/*-"${cudaMajorMinorVersion}.pc"; do
-        nixLog "creating unversioned symlink for $pc"
-        ln -s "$(basename "$pc")" "''${pc%-${cudaMajorMinorVersion}.pc}".pc
-      done
-      unset -v pc
-    '';
+  # Required for the hook.
+  inherit cudaMajorMinorVersion cudaMajorVersion;
 
   # We do need some other phases, like configurePhase, so the multiple-output setup hook works.
   dontBuild = true;
 
   nativeBuildInputs =
     [
+      ./redistBuilderHook.bash
       autoPatchelfHook
       # This hook will make sure libcuda can be found
       # in typically /lib/opengl-driver by adding that
@@ -197,6 +138,7 @@ in
   # the multiple-outputs setup hook.
   # NOTE: moveToOutput operates on all outputs:
   # https://github.com/NixOS/nixpkgs/blob/2920b6fc16a9ed5d51429e94238b28306ceda79e/pkgs/build-support/setup-hooks/multiple-outputs.sh#L105-L107
+  # NOTE: installPhase is not moved into the builder hook because we do a lot of Nix templating.
   installPhase =
     let
       mkMoveToOutputCommand =
@@ -230,71 +172,6 @@ in
 
   doInstallCheck = true;
   allowFHSReferences = false;
-  postInstallCheck = ''
-    if [[ -z "''${allowFHSReferences-}" ]]; then
-      nixLog "checking for FHS references..."
-      firstMatches="$(grep --max-count=5 --recursive --exclude=LICENSE /usr/ "''${outputPaths[@]}")" || true
-      if [[ -n "$firstMatches" ]]; then
-        nixErrorLog "Detected the references to /usr: $firstMatches"
-        exit 1
-      fi
-      unset -v firstMatches
-    fi
-
-    for output in $(getAllOutputNames); do
-      [[ "''${!output:?}" == "out" ]] && continue
-      nixLog "checking if "''${!output:?}" contains non nix-support directories..."
-      case "$(find "''${!output:?}" -mindepth 1 -maxdepth 1 -type d)" in
-      "" | "''${!output:?}/nix-support/")
-        nixErrorLog "output $output is empty (excluding nix-support)!"
-        nixErrorLog "this typically indicates a failure in packaging or moveToOutput ordering"
-        ls -laR "''${!output:?}"
-        exit 1
-        ;;
-      *) ;;
-      esac
-    done
-    unset -v output
-
-    if [[ -d "''${!outputLib:?}/lib" ]]; then
-      nixLog "checking for .so files in ''${!outputLib:?}/lib..."
-      case "$(find "''${!outputLib:?}/lib" -mindepth 1 -maxdepth 1 -name '*.so*')" in
-      "")
-        nixErrorLog "directory ''${!outputLib:?}/lib contains no .so files!"
-        nixErrorLog "this typically indicates a failure in packaging or raising lib subpaths"
-        ls -laR "''${!outputLib:?}/lib"
-        exit 1
-        ;;
-      *) ;;
-      esac
-    fi
-  '';
-
-  # TODO(@connorbaker): https://github.com/NixOS/nixpkgs/issues/323126.
-  # _multioutPropagateDev() currently expects a space-separated string rather than an array.
-  # Because it is a postFixup hook, we correct it in preFixup.
-  preFixup = ''
-    nixLog "converting propagatedBuildOutputs to a space-separated string"
-    export propagatedBuildOutputs="''${propagatedBuildOutputs[@]}"
-  '';
-
-  postFixup =
-    # The `out` output should largely be empty save for nix-support/propagated-build-inputs.
-    # In effect, this allows us to make `out` depend on all the other components.
-    ''
-      mkdir -p "$out/nix-support"
-    ''
-    # NOTE: We must use printWords to ensure the output is a single line.
-    + ''
-      for output in $(getAllOutputNames); do
-        # Skip out and dev outputs
-        [[ ''${output:?} == "out" ]] && continue
-        # Propagate the other components to the out output
-        nixLog "adding output ''${output:?} to output out's propagated-build-inputs"
-        printWords "''${!output:?}" >> "$out/nix-support/propagated-build-inputs"
-      done
-      unset -v output
-    '';
 
   passthru = {
     redistBuilderArg = {
