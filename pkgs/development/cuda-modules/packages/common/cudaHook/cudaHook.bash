@@ -39,7 +39,7 @@ cudaHookRegistration
 
 cudaSetupCudaToolkitRoot() {
   if [[ -f "$1/nix-support/include-in-cudatoolkit-root" ]]; then
-    cudaHostPathsSeen["$1"]=1
+    cudaHostPathsSeen[$1]=1
     addToSearchPathWithCustomDelimiter ";" CUDAToolkit_ROOT "$1"
     nixLog "added $1 to CUDAToolkit_ROOT"
   else

@@ -1,4 +1,4 @@
-# NOTE: Tests for nvccRunpathCheck go here.
+# NOTE: Tests for nvccRunpathFixup go here.
 {
   arrayUtilities,
   hello,
@@ -34,8 +34,8 @@ let
       script = ''
         nixLog "installing main"
         install -Dm677 "${makeMainWithRunpath { inherit runpathEntries; }}/bin/main" main
-        nixLog "running nvccRunpathCheck on main"
-        nvccRunpathCheck main
+        nixLog "running nvccRunpathFixup on main"
+        nvccRunpathFixup main
         nixLog "populating actualArray"
         getRunpathEntries main actualArray
       '';

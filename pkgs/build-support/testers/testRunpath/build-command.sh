@@ -123,7 +123,7 @@ testPrecedes() {
   # shellcheck disable=SC2154
   for preceding in "${!precedes[@]}"; do
     # Space-delimited list of entries to be preceded by $preceding
-    for entry in ${precedes["$preceding"]}; do
+    for entry in ${precedes[$preceding]}; do
       if isInDelimitedString "$entry" : "$runpath" && ! isPrecededByInDelimitedString "$entry" "$preceding" : "$runpath"; then
         nixErrorLog "$preceding does not precede $entry in runpath of $file"
         hasFailed=1
@@ -144,7 +144,7 @@ testSucceeds() {
   # shellcheck disable=SC2154
   for succeeding in "${!succeeds[@]}"; do
     # Space-delimited list of entries to be succeeded by $succeeding
-    for entry in ${succeeds["$succeeding"]}; do
+    for entry in ${succeeds[$succeeding]}; do
       if isInDelimitedString "$entry" : "$runpath" && ! isSucceededByInDelimitedString "$entry" "$succeeding" : "$runpath"; then
         nixErrorLog "$succeeding does not succeed $entry in runpath of $file"
         hasFailed=1

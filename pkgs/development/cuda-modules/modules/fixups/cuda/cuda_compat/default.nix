@@ -18,6 +18,9 @@ prevAttrs: {
 
       # Added dependencies to force discovery of other libraries on Ubuntu Jetsons since these libraries
       # have no runpath.
+      # TODO(@connorbaker): Should these be added to libcuda_cudart.so as well when not using cuda_compat?
+      # These will still need to be opened on the host and have no runpath on Ubuntu Jetsons.
+      # NOTE: These libraries were discovered by using `LD_DEBUG=libs` and running the saxpy test.
       "libnvos.so"
       "libnvsocsys.so"
       "libnvrm_sync.so"

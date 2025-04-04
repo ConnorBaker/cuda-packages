@@ -339,6 +339,7 @@ let
 
     # NOTE: Because the test cases immediately create and try to run the binaries, we don't have an opportunity
     # to patch them with autoAddDriverRunpath. To get around this, we add the driver runpath to the environment.
+    # NOTE: This will break GPU tests on Jetson which rely on cuda_compat since LD_LIBRARY_PATH will have higher priority.
     preCheck = optionalString finalAttrs.doCheck ''
       export LD_LIBRARY_PATH="$(readlink -mnv "${addDriverRunpath.driverLink}/lib")"
     '';

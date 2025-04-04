@@ -93,7 +93,7 @@ deduplicateRunpathEntries() {
   if ((${#newRunpathEntries[@]} < ${#originalRunpathEntries[@]})); then
     nixErrorLog "found duplicate runpath entries in $path"
     for runpathEntry in "${newRunpathEntries[@]}"; do
-      runpathEntryTimesSeen=${observedRunpathEntries["$runpathEntry"]}
+      runpathEntryTimesSeen=${observedRunpathEntries[$runpathEntry]}
       if ((runpathEntryTimesSeen > 1)); then
         nixErrorLog "runpath entry $runpathEntry seen $runpathEntryTimesSeen times"
       fi
