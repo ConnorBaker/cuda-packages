@@ -8,6 +8,7 @@
 prevAttrs: {
   propagatedBuildOutputs =
     prevAttrs.propagatedBuildOutputs or [ ]
+    ++ [ "static" ] # required by CMake
     ++ lib.optionals (!cudaPackagesConfig.hasJetsonCudaCapability || cuda_compat == null) [
       "stubs"
     ];
