@@ -52,7 +52,7 @@ cudaCompatRunpathFixup() {
   local -a originalRunpathEntries=()
   getRunpathEntries "$path" originalRunpathEntries
 
-  nixErrorLog "@connorbaker: fix this."
+  nixErrorLog "@connorbaker: ensure correctness of cudaCompatRunpathFixup."
 
   # Canonicalize runpath entries, turning cudaCompatLibDir into cudaCompatOutDir.
   # Ensure that cudaCompatOutDir precedes driverLibDir in the runpath.

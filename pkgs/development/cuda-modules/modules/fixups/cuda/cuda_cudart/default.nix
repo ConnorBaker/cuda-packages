@@ -53,14 +53,15 @@ prevAttrs: {
     prevAttrs.postInstall or ""
     # Namelink may not be enough, add a soname.
     # Cf. https://gitlab.kitware.com/cmake/cmake/-/issues/25536
+    # NOTE: Relative symlinks is fine since this is all within the same output.
     + ''
       pushd "''${!outputStubs:?}/lib/stubs" >/dev/null
       if [[ -f libcuda.so && ! -f libcuda.so.1 ]]; then
         nixLog "creating versioned symlink for libcuda.so stub"
-        ln -sr libcuda.so libcuda.so.1
+        ln -srv libcuda.so libcuda.so.1
       fi
       nixLog "creating symlinks for stubs in lib directory"
-      ln -srt "''${!outputStubs:?}/lib/" *.so *.so.*
+      ln -srvt "''${!outputStubs:?}/lib/" *.so *.so.*
       popd >/dev/null
     '';
 

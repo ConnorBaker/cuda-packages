@@ -15,10 +15,23 @@ prevAttrs: {
       "libnvdla_runtime.so"
     ];
 
+  postInstall =
+    prevAttrs.postInstall or ""
+    + ''
+      nixLog "creating symlinks for compat libs in ''${!outputLib:?}/lib"
+      mkdir -p "''${!outputLib:?}/lib"
+      ln -svt "''${!outputLib:?}/lib/" "''${out:?}/compat"/*.so "''${out:?}/compat"/*.so.*
+
+      nixLog "creating symlinks for compat binaries in ''${!outputBin:?}/bin"
+      mkdir -p "''${!outputBin:?}/bin"
+      ln -svt "''${!outputBin:?}/bin/" "''${out:?}/compat"/nvidia-cuda-mps-*
+    '';
+
   # Use postFixup because fixupPhase overwrites the dependency files in /nix-support.
   postFixup =
     prevAttrs.postFixup or ""
-    # Install the setup hook
+    # Install the setup hook in `out`, since the other outputs are symlinks to `out` (ensuring `out`'s setup hook is
+    # always sourced).
     + ''
       mkdir -p "''${out:?}/nix-support"
 
@@ -26,9 +39,6 @@ prevAttrs: {
         nixErrorLog "''${out:?}/nix-support/setup-hook already exists, unsure if this is correct!"
         exit 1
       fi
-
-      nixErrorLog "@connorbaker: this is incorrect, fix it"
-      exit 1
 
       nixLog "installing cudaCudartRunpathFixupHook.bash to ''${out:?}/nix-support/setup-hook"
       substitute \
@@ -52,14 +62,10 @@ prevAttrs: {
         !cudaPackagesConfig.hasJetsonCudaCapability;
     };
 
-    # TODO(@connorbaker): Keep `compat` as a directory; symlink .so.* files to `lib` and binaries to `bin`.
+    # NOTE: Using multiple outputs with symlinks causes build cycles.
+    # To avoid that (and troubleshooting why), we just use a single output.
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
-      outputs = [
-        "out"
-        "bin"
-        "dev"
-        "lib"
-      ];
+      outputs = [ "out" ];
     };
   };
 }
