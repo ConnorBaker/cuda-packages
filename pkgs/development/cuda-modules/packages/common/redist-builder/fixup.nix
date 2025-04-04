@@ -19,20 +19,54 @@ let
     sourceTypes
     teams
     ;
-  inherit (lib.attrsets) attrValues optionalAttrs;
+  inherit (lib.asserts) assertMsg;
+  inherit (lib.attrsets)
+    attrNames
+    attrValues
+    optionalAttrs
+    ;
   inherit (lib.lists)
     any
     elem
+    findFirst
     findFirstIndex
+    foldl'
     intersectLists
+    map
     optionals
+    subtractLists
     tail
     unique
     ;
-  inherit (lib.strings) concatMapStringsSep;
+  inherit (lib.strings)
+    concatMapStringsSep
+    toUpper
+    stringLength
+    substring
+    ;
   inherit (lib.trivial) flip id warnIfNot;
 
   hasAnyTrueValue = attrs: any id (attrValues attrs);
+
+  mkOutputNameVar =
+    output:
+    assert assertMsg (output != "") "mkOutputNameVar: output name variable must not be empty";
+    "output" + toUpper (substring 0 1 output) + substring 1 (stringLength output - 1) output;
+
+  # Order is important here so we use a list.
+  # NOTE: Moved out of the attribute set overlay so we can use it to add top-level attributes.
+  expectedOutputs = [
+    "out"
+    "doc"
+    "sample"
+    "python"
+    "bin"
+    "dev"
+    "include"
+    "lib"
+    "static"
+    "stubs"
+  ];
 in
 # We need finalAttrs, so even if prevAttrs isn't used we still need to take it as an argument (see https://noogle.dev/f/lib/fixedPoints/toExtension).
 finalAttrs: _:
@@ -81,19 +115,6 @@ in
     "include"
     "lib"
   ] finalAttrs.outputs;
-
-  # We have a separate output for include files; don't use the dev output.
-  # NOTE: We must set outputInclude carefully to ensure we get fallback to other outputs if the `include` output
-  # doesn't exist.
-  outputInclude =
-    if hasOutput "include" then
-      "include"
-    else if hasOutput "dev" then
-      "dev"
-    else
-      "out";
-
-  outputStubs = if hasOutput "stubs" then "stubs" else "out";
 
   # src :: null | Derivation
   src = redistBuilderArg.releaseSource;
@@ -202,19 +223,9 @@ in
       supportedNixSystems = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.supportedNixSystems";
     };
 
-    # Order is important here so we use a list.
-    expectedOutputs = [
-      "out"
-      "doc"
-      "sample"
-      "python"
-      "bin"
-      "dev"
-      "include"
-      "lib"
-      "static"
-      "stubs"
-    ];
+    # NOTE: Downstream may expand this to include other outputs, but they must remember to set the appropriate
+    # outputNameVarFallbacks!
+    inherit expectedOutputs;
 
     # Traversed in the order of the outputs speficied in outputs;
     # entries are skipped if they don't exist in outputs.
@@ -238,6 +249,26 @@ in
       ];
     };
 
+    # Defines a list of fallbacks for each potential output.
+    # The last fallback is the out output.
+    # Taken and modified from:
+    # https://github.com/NixOS/nixpkgs/blob/fe5e11faed6241aacf7220436088789287507494/pkgs/build-support/setup-hooks/multiple-outputs.sh#L45-L62
+    outputNameVarFallbacks = {
+      outputBin = [ "bin" ];
+      outputDev = [ "dev" ];
+      outputDoc = [ "doc" ];
+      outputInclude = [
+        "include"
+        "dev"
+      ];
+      outputLib = [ "lib" ];
+      outputOut = [ "out" ];
+      outputPython = [ "python" ];
+      outputSample = [ "sample" ];
+      outputStatic = [ "static" ];
+      outputStubs = [ "stubs" ];
+    };
+
     # Useful for introspecting why something went wrong. Maps descriptions of why the derivation would be marked as
     # broken on have badPlatforms include the current platform.
 
@@ -256,6 +287,16 @@ in
           staticIndex = findFirstIndex (x: x == "static") null finalAttrs.outputs;
         in
         libIndex != null && staticIndex != null && libIndex > staticIndex;
+      "outputNameVarFallbacks is not a super set of expectedOutputs" =
+        subtractLists (map mkOutputNameVar finalAttrs.passthru.expectedOutputs) (
+          attrNames finalAttrs.passthru.outputNameVarFallbacks
+        ) != [ ];
+      "outputToPatterns is not a super set of expectedOutputs" =
+        subtractLists finalAttrs.passthru.expectedOutputs (attrNames finalAttrs.passthru.outputToPatterns)
+        != [ ];
+      # NOTE: We cannot (easily) check that all expected outputs have a corresponding outputNameVar attribute in
+      # finalAttrs because of the presence of attributes which use the "output" prefix but are not outputNameVars
+      # (e.g., outputChecks and outputName).
     };
 
     # badPlatformsConditions :: AttrSet Bool
@@ -311,3 +352,18 @@ in
     maintainers = teams.cuda.members;
   };
 }
+# Setup the outputNameVar variables to gracefully handle missing outputs.
+# NOTE: We cannot use expectedOutputs from finalAttrs.passthru because we will infinitely recurse: presence of
+# attributes in finalAttrs cannot depend on finalAttrs.
+// foldl' (
+  acc: output:
+  let
+    outputNameVar = mkOutputNameVar output;
+  in
+  acc
+  // {
+    ${outputNameVar} =
+      findFirst hasOutput "out"
+        finalAttrs.passthru.outputNameVarFallbacks.${outputNameVar};
+  }
+) { } expectedOutputs
