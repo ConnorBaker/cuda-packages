@@ -51,20 +51,17 @@ cudaCudartRunpathFixup() {
   getRunpathEntries "$path" originalRunpathEntries
 
   # Replace the runpath entries for the stubs with driverLibDir.
-  local -a newRunpathEntries=("$driverLibDir")
+  local -a newRunpathEntries=()
   local runpathEntry
   for runpathEntry in "${originalRunpathEntries[@]}"; do
     case "$runpathEntry" in
-    # If runpathEntry is a stub dir, replace it with driverLibDir.
-    "$cudartStubLibDir" | "$cudartStubLibDir/stubs" | "$driverLibDir")
-      continue
-      ;;
-    *)
-      # Add the entry to the new runpath.
-      newRunpathEntries+=("$runpathEntry")
-      ;;
+    "$cudartStubLibDir" | "$cudartStubLibDir/stubs" | "$driverLibDir") ;;
+    *) newRunpathEntries+=("$runpathEntry") ;;
     esac
   done
+
+  # Add driverLibDir to the new runpath at the end, to ensure lowest priority.
+  newRunpathEntries+=("$driverLibDir")
 
   local -r originalRunpathString="$(concatStringsSep ":" originalRunpathEntries)"
   local -r newRunpathString="$(concatStringsSep ":" newRunpathEntries)"

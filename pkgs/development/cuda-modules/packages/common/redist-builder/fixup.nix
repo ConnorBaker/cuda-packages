@@ -63,9 +63,10 @@ in
     else
       intersectLists redistBuilderArg.outputs finalAttrs.passthru.expectedOutputs;
 
-  # If out is not the only output, it should be *very* small.
-  # This is essentially a way for us to detect whether we've forgotten or missed an output.
-  outputChecks = optionalAttrs (finalAttrs.outputs != [ "out" ]) {
+  # If the bin or lib output exist, they should contain the majority of the package.
+  # Enforcing a size limitation on the out output lets us detect if we forgot to
+  # move something into the bin or lib output.
+  outputChecks = optionalAttrs (hasOutput "bin" || hasOutput "lib") {
     out.maxSize = 128 * 1024; # 128 KiB
   };
 

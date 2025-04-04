@@ -18,6 +18,9 @@ prevAttrs: {
     ];
 
   # Update the CMake configurations
+  # TODO(@connorbaker):
+  # ERROR: checkCudaFhsRefs: detected references to /usr: /nix/store/p3qxnwcfl28s1zz062k1bvbncw2b6y0b-cuda12.6-libcudss-0.4.0.2-dev/lib/cmake/cudss/cudss-static-targets.cmake:  INTERFACE_LINK_DIRECTORIES "/usr/local/cuda/lib64"
+  # TODO(@connorbaker): Switch away from placeholder.
   postFixup =
     prevAttrs.postFixup or ""
     + ''

@@ -21,7 +21,6 @@ prevAttrs: {
         "include"
         "lib"
         "static"
-        "sample"
       ];
     };
   };

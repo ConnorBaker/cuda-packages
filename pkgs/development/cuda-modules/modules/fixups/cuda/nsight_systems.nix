@@ -169,12 +169,7 @@ in
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       outputs = [
         "out"
-        "dev"
         "doc"
-        "include"
-        "lib"
-        "static"
-        "stubs"
       ];
     };
   };

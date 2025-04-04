@@ -41,8 +41,6 @@ cudaCompatRunpathFixupHookRegistration() {
   return 0
 }
 
-# NOTE: Does not double-add driverLib, which means it may move the priority up to the first occurrence of
-# cudaCompatDir.
 cudaCompatRunpathFixup() {
   local -r path="$1"
   # May be linked to compat libraries through `out/compat` or symlinks in `lib/lib`.
@@ -52,32 +50,18 @@ cudaCompatRunpathFixup() {
   local -a originalRunpathEntries=()
   getRunpathEntries "$path" originalRunpathEntries
 
-  nixErrorLog "@connorbaker: ensure correctness of cudaCompatRunpathFixup."
-
-  # Canonicalize runpath entries, turning cudaCompatLibDir into cudaCompatOutDir.
-  # Ensure that cudaCompatOutDir precedes driverLibDir in the runpath.
-
-  # TODO(@connorbaker): Do we need to worry about cudaCudartRunpathFixupHook *moving* the position
-  # of driverLibDir by way of replacing cudaStubLibDir with driverLibDir? That could cause it to leap-frog
-  # over cudaCompatOutDir, which would be bad.
-
-  local -a newRunpathEntries=(
-    "$cudaCompatOutDir"
-    "$driverLibDir"
-  )
+  # Always prepend the runpath with cudaCompatOutDir to give it the highest priority.
+  local -a newRunpathEntries=("$cudaCompatOutDir")
   local runpathEntry
   for runpathEntry in "${originalRunpathEntries[@]}"; do
     case "$runpathEntry" in
-    # If runpathEntry is a stub dir, replace it with driverLibDir.
-    "$cudaCompatOutDir" | "$cudaCompatLibDir" | "$driverLibDir")
-      continue
-      ;;
-    *)
-      # Add the entry to the new runpath.
-      newRunpathEntries+=("$runpathEntry")
-      ;;
+    "$cudaCompatOutDir" | "$cudaCompatLibDir" | "$driverLibDir") ;;
+    *) newRunpathEntries+=("$runpathEntry") ;;
     esac
   done
+
+  # Add driverLibDir to the new runpath at the end, to ensure lowest priority.
+  newRunpathEntries+=("$driverLibDir")
 
   local -r originalRunpathString="$(concatStringsSep ":" originalRunpathEntries)"
   local -r newRunpathString="$(concatStringsSep ":" newRunpathEntries)"
