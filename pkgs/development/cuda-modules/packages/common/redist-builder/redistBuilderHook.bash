@@ -123,13 +123,13 @@ checkCudaNonEmptyOutputs() {
   local dirs
 
   for output in $(getAllOutputNames); do
-    [[ ${!output:?} == "out" ]] && continue
+    [[ ${!output:?} == "out" || ${!output:?} == "${!outputDev:?}" ]] && continue
     nixLog "checking if ${!output:?} contains non nix-support directories..."
-    dirs="$(find "${!output:?}" -mindepth 1 -maxdepth 1 -type d)" || true
-    if [[ -z $dirs || $dirs == "${!output:?}/nix-support/" ]]; then
+    dirs="$(find "${!output:?}" -mindepth 1 -maxdepth 1)" || true
+    if [[ -z $dirs || $dirs == "${!output:?}/nix-support" ]]; then
       nixErrorLog "output ${!output:?} is empty (excluding nix-support)!"
       nixErrorLog "this typically indicates a failure in packaging or moveToOutput ordering"
-      ls -laR "${!output:?}"
+      ls -la "${!output:?}"
       exit 1
     fi
   done
