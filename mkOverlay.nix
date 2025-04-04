@@ -49,7 +49,28 @@ let
     ];
   };
   cudaPackages = import ./pkgs/top-level/cuda-packages.nix;
-  packageFixes = final: prev: { };
+  packageFixes =
+    final: prev:
+    let
+      useCudartJoined =
+        drv:
+        drv.override (prevAttrs: {
+          cudaPackages = prevAttrs.cudaPackages // {
+            # Nothing else should be changed, so we don't override the scope.
+            cuda_cudart = final.symlinkJoin {
+              name = "cudart-joined";
+              paths = lib.concatMap (
+                # Don't include the stubs in the joined package.
+                output: lib.optionals (output != "stubs") [ prevAttrs.cudaPackages.cuda_cudart.${output} ]
+              ) prevAttrs.cudaPackages.cuda_cudart.outputs;
+            };
+          };
+        });
+    in
+    {
+      ucc = useCudartJoined prev.ucc;
+      ucx = useCudartJoined prev.ucx;
+    };
 in
 composeManyExtensions [
   extraAutoCalledPackages
