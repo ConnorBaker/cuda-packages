@@ -121,18 +121,27 @@ checkCudaFhsRefs() {
 checkCudaNonEmptyOutputs() {
   local output
   local dirs
+  local -a failingOutputs=()
 
   for output in $(getAllOutputNames); do
     [[ ${!output:?} == "out" || ${!output:?} == "${!outputDev:?}" ]] && continue
-    nixLog "checking if ${!output:?} contains non nix-support directories..."
     dirs="$(find "${!output:?}" -mindepth 1 -maxdepth 1)" || true
     if [[ -z $dirs || $dirs == "${!output:?}/nix-support" ]]; then
-      nixErrorLog "output ${!output:?} is empty (excluding nix-support)!"
-      nixErrorLog "this typically indicates a failure in packaging or moveToOutput ordering"
-      ls -la "${!output:?}"
-      exit 1
+      failingOutputs+=("$output")
     fi
   done
+
+  if ((${#failingOutputs[@]})); then
+    nixErrorLog "detected empty (excluding nix-support) outputs: ${failingOutputs[*]}"
+    nixErrorLog "this typically indicates a failure in packaging or moveToOutput ordering"
+
+    for output in "${failingOutputs[@]}"; do
+      nixErrorLog "contents of ${!output:?}:"
+      ls -la "${!output:?}"
+    done
+
+    exit 1
+  fi
 
   return 0
 }
