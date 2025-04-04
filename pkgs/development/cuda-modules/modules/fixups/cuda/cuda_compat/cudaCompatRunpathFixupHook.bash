@@ -2,7 +2,7 @@
 
 # TODO(@connorbaker): Why this offset?
 # Stubs are a used during linking, so we only want to run if we're in buildInputs.
-if ((${hostOffset:?} != -1)); then
+if ((${hostOffset:?} != 0)); then
   nixInfoLog "skipping sourcing cudaCompatRunpathFixupHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
   return 0
 fi
@@ -14,11 +14,11 @@ declare -ag prePhases
 cudaCompatRunpathFixupHookPreRegistration() {
   # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
   # NOTE: prePhases may not exist as an array.
-  if occursInArray cudaCompatRunpathFixupHookPreRegistration prePhases; then
-    nixLog "skipping cudaCompatRunpathFixupHookPreRegistration, already present in prePhases"
+  if occursInArray cudaCompatRunpathFixupHookRegistration prePhases; then
+    nixLog "skipping cudaCompatRunpathFixupHookRegistration, already present in prePhases"
   else
-    prePhases+=(cudaCompatRunpathFixupHookPreRegistration)
-    nixLog "added cudaCompatRunpathFixupHookPreRegistration to prePhases"
+    prePhases+=(cudaCompatRunpathFixupHookRegistration)
+    nixLog "added cudaCompatRunpathFixupHookRegistration to prePhases"
   fi
 
   return 0
@@ -61,40 +61,27 @@ cudaCompatRunpathFixup() {
   # of driverLibDir by way of replacing cudaStubLibDir with driverLibDir? That could cause it to leap-frog
   # over cudaCompatOutDir, which would be bad.
 
-  local -a newRunpathEntries=()
-  local -i driverLibDirSeen=0
-  local -i cudaCompatOutDirSeen=0
+  local -a newRunpathEntries=(
+    "$cudaCompatOutDir"
+    "$driverLibDir"
+  )
   local runpathEntry
   for runpathEntry in "${originalRunpathEntries[@]}"; do
-    # If runpathEntry is cudaCompatLibDir, replace it with cudaCompatOutDir.
-    if [[ $runpathEntry == "$cudaCompatLibDir" ]]; then
-      runpathEntry="$cudaCompatOutDir"
-    fi
-
-    # If we're looking at driverLibDir...
-    if [[ $runpathEntry == "$driverLibDir" ]]; then
-      # Early return if we've seen it before.
-      ((driverLibDirSeen)) && continue
-
-      # If we've not seen cudaCompatOutDir, add it to the runpath.
-      if ! ((cudaCompatOutDirSeen)); then
-        newRunpathEntries+=("$cudaCompatOutDir")
-        # Mark it as seen.
-        cudaCompatOutDirSeen=1
-      fi
-
-      # Mark driverLibDir as seen and continue.
-      driverLibDirSeen=1
-    fi
-
-    # Add the entry to the new runpath.
-    newRunpathEntries+=("$runpathEntry")
+    case "$runpathEntry" in
+    # If runpathEntry is a stub dir, replace it with driverLibDir.
+    "$cudaCompatOutDir" | "$cudaCompatLibDir" | "$driverLibDir")
+      continue
+      ;;
+    *)
+      # Add the entry to the new runpath.
+      newRunpathEntries+=("$runpathEntry")
+      ;;
+    esac
   done
 
-  # TODO(@connorbaker): Do we need to add patchelf as a dependency?
   local -r originalRunpathString="$(concatStringsSep ":" originalRunpathEntries)"
   local -r newRunpathString="$(concatStringsSep ":" newRunpathEntries)"
-  nixLog "replacing rpath of $path: $originalRunpathString -> $newRunpathString"
+  nixInfoLog "replacing rpath of $path: $originalRunpathString -> $newRunpathString"
   patchelf --set-rpath "$newRunpathString" "$path"
 
   return 0

@@ -15,7 +15,19 @@ prevAttrs: {
       "libnvrm_gpu.so"
       "libnvrm_mem.so"
       "libnvdla_runtime.so"
+
+      # Added dependencies to force discovery of other libraries on Ubuntu Jetsons since these libraries
+      # have no runpath.
+      "libnvos.so"
+      "libnvsocsys.so"
+      "libnvrm_sync.so"
+      "libnvsciipc.so"
+      "libnvrm_chip.so"
+      "libnvrm_host1x.so"
+      "libnvcucompat.so"
     ];
+
+  nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ patchelf ];
 
   postInstall =
     prevAttrs.postInstall or ""
@@ -24,9 +36,13 @@ prevAttrs: {
       mkdir -p "''${!outputLib:?}/lib"
       ln -svt "''${!outputLib:?}/lib/" "''${out:?}/compat"/*.so "''${out:?}/compat"/*.so.*
 
-      nixLog "creating symlinks for compat binaries in ''${!outputBin:?}/bin"
-      mkdir -p "''${!outputBin:?}/bin"
-      ln -svt "''${!outputBin:?}/bin/" "''${out:?}/compat"/nvidia-cuda-mps-*
+      # If there are any matches for the glob "''${out:?}/compat"/nvidia-cuda-mps-*,
+      # make symlinks.
+      if [[ -n "$(ls -A "''${out:?}/compat"/nvidia-cuda-mps-*)" ]]; then
+        nixLog "creating symlinks for compat binaries in ''${!outputBin:?}/bin"
+        mkdir -p "''${!outputBin:?}/bin"
+        ln -svt "''${!outputBin:?}/bin/" "''${out:?}/compat"/nvidia-cuda-mps-*
+      fi
     '';
 
   # Use postFixup because fixupPhase overwrites the dependency files in /nix-support.
@@ -38,6 +54,20 @@ prevAttrs: {
       getHostTarget = drv: lib.getDev drv.__spliced.hostTarget or drv;
     in
     prevAttrs.postFixup or ""
+    # Added dependencies to force discovery of other libraries on Ubuntu Jetsons since these libraries
+    # have no runpath.
+    + ''
+      nixLog "patchelf-ing ''${!outputLib:?}/lib/libcuda.so with runtime dependencies"
+      patchelf \
+        "''${!outputLib:?}/lib/libcuda.so" \
+        --add-needed libnvos.so \
+        --add-needed libnvsocsys.so \
+        --add-needed libnvrm_sync.so \
+        --add-needed libnvsciipc.so \
+        --add-needed libnvrm_chip.so \
+        --add-needed libnvrm_host1x.so \
+        --add-needed libnvcucompat.so
+    ''
     # Install the setup hook in `out`, since the other outputs are symlinks to `out` (ensuring `out`'s setup hook is
     # always sourced).
     + ''

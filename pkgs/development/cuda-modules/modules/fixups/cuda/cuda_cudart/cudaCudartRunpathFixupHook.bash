@@ -50,37 +50,25 @@ cudaCudartRunpathFixup() {
   local -a originalRunpathEntries=()
   getRunpathEntries "$path" originalRunpathEntries
 
-  if ! occursInArray "$cudartStubLibDir" originalRunpathEntries && ! occursInArray "$cudartStubLibDir/stubs" originalRunpathEntries; then
-    nixInfoLog "skipping $path, no stubs output in runpath"
-    return 0
-  fi
-
   # Replace the runpath entries for the stubs with driverLibDir.
-  local -a newRunpathEntries=()
-  local -i driverLibDirSeen=0
+  local -a newRunpathEntries=("$driverLibDir")
   local runpathEntry
   for runpathEntry in "${originalRunpathEntries[@]}"; do
+    case "$runpathEntry" in
     # If runpathEntry is a stub dir, replace it with driverLibDir.
-    if [[ $runpathEntry == "$cudartStubLibDir" || $runpathEntry == "$cudartStubLibDir/stubs" ]]; then
-      runpathEntry="$driverLibDir"
-    fi
-
-    # If we're considering adding driverLibDir...
-    if [[ $runpathEntry == "$driverLibDir" ]]; then
-      # Early return if we've seen it before.
-      ((driverLibDirSeen)) && continue
-      # Otherwise mark it as seen and continue.
-      driverLibDirSeen=1
-    fi
-
-    # Add the entry to the new runpath.
-    newRunpathEntries+=("$runpathEntry")
+    "$cudartStubLibDir" | "$cudartStubLibDir/stubs" | "$driverLibDir")
+      continue
+      ;;
+    *)
+      # Add the entry to the new runpath.
+      newRunpathEntries+=("$runpathEntry")
+      ;;
+    esac
   done
 
-  # TODO(@connorbaker): Do we need to add patchelf as a dependency?
   local -r originalRunpathString="$(concatStringsSep ":" originalRunpathEntries)"
   local -r newRunpathString="$(concatStringsSep ":" newRunpathEntries)"
-  nixLog "replacing rpath of $path: $originalRunpathString -> $newRunpathString"
+  nixInfoLog "replacing rpath of $path: $originalRunpathString -> $newRunpathString"
   patchelf --set-rpath "$newRunpathString" "$path"
 
   return 0
