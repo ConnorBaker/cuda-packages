@@ -118,7 +118,7 @@ finalAttrs: prevAttrs: {
         "dev"
         "include"
         "lib"
-        "python"
+        # "python" # We use tensorrt-oss for this
         "sample"
         "static"
         "stubs"
