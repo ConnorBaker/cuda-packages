@@ -1,6 +1,7 @@
 # Internal hook, used by cudatoolkit and cuda redist packages
 # to accommodate automatic CUDAToolkit_ROOT construction
 {
+  arrayUtilities,
   config,
   cudaPackagesConfig,
   lib,
@@ -27,12 +28,14 @@ let
   };
   isBadPlatform = any id (attrValues badPlatformsConditions);
 in
-makeSetupHook {
+(makeSetupHook {
   inherit name;
+
   passthru = {
     inherit badPlatformsConditions;
     brokenConditions = { };
   };
+
   meta = {
     description = "Setup hook which marks CUDA packages for inclusion in CUDA environment variables";
     inherit badPlatforms platforms;
@@ -42,4 +45,9 @@ makeSetupHook {
         false;
     maintainers = lib.teams.cuda.members;
   };
-} ./markForCudaToolkitRootHook.bash
+} ./markForCudaToolkitRootHook.bash).overrideAttrs
+  (prevAttrs: {
+    depsHostHostPropagated = prevAttrs.depsHostHostPropagated or [ ] ++ [
+      arrayUtilities.occursInArray
+    ];
+  })

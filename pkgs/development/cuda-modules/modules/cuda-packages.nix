@@ -17,7 +17,11 @@ let
     getRedistSystem
     mkOptionsModule
     ;
-  inherit (lib.attrsets) attrNames genAttrs;
+  inherit (lib.attrsets)
+    attrNames
+    genAttrs
+    hasAttr
+    ;
   inherit (lib.options) mkOption;
   inherit (lib.lists)
     concatMap
@@ -28,7 +32,7 @@ let
     length
     subtractLists
     ;
-  inherit (lib.modules) mkMerge mkOptionDefault;
+  inherit (lib.modules) mkIf mkMerge mkOptionDefault;
   inherit (lib.strings) optionalString versionOlder;
   inherit (lib.types) submodule;
 
@@ -53,10 +57,20 @@ let
           redistName:
           let
             redistVersion = cudaPackagesConfig.redists.${redistName};
+            manifest = cudaConfig.manifests.${redistName}.${redistVersion};
           in
           # One benefit of using mkMerge is that, becuase all entries have the same priority, we should get errors
           # if there are collisions between package names across redists.
-          [ cudaConfig.redists.${redistName}.${redistVersion} ]
+          map (
+            packageName:
+            # Only add the configuration for the package if it is in the manifest.
+            (mkIf (hasAttr packageName manifest) {
+              ${packageName} = {
+                inherit packageName redistName;
+                fixupFn = cudaConfig.fixups.${redistName}.${packageName};
+              };
+            })
+          ) (attrNames cudaConfig.fixups.${redistName})
         ) (attrNames cudaPackagesConfig.redists)
       );
     in

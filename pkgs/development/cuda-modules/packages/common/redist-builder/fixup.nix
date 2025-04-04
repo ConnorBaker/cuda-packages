@@ -8,7 +8,6 @@
   cudaMajorVersion,
   cudaNamePrefix,
   cudaPackagesConfig,
-  cudaRunpathFixupHook,
   lib,
   markForCudaToolkitRootHook,
   stdenv,
@@ -98,27 +97,18 @@ in
   # We do need some other phases, like configurePhase, so the multiple-output setup hook works.
   dontBuild = true;
 
-  nativeBuildInputs =
-    [
-      ./redistBuilderHook.bash
-      autoPatchelfHook
-      # This hook will make sure libcuda can be found
-      # in typically /lib/opengl-driver by adding that
-      # directory to the rpath of all ELF binaries.
-      # Check e.g. with `patchelf --print-rpath path/to/my/binary
-      autoAddDriverRunpath
-      markForCudaToolkitRootHook
-    ]
-    ++ optionals (finalAttrs.pname != "cuda_compat" && finalAttrs.pname != "cuda_cudart") [
-      cudaRunpathFixupHook
-    ];
+  nativeBuildInputs = [
+    ./redistBuilderHook.bash
+    autoPatchelfHook
+    # This hook will make sure libcuda can be found
+    # in typically /lib/opengl-driver by adding that
+    # directory to the rpath of all ELF binaries.
+    # Check e.g. with `patchelf --print-rpath path/to/my/binary
+    autoAddDriverRunpath
+    markForCudaToolkitRootHook
+  ];
 
-  propagatedBuildInputs =
-    [ cudaHook ]
-    # cudaRunpathFixupHook depends on cuda_cudart and cuda_compat, so we cannot include it in those.
-    ++ optionals (finalAttrs.pname != "cuda_compat" && finalAttrs.pname != "cuda_cudart") [
-      cudaRunpathFixupHook
-    ];
+  propagatedBuildInputs = [ cudaHook ];
 
   buildInputs = [
     # autoPatchelfHook will search for a libstdc++ and we're giving it
@@ -176,33 +166,33 @@ in
   passthru = {
     redistBuilderArg = {
       # The name of the redistributable to which this package belongs.
-      redistName = builtins.throw "redistBuilderArg.redistName must be set";
+      redistName = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.redistName";
 
       # The full package name, for use in meta.description
       # e.g., "CXX Core Compute Libraries"
-      releaseName = builtins.throw "redistBuilderArg.releaseName must be set";
+      releaseName = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.releaseName";
 
       # The package version
       # e.g., "12.2.140"
-      releaseVersion = builtins.throw "redistBuilderArg.releaseVersion must be set";
+      releaseVersion = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.releaseVersion";
 
       # The path to the license, or null
       # e.g., "cuda_cccl/LICENSE.txt"
-      licensePath = builtins.throw "redistBuilderArg.licensePath must be set";
+      licensePath = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.licensePath";
 
       # The short name of the package
       # e.g., "cuda_cccl"
-      packageName = builtins.throw "redistBuilderArg.packageName must be set";
+      packageName = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.packageName";
 
       # Package source, or null
-      releaseSource = builtins.throw "redistBuilderArg.releaseSource must be set";
+      releaseSource = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.releaseSource";
 
       # The outputs provided by this package.
-      outputs = builtins.throw "redistBuilderArg.outputs must be set";
+      outputs = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.outputs";
 
       # TODO(@connorbaker): Document these
-      supportedRedistSystems = builtins.throw "redistBuilderArg.supportedRedistSystems must be set";
-      supportedNixSystems = builtins.throw "redistBuilderArg.supportedNixSystems must be set";
+      supportedRedistSystems = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.supportedRedistSystems";
+      supportedNixSystems = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.supportedNixSystems";
     };
 
     # Order is important here so we use a list.

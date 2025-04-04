@@ -145,7 +145,6 @@ let
       # ending with `-hook`, and that setup hooks are all top-level.
       setup-hooks = [
         cudaPackages.cudaHook
-        cudaPackages.cudaRunpathFixupHook
         cudaPackages.markForCudaToolkitRootHook
         cudaPackages.nvccHook
       ];

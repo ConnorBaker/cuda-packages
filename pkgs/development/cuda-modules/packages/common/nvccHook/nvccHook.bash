@@ -1,5 +1,12 @@
 # shellcheck shell=bash
 
+# TODO(@connorbaker): Why this offset?
+if ((${hostOffset:?} != -1)); then
+  nixInfoLog "skipping sourcing nvccHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+  return 0
+fi
+nixLog "sourcing nvccHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+
 declare -ig nvccHostCCMatchesStdenvCC="@nvccHostCCMatchesStdenvCC@"
 declare -ig dontCompressCudaFatbin=${dontCompressCudaFatbin:-0}
 declare -ig dontNvccFixHookOrder=${dontNvccFixHookOrder:-0}
@@ -9,36 +16,58 @@ declare -ig dontNvccFixHookOrder=${dontNvccFixHookOrder:-0}
 export NVCC_PREPEND_FLAGS="${NVCC_PREPEND_FLAGS:-}"
 export NVCC_APPEND_FLAGS="${NVCC_APPEND_FLAGS:-}"
 
-preConfigureHooks+=(nvccSetupEnvironmentVariables)
-nixLog "added nvccSetupEnvironmentVariables to preConfigureHooks"
+# Declare the variable to avoid occursInArray throwing an error if it doesn't exist.
+declare -ag prePhases
 
-preConfigureHooks+=(nvccSetupCMakeEnvironmentVariables)
-nixLog "added nvccSetupCMakeEnvironmentVariables to preConfigureHooks"
+nvccHookRegistration() {
+  if occursInArray nvccSetupEnvironmentVariables preConfigureHooks; then
+    nixLog "skipping nvccSetupEnvironmentVariables, already present in preConfigureHooks"
+  else
+    preConfigureHooks+=(nvccSetupEnvironmentVariables)
+    nixLog "added nvccSetupEnvironmentVariables to preConfigureHooks"
+  fi
 
-# If the host compiler does not match the stdenv compiler, we need to prevent NVCC from leaking the host compiler
-# into the build.
-if ! ((nvccHostCCMatchesStdenvCC)); then
-  declare -ag nvccForbiddenHostCompilerRunpathEntries=(
-    # Compiler libraries
-    "@unwrappedCCRoot@/lib"
-    "@unwrappedCCRoot@/lib64"
-    "@unwrappedCCRoot@/gcc/@hostPlatformConfig@/@ccVersion@"
-    # Compiler library
-    "@unwrappedCCLibRoot@/lib"
-  )
+  # If the host compiler does not match the stdenv compiler, we need to prevent NVCC from leaking the host compiler
+  # into the build.
+  if ! ((nvccHostCCMatchesStdenvCC)); then
+    declare -ag nvccForbiddenHostCompilerRunpathEntries=(
+      # Compiler libraries
+      "@unwrappedCCRoot@/lib"
+      "@unwrappedCCRoot@/lib64"
+      "@unwrappedCCRoot@/gcc/@hostPlatformConfig@/@ccVersion@"
+      # Compiler library
+      "@unwrappedCCLibRoot@/lib"
+    )
 
-  # Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
-  prePhases+=(nvccHookOrderCheckPhase)
-  nixLog "added nvccHookOrderCheckPhase to prePhases"
+    # Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
+    if occursInArray nvccHookOrderCheckPhase prePhases; then
+      nixLog "skipping nvccHookOrderCheckPhase, already present in prePhases"
+    else
+      prePhases+=(nvccHookOrderCheckPhase)
+      nixLog "added nvccHookOrderCheckPhase to prePhases"
+    fi
 
-  # Tell CMake to ignore libraries provided by NVCC's host compiler when linking.
-  preConfigureHooks+=(nvccSetupCMakeHostCompilerLeakPrevention)
-  nixLog "added nvccSetupCMakeHostCompilerLeakPrevention to preConfigureHooks"
+    # Tell CMake to ignore libraries provided by NVCC's host compiler when linking.
+    if occursInArray nvccSetupCMakeHostCompilerLeakPrevention preConfigureHooks; then
+      nixLog "skipping nvccSetupCMakeHostCompilerLeakPrevention, already present in preConfigureHooks"
+    else
+      preConfigureHooks+=(nvccSetupCMakeHostCompilerLeakPrevention)
+      nixLog "added nvccSetupCMakeHostCompilerLeakPrevention to preConfigureHooks"
+    fi
 
-  # Ensure that the host compiler's libraries are not present in the runpath of the compiled binaries.
-  postFixupHooks+=("autoFixElfFiles nvccRunpathCheck")
-  nixLog "added 'autoFixElfFiles nvccRunpathCheck' to postFixupHooks"
-fi
+    # Ensure that the host compiler's libraries are not present in the runpath of the compiled binaries.
+    if occursInArray "autoFixElfFiles nvccRunpathCheck" postFixupHooks; then
+      nixLog "skipping 'autoFixElfFiles nvccRunpathCheck', already present in postFixupHooks"
+    else
+      postFixupHooks+=("autoFixElfFiles nvccRunpathCheck")
+      nixLog "added 'autoFixElfFiles nvccRunpathCheck' to postFixupHooks"
+    fi
+  fi
+
+  return 0
+}
+
+nvccHookRegistration
 
 nvccHookOrderCheck() {
   # Ensure that our setup hook runs after autoPatchelf.
@@ -97,6 +126,19 @@ nvccHookOrderCheckPhase() {
 }
 
 nvccSetupEnvironmentVariables() {
+  # NOTE: Historically, we would set the following flags:
+  # -DCUDA_HOST_COMPILER=@ccFullPath@
+  # -DCMAKE_CUDA_HOST_COMPILER=@ccFullPath@
+  # However, as of CMake 3.13, if CUDAHOSTCXX is set, CMake will automatically use it as the host compiler for CUDA.
+  # Since we set CUDAHOSTCXX in cudaSetupEnvironmentVariables, we don't need to set these flags anymore.
+
+  # Set CUDAHOSTCXX if unset or null
+  # https://cmake.org/cmake/help/latest/envvar/CUDAHOSTCXX.html
+  if [[ -z ${CUDAHOSTCXX:-} ]]; then
+    export CUDAHOSTCXX="@ccFullPath@"
+    nixLog "set CUDAHOSTCXX to $CUDAHOSTCXX"
+  fi
+
   # NOTE: CUDA 12.5 and later allow setting NVCC_CCBIN as a lower-precedent way of using -ccbin.
   # https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#compiler-bindir-directory-ccbin
   export NVCC_CCBIN="@ccFullPath@"
@@ -124,35 +166,20 @@ nvccSetupEnvironmentVariables() {
   return 0
 }
 
-nvccSetupCMakeEnvironmentVariables() {
+nvccSetupCMakeHostCompilerLeakPrevention() {
   # If CMake is not present, skip setting CMake flags.
   if ! command -v cmake &>/dev/null; then
     return 0
   fi
 
-  # NOTE: Historically, we would set the following flags:
-  # -DCUDA_HOST_COMPILER=@ccFullPath@
-  # -DCMAKE_CUDA_HOST_COMPILER=@ccFullPath@
-  # However, as of CMake 3.13, if CUDAHOSTCXX is set, CMake will automatically use it as the host compiler for CUDA.
-  # Since we set CUDAHOSTCXX in cudaSetupEnvironmentVariables, we don't need to set these flags anymore.
-
-  # Set CUDAHOSTCXX if unset or null
-  # https://cmake.org/cmake/help/latest/envvar/CUDAHOSTCXX.html
-  if [[ -z ${CUDAHOSTCXX:-} ]]; then
-    export CUDAHOSTCXX="@ccFullPath@"
-    nixLog "set CUDAHOSTCXX to $CUDAHOSTCXX"
-  fi
-
-  return 0
-}
-
-nvccSetupCMakeHostCompilerLeakPrevention() {
   # Instruct CMake to ignore libraries provided by NVCC's host compiler when linking, as these should be supplied by
   # the stdenv's compiler.
+  local forbiddenEntry
   for forbiddenEntry in "${nvccForbiddenHostCompilerRunpathEntries[@]}"; do
     addToSearchPathWithCustomDelimiter ";" CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE "$forbiddenEntry"
     nixLog "appended $forbiddenEntry to CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE"
   done
+
   return 0
 }
 

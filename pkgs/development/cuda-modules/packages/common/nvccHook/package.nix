@@ -47,16 +47,10 @@ let
   isBadPlatform = any id (attrValues badPlatformsConditions);
 in
 # TODO: Document breaking change of move from cudaDontCompressFatbin to dontCompressCudaFatbin.
-makeSetupHook {
+(makeSetupHook {
   inherit name;
 
-  propagatedBuildInputs = [
-    # Used in the setup hook
-    autoFixElfFiles
-    arrayUtilities.occursOnlyOrAfterInArray
-    arrayUtilities.computeFrequencyMap
-    arrayUtilities.getRunpathEntries
-  ];
+  propagatedBuildInputs = [ autoFixElfFiles ];
 
   inherit substitutions;
 
@@ -79,4 +73,12 @@ makeSetupHook {
         false;
     maintainers = lib.teams.cuda.members;
   };
-} ./nvccHook.bash
+} ./nvccHook.bash).overrideAttrs
+  (prevAttrs: {
+    depsHostHostPropagated = prevAttrs.depsHostHostPropagated or [ ] ++ [
+      arrayUtilities.computeFrequencyMap
+      arrayUtilities.getRunpathEntries
+      arrayUtilities.occursInArray
+      arrayUtilities.occursOnlyOrAfterInArray
+    ];
+  })

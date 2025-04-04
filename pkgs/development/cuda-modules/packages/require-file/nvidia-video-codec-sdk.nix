@@ -10,6 +10,9 @@ let
   inherit (lib.versions) majorMinor;
 in
 stdenv.mkDerivation (finalAttrs: {
+  # TODO(@connorbaker): Document that libraries which need to link against the stubs must manually add them to
+  # autoPatchelf's search path.
+
   __structuredAttrs = true;
   strictDeps = true;
 
@@ -65,8 +68,6 @@ stdenv.mkDerivation (finalAttrs: {
           ln -sr "$libname.so" "$libname.so.1"
         fi
       done
-      nixLog "creating symlinks for stubs in lib directory"
-      ln -srt .. *.so *.so.*
       popd
 
       nixLog "deleting Lib directory"

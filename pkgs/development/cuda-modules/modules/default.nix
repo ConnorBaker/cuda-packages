@@ -12,7 +12,7 @@ in
   imports = [
     ./cuda-packages.nix
     ./data
-    ./redists
+    ./fixups
     ./manifests
   ];
 

@@ -1,17 +1,10 @@
 {
-  autoAddDriverRunpath,
-  autoPatchelfHook,
   callPackage,
-  config,
   cudaConfig,
   cudaMajorVersion,
   cudaLib,
-  cudaMajorMinorVersion,
   cudaPackagesConfig,
-  cudaRunpathFixupHook,
   lib,
-  markForCudaToolkitRootHook,
-  cudaHook,
   stdenv,
   stdenvNoCC,
   srcOnly,
@@ -69,11 +62,9 @@ in
 {
   redistName,
   packageName,
-  outputs,
-  fixupFn ? (
-    _: _: _:
-    { }
-  ),
+  # `fixupFn` is a `callPackage`-able arugment which is `callPackage`-ed and provided to the derivation's `overrideAttrs`.
+  # It is responsible for setting up `passthru.redistBuilderArg.outputs`, among other things.
+  fixupFn,
 }:
 let
   manifestVersion = cudaPackagesConfig.redists.${redistName};
@@ -140,8 +131,6 @@ let
 
           # Package source, or null
           inherit releaseSource;
-
-          inherit outputs;
 
           # TODO(@connorbaker): Document these
           inherit supportedRedistSystems;

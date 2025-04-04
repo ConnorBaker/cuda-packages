@@ -1,60 +1,50 @@
 # shellcheck shell=bash
 
-declare -Ag cudaHostPathsSeen=()
+# TODO(@connorbaker): Why this offset?
+if ((${hostOffset:?} != -1)); then
+  nixInfoLog "skipping sourcing cudaHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+  return 0
+fi
+nixLog "sourcing cudaHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
 
-preConfigureHooks+=(cudaFindAvailablePackages)
-nixLog "added cudaFindAvailablePackages to preConfigureHooks"
+# TODO(@connorbaker): Guard against being sourced multiple times.
+declare -Ag cudaHostPathsSeen
 
-preConfigureHooks+=(cudaSetupEnvironmentVariables)
-nixLog "added cudaSetupEnvironmentVariables to preConfigureHooks"
+cudaHookRegistration() {
+  # We use the `targetOffset` to choose the right env hook to accumulate the right
+  # sort of deps (those with that offset).
+  addEnvHooks "${targetOffset:?}" cudaSetupCudaToolkitRoot
+  nixLog "added cudaSetupCudaToolkitRoot to envHooks for targetOffset=${targetOffset:?}"
 
-preConfigureHooks+=(cudaSetupCMakeFlags)
-nixLog "added cudaSetupCMakeFlags to preConfigureHooks"
+  if occursInArray cudaSetupCMakeFlags preConfigureHooks; then
+    nixLog "skipping cudaSetupCMakeFlags, already present in preConfigureHooks"
+  else
+    preConfigureHooks+=(cudaSetupCMakeFlags)
+    nixLog "added cudaSetupCMakeFlags to preConfigureHooks"
+  fi
 
-# NOTE: setup.sh uses recordPropagatedDependencies in fixupPhase, which overwrites dependency files, so we must run
-# in postFixup.
-postFixupHooks+=(cudaPropagateLibraries)
-nixLog "added cudaPropagateLibraries to postFixupHooks"
-
-cudaFindAvailablePackages() {
-  local dependency
-  local dependencyArrayName
-  local -n dependencyArray
-  # These names are all guaranteed to be arrays (though they may be empty), with or without __structuredAttrs set.
-  # TODO: This function should record *where* it saw each CUDA marker so we can ensure the device offsets are correct.
-  # Currently, it lumps them all into the same array, and we use that array to set environment variables.
-  local -a dependencyArrayNames=(
-    pkgsBuildBuild
-    pkgsBuildHost
-    pkgsBuildTarget
-    pkgsHostHost
-    pkgsHostTarget
-    pkgsTargetTarget
-  )
-
-  for dependencyArrayName in "${dependencyArrayNames[@]}"; do
-    nixInfoLog "searching dependencies in $dependencyArrayName for CUDA markers"
-    dependencyArray="$dependencyArrayName"
-    for dependency in "${dependencyArray[@]}"; do
-      nixInfoLog "checking $dependency for CUDA markers"
-      if [[ -f "$dependency/nix-support/include-in-cudatoolkit-root" ]]; then
-        nixInfoLog "found CUDA marker in $dependency from $dependencyArrayName"
-        cudaHostPathsSeen["$dependency"]=1
-      fi
-    done
-  done
+  # NOTE: setup.sh uses recordPropagatedDependencies in fixupPhase, which overwrites dependency files, so we must run
+  # in postFixup.
+  if occursInArray cudaPropagateLibraries postFixupHooks; then
+    nixLog "skipping cudaPropagateLibraries, already present in postFixupHooks"
+  else
+    postFixupHooks+=(cudaPropagateLibraries)
+    nixLog "added cudaPropagateLibraries to postFixupHooks"
+  fi
 
   return 0
 }
 
-cudaSetupEnvironmentVariables() {
-  local path
-  nixInfoLog "running with cudaHostPathsSeen=${!cudaHostPathsSeen[*]}"
+cudaHookRegistration
 
-  for path in "${!cudaHostPathsSeen[@]}"; do
-    addToSearchPathWithCustomDelimiter ";" CUDAToolkit_ROOT "$path"
-    nixLog "added $path to CUDAToolkit_ROOT"
-  done
+cudaSetupCudaToolkitRoot() {
+  if [[ -f "$1/nix-support/include-in-cudatoolkit-root" ]]; then
+    cudaHostPathsSeen["$1"]=1
+    addToSearchPathWithCustomDelimiter ";" CUDAToolkit_ROOT "$1"
+    nixLog "added $1 to CUDAToolkit_ROOT"
+  else
+    nixInfoLog "skipping $1, not marked for inclusion by cudaHook"
+  fi
 
   return 0
 }
@@ -62,15 +52,18 @@ cudaSetupEnvironmentVariables() {
 cudaSetupCMakeFlags() {
   # If CMake is not present, skip setting CMake flags.
   if ! command -v cmake &>/dev/null; then
+    nixInfoLog "skipping cudaSetupCMakeFlags, CMake not found"
     return 0
   fi
 
+  # TODO: Check if this is already present in cmakeFlags before adding.
   appendToVar cmakeFlags "-DCMAKE_POLICY_DEFAULT_CMP0074=NEW"
   nixLog "appended -DCMAKE_POLICY_DEFAULT_CMP0074=NEW to cmakeFlags"
 
   return 0
 }
 
+# TODO: This doesn't account for offsets.
 cudaPropagateLibraries() {
   nixInfoLog "running with cudaPropagateToOutput=${cudaPropagateToOutput:-} cudaHostPathsSeen=${!cudaHostPathsSeen[*]}"
 

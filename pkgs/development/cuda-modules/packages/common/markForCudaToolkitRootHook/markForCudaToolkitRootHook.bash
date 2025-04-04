@@ -1,7 +1,24 @@
 # shellcheck shell=bash
 
-fixupOutputHooks+=(markForCudaToolkitRoot)
-nixLog "added markForCudaToolkitRoot to fixupOutputHooks"
+# TODO(@connorbaker): Why this offset?
+if ((${hostOffset:?} != -1)); then
+  nixInfoLog "skipping sourcing markForCudaToolkitRootHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+  return 0
+fi
+nixLog "sourcing markForCudaToolkitRootHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+
+markForCudaToolkitRootHookRegistration() {
+  if occursInArray markForCudaToolkitRoot fixupOutputHooks; then
+    nixLog "skipping markForCudaToolkitRoot, already present in fixupOutputHooks"
+  else
+    fixupOutputHooks+=(markForCudaToolkitRoot)
+    nixLog "added markForCudaToolkitRoot to fixupOutputHooks"
+  fi
+
+  return 0
+}
+
+markForCudaToolkitRootHookRegistration
 
 markForCudaToolkitRoot() {
   nixDebugLog "creating ${prefix:?}/nix-support if it doesn't exist"

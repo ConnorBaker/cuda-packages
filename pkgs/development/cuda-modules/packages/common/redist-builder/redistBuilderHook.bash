@@ -1,27 +1,37 @@
 # shellcheck shell=bash
 
-postUnpackHooks+=(unpackCudaLibSubdir)
-nixLog "added unpackCudaLibSubdir to postUnpackHooks"
-
-postUnpackHooks+=(unpackCudaPkgConfigDirs)
-nixLog "added unpackCudaPkgConfigDirs to postUnpackHooks"
-
-prePatchHooks+=(patchCudaPkgConfig)
-nixLog "added patchCudaPkgConfig to prePatchHooks"
-
-if [[ -z ${allowFHSReferences-} ]]; then
-  postInstallCheckHooks+=(checkCudaFhsRefs)
-  nixLog "added checkCudaFhsRefs to postInstallCheckHooks"
+if ((${hostOffset:?} != -1)); then
+  nixLog "skipping sourcing redistBuilderHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+  return 0
 fi
+nixLog "sourcing redistBuilderHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
 
-postInstallCheckHooks+=(checkCudaNonEmptyOutputs)
-nixLog "added checkCudaNonEmptyOutputs to postInstallCheckHooks"
+redistBuilderHookRegistration() {
+  postUnpackHooks+=(unpackCudaLibSubdir)
+  nixLog "added unpackCudaLibSubdir to postUnpackHooks"
 
-preFixupHooks+=(fixupPropagatedBuildOutputsForMultipleOutputs)
-nixLog "added fixupPropagatedBuildOutputsForMultipleOutputs to preFixupHooks"
+  postUnpackHooks+=(unpackCudaPkgConfigDirs)
+  nixLog "added unpackCudaPkgConfigDirs to postUnpackHooks"
 
-postFixupHooks+=(fixupCudaPropagatedBuildOutputsToOut)
-nixLog "added fixupCudaPropagatedBuildOutputsToOut to postFixupHooks"
+  prePatchHooks+=(patchCudaPkgConfig)
+  nixLog "added patchCudaPkgConfig to prePatchHooks"
+
+  if [[ -z ${allowFHSReferences-} ]]; then
+    postInstallCheckHooks+=(checkCudaFhsRefs)
+    nixLog "added checkCudaFhsRefs to postInstallCheckHooks"
+  fi
+
+  postInstallCheckHooks+=(checkCudaNonEmptyOutputs)
+  nixLog "added checkCudaNonEmptyOutputs to postInstallCheckHooks"
+
+  preFixupHooks+=(fixupPropagatedBuildOutputsForMultipleOutputs)
+  nixLog "added fixupPropagatedBuildOutputsForMultipleOutputs to preFixupHooks"
+
+  postFixupHooks+=(fixupCudaPropagatedBuildOutputsToOut)
+  nixLog "added fixupCudaPropagatedBuildOutputsToOut to postFixupHooks"
+}
+
+redistBuilderHookRegistration
 
 unpackCudaLibSubdir() {
   local -r cudaLibDir="${NIX_BUILD_TOP:?}/${sourceRoot:?}/lib"

@@ -49,6 +49,7 @@ let
     ];
   };
   cudaPackages = import ./pkgs/top-level/cuda-packages.nix;
+  packageFixes = final: prev: { };
 in
 composeManyExtensions [
   extraAutoCalledPackages
@@ -57,21 +58,5 @@ composeManyExtensions [
   extraSetupHooks
   extraPythonPackages
   cudaPackages
+  packageFixes
 ]
-
-# # Package fixes
-# // {
-#   openmpi = prev.openmpi.override {
-#     # The configure flag openmpi takes expects cuda_cudart to be joined.
-#     cudaPackages = final.cudaPackages // {
-#       cuda_cudart = final.symlinkJoin {
-#         name = "cuda_cudart_joined";
-#         paths = map (
-#           output: final.cudaPackages.cuda_cudart.${output}
-#         ) final.cudaPackages.cuda_cudart.outputs;
-#       };
-#     };
-#   };
-#   # https://github.com/NixOS/nixpkgs/blob/6c4e0724e0a785a20679b1bca3a46bfce60f05b6/pkgs/by-name/uc/ucc/package.nix#L36-L39
-#   ucc = prev.ucc.overrideAttrs { strictDeps = false; };
-# }

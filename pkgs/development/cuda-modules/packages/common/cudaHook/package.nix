@@ -1,5 +1,6 @@
 # Currently propagated by cuda_nvcc or cudatoolkit, rather than used directly
 {
+  arrayUtilities,
   config,
   cudaPackagesConfig,
   lib,
@@ -25,7 +26,7 @@ let
   };
   isBadPlatform = any id (attrValues badPlatformsConditions);
 in
-makeSetupHook {
+(makeSetupHook {
   inherit name;
 
   substitutions.cudaHook = placeholder "out";
@@ -44,4 +45,9 @@ makeSetupHook {
         false;
     maintainers = lib.teams.cuda.members;
   };
-} ./cudaHook.bash
+} ./cudaHook.bash).overrideAttrs
+  (prevAttrs: {
+    depsHostHostPropagated = prevAttrs.depsHostHostPropagated or [ ] ++ [
+      arrayUtilities.occursInArray
+    ];
+  })

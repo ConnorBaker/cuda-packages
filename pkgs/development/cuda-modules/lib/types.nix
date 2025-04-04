@@ -21,6 +21,7 @@ let
   inherit (lib.lists) all;
   inherit (lib.types)
     addCheck
+    anything
     attrsWith
     bool
     enum
@@ -220,11 +221,6 @@ in
         description = "The name of the package";
         type = packageName;
       };
-      outputs = {
-        description = "The outputs available for the package";
-        type = nonEmptyListOf nonEmptyStr;
-        default = [ "out" ];
-      };
       fixupFn = {
         description = "An expression to be callPackage'd and then provided to overrideAttrs";
         type = raw;
@@ -253,16 +249,16 @@ in
   };
 
   /**
-    The option type of an attribute set mapping redistributable names to redistributable configurations.
+    The option type of an attribute set mapping redistributable names to fixup functions.
 
     # Type
 
     ```
-    redists :: OptionType
+    fixups :: OptionType
     ```
   */
-  redists = attrs redistName (attrs version redistBuilderArgs) // {
-    name = "redists";
+  fixups = attrs redistName (attrs packageName raw) // {
+    name = "fixups";
   };
 
   /**
