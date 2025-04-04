@@ -6,7 +6,6 @@
   makeSetupHook,
   patchelf,
 }:
-# TODO(@connorbaker): This functionality should be subsumed by runpathFixup.
 makeSetupHook {
   name = "deduplicateRunpathEntriesHook";
   propagatedBuildInputs = [

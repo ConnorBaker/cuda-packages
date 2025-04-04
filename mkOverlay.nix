@@ -10,12 +10,6 @@ let
       deduplicateRunpathEntriesHook = final.deduplicateRunpathEntriesHook.passthru.tests;
     };
   };
-  extraSetupHooks = final: prev: {
-    runpathFixup = final.callPackage ./pkgs/build-support/setup-hooks/runpathFixup { };
-    tests = prev.tests // {
-      runpathFixup = final.runpathFixup.passthru.tests;
-    };
-  };
   extraTesterPackages = final: prev: {
     testers = prev.testers // {
       makeMainWithRunpath = final.callPackage ./pkgs/build-support/testers/makeMainWithRunpath { };
@@ -101,7 +95,6 @@ composeManyExtensions [
   extraAutoCalledPackages
   extraAutoCalledPackagesTests
   extraTesterPackages
-  extraSetupHooks
   extraPythonPackages
   cudaPackages
   packageFixes
