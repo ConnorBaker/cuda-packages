@@ -5,7 +5,6 @@ _: prevAttrs: {
         "out"
         "dev"
         "include"
-        "lib"
       ];
     };
   };

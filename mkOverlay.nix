@@ -52,24 +52,49 @@ let
   packageFixes =
     final: prev:
     let
-      useCudartJoined =
-        drv:
-        drv.override (prevAttrs: {
-          cudaPackages = prevAttrs.cudaPackages // {
-            # Nothing else should be changed, so we don't override the scope.
-            cuda_cudart = final.symlinkJoin {
-              name = "cudart-joined";
-              paths = lib.concatMap (
-                # Don't include the stubs in the joined package.
-                output: lib.optionals (output != "stubs") [ prevAttrs.cudaPackages.cuda_cudart.${output} ]
-              ) prevAttrs.cudaPackages.cuda_cudart.outputs;
-            };
-          };
-        });
+      cudartJoined = final.symlinkJoin {
+        name = "cudart-joined";
+        paths = lib.concatMap (
+          # Don't include the stubs in the joined package.
+          output: lib.optionals (output != "stubs") [ final.cudaPackages.cuda_cudart.${output} ]
+        ) final.cudaPackages.cuda_cudart.outputs;
+      };
+      nvccJoined = final.symlinkJoin {
+        name = "nvcc-joined";
+        paths = lib.map (
+          output: final.cudaPackages.cuda_nvcc.${output}
+        ) final.cudaPackages.cuda_nvcc.outputs;
+      };
     in
     {
-      ucc = useCudartJoined prev.ucc;
-      ucx = useCudartJoined prev.ucx;
+      mpi = prev.mpi.override (prevAttrs: {
+        cudaPackages = prevAttrs.cudaPackages // {
+          # Nothing else should be changed, so we don't override the scope.
+          cuda_cudart = cudartJoined;
+        };
+      });
+
+      ucx = prev.ucx.override (prevAttrs: {
+        cudaPackages = prevAttrs.cudaPackages // {
+          # Nothing else should be changed, so we don't override the scope.
+          cuda_cudart = cudartJoined;
+        };
+      });
+
+      ucc =
+        (prev.ucc.override (prevAttrs: {
+          # Use the joined nvcc package
+          cudaPackages = prevAttrs.cudaPackages // {
+            # Nothing else should be changed, so we don't override the scope.
+            cuda_nvcc = nvccJoined;
+          };
+        })).overrideAttrs
+          (prevAttrs: {
+            env.LDFLAGS = builtins.toString [
+              # Fake libnvidia-ml.so (the real one is deployed impurely)
+              "-L${lib.getOutput "stubs" final.cudaPackages.cuda_nvml_dev}/lib/stubs"
+            ];
+          });
     };
 in
 composeManyExtensions [

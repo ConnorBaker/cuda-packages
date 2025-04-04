@@ -33,7 +33,6 @@ finalAttrs: prevAttrs: {
         "out"
         "dev"
         "include"
-        "lib"
         "stubs"
       ];
     };

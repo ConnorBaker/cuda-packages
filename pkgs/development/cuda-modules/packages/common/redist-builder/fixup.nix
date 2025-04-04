@@ -63,6 +63,12 @@ in
     else
       intersectLists redistBuilderArg.outputs finalAttrs.passthru.expectedOutputs;
 
+  # If out is not the only output, it should be *very* small.
+  # This is essentially a way for us to detect whether we've forgotten or missed an output.
+  outputChecks = optionalAttrs (finalAttrs.outputs != [ "out" ]) {
+    out.maxSize = 128 * 1024; # 128 KiB
+  };
+
   # NOTE: Because the `dev` output is special in Nixpkgs -- make-derivation.nix uses it as the default if
   # it is present -- we must ensure that it brings in the expected dependencies. For us, this means that `dev`
   # should include `bin`, `include`, and `lib` -- `static` is notably absent because it is quite large.
