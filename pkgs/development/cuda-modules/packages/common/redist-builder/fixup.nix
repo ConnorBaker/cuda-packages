@@ -258,8 +258,8 @@ in
     # NOTE: Use this when a broken condition means evaluation can fail!
     badPlatformsConditions =
       let
-        isRedistSystemSbsaExplicitlySupported = elem "linux-sbsa" finalAttrs.passthru.supportedRedistSystems;
-        isRedistSystemAarch64ExplicitlySupported = elem "linux-aarch64" finalAttrs.passthru.supportedRedistSystems;
+        isRedistSystemSbsaExplicitlySupported = elem "linux-sbsa" redistBuilderArg.supportedRedistSystems;
+        isRedistSystemAarch64ExplicitlySupported = elem "linux-aarch64" redistBuilderArg.supportedRedistSystems;
       in
       {
         "Platform is not supported" =
