@@ -89,6 +89,9 @@ let
               "-L${lib.getOutput "stubs" final.cudaPackages.cuda_nvml_dev}/lib/stubs"
             ];
           });
+
+      # Example of disabling cuda_compat for JetPack 6
+      # cudaPackagesExtensions = prev.cudaPackagesExtensions or [ ] ++ [ (_: _: { cuda_compat = null; }) ];
     };
 in
 composeManyExtensions [

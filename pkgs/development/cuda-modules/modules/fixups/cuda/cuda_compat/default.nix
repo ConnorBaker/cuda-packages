@@ -15,19 +15,6 @@ prevAttrs: {
       "libnvrm_gpu.so"
       "libnvrm_mem.so"
       "libnvdla_runtime.so"
-
-      # Added dependencies to force discovery of other libraries on Ubuntu Jetsons since these libraries
-      # have no runpath.
-      # TODO(@connorbaker): Should these be added to libcuda_cudart.so as well when not using cuda_compat?
-      # These will still need to be opened on the host and have no runpath on Ubuntu Jetsons.
-      # NOTE: These libraries were discovered by using `LD_DEBUG=libs` and running the saxpy test.
-      "libnvos.so"
-      "libnvsocsys.so"
-      "libnvrm_sync.so"
-      "libnvsciipc.so"
-      "libnvrm_chip.so"
-      "libnvrm_host1x.so"
-      "libnvcucompat.so"
     ];
 
   nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ patchelf ];
@@ -57,20 +44,6 @@ prevAttrs: {
       getHostTarget = drv: lib.getDev drv.__spliced.hostTarget or drv;
     in
     prevAttrs.postFixup or ""
-    # Added dependencies to force discovery of other libraries on Ubuntu Jetsons since these libraries
-    # have no runpath.
-    + ''
-      nixLog "patchelf-ing ''${!outputLib:?}/lib/libcuda.so with runtime dependencies"
-      patchelf \
-        "''${!outputLib:?}/lib/libcuda.so" \
-        --add-needed libnvos.so \
-        --add-needed libnvsocsys.so \
-        --add-needed libnvrm_sync.so \
-        --add-needed libnvsciipc.so \
-        --add-needed libnvrm_chip.so \
-        --add-needed libnvrm_host1x.so \
-        --add-needed libnvcucompat.so
-    ''
     # Install the setup hook in `out`, since the other outputs are symlinks to `out` (ensuring `out`'s setup hook is
     # always sourced).
     + ''

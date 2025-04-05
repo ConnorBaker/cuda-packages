@@ -37,6 +37,9 @@ TODO: `cudaCapabilities` was introduced to `cudaPackagesConfig` to enable per-pa
 
 ## Todo
 
+- Discovered in the process of examining `saxpy`'s build, using `declare NIX_DEBUG=4` and `export NIX_DEBUG=4` yield different logs and results!
+  - Only `export` shows the before and after flags used with toolchain invocations -- `declare` does not!
+  - Only `declare` yields an output with the same RUNPATH as the original -- with `export`, entries are missing!
 - `src` selection and merging handled by module system instead of fuctions in `cudaLib`?
 - update `cuda-redist` to accept path arguments
 - continue switching from `testBuildFailure` to `testBuildFailure'`

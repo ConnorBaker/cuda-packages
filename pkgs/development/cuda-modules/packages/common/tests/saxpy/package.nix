@@ -13,6 +13,9 @@ let
   inherit (lib.strings) cmakeBool cmakeFeature;
 in
 stdenv.mkDerivation {
+  __structuredAttrs = true;
+  strictDeps = true;
+
   pname = "saxpy";
   version = "0-unstable-2023-07-11";
 
