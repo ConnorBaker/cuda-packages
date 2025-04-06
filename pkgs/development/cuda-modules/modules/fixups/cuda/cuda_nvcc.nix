@@ -1,15 +1,10 @@
 {
   cudaAtLeast,
   cudaStdenv,
-  cudaConfig,
-  cudaMajorMinorPatchVersion,
-  cudaMajorMinorVersion,
   cudaOlder,
   lib,
   nvccHook,
-  pkgs,
   stdenv,
-  stdenvAdapters,
 }:
 finalAttrs: prevAttrs: {
   # Entries here will be in nativeBuildInputs when cuda_nvcc is

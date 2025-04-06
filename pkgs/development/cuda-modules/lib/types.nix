@@ -21,12 +21,10 @@ let
   inherit (lib.lists) all;
   inherit (lib.types)
     addCheck
-    anything
     attrsWith
     bool
     enum
     listOf
-    nonEmptyListOf
     nonEmptyStr
     nullOr
     package
@@ -358,6 +356,17 @@ in
       cudaForwardCompat = {
         description = ''
           Whether to build with forward compatability enabled.
+        '';
+        type = bool;
+      };
+      cudaForceRpath = {
+        description = ''
+          Sets the default value of the `cudaForceRpath` configuration across all CUDA package sets.
+          When set, `cudaForceRpath` forces all CUDA packages (and consumers) to use RPATH instead of RUNPATH.
+
+          NOTE: This can be used as temporary workaround for devices running Ubuntu JetPack 6 releases, where
+          NVIDIA's CUDA driver libraries have neither RPATH nor RUNPATH set and tools like `nixGL` and `nixglhost`
+          do not work or do not work with `cuda_compat`.
         '';
         type = bool;
       };

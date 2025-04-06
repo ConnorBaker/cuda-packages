@@ -156,6 +156,7 @@ final: _: {
           {
             cudaCapabilities = final.config.cudaCapabilities or [ ];
             cudaForwardCompat = final.config.cudaForwardCompat or true;
+            cudaForceRpath = final.config.cudaForceRpath or false;
             hostNixSystem = final.stdenv.hostPlatform.system;
           }
         ] ++ final.cudaModules;

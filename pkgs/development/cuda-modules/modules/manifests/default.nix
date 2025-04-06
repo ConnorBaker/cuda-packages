@@ -23,7 +23,7 @@ let
         ];
         isRedistribFile = pathType == "regular" && version != pathName;
       in
-      acc // optionalAttrs isRedistribFile ({ ${version} = importJSON (path + "/${pathName}"); })
+      acc // optionalAttrs isRedistribFile { ${version} = importJSON (path + "/${pathName}"); }
     ) { } (readDir path);
 
   mkManyManifests =

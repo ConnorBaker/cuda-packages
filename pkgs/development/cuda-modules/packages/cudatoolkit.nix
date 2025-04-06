@@ -64,7 +64,8 @@ let
 in
 symlinkJoin {
   # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
-  pname = "${cudaNamePrefix}-cudatoolkit";
+  name = "${cudaNamePrefix}-cudatoolkit-${cudaMajorMinorVersion}";
+  pname = "cudatoolkit";
   version = cudaMajorMinorVersion;
   paths = concatMap getAllOutputs allPackages;
 
@@ -72,6 +73,7 @@ symlinkJoin {
     lib = symlinkJoin {
       # NOTE: cudaNamePrefix is needed here because cudaPackages.callPackage will not set it on passthru attributes.
       name = "${cudaNamePrefix}-cudatoolkit-lib-${cudaMajorMinorVersion}";
+      pname = "cudatoolkit-lib";
       version = cudaMajorMinorVersion;
       paths = map getLib allPackages;
     };

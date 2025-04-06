@@ -1,9 +1,7 @@
 # NOTE: Tests for nvccRunpathFixup go here.
 {
   arrayUtilities,
-  hello,
   nvccHook,
-  patchelf,
   testers,
 }:
 let

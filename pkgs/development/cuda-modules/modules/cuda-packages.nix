@@ -5,7 +5,7 @@ top@{
 }:
 let
   inherit (builtins) toJSON throw warn;
-  inherit (cudaConfig.data) cudaCapabilityToInfo;
+  inherit (cudaConfig) data fixups manifests;
   inherit (cudaLib.types)
     attrs
     cudaPackagesConfig
@@ -57,7 +57,7 @@ let
           redistName:
           let
             redistVersion = cudaPackagesConfig.redists.${redistName};
-            manifest = cudaConfig.manifests.${redistName}.${redistVersion};
+            manifest = manifests.${redistName}.${redistVersion};
           in
           # One benefit of using mkMerge is that, becuase all entries have the same priority, we should get errors
           # if there are collisions between package names across redists.
@@ -67,10 +67,10 @@ let
             (mkIf (hasAttr packageName manifest) {
               ${packageName} = {
                 inherit packageName redistName;
-                fixupFn = cudaConfig.fixups.${redistName}.${packageName};
+                fixupFn = fixups.${redistName}.${packageName};
               };
             })
-          ) (attrNames cudaConfig.fixups.${redistName})
+          ) (attrNames fixups.${redistName})
         ) (attrNames cudaPackagesConfig.redists)
       );
     in
@@ -84,25 +84,27 @@ let
   mkCudaPackagesConfig =
     cudaPackagesConfig:
     let
+      inherit (cudaPackagesConfig) cudaCapabilities;
+
       # The value for CUDA version is the attribute name since this attribute set is indexed by CUDA version.
       cudaMajorMinorPatchVersion = cudaPackagesConfig._module.args.name;
 
       # Remove all known capabilities from the user's list to find unrecognized capabilities.
-      unrecognizedCudaCapabilities = subtractLists cudaConfig.data.allCudaCapabilities cudaPackagesConfig.cudaCapabilities;
+      unrecognizedCudaCapabilities = subtractLists data.allCudaCapabilities cudaCapabilities;
 
       # Remove all supported capabilities from the user's list to find unsupported capabilities.
-      unsupportedCudaCapabilities = subtractLists cudaPackagesConfig.supportedCudaCapabilities cudaPackagesConfig.cudaCapabilities;
+      unsupportedCudaCapabilities = subtractLists cudaPackagesConfig.supportedCudaCapabilities cudaCapabilities;
 
       # Find the intersection of the user's capabilities and the Jetson capabilities.
-      requestedJetsonCudaCapabilities = intersectLists cudaConfig.data.jetsonCudaCapabilities cudaPackagesConfig.cudaCapabilities;
+      requestedJetsonCudaCapabilities = intersectLists data.jetsonCudaCapabilities cudaCapabilities;
 
       # Find the intersection of the user's capabilities and the accelerated capabilities.
-      requestedAcceleratedCudaCapabilities = intersectLists cudaConfig.data.acceleratedCudaCapabilities cudaPackagesConfig.cudaCapabilities;
+      requestedAcceleratedCudaCapabilities = intersectLists data.acceleratedCudaCapabilities cudaCapabilities;
 
       # Find the capabilities which are not Jetson capabilities.
       requestedNonJetsonCudaCapabilities = subtractLists (
         requestedJetsonCudaCapabilities ++ requestedAcceleratedCudaCapabilities
-      ) cudaPackagesConfig.cudaCapabilities;
+      ) cudaCapabilities;
     in
     # For both cudaCapabilities and cudaForwardCompat, use a very low priority so the user's value is used
     # instead of merging.
@@ -134,8 +136,7 @@ let
           }
           {
             assertion =
-              cudaPackagesConfig.hasJetsonCudaCapability
-              -> requestedJetsonCudaCapabilities == cudaPackagesConfig.cudaCapabilities;
+              cudaPackagesConfig.hasJetsonCudaCapability -> requestedJetsonCudaCapabilities == cudaCapabilities;
             message = "${jetsonMesssagePrefix} cannot be specified with non-Jetson capabilities (${toJSON requestedNonJetsonCudaCapabilities})";
           }
           {
@@ -144,14 +145,13 @@ let
             message = "${acceleratedMessagePrefix} do not support forward compatibility.";
           }
           {
-            assertion =
-              cudaPackagesConfig.hasAcceleratedCudaCapability -> length cudaPackagesConfig.cudaCapabilities == 1;
+            assertion = cudaPackagesConfig.hasAcceleratedCudaCapability -> length cudaCapabilities == 1;
             message =
               let
                 requestedAcceleratedCudaCapability = head requestedAcceleratedCudaCapabilities;
                 otherCudaCapabilities = filter (
                   cudaCapability: cudaCapability != requestedAcceleratedCudaCapability
-                ) cudaPackagesConfig.cudaCapabilities;
+                ) cudaCapabilities;
               in
               "${acceleratedMessagePrefix} cannot be specified with any other capability (${toJSON otherCudaCapabilities}).";
           }
@@ -163,6 +163,8 @@ let
 
       warnings = [ ];
 
+      # Default to the global CUDA capabilities if the user specified them;
+      # otherwise, use the default set of capabilities for this CUDA version.
       cudaCapabilities = mkOptionDefault (
         if cudaConfig.cudaCapabilities != [ ] then
           cudaConfig.cudaCapabilities
@@ -174,22 +176,29 @@ let
       supportedCudaCapabilities = filter (
         cudaCapability:
         cudaCapabilityIsSupported cudaPackagesConfig.cudaMajorMinorPatchVersion
-          cudaCapabilityToInfo.${cudaCapability}
-      ) cudaConfig.data.allCudaCapabilities;
+          data.cudaCapabilityToInfo.${cudaCapability}
+      ) data.allCudaCapabilities;
 
       # Find the default set of capabilities for this CUDA version using the list of supported capabilities.
       # Does not include Jetson or accelerated capabilities.
       defaultCudaCapabilities = filter (
         cudaCapability:
         cudaCapabilityIsDefault cudaPackagesConfig.cudaMajorMinorPatchVersion
-          cudaCapabilityToInfo.${cudaCapability}
+          data.cudaCapabilityToInfo.${cudaCapability}
       ) cudaPackagesConfig.supportedCudaCapabilities;
 
       cudaForwardCompat = mkOptionDefault cudaConfig.cudaForwardCompat;
+
+      cudaForceRpath = mkOptionDefault cudaConfig.cudaForceRpath;
+
       hasJetsonCudaCapability = requestedJetsonCudaCapabilities != [ ];
+
       hasAcceleratedCudaCapability = requestedAcceleratedCudaCapabilities != [ ];
+
       hostRedistSystem = getRedistSystem cudaPackagesConfig.hasJetsonCudaCapability cudaConfig.hostNixSystem;
+
       redists.cuda = cudaPackagesConfig.cudaMajorMinorPatchVersion;
+
       redistBuilderArgs = mkRedistBuilderArgsAssertWarn cudaPackagesConfig;
     };
 in
@@ -221,7 +230,7 @@ in
       cudaPackagesConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion};
     in
     {
-      packagesDirectories = [ ../packages/common ];
+      packagesDirectories = [ ../packages ];
       redists = {
         cublasmp = "0.3.1";
         cudnn = "9.7.1";

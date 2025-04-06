@@ -2,7 +2,6 @@
   autoFixElfFiles,
   addDriverRunpath,
   arrayUtilities,
-  callPackage,
   cuda_compat,
   cudaPackagesConfig,
   lib,
@@ -91,6 +90,7 @@ prevAttrs: {
       substitute \
         ${./cudaCudartRunpathFixupHook.bash} \
         "''${!outputStubs:?}/nix-support/setup-hook" \
+        --subst-var-by cudaForceRpath "${if cudaPackagesConfig.cudaForceRpath then "1" else "0"}" \
         --subst-var-by cudartStubLibDir "''${!outputStubs:?}/lib" \
         --subst-var-by driverLibDir "${addDriverRunpath.driverLink}/lib"
 

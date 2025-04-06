@@ -16,23 +16,30 @@ in
     ./manifests
   ];
 
-  # Allow users extending CUDA package sets to specify the redist version to use.
   options = mkOptions {
-    # Options
     cudaCapabilities = {
       description = ''
         Sets the default CUDA capabilities to target across all CUDA package sets.
         If empty, the default set of capabilities is determined per-package set.
       '';
       type = listOf cudaCapability;
-      default = [ ];
     };
     cudaForwardCompat = {
       description = ''
         Sets the default value of the `cudaForwardCompat` configuration across all CUDA package sets.
       '';
       type = bool;
-      default = false;
+    };
+    cudaForceRpath = {
+      description = ''
+        Sets the default value of the `cudaForceRpath` configuration across all CUDA package sets.
+        When set, `cudaForceRpath` forces all CUDA packages (and consumers) to use RPATH instead of RUNPATH.
+
+        NOTE: This can be used as temporary workaround for devices running Ubuntu JetPack 6 releases, where
+        NVIDIA's CUDA driver libraries have neither RPATH nor RUNPATH set and tools like `nixGL` and `nixglhost`
+        do not work or do not work with `cuda_compat`.
+      '';
+      type = bool;
     };
     hostNixSystem = {
       description = ''

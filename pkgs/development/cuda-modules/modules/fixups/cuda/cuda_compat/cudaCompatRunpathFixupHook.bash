@@ -10,7 +10,7 @@ nixLog "sourcing cudaCompatRunpathFixupHook.bash (hostOffset=${hostOffset:?}) (t
 
 # NOTE: This flag is duplicated in all CUDA setup hooks which modify ELF files to ensure consistency.
 # patchelf defaults to using RUNPATH, so to preserve RPATH we need to be uniform.
-declare -ig dontCudaForceRpath=${dontCudaForceRpath:-0}
+declare -ig cudaForceRpath="@cudaForceRpath@"
 
 # Declare the variable to avoid occursInArray throwing an error if it doesn't exist.
 declare -ag prePhases
@@ -70,11 +70,11 @@ cudaCompatRunpathFixup() {
   local -r originalRunpathString="$(concatStringsSep ":" originalRunpathEntries)"
   local -r newRunpathString="$(concatStringsSep ":" newRunpathEntries)"
   nixInfoLog "replacing rpath of $path: $originalRunpathString -> $newRunpathString"
-  if ((dontCudaForceRpath)); then
-    patchelf --set-rpath "$newRunpathString" "$path"
-  else
+  if ((cudaForceRpath)); then
     patchelf --remove-rpath "$path"
     patchelf --force-rpath --set-rpath "$newRunpathString" "$path"
+  else
+    patchelf --set-rpath "$newRunpathString" "$path"
   fi
 
   return 0

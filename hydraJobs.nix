@@ -6,7 +6,6 @@
 let
   inherit (cudaLib.utils) flattenDrvTree mkCudaPackagesVersionedName mkRealArchitecture;
   inherit (lib.attrsets)
-    attrNames
     attrValues
     intersectAttrs
     isAttrs
@@ -20,7 +19,6 @@ let
     map
     optionals
     ;
-  inherit (lib.strings) hasSuffix;
   inherit (lib.trivial) pipe;
 
   getPassthruTests =

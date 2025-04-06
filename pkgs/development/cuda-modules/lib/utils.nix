@@ -50,7 +50,7 @@ let
     ;
   inherit (lib.debug) traceIf;
   inherit (lib.filesystem) packagesFromDirectoryRecursive;
-  inherit (lib.fixedPoints) extends makeExtensible;
+  inherit (lib.fixedPoints) makeExtensible;
   inherit (lib.lists)
     concatMap
     head
@@ -65,7 +65,6 @@ let
   inherit (lib.strings)
     concatMapStringsSep
     concatStringsSep
-    hasPrefix
     hasSuffix
     removePrefix
     replaceStrings

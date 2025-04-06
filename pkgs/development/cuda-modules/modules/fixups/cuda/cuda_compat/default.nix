@@ -58,6 +58,7 @@ prevAttrs: {
       substitute \
         ${./cudaCompatRunpathFixupHook.bash} \
         "''${out:?}/nix-support/setup-hook" \
+        --subst-var-by cudaForceRpath "${if cudaPackagesConfig.cudaForceRpath then "1" else "0"}" \
         --subst-var-by cudaCompatOutDir "''${out:?}/compat" \
         --subst-var-by cudaCompatLibDir "''${!outputLib:?}/lib" \
         --subst-var-by driverLibDir "${addDriverRunpath.driverLink}/lib"

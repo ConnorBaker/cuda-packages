@@ -7,19 +7,13 @@ let
   inherit (builtins) readDir;
   inherit (cudaLib.types) redistName fixups;
   inherit (lib.asserts) assertMsg;
-  inherit (lib.attrsets)
-    foldlAttrs
-    optionalAttrs
-    ;
+  inherit (lib.attrsets) foldlAttrs optionalAttrs;
   inherit (lib.options) mkOption;
   inherit (lib.strings) hasSuffix removeSuffix;
   inherit (lib.trivial) pathExists;
 
-  mkFixupsForRedist =
-    {
-      redistName,
-      fixupFnDir,
-    }:
+  mkFixups =
+    fixupFnDir:
     let
       fixupFnDirContents = readDir fixupFnDir;
     in
@@ -59,10 +53,7 @@ in
     // optionalAttrs (fileType == "directory") (
       assert assertMsg (redistName.check fileName) "expected a redist name but got ${fileName}";
       {
-        ${fileName} = mkFixupsForRedist {
-          redistName = fileName;
-          fixupFnDir = ./. + "/${fileName}";
-        };
+        ${fileName} = mkFixups (./. + "/${fileName}");
       }
     )
   ) { } (readDir ./.);

@@ -9,7 +9,7 @@ nixLog "sourcing nvccHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targ
 
 # NOTE: This flag is duplicated in all CUDA setup hooks which modify ELF files to ensure consistency.
 # patchelf defaults to using RUNPATH, so to preserve RPATH we need to be uniform.
-declare -ig dontCudaForceRpath=${dontCudaForceRpath:-0}
+declare -ig cudaForceRpath="@cudaForceRpath@"
 
 declare -ig nvccHostCCMatchesStdenvCC="@nvccHostCCMatchesStdenvCC@"
 declare -ig dontCompressCudaFatbin=${dontCompressCudaFatbin:-0}
@@ -172,11 +172,11 @@ nvccRunpathFixup() {
   if [[ $originalRunpathString != "$newRunpathString" ]]; then
     # Always error log when we made replacements -- this is a sign of a broken build.
     nixErrorLog "found forbidden paths, replacing rpath of $path: $originalRunpathString -> $newRunpathString"
-    if ((dontCudaForceRpath)); then
-      patchelf --set-rpath "$newRunpathString" "$path"
-    else
+    if ((cudaForceRpath)); then
       patchelf --remove-rpath "$path"
       patchelf --force-rpath --set-rpath "$newRunpathString" "$path"
+    else
+      patchelf --set-rpath "$newRunpathString" "$path"
     fi
   fi
 

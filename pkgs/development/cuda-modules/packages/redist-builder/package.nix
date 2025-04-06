@@ -91,7 +91,7 @@ let
           strictDeps = true;
           stdenv = stdenvNoCC;
           pname = packageName;
-          version = release.version;
+          inherit (release) version;
           src = fetchurl {
             url = mkRedistUrl redistName relative_path;
             inherit sha256;

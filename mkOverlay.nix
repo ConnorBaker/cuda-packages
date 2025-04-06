@@ -24,7 +24,7 @@ let
       };
     };
   };
-  extraPythonPackages = final: prev: {
+  extraPythonPackages = _: prev: {
     pythonPackagesExtensions = prev.pythonPackagesExtensions or [ ] ++ [
       (
         finalPythonPackages: _:
@@ -83,12 +83,12 @@ let
             cuda_nvcc = nvccJoined;
           };
         })).overrideAttrs
-          (prevAttrs: {
+          {
             env.LDFLAGS = builtins.toString [
               # Fake libnvidia-ml.so (the real one is deployed impurely)
               "-L${lib.getOutput "stubs" final.cudaPackages.cuda_nvml_dev}/lib/stubs"
             ];
-          });
+          };
 
       # Example of disabling cuda_compat for JetPack 6
       # cudaPackagesExtensions = prev.cudaPackagesExtensions or [ ] ++ [ (_: _: { cuda_compat = null; }) ];
