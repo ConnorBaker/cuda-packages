@@ -42,30 +42,34 @@ cudaCompatRunpathFixupHookRegistration() {
     nixLog "added 'autoFixElfFiles cudaCompatRunpathFixup' to postFixupHooks"
   fi
 
+  # May be linked to compat libraries through `out/compat` or symlinks in `lib/lib`.
+  # NOTE: Used in cudaCompatRunpathFixup.
+  # shellcheck disable=SC2034
+  declare -ag cudaCompatRunpathEntriesToRemove=(
+    "@cudaCompatOutDir@"
+    "@cudaCompatLibDir@"
+    "@driverLibDir@"
+  )
+
   return 0
 }
 
 cudaCompatRunpathFixup() {
   local -r path="$1"
-  # May be linked to compat libraries through `out/compat` or symlinks in `lib/lib`.
-  local -r cudaCompatOutDir="@cudaCompatOutDir@"
-  local -r cudaCompatLibDir="@cudaCompatLibDir@"
-  local -r driverLibDir="@driverLibDir@"
+  # NOTE: Used in getRunpathEntries.
+  # shellcheck disable=SC2034
   local -a originalRunpathEntries=()
   getRunpathEntries "$path" originalRunpathEntries
 
   # Always prepend the runpath with cudaCompatOutDir to give it the highest priority.
-  local -a newRunpathEntries=("$cudaCompatOutDir")
-  local runpathEntry
-  for runpathEntry in "${originalRunpathEntries[@]}"; do
-    case "$runpathEntry" in
-    "$cudaCompatOutDir" | "$cudaCompatLibDir" | "$driverLibDir") ;;
-    *) newRunpathEntries+=("$runpathEntry") ;;
-    esac
-  done
+  local -a newRunpathEntries=("@cudaCompatOutDir@")
+
+  # Remove the entries that are in cudaCompatRunpathEntriesToRemove from the original runpath.
+  # NOTE: This is safe because arrayDifference only mutates its third argument by appending.
+  arrayDifference originalRunpathEntries cudaCompatRunpathEntriesToRemove newRunpathEntries
 
   # Add driverLibDir to the new runpath at the end, to ensure lowest priority.
-  newRunpathEntries+=("$driverLibDir")
+  newRunpathEntries+=("@driverLibDir@")
 
   local -r originalRunpathString="$(concatStringsSep ":" originalRunpathEntries)"
   local -r newRunpathString="$(concatStringsSep ":" newRunpathEntries)"

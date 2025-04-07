@@ -65,6 +65,7 @@ prevAttrs: {
 
       nixLog "installing cudaCompatRunpathFixupHook.bash depsHostHostPropagated to ''${out:?}/nix-support/propagated-host-host-deps"
       printWords \
+        "${getHostHost arrayUtilities.arrayDifference}" \
         "${getHostHost arrayUtilities.getRunpathEntries}" \
         "${getHostHost arrayUtilities.occursInArray}" \
         >>"''${out:?}/nix-support/propagated-host-host-deps"
