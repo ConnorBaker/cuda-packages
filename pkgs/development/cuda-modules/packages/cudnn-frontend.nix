@@ -3,10 +3,12 @@
   catch2_3,
   cmake,
   cuda_cccl,
+  cuda_compat ? null,
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
   cudaNamePrefix,
+  cudaPackagesConfig,
   cudnn,
   fetchFromGitHub,
   gitUpdater,
@@ -119,6 +121,9 @@ stdenv.mkDerivation (finalAttrs: {
   meta = {
     description = "A c++ wrapper for the cudnn backend API";
     homepage = "https://github.com/NVIDIA/cudnn-frontend";
+    # TODO(@connorbaker): We don't have stubs for libraries cuda_compat tries to link against yet,
+    # so this package fails to build.
+    broken = cuda_compat != null && cudaPackagesConfig.hasJetsonCudaCapability;
     license = lib.licenses.mit;
     platforms = [
       "aarch64-linux"
