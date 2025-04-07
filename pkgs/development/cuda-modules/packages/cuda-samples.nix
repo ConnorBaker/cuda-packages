@@ -28,7 +28,7 @@ stdenv.mkDerivation (finalAttrs: {
   strictDeps = true;
 
   name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
-  pname = "tests-cuda-samples";
+  pname = "cuda-samples";
   version = "12.8";
 
   # We should be able to use samples from the latest version of CUDA
@@ -174,6 +174,11 @@ stdenv.mkDerivation (finalAttrs: {
     libnvjpeg
   ];
 
+  cmakeFlags = [
+    (lib.cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
+    (lib.cmakeBool "BUILD_TEGRA" cudaPackagesConfig.hasJetsonCudaCapability)
+  ];
+
   # TODO(@connorbaker):
   # For some reason, using the combined find command doesn't delete directories:
   # find "$PWD/Samples" \
@@ -200,9 +205,4 @@ stdenv.mkDerivation (finalAttrs: {
 
     runHook postInstall
   '';
-
-  cmakeFlags = [
-    (lib.cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
-    (lib.cmakeBool "BUILD_TEGRA" cudaPackagesConfig.hasJetsonCudaCapability)
-  ];
 })
