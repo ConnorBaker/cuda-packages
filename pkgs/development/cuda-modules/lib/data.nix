@@ -35,6 +35,7 @@
     "cusparselt"
     "cutensor"
     "nppplus"
+    "nvcomp"
     # "nvidia-driver",  # NOTE: Some of the earlier manifests don't follow our scheme.
     "nvjpeg2000"
     "nvpl"
