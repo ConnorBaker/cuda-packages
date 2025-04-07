@@ -28,8 +28,8 @@ let
       # https://gitlab.kitware.com/cmake/cmake/-/merge_requests/10354
       (fetchpatch2 {
         name = "find-cuda-toolkit-check-for-language-enablement.patch";
-        url = "https://gitlab.kitware.com/cmake/cmake/-/commit/973c2c116add1d33e8551e4d5cbad0d3f480e8ab.patch";
-        hash = "sha256-oGxzbp+x88+79V+Cyx0l7+nMxX+n3ixzAFKPK26NMI8=";
+        url = "https://gitlab.kitware.com/cmake/cmake/-/commit/c5d81a246852e1ad81a3d55fcaff7e6feb779db7.patch";
+        hash = "sha256-8M+C/8bRScVybzvocwSadWL7+DXz5RR/tsnQBZjxNkI=";
       })
       # https://gitlab.kitware.com/cmake/cmake/-/merge_requests/10289
       (fetchpatch2 {
