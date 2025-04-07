@@ -34,11 +34,13 @@
 let
   inherit (cudaPackages)
     cuda_cccl # cub/cub.cuh -- Only available from CUDA 12.0.
+    cuda_compat
     cuda_cudart
     cuda_nvcc
     cudaOlder
-    cudnn-frontend
+    cudaPackagesConfig
     cudnn
+    cudnn-frontend
     flags
     libcublas # cublas_v2.h
     libcufft # cufft.h
@@ -339,10 +341,18 @@ let
 
     # NOTE: Because the test cases immediately create and try to run the binaries, we don't have an opportunity
     # to patch them with autoAddDriverRunpath. To get around this, we add the driver runpath to the environment.
-    # NOTE: This will break GPU tests on Jetson which rely on cuda_compat since LD_LIBRARY_PATH will have higher priority.
-    preCheck = optionalString finalAttrs.doCheck ''
-      export LD_LIBRARY_PATH="$(readlink -mnv "${addDriverRunpath.driverLink}/lib")"
-    '';
+    preCheck = optionalString finalAttrs.doCheck (
+      ''
+        export LD_LIBRARY_PATH="''${LD_LIBRARY_PATH:-}"
+      ''
+      # NOTE: Ensure cuda_compat has a higher priority than the driver lib when it is in use.
+      + optionalString (cudaPackagesConfig.hasJetsonCudaCapability && cuda_compat != null) ''
+        addToSearchPath LD_LIBRARY_PATH "${cuda_compat}/compat"
+      ''
+      + ''
+        addToSearchPath LD_LIBRARY_PATH "$(readlink -mnv "${addDriverRunpath.driverLink}/lib")"
+      ''
+    );
 
     # Failed tests:
     # ActivationOpTest.ONNX_Gelu
