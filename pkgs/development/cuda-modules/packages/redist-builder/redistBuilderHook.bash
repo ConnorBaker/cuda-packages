@@ -134,12 +134,6 @@ checkCudaNonEmptyOutputs() {
   if ((${#failingOutputs[@]})); then
     nixErrorLog "detected empty (excluding nix-support) outputs: ${failingOutputs[*]}"
     nixErrorLog "this typically indicates a failure in packaging or moveToOutput ordering"
-
-    for output in "${failingOutputs[@]}"; do
-      nixErrorLog "contents of ${!output:?}:"
-      ls -la "${!output:?}"
-    done
-
     exit 1
   fi
 
