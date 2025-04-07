@@ -2,6 +2,7 @@
   cmake,
   cuda_cudart,
   cuda_nvcc,
+  cudaNamePrefix,
   cudaStdenv,
   fetchpatch2,
   flags,
@@ -61,7 +62,8 @@ let
         testSuiteName = builtins.throw "testSuiteName must be set";
         testName = builtins.throw "testName must be set";
 
-        pname = "tests-cmake-tests-${finalAttrs.testSuiteName}-${finalAttrs.testName}";
+        name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
+        pname = "tests-cmake-${finalAttrs.testSuiteName}-${finalAttrs.testName}";
         inherit (cmakeSrc) version;
 
         src = cmakeSrc;

@@ -3,6 +3,7 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
+  cudaNamePrefix,
   flags,
   lib,
   libcublas,
@@ -12,10 +13,11 @@ let
   inherit (lib.fileset) toSource unions;
   inherit (lib.strings) cmakeBool cmakeFeature;
 in
-stdenv.mkDerivation {
+stdenv.mkDerivation (finalAttrs: {
   __structuredAttrs = true;
   strictDeps = true;
 
+  name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "saxpy";
   version = "0-unstable-2023-07-11";
 
@@ -53,4 +55,4 @@ stdenv.mkDerivation {
       "x86_64-linux"
     ];
   };
-}
+})

@@ -1,6 +1,7 @@
 {
   cudaConfig,
   cudaLib,
+  cudaNamePrefix,
   lib,
   runCommand,
   stdenv,
@@ -167,7 +168,7 @@ assert
     Expected: ${toJSON expected}
     Actual: ${toJSON actualWrapped}
   '';
-runCommand "tests-flags"
+runCommand "${cudaNamePrefix}-tests-flags"
   {
     __structuredAttrs = true;
     strictDeps = true;

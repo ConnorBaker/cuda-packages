@@ -1,5 +1,6 @@
 {
   cuda_cudart,
+  cudaNamePrefix,
   python3,
   writeShellApplication,
 }:
@@ -8,7 +9,7 @@ writeShellApplication {
     __structuredAttrs = true;
     strictDeps = true;
   };
-  name = "tests-onnx-tensorrt-short";
+  name = "${cudaNamePrefix}-tests-onnx-tensorrt-short";
   runtimeInputs = [
     cuda_cudart
     (python3.withPackages (ps: [

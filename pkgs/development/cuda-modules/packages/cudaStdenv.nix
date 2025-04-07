@@ -1,6 +1,6 @@
 {
   cudaConfig,
-  cudaMajorMinorPatchVersion,
+  cudaPackagesConfig,
   cudaMajorMinorVersion,
   lib,
   pkgs,
@@ -18,7 +18,7 @@ let
   defaultNvccHostCompilerMajorVersion =
     cudaConfig.data.nvccCompatibilities.${cudaMajorMinorVersion}.gcc.maxMajorVersion;
   defaultNvccHostStdenv = pkgs."gcc${defaultNvccHostCompilerMajorVersion}Stdenv";
-  nvccConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion}.nvcc;
+  nvccConfig = cudaConfig.cudaPackages.${cudaPackagesConfig.cudaMajorMinorPatchVersion}.nvcc;
   nvccHostStdenv =
     if nvccConfig.hostStdenv != null then nvccConfig.hostStdenv else defaultNvccHostStdenv;
   nvccStdenv = stdenvAdapters.useLibsFrom stdenv nvccHostStdenv;

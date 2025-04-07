@@ -2,12 +2,16 @@
   cudaAtLeast,
   cudaStdenv,
   cudaOlder,
+  cuda_nvcc,
   lib,
   nvccHook,
   stdenv,
 }:
 finalAttrs: prevAttrs: {
-  # Entries here will be in nativeBuildInputs when cuda_nvcc is
+  # The nvcc and cicc binaries contain hard-coded references to /usr
+  allowFHSReferences = true;
+
+  # Entries here will be in nativeBuildInputs when cuda_nvcc is in nativeBuildInputs
   propagatedBuildInputs = prevAttrs.propagatedBuildInputs or [ ] ++ [
     nvccHook
     cudaStdenv.cc
@@ -125,17 +129,14 @@ finalAttrs: prevAttrs: {
       )
     );
 
-  # The nvcc and cicc binaries contain hard-coded references to /usr
-  allowFHSReferences = true;
-
   passthru = prevAttrs.passthru or { } // {
     inherit cudaStdenv;
 
     nvccHostCCMatchesStdenvCC = cudaStdenv.cc == stdenv.cc;
 
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
-      # NOTE: Restrict cuda_nvcc to a single output for now to avoid breaking some consumers
-      # which expect NVCC to be within a single directory structure.
+      # NOTE: May need to restrict cuda_nvcc to a single output to avoid breaking consumers which expect NVCC
+      # to be within a single directory structure. This happens partly because NVCC is also home to NVVM.
       outputs = [
         "out"
         "bin"

@@ -1,8 +1,10 @@
 {
-  autoFixElfFiles,
   addDriverRunpath,
   arrayUtilities,
+  autoFixElfFiles,
+  cuda_cccl,
   cuda_compat,
+  cuda_nvcc,
   cudaPackagesConfig,
   lib,
   patchelf,
@@ -20,6 +22,14 @@ prevAttrs: {
   # the host OS has a recent enough CUDA driver that the compatibility library isn't needed.
   propagatedBuildInputs =
     prevAttrs.propagatedBuildInputs or [ ]
+    # Add the dependency on NVCC's include directory.
+    # - crt/host_config.h
+    # TODO(@connorbaker): Check that the dependency offset for this is correct.
+    ++ [ (lib.getOutput "include" cuda_nvcc) ]
+    # Add the dependency on CCCL's include directory.
+    # - nv/target
+    # TODO(@connorbaker): Check that the dependency offset for this is correct.
+    ++ [ (lib.getOutput "include" cuda_cccl) ]
     ++ lib.optionals (cudaPackagesConfig.hasJetsonCudaCapability && cuda_compat != null) [
       cuda_compat
     ];
@@ -28,6 +38,7 @@ prevAttrs: {
     prevAttrs.postPatch or ""
     # Patch the `cudart` package config files so they reference lib
     + ''
+      local path=""
       while IFS= read -r -d $'\0' path; do
         nixLog "patching $path"
         sed -i \
@@ -35,10 +46,12 @@ prevAttrs: {
           -e "s|^Libs\s*:\(.*\)\$|Libs: \1 -Wl,-rpath,${addDriverRunpath.driverLink}/lib|" \
           "$path"
       done < <(find -iname 'cudart-*.pc' -print0)
+      unset -v path
     ''
     # Patch the `cuda` package config files so they reference stubs
     # TODO: Will this always pull in the stubs output and cause its setup hook to be executed?
     + ''
+      local path=""
       while IFS= read -r -d $'\0' path; do
         nixLog "patching $path"
         sed -i \
@@ -47,11 +60,9 @@ prevAttrs: {
           -e "s|^Libs\s*:\(.*\)\$|Libs: \1 -Wl,-rpath,${addDriverRunpath.driverLink}/lib|" \
           "$path"
       done < <(find -iname 'cuda-*.pc' -print0)
+      unset -v path
     '';
 
-  # NOTE: cuda_cudart.dev depends on :
-  # - crt/host_config.h, which is from cuda_nvcc.dev
-  # - nv/target, which is from cuda_cccl.dev
   postInstall =
     prevAttrs.postInstall or ""
     # Namelink may not be enough, add a soname.
@@ -78,6 +89,7 @@ prevAttrs: {
     in
     prevAttrs.postFixup or ""
     # Install the setup hook
+    # TODO(@connorbaker): Check that the dependency offset for this is correct.
     + ''
       mkdir -p "''${!outputStubs:?}/nix-support"
 

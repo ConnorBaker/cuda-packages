@@ -1,4 +1,5 @@
 {
+  cudaNamePrefix,
   cudnn-frontend,
   jq,
   lib,
@@ -12,7 +13,7 @@ writeShellApplication {
     __structuredAttrs = true;
     strictDeps = true;
   };
-  name = "tests-cudnn-frontend-tests";
+  name = "${cudaNamePrefix}-tests-cudnn-frontend-tests";
   runtimeInputs = [
     cudnn-frontend.tests
     jq

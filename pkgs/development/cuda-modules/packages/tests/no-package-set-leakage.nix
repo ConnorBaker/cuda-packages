@@ -58,7 +58,7 @@ let
       unique
     ];
 in
-runCommand "tests-no-package-set-leakage"
+runCommand "${cudaNamePrefix}-tests-no-package-set-leakage"
   {
     __structuredAttrs = true;
     strictDeps = true;
