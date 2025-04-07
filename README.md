@@ -37,6 +37,7 @@ TODO: `cudaCapabilities` was introduced to `cudaPackagesConfig` to enable per-pa
 
 ## Todo
 
+- Packages with `stubs` outputs should have a hook for the stub output which replaces RPATH entries pointing to the stub with driverLink or cuda_compat, where appropriate
 - Hook which runs `nvprune` on the outputs of redistributable packages to slim them down for requested capabilities -- could be put solely in `redist-builder`
 - Hook which is registered with `addEnvHooks` (so it is run when dependencies are included) to examine the store path for CUDA libraries from a different version of the package set -- should be propagated
 - Discovered in the process of examining `saxpy`'s build, using `declare NIX_DEBUG=4` and `export NIX_DEBUG=4` yield different logs and results!
