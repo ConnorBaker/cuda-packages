@@ -6,6 +6,14 @@
   lib,
   patchelf,
 }:
+# NOTE: Because we keep the output entirely in `compat`, autoPatchelfHook won't find our try to link against
+# `compat/libcuda.so` and programs will instead link against the stubs provided by cuda_cudart.
+# This saves us from missing symbol errors as we can't link against the driver-provided `libcuda.so`, which
+# `cuda_compat/libcuda.so` requires.
+# Thanks to the setup hook for cuda_cudart, RPATH entries to the stub file are removed and the driverLink path
+# added at the end of the RPATH.
+# When cuda_compat is used, our setup hook will add the path to the compat directory to the front of the RPATH,
+# ensuring the compat library is found before the driver-provided library.
 prevAttrs: {
   allowFHSReferences = true;
 
@@ -16,24 +24,6 @@ prevAttrs: {
       "libnvrm_mem.so"
       "libnvdla_runtime.so"
     ];
-
-  nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ patchelf ];
-
-  postInstall =
-    prevAttrs.postInstall or ""
-    + ''
-      nixLog "creating symlinks for compat libs in ''${!outputLib:?}/lib"
-      mkdir -p "''${!outputLib:?}/lib"
-      ln -svt "''${!outputLib:?}/lib/" "''${out:?}/compat"/*.so "''${out:?}/compat"/*.so.*
-
-      # If there are any matches for the glob "''${out:?}/compat"/nvidia-cuda-mps-*,
-      # make symlinks.
-      if [[ -n "$(ls -A "''${out:?}/compat"/nvidia-cuda-mps-*)" ]]; then
-        nixLog "creating symlinks for compat binaries in ''${!outputBin:?}/bin"
-        mkdir -p "''${!outputBin:?}/bin"
-        ln -svt "''${!outputBin:?}/bin/" "''${out:?}/compat"/nvidia-cuda-mps-*
-      fi
-    '';
 
   # Use postFixup because fixupPhase overwrites the dependency files in /nix-support.
   postFixup =

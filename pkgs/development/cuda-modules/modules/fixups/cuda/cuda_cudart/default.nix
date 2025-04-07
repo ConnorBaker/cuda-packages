@@ -10,12 +10,10 @@
   patchelf,
 }:
 prevAttrs: {
-  propagatedBuildOutputs =
-    prevAttrs.propagatedBuildOutputs or [ ]
-    ++ [ "static" ] # required by CMake
-    ++ lib.optionals (!cudaPackagesConfig.hasJetsonCudaCapability || cuda_compat == null) [
-      "stubs"
-    ];
+  propagatedBuildOutputs = prevAttrs.propagatedBuildOutputs or [ ] ++ [
+    "static" # required by CMake
+    "stubs" # always propagate, even when cuda_compat is used, to avoid symbol linking errors
+  ];
 
   # When cuda_compat is available, propagate it.
   # NOTE: `cuda_compat` can be disabled by setting the package to `null`. This is useful in cases where
