@@ -61,7 +61,8 @@ TODO: `cudaCapabilities` was introduced to `cudaPackagesConfig` to enable per-pa
 - Throw if trying to build for a capability newer than the CUDA package set can support.
 - Figure out why separable compilation isn't working.
 - Packages:
-  - https://developer.download.nvidia.com/compute/nvcomp/redist/
+  - ~~https://developer.download.nvidia.com/compute/nvcomp/redist/~~
+    - Package the python bindings as well, which aren't packaged with the redistributable
   - https://developer.download.nvidia.com/compute/redist/nvshmem/
   - https://developer.download.nvidia.com/compute/nvidia-hpc-benchmarks/redist/
   - https://developer.nvidia.com/nvidia-hpc-sdk-249-downloads

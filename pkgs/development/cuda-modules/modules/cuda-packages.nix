@@ -241,6 +241,7 @@ in
           if versionOlder cudaPackagesConfig.cudaMajorMinorPatchVersion "12.8.0" then "0.6.3" else "0.7.0";
         cutensor = "2.1.0";
         nppplus = "0.9.0";
+        nvcomp = "4.2.0.11";
         nvjpeg2000 = "0.8.1";
         nvpl = "25.1";
         nvtiff = "0.4.0";
