@@ -6,7 +6,9 @@
   cuda_nvrtc,
   cuda_nvtx,
   cuda_profiler_api,
+  cudaAtLeast,
   cudaNamePrefix,
+  cudaOlder,
   cudaPackagesConfig,
   fetchFromGitHub,
   flags,
@@ -21,7 +23,6 @@
   libnvjpeg,
   stdenv,
 }:
-
 stdenv.mkDerivation (finalAttrs: {
   __structuredAttrs = true;
   strictDeps = true;
@@ -32,6 +33,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   # We should be able to use samples from the latest version of CUDA
   # on most of the CUDA package sets we have.
+  # Plus, 12.8 and later are rewritten to use CMake which makes it much, much easier to build.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "cuda-samples";
@@ -80,6 +82,14 @@ stdenv.mkDerivation (finalAttrs: {
       done
       unset -v sample
     ''
+    + lib.optionalString (cudaOlder "12.4") ''
+      nixLog "removing sample 3_CUDA_Features/graphConditionalNodes which requires at least CUDA 12.4"
+      substituteInPlace \
+        "$NIX_BUILD_TOP/$sourceRoot/Samples/3_CUDA_Features/CMakeLists.txt" \
+        --replace-fail \
+          "add_subdirectory(graphConditionalNodes)" \
+          "# add_subdirectory(graphConditionalNodes)"
+    ''
     # For some reason this sample requires a static library, which we don't propagate by default due to size.
     + ''
       nixLog "patching sample 4_CUDA_Libraries/simpleCUFFT_callback to use dynamic library"
@@ -89,14 +99,35 @@ stdenv.mkDerivation (finalAttrs: {
           'CUDA::cufft_static' \
           'CUDA::cufft'
     ''
-    # Patch to use the correct path to libnvJitLink.so
-    + ''
+    # Patch to use the correct path to libnvJitLink.so, or disable the sample if older than 12.4.
+    + lib.optionalString (cudaOlder "12.4") ''
+      nixLog "removing sample 4_CUDA_Libraries/jitLto which requires at least CUDA 12.4"
+      substituteInPlace \
+        "$NIX_BUILD_TOP/$sourceRoot/Samples/4_CUDA_Libraries/CMakeLists.txt" \
+        --replace-fail \
+          "add_subdirectory(jitLto)" \
+          "# add_subdirectory(jitLto)"
+    ''
+    + lib.optionalString (cudaAtLeast "12.4") ''
       nixLog "patching sample 4_CUDA_Libraries/jitLto to use correct path to libnvJitLink.so"
       substituteInPlace \
         "$NIX_BUILD_TOP/$sourceRoot/Samples/4_CUDA_Libraries/jitLto/CMakeLists.txt" \
         --replace-fail \
           "\''${CUDAToolkit_LIBRARY_DIR}/libnvJitLink.so" \
           "${lib.getLib libnvjitlink}/lib/libnvJitLink.so"
+    ''
+    # /build/NVIDIA-cuda-samples-v12.8/Samples/4_CUDA_Libraries/watershedSegmentationNPP/watershedSegmentationNPP.cpp:272:80: error: cannot convert 'size_t*' {aka 'long unsigned int*'} to 'int*'
+    #   272 |         nppStatus = nppiSegmentWatershedGetBufferSize_8u_C1R(oSizeROI[nImage], &aSegmentationScratchBufferSize[nImage]);
+    #       |                                                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #       |                                                                                |
+    #       |                                                                                size_t* {aka long unsigned int*}
+    + lib.optionalString (cudaOlder "12.8") ''
+      nixLog "removing sample 4_CUDA_Libraries/watershedSegmentationNPP which requires at least CUDA 12.8"
+      substituteInPlace \
+        "$NIX_BUILD_TOP/$sourceRoot/Samples/4_CUDA_Libraries/CMakeLists.txt" \
+        --replace-fail \
+          "add_subdirectory(watershedSegmentationNPP)" \
+          "# add_subdirectory(watershedSegmentationNPP)"
     ''
     # NVVM samples require a specific build of LLVM, which is a hassle.
     + ''
