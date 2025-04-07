@@ -97,12 +97,11 @@ in
     else
       intersectLists redistBuilderArg.outputs finalAttrs.passthru.expectedOutputs;
 
-  # If the bin or lib output exist, they should contain the majority of the package.
   # Enforcing a size limitation on the out output lets us detect if we forgot to
   # move something into the bin or lib output.
-  outputChecks = optionalAttrs (hasOutput "bin" || hasOutput "lib") {
-    out.maxSize = 128 * 1024; # 128 KiB
-  };
+  # This should be overridden by packages where we must keep more in `out`.
+  # TODO(@connorbaker): This doesn't seem to be working, or at least, isn't triggered when using `--rebuild`.
+  outputChecks.out.maxSize = 128 * 1024; # 128 KiB
 
   # NOTE: Because the `dev` output is special in Nixpkgs -- make-derivation.nix uses it as the default if
   # it is present -- we must ensure that it brings in the expected dependencies. For us, this means that `dev`
