@@ -4,6 +4,7 @@
   libcublas,
   mpi,
   nccl,
+  stdenv,
 }:
 prevAttrs: {
   buildInputs =
@@ -19,6 +20,23 @@ prevAttrs: {
 
   # Update the CMake configurations
   postFixup =
+    let
+      usrLocalCudaLib64Path = lib.concatStringsSep "/" (
+        [
+          "" # Leading slash
+          "usr"
+          "local"
+          "cuda"
+        ]
+        ++ lib.optionals stdenv.isAarch64 [
+          "targets"
+          "aarch64-linux"
+        ]
+        ++ [
+          "lib64"
+        ]
+      );
+    in
     prevAttrs.postFixup or ""
     + ''
       pushd "''${!outputDev:?}/lib/cmake/cudss" >/dev/null
@@ -35,7 +53,7 @@ prevAttrs: {
       nixLog "patching $PWD/cudss-static-targets.cmake to fix INTERFACE_LINK_DIRECTORIES for cublas"
       substituteInPlace "$PWD/cudss-static-targets.cmake" \
         --replace-fail \
-          'INTERFACE_LINK_DIRECTORIES "/usr/local/cuda/lib64"' \
+          'INTERFACE_LINK_DIRECTORIES "${usrLocalCudaLib64Path}"' \
           'INTERFACE_LINK_DIRECTORIES "${lib.getLib libcublas}/lib"'
 
       nixLog "patching $PWD/cudss-static-targets-release.cmake to fix the path to the static library"
