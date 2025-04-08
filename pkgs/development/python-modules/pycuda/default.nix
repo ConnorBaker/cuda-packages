@@ -10,7 +10,7 @@
   mako,
   numpy,
   platformdirs,
-  python3,
+  python,
   pytools,
   setuptools,
   wheel,
@@ -59,9 +59,9 @@ buildPythonPackage {
   ];
 
   preConfigure = ''
-    ${python3.pythonOnBuildForHost.interpreter} configure.py \
+    ${python.pythonOnBuildForHost.interpreter} configure.py \
       --no-use-shipped-boost \
-      --boost-python-libname=boost_python${dropDots (majorMinor python3.version)}
+      --boost-python-libname=boost_python${dropDots (majorMinor python.version)}
   '';
 
   dependencies = [
@@ -80,7 +80,7 @@ buildPythonPackage {
   ];
 
   postInstall = ''
-    ln -s "${compyteSrc}" "$out/${python3.sitePackages}/pycuda/compyte"
+    ln -s "${compyteSrc}" "$out/${python.sitePackages}/pycuda/compyte"
   '';
 
   # Requires access to libcuda.so.1 which is provided by the driver

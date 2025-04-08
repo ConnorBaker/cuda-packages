@@ -15,7 +15,7 @@
   protobuf_25 ? null,
   pybind11,
   pytestCheckHook,
-  python3,
+  python,
   setuptools,
   tabulate,
 }:
@@ -34,19 +34,19 @@ let
         hasCppProtobuf25 = protobuf_25 != null;
         hasCppProtobuf24 = protobuf_24 != null;
         hasPyProtobuf5 =
-          python3.pkgs.protobuf5 or null != null || (major python3.pkgs.protobuf.version == "5");
+          python.pkgs.protobuf5 or null != null || (major python.pkgs.protobuf.version == "5");
         hasPyProtobuf4 =
-          python3.pkgs.protobuf4 or null != null || (major python3.pkgs.protobuf.version == "4");
+          python.pkgs.protobuf4 or null != null || (major python.pkgs.protobuf.version == "4");
       in
       if hasCppProtobuf25 && hasPyProtobuf5 then
         {
           cppProtobuf = protobuf_25;
-          pyProtobuf = python3.pkgs.protobuf5 or python3.pkgs.protobuf;
+          pyProtobuf = python.pkgs.protobuf5 or python.pkgs.protobuf;
         }
       else if hasCppProtobuf24 && hasPyProtobuf4 then
         {
           cppProtobuf = protobuf_24;
-          pyProtobuf = python3.pkgs.protobuf4 or python3.pkgs.protobuf;
+          pyProtobuf = python.pkgs.protobuf4 or python.pkgs.protobuf;
         }
       else
         throw "Invalid set of protobuf"
@@ -155,7 +155,7 @@ let
       # TODO: Should these only be available to the python package?
       + ''
         nixLog "symlinking protobuf files to $out/include/onnx"
-        pushd "$out/${python3.sitePackages}/onnx"
+        pushd "$out/${python.sitePackages}/onnx"
         ln -srt "$out/include/onnx/" *.proto
         popd
       '';

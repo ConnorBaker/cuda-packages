@@ -45,10 +45,9 @@ cudaCompatRunpathFixupHookRegistration() {
   # May be linked to compat libraries through `out/compat` or symlinks in `lib/lib`.
   # NOTE: Used in cudaCompatRunpathFixup.
   # shellcheck disable=SC2034
-  declare -ag cudaCompatRunpathEntriesToRemove=(
-    "@cudaCompatOutDir@"
-    "@cudaCompatLibDir@"
-    "@driverLibDir@"
+  declare -Agr cudaCompatRunpathEntriesToRemove=(
+    ["@cudaCompatOutDir@"]=""
+    ["@cudaCompatLibDir@"]=""
   )
 
   return 0
@@ -56,29 +55,32 @@ cudaCompatRunpathFixupHookRegistration() {
 
 cudaCompatRunpathFixup() {
   local -r path="$1"
-  # NOTE: Used in getRunpathEntries.
+
+  # Get the original runpath entries.
   # shellcheck disable=SC2034
   local -a originalRunpathEntries=()
-  getRunpathEntries "$path" originalRunpathEntries
+  getRunpathEntries "$path" originalRunpathEntries || return 0 # Fails if ELF is statically linked.
 
   # Always prepend the runpath with cudaCompatOutDir to give it the highest priority.
+  # shellcheck disable=SC2034
   local -a newRunpathEntries=("@cudaCompatOutDir@")
 
   # Remove the entries that are in cudaCompatRunpathEntriesToRemove from the original runpath.
-  # NOTE: This is safe because arrayDifference only mutates its third argument by appending.
-  arrayDifference originalRunpathEntries cudaCompatRunpathEntriesToRemove newRunpathEntries
+  arrayReplace originalRunpathEntries cudaCompatRunpathEntriesToRemove $'\0' newRunpathEntries
 
-  # Add driverLibDir to the new runpath at the end, to ensure lowest priority.
-  newRunpathEntries+=("@driverLibDir@")
+  # NOTE: cudaCudartRunpathFixupHook handles filtering out and adding a single driverLibDir to the runpath at the end,
+  # so we don't need to do that here.
 
   local -r originalRunpathString="$(concatStringsSep ":" originalRunpathEntries)"
   local -r newRunpathString="$(concatStringsSep ":" newRunpathEntries)"
-  nixInfoLog "replacing rpath of $path: $originalRunpathString -> $newRunpathString"
-  if ((cudaForceRpath)); then
-    patchelf --remove-rpath "$path"
-    patchelf --force-rpath --set-rpath "$newRunpathString" "$path"
-  else
-    patchelf --set-rpath "$newRunpathString" "$path"
+  if [[ $originalRunpathString != "$newRunpathString" ]]; then
+    nixInfoLog "replacing rpath of $path: $originalRunpathString -> $newRunpathString"
+    if ((cudaForceRpath)); then
+      patchelf --remove-rpath "$path"
+      patchelf --force-rpath --set-rpath "$newRunpathString" "$path"
+    else
+      patchelf --set-rpath "$newRunpathString" "$path"
+    fi
   fi
 
   return 0

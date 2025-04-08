@@ -9,7 +9,7 @@
   lib,
   onnx-tensorrt,
   pybind11,
-  python3,
+  python,
   runCommand,
   setuptools,
   stdenv,
@@ -28,7 +28,7 @@ let
   inherit (lib.strings) cmakeFeature;
   inherit (lib.versions) splitVersion;
 
-  pythonVersionComponents = splitVersion python3.version;
+  pythonVersionComponents = splitVersion python.version;
   pythonMajorVersion = elemAt pythonVersionComponents 0;
   pythonMinorVersion = elemAt pythonVersionComponents 1;
 
@@ -85,7 +85,7 @@ let
         substituteInPlace CMakeLists.txt \
           --replace-fail \
             'HINTS ''${EXT_PATH}/''${PYTHON} /usr/include/''${PYTHON}' \
-            'HINTS "${python3}/include/''${PYTHON}"'
+            'HINTS "${python}/include/''${PYTHON}"'
         for script in packaging/bindings_wheel/tensorrt/plugin/_{lib,tensor,top_level}.py; do
           nixLog "patching $PWD/$script to remove invalid escape sequence '\s'"
           substituteInPlace "$script" --replace-fail '\s' 's'

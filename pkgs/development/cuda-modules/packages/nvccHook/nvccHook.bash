@@ -157,15 +157,16 @@ nvccSetupCMakeHostCompilerLeakPrevention() {
 
 nvccRunpathFixup() {
   local -r path="$1"
+
+  # Get the original runpath entries.
+  # shellcheck disable=SC2034
   local -a originalRunpathEntries=()
-  getRunpathEntries "$path" originalRunpathEntries
+  getRunpathEntries "$path" originalRunpathEntries || return 0 # Fails if ELF is statically linked.
 
   # Replace the forbidden entries.
+  # shellcheck disable=SC2034
   local -a newRunpathEntries=()
-  local runpathEntry
-  for runpathEntry in "${originalRunpathEntries[@]}"; do
-    newRunpathEntries+=("${nvccForbiddenHostCompilerRunpathEntries[$runpathEntry]:-"$runpathEntry"}")
-  done
+  arrayReplace originalRunpathEntries nvccForbiddenHostCompilerRunpathEntries $'\0' newRunpathEntries
 
   local -r originalRunpathString="$(concatStringsSep ":" originalRunpathEntries)"
   local -r newRunpathString="$(concatStringsSep ":" newRunpathEntries)"

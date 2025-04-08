@@ -4,11 +4,11 @@ let
   lib = import ../../lib;
   inherit (lib.attrsets)
     mapAttrs
-    recursiveUpdate
+    mergeAttrsList
     ;
-  inherit (lib.customisation) callPackagesWith makeScope;
+  inherit (lib.customisation) callPackagesWith;
   inherit (lib.fixedPoints) composeManyExtensions extends;
-  inherit (lib.lists) all foldl' map;
+  inherit (lib.lists) map;
   inherit (lib.modules) evalModules;
   inherit (lib.strings) versionAtLeast versionOlder;
   inherit (lib.trivial)
@@ -43,6 +43,8 @@ let
       # NOTE: This value is considered an implementation detail and should not be exposed in the attribute set.
       inherit (cudaPackagesConfig) cudaMajorMinorPatchVersion;
 
+      cudaPackagesMajorMinorPatchVersionName = mkCudaPackagesVersionedName cudaMajorMinorPatchVersion;
+
       mkAlias = if final.config.allowAliases then warn else flip const throw;
 
       pkgs = dontRecurseForDerivationsOrEvaluate (
@@ -54,33 +56,17 @@ let
           cudaPackagesMajorVersionName = mkCudaPackagesVersionedName (major cudaMajorMinorPatchVersion);
           cudaPackagesUnversionedName = "cudaPackages";
         in
-        if
-          # Returns true if the three CUDA package set aliases match the provided CUDA package set version.
-          all
-            (
-              packageSetAliasName:
-              final.${packageSetAliasName}.cudaPackagesConfig.cudaMajorMinorPatchVersion
-              == cudaMajorMinorPatchVersion
-            )
-            [
-              cudaPackagesMajorMinorVersionName
-              cudaPackagesMajorVersionName
-              cudaPackagesUnversionedName
-            ]
-        then
-          final
-        else
-          final.extend (
-            final: _: {
-              # cudaPackages_x_y = cudaPackages_x_y_z
-              ${cudaPackagesMajorMinorVersionName} =
-                final.cudaPackagesVersions.${cudaPackagesMajorMinorPatchVersionName};
-              # cudaPackages_x = cudaPackages_x_y
-              ${cudaPackagesMajorVersionName} = final.${cudaPackagesMajorMinorVersionName};
-              # cudaPackages = cudaPackages_x
-              ${cudaPackagesUnversionedName} = final.${cudaPackagesMajorVersionName};
-            }
-          )
+        final.extend (
+          final: _: {
+            # cudaPackages_x_y = cudaPackages_x_y_z
+            ${cudaPackagesMajorMinorVersionName} =
+              final.cudaPackagesVersions.${cudaPackagesMajorMinorPatchVersionName};
+            # cudaPackages_x = cudaPackages_x_y
+            ${cudaPackagesMajorVersionName} = final.${cudaPackagesMajorMinorVersionName};
+            # cudaPackages = cudaPackages_x
+            ${cudaPackagesUnversionedName} = final.${cudaPackagesMajorVersionName};
+          }
+        )
       );
 
       cudaNamePrefix = "cuda${majorMinor cudaMajorMinorPatchVersion}";
@@ -90,8 +76,8 @@ let
       # we cannot build nested scopes incrementally (like adding aliases) because later definitions would overwrite earlier ones.
       cudaPackagesFixedPoint =
         finalCudaPackages:
-        foldl' recursiveUpdate
-          (
+        mergeAttrsList (
+          [
             {
               inherit cudaNamePrefix;
               cudaPackages = dontRecurseForDerivationsOrEvaluate finalCudaPackages;
@@ -129,18 +115,22 @@ let
               markForCudatoolkitRootHook = mkAlias "cudaPackages.markForCudatoolkitRootHook has moved, use cudaPackages.markForCudaToolkitRootHook instead" finalCudaPackages.markForCudaToolkitRootHook;
             }
             # Redistributable packages
-            // mapAttrs (const finalCudaPackages.redist-builder) cudaPackagesConfig.redistBuilderArgs
-          )
+            (mapAttrs (const finalCudaPackages.redist-builder) cudaPackagesConfig.redistBuilderArgs)
+          ]
           # CUDA version-specific packages
-          (
-            map (packagesFromDirectoryRecursive' finalCudaPackages.callPackage) cudaPackagesConfig.packagesDirectories
-          );
+          # NOTE: No need for recurseIntoAttrs on the package set as packagesFromDirectoryRecursive' applies it automatically,
+          # and so the union of the attribute sets will have it as well.
+          ++ map (packagesFromDirectoryRecursive' finalCudaPackages.callPackage) cudaPackagesConfig.packagesDirectories
+        );
     in
-    makeScope pkgs.newScope (
+    pkgs.makeScopeWithSplicing' {
+      otherSplices = pkgs.generateSplicesForMkScope [
+        "cudaPackagesVersions"
+        cudaPackagesMajorMinorPatchVersionName
+      ];
       # User additions are included through cudaPackagesExtensions
-      extends (composeManyExtensions final.cudaPackagesExtensions) cudaPackagesFixedPoint
-    );
-
+      f = extends (composeManyExtensions final.cudaPackagesExtensions) cudaPackagesFixedPoint;
+    };
 in
 final: _: {
   # Make sure to use `lib` from `prev` to avoid attribute names (in which attribute sets are strict) depending on the

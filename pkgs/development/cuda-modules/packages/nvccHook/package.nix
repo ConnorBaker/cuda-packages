@@ -65,10 +65,13 @@ let
   isBroken = any id (attrValues brokenConditions);
 in
 # TODO: Document breaking change of move from cudaDontCompressFatbin to dontCompressCudaFatbin.
-(makeSetupHook {
+makeSetupHook {
   inherit name;
 
   propagatedBuildInputs = [
+    arrayUtilities.arrayReplace
+    arrayUtilities.getRunpathEntries
+    arrayUtilities.occursInArray
     autoFixElfFiles
     patchelf
   ];
@@ -93,12 +96,4 @@ in
         isBroken;
     maintainers = lib.teams.cuda.members;
   };
-} ./nvccHook.bash).overrideAttrs
-  (prevAttrs: {
-    depsHostHostPropagated = prevAttrs.depsHostHostPropagated or [ ] ++ [
-      arrayUtilities.computeFrequencyMap
-      arrayUtilities.getRunpathEntries
-      arrayUtilities.occursInArray
-      arrayUtilities.occursOnlyOrAfterInArray
-    ];
-  })
+} ./nvccHook.bash

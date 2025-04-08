@@ -30,7 +30,6 @@ prevAttrs: {
     let
       # Taken from:
       # https://github.com/NixOS/nixpkgs/blob/6527f230b4ac4cd7c39a4ab570500d8e2564e5ff/pkgs/stdenv/generic/make-derivation.nix#L421-L426
-      getHostHost = drv: lib.getDev drv.__spliced.hostHost or drv;
       getHostTarget = drv: lib.getDev drv.__spliced.hostTarget or drv;
     in
     prevAttrs.postFixup or ""
@@ -50,18 +49,13 @@ prevAttrs: {
         "''${out:?}/nix-support/setup-hook" \
         --subst-var-by cudaForceRpath "${if cudaPackagesConfig.cudaForceRpath then "1" else "0"}" \
         --subst-var-by cudaCompatOutDir "''${out:?}/compat" \
-        --subst-var-by cudaCompatLibDir "''${!outputLib:?}/lib" \
-        --subst-var-by driverLibDir "${addDriverRunpath.driverLink}/lib"
-
-      nixLog "installing cudaCompatRunpathFixupHook.bash depsHostHostPropagated to ''${out:?}/nix-support/propagated-host-host-deps"
-      printWords \
-        "${getHostHost arrayUtilities.arrayDifference}" \
-        "${getHostHost arrayUtilities.getRunpathEntries}" \
-        "${getHostHost arrayUtilities.occursInArray}" \
-        >>"''${out:?}/nix-support/propagated-host-host-deps"
+        --subst-var-by cudaCompatLibDir "''${!outputLib:?}/lib"
 
       nixLog "installing cudaCompatRunpathFixupHook.bash propagatedBuildInputs to ''${out:?}/nix-support/propagated-build-inputs"
       printWords \
+        "${getHostTarget arrayUtilities.arrayReplace}" \
+        "${getHostTarget arrayUtilities.getRunpathEntries}" \
+        "${getHostTarget arrayUtilities.occursInArray}" \
         "${getHostTarget autoFixElfFiles}" \
         "${getHostTarget patchelf}" \
         >>"''${out:?}/nix-support/propagated-build-inputs"

@@ -11,7 +11,7 @@
   llvmPackages,
   ninja,
   numpy,
-  python3,
+  python,
   setuptools,
   wheel,
 }:
@@ -117,7 +117,7 @@ let
     # NOTE: The `cuda_path` argument is the directory which contains `bin/nvcc`.
     preBuild = ''
       nixLog "running build_lib.py to create components necessary to build the wheel"
-      "${python3.pythonOnBuildForHost.interpreter}" build_lib.py \
+      "${python.pythonOnBuildForHost.interpreter}" build_lib.py \
         --cuda_path "${getBin cuda_nvcc}" \
         --libmathdx_path "${libmathdx}" \
         --build_llvm \

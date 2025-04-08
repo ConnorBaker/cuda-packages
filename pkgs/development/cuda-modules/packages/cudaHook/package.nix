@@ -26,8 +26,10 @@ let
   };
   isBadPlatform = any id (attrValues badPlatformsConditions);
 in
-(makeSetupHook {
+makeSetupHook {
   inherit name;
+
+  propagatedBuildInputs = [ arrayUtilities.occursInArray ];
 
   substitutions.cudaHook = placeholder "out";
 
@@ -45,9 +47,4 @@ in
         false;
     maintainers = lib.teams.cuda.members;
   };
-} ./cudaHook.bash).overrideAttrs
-  (prevAttrs: {
-    depsHostHostPropagated = prevAttrs.depsHostHostPropagated or [ ] ++ [
-      arrayUtilities.occursInArray
-    ];
-  })
+} ./cudaHook.bash
