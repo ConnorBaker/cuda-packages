@@ -35,7 +35,7 @@ in
       inherit (cudaPackagesConfig) hasJetsonCudaCapability;
     in
     {
-      packagesDirectories = [ ../packages ];
+      packagesDirectories = [ ../../packages ];
       redists = {
         cublasmp = "0.3.1";
         cudnn = "9.7.1";
