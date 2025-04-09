@@ -1,10 +1,10 @@
 # shellcheck shell=bash
 
-if ((${hostOffset:?} != -1)); then
-  nixLog "skipping sourcing redistBuilderHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne -1 ]]; then
+  nixLog "skipping sourcing redistBuilderHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
   return 0
 fi
-nixLog "sourcing redistBuilderHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+nixLog "sourcing redistBuilderHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
 
 redistBuilderHookRegistration() {
   postUnpackHooks+=(unpackCudaLibSubdir)

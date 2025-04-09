@@ -2,11 +2,11 @@
 
 # TODO(@connorbaker): Why this offset?
 # Stubs are a used during linking, so we only want to run if we're in buildInputs.
-if ((${hostOffset:?} != 0)); then
-  nixInfoLog "skipping sourcing cudaCudartRunpathFixupHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne 0 ]]; then
+  nixInfoLog "skipping sourcing cudaCudartRunpathFixupHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
   return 0
 fi
-nixLog "sourcing cudaCudartRunpathFixupHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+nixLog "sourcing cudaCudartRunpathFixupHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
 
 # NOTE: This flag is duplicated in all CUDA setup hooks which modify ELF files to ensure consistency.
 # patchelf defaults to using RUNPATH, so to preserve RPATH we need to be uniform.

@@ -1,11 +1,11 @@
 # shellcheck shell=bash
 
 # TODO(@connorbaker): Why this offset?
-if ((${hostOffset:?} != -1)); then
-  nixInfoLog "skipping sourcing cudaHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne -1 ]]; then
+  nixInfoLog "skipping sourcing cudaHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
   return 0
 fi
-nixLog "sourcing cudaHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+nixLog "sourcing cudaHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
 
 # TODO(@connorbaker): Guard against being sourced multiple times.
 declare -Ag cudaHostPathsSeen
@@ -24,8 +24,8 @@ nixLog "added cudaHookRegistration to prePhases"
 cudaHookRegistration() {
   # We use the `targetOffset` to choose the right env hook to accumulate the right
   # sort of deps (those with that offset).
-  addEnvHooks "${targetOffset:?}" cudaSetupCudaToolkitRoot
-  nixLog "added cudaSetupCudaToolkitRoot to envHooks for targetOffset=${targetOffset:?}"
+  addEnvHooks "${targetOffset:-0}" cudaSetupCudaToolkitRoot
+  nixLog "added cudaSetupCudaToolkitRoot to envHooks for targetOffset=${targetOffset:-0}"
 
   if occursInArray cudaSetupCMakeFlags preConfigureHooks; then
     nixLog "skipping cudaSetupCMakeFlags, already present in preConfigureHooks"

@@ -1,11 +1,11 @@
 # shellcheck shell=bash
 
 # TODO(@connorbaker): Why this offset?
-if ((${hostOffset:?} != -1)); then
-  nixInfoLog "skipping sourcing markForCudaToolkitRootHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne -1 ]]; then
+  nixInfoLog "skipping sourcing markForCudaToolkitRootHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
   return 0
 fi
-nixLog "sourcing markForCudaToolkitRootHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+nixLog "sourcing markForCudaToolkitRootHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
 
 # Declare the variable to avoid occursInArray throwing an error if it doesn't exist.
 declare -ag prePhases

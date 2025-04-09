@@ -1,11 +1,11 @@
 # shellcheck shell=bash
 
 # TODO(@connorbaker): Why this offset?
-if ((${hostOffset:?} != -1)); then
-  nixInfoLog "skipping sourcing nvccHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne -1 ]]; then
+  nixInfoLog "skipping sourcing nvccHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
   return 0
 fi
-nixLog "sourcing nvccHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
+nixLog "sourcing nvccHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
 
 # NOTE: This flag is duplicated in all CUDA setup hooks which modify ELF files to ensure consistency.
 # patchelf defaults to using RUNPATH, so to preserve RPATH we need to be uniform.
