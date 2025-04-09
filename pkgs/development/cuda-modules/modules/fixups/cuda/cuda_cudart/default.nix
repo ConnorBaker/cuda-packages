@@ -82,7 +82,7 @@ prevAttrs: {
     let
       # Taken from:
       # https://github.com/NixOS/nixpkgs/blob/6527f230b4ac4cd7c39a4ab570500d8e2564e5ff/pkgs/stdenv/generic/make-derivation.nix#L421-L426
-      getHostTarget = drv: lib.getDev drv.__spliced.hostTarget or drv;
+      getBuildHost = drv: lib.getDev drv.__spliced.buildHost or drv;
     in
     prevAttrs.postFixup or ""
     # Install the setup hook
@@ -103,14 +103,14 @@ prevAttrs: {
         --subst-var-by cudartStubLibDir "''${!outputStubs:?}/lib" \
         --subst-var-by driverLibDir "${addDriverRunpath.driverLink}/lib"
 
-      nixLog "installing cudaCudartRunpathFixupHook.bash propagatedBuildInputs to ''${!outputStubs:?}/nix-support/propagated-build-inputs"
+      nixLog "installing cudaCudartRunpathFixupHook.bash propagatedNativeBuildInputs to ''${!outputStubs:?}/nix-support/propagated-native-build-inputs"
       printWords \
-        "${getHostTarget arrayUtilities.arrayReplace}" \
-        "${getHostTarget arrayUtilities.getRunpathEntries}" \
-        "${getHostTarget arrayUtilities.occursInArray}" \
-        "${getHostTarget autoFixElfFiles}" \
-        "${getHostTarget patchelf}" \
-        >>"''${!outputStubs:?}/nix-support/propagated-build-inputs"
+        "${getBuildHost arrayUtilities.arrayReplace}" \
+        "${getBuildHost arrayUtilities.getRunpathEntries}" \
+        "${getBuildHost arrayUtilities.occursInArray}" \
+        "${getBuildHost autoFixElfFiles}" \
+        "${getBuildHost patchelf}" \
+        >>"''${!outputStubs:?}/nix-support/propagated-native-build-inputs"
     '';
 
   passthru = prevAttrs.passthru or { } // {
