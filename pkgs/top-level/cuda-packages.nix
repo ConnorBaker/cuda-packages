@@ -22,6 +22,7 @@ let
     addNameToFetchFromGitLikeArgs
     bimap
     dropDots
+    formatCapabilities
     mkCudaPackagesVersionedName
     mkRealArchitecture
     packagesFromDirectoryRecursive'
@@ -102,11 +103,17 @@ let
                 args: final.fetchFromGitLab (addNameToFetchFromGitLikeArgs final.fetchFromGitLab args);
 
               # Aliases
-              flags = {
-                cudaComputeCapabilityToName = mkAlias "cudaPackages.flags.cudaComputeCapabilityToName is deprecated, use cudaPackages.flags.cudaCapabilityToArchName instead" finalCudaPackages.flags.cudaCapabilityToArchName;
-                dropDot = mkAlias "cudaPackages.flags.dropDot is deprecated, use cudaLibs.utils.dropDots instead" dropDots;
-                isJetsonBuild = mkAlias "cudaPackages.flags.isJetsonBuild is deprecated, use cudaPackages.cudaPackagesConfig.hasJetsonCudaCapability instead" cudaPackagesConfig.hasJetsonCudaCapability;
-              };
+              # NOTE: flags is defined here to prevent a collision with an attribute of the same name from cuda-modules/packages.
+              flags =
+                dontRecurseForDerivationsOrEvaluate (formatCapabilities {
+                  inherit (final.cudaConfig.data) cudaCapabilityToInfo;
+                  inherit (cudaPackagesConfig) cudaCapabilities cudaForwardCompat;
+                })
+                // {
+                  cudaComputeCapabilityToName = throw "cudaPackages.flags.cudaComputeCapabilityToName has been removed";
+                  dropDot = mkAlias "cudaPackages.flags.dropDot is deprecated, use cudaLibs.utils.dropDots instead" dropDots;
+                  isJetsonBuild = mkAlias "cudaPackages.flags.isJetsonBuild is deprecated, use cudaPackages.cudaPackagesConfig.hasJetsonCudaCapability instead" cudaPackagesConfig.hasJetsonCudaCapability;
+                };
               backendStdenv = mkAlias "cudaPackages.backendStdenv has been removed, use cudaPackages.cudaStdenv instead" finalCudaPackages.cudaStdenv;
               cudaVersion = mkAlias "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" finalCudaPackages.cudaMajorMinorVersion;
               cudaMajorMinorPatchVersion = mkAlias "cudaPackages.cudaMajorMinorPatchVersion is an implementation detail, please use cudaPackages.cudaMajorMinorVersion instead" cudaPackagesConfig.cudaMajorMinorPatchVersion;
