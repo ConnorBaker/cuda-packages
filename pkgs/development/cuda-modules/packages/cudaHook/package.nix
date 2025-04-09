@@ -1,6 +1,5 @@
 # Currently propagated by cuda_nvcc or cudatoolkit, rather than used directly
 {
-  arrayUtilities,
   config,
   cudaPackagesConfig,
   lib,
@@ -28,8 +27,6 @@ let
 in
 makeSetupHook {
   inherit name;
-
-  propagatedBuildInputs = [ arrayUtilities.occursInArray ];
 
   substitutions.cudaHook = placeholder "out";
 

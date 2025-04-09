@@ -12,15 +12,13 @@ nixLog "sourcing cudaCompatRunpathFixupHook.bash (hostOffset=${hostOffset:-0}) (
 # patchelf defaults to using RUNPATH, so to preserve RPATH we need to be uniform.
 declare -ig cudaForceRpath="@cudaForceRpath@"
 
-# Declare the variable to avoid occursInArray throwing an error if it doesn't exist.
-declare -ag prePhases
-
 # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
 # TODO(@connorbaker): Due to the order Nixpkgs setup sources files, dependencies are not sourced
 # prior to the current node. As such, even though we have occursInArray as one of our propagated
 # build inputs, we cannot use it at the time the hook is sourced.
 # See: https://github.com/NixOS/nixpkgs/pull/31414
-prePhases+=(cudaCompatRunpathFixupHookRegistration)
+# TODO: We don't use structuredAttrs/arrays universally, so don't worry about idempotency.
+appendToVar prePhases cudaCompatRunpathFixupHookRegistration
 nixLog "added cudaCompatRunpathFixupHookRegistration to prePhases"
 
 # Registering during prePhases ensures that all setup hooks are sourced prior to installing ours,
@@ -28,12 +26,9 @@ nixLog "added cudaCompatRunpathFixupHookRegistration to prePhases"
 cudaCompatRunpathFixupHookRegistration() {
   # NOTE: setup.sh uses recordPropagatedDependencies in fixupPhase, which overwrites dependency files, so we must run
   # in postFixup.
-  if occursInArray "autoFixElfFiles cudaCompatRunpathFixup" postFixupHooks; then
-    nixLog "skipping 'autoFixElfFiles cudaCompatRunpathFixup', already present in postFixupHooks"
-  else
-    postFixupHooks+=("autoFixElfFiles cudaCompatRunpathFixup")
-    nixLog "added 'autoFixElfFiles cudaCompatRunpathFixup' to postFixupHooks"
-  fi
+  # TODO: We don't use structuredAttrs/arrays universally, so don't worry about idempotency.
+  appendToVar postFixupHooks "autoFixElfFiles cudaCompatRunpathFixup"
+  nixLog "added 'autoFixElfFiles cudaCompatRunpathFixup' to postFixupHooks"
 
   # May be linked to compat libraries through `out/compat` or symlinks in `lib/lib`.
   # NOTE: Used in cudaCompatRunpathFixup.

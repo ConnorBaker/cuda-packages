@@ -1,7 +1,6 @@
 # Internal hook, used by cudatoolkit and cuda redist packages
 # to accommodate automatic CUDAToolkit_ROOT construction
 {
-  arrayUtilities,
   config,
   cudaPackagesConfig,
   lib,
@@ -30,8 +29,6 @@ let
 in
 makeSetupHook {
   inherit name;
-
-  propagatedBuildInputs = [ arrayUtilities.occursInArray ];
 
   passthru = {
     inherit badPlatformsConditions;

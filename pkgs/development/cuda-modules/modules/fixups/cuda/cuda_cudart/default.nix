@@ -107,7 +107,6 @@ prevAttrs: {
       printWords \
         "${getBuildHost arrayUtilities.arrayReplace}" \
         "${getBuildHost arrayUtilities.getRunpathEntries}" \
-        "${getBuildHost arrayUtilities.occursInArray}" \
         "${getBuildHost autoFixElfFiles}" \
         "${getBuildHost patchelf}" \
         >>"''${!outputStubs:?}/nix-support/propagated-native-build-inputs"

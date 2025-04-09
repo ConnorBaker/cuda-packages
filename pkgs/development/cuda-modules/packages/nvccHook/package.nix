@@ -71,7 +71,6 @@ makeSetupHook {
   propagatedBuildInputs = [
     arrayUtilities.arrayReplace
     arrayUtilities.getRunpathEntries
-    arrayUtilities.occursInArray
     autoFixElfFiles
     patchelf
   ];

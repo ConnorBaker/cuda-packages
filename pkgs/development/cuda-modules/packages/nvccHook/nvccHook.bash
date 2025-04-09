@@ -21,27 +21,20 @@ declare -ig dontNvccRunpathCheck=${dontNvccRunpathCheck:-0}
 export NVCC_PREPEND_FLAGS="${NVCC_PREPEND_FLAGS:-}"
 export NVCC_APPEND_FLAGS="${NVCC_APPEND_FLAGS:-}"
 
-# Declare the variable to avoid occursInArray throwing an error if it doesn't exist.
-declare -ag prePhases
-declare -ag postInstallCheckHooks
-
 # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
 # TODO(@connorbaker): Due to the order Nixpkgs setup sources files, dependencies are not sourced
 # prior to the current node. As such, even though we have occursInArray as one of our propagated
 # build inputs, we cannot use it at the time the hook is sourced.
 # See: https://github.com/NixOS/nixpkgs/pull/31414
-prePhases+=(nvccHookRegistration)
+appendToVar prePhases nvccHookRegistration
 nixLog "added nvccHookRegistration to prePhases"
 
 # Registering during prePhases ensures that all setup hooks are sourced prior to installing ours,
 # allowing us to always go after autoAddDriverRunpath and autoPatchelfHook.
 nvccHookRegistration() {
-  if occursInArray nvccSetupEnvironmentVariables preConfigureHooks; then
-    nixLog "skipping nvccSetupEnvironmentVariables, already present in preConfigureHooks"
-  else
-    preConfigureHooks+=(nvccSetupEnvironmentVariables)
-    nixLog "added nvccSetupEnvironmentVariables to preConfigureHooks"
-  fi
+  # TODO: We don't use structuredAttrs/arrays universally, so don't worry about idempotency.
+  appendToVar preConfigureHooks nvccSetupEnvironmentVariables
+  nixLog "added nvccSetupEnvironmentVariables to preConfigureHooks"
 
   # If the host compiler does not match the stdenv compiler, we need to prevent NVCC from leaking the host compiler
   # into the build.
@@ -58,31 +51,22 @@ nvccHookRegistration() {
     )
 
     # Tell CMake to ignore libraries provided by NVCC's host compiler when linking.
-    if occursInArray nvccSetupCMakeHostCompilerLeakPrevention preConfigureHooks; then
-      nixLog "skipping nvccSetupCMakeHostCompilerLeakPrevention, already present in preConfigureHooks"
-    else
-      preConfigureHooks+=(nvccSetupCMakeHostCompilerLeakPrevention)
-      nixLog "added nvccSetupCMakeHostCompilerLeakPrevention to preConfigureHooks"
-    fi
+    # TODO: We don't use structuredAttrs/arrays universally, so don't worry about idempotency.
+    appendToVar preConfigureHooks nvccSetupCMakeHostCompilerLeakPrevention
+    nixLog "added nvccSetupCMakeHostCompilerLeakPrevention to preConfigureHooks"
 
     # Remove references to forbidden paths in output ELF files.
     if ! ((dontNvccRunpathFixup)); then
-      if occursInArray "autoFixElfFiles nvccRunpathFixup" postFixupHooks; then
-        nixLog "skipping 'autoFixElfFiles nvccRunpathFixup', already present in postFixupHooks"
-      else
-        postFixupHooks+=("autoFixElfFiles nvccRunpathFixup")
-        nixLog "added 'autoFixElfFiles nvccRunpathFixup' to postFixupHooks"
-      fi
+      # TODO: We don't use structuredAttrs/arrays universally, so don't worry about idempotency.
+      appendToVar postFixupHooks "autoFixElfFiles nvccRunpathFixup"
+      nixLog "added 'autoFixElfFiles nvccRunpathFixup' to postFixupHooks"
     fi
 
     # Check for references to forbidden paths in the output files.
     if ! ((dontNvccRunpathCheck)); then
-      if occursInArray nvccRunpathCheck postInstallCheckHooks; then
-        nixLog "skipping nvccRunpathCheck, already present in postInstallCheckHooks"
-      else
-        postInstallCheckHooks+=(nvccRunpathCheck)
-        nixLog "added nvccRunpathCheck to postInstallCheckHooks"
-      fi
+      # TODO: We don't use structuredAttrs/arrays universally, so don't worry about idempotency.
+      appendToVar postInstallCheckHooks nvccRunpathCheck
+      nixLog "added nvccRunpathCheck to postInstallCheckHooks"
     fi
   fi
 

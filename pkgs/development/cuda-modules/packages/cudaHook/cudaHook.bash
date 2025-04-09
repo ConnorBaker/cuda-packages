@@ -10,38 +10,32 @@ nixLog "sourcing cudaHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${tar
 # TODO(@connorbaker): Guard against being sourced multiple times.
 declare -Ag cudaHostPathsSeen
 
-# Declare the variable to avoid occursInArray throwing an error if it doesn't exist.
-declare -ag prePhases
-
 # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
 # TODO(@connorbaker): Due to the order Nixpkgs setup sources files, dependencies are not sourced
 # prior to the current node. As such, even though we have occursInArray as one of our propagated
 # build inputs, we cannot use it at the time the hook is sourced.
 # See: https://github.com/NixOS/nixpkgs/pull/31414
-prePhases+=(cudaHookRegistration)
+# TODO: We don't use structuredAttrs/arrays universally, so don't worry about idempotency.
+appendToVar prePhases cudaHookRegistration
 nixLog "added cudaHookRegistration to prePhases"
 
-cudaHookRegistration() {
-  # We use the `targetOffset` to choose the right env hook to accumulate the right
-  # sort of deps (those with that offset).
-  addEnvHooks "${targetOffset:-0}" cudaSetupCudaToolkitRoot
-  nixLog "added cudaSetupCudaToolkitRoot to envHooks for targetOffset=${targetOffset:-0}"
+# We use the `targetOffset` to choose the right env hook to accumulate the right
+# sort of deps (those with that offset).
+# NOTE: addEnvHooks must occur before the prePhases are run, so we must
+# register the hook here.
+addEnvHooks "${targetOffset:-0}" cudaSetupCudaToolkitRoot
+nixLog "added cudaSetupCudaToolkitRoot to envHooks for targetOffset=${targetOffset:-0}"
 
-  if occursInArray cudaSetupCMakeFlags preConfigureHooks; then
-    nixLog "skipping cudaSetupCMakeFlags, already present in preConfigureHooks"
-  else
-    preConfigureHooks+=(cudaSetupCMakeFlags)
-    nixLog "added cudaSetupCMakeFlags to preConfigureHooks"
-  fi
+cudaHookRegistration() {
+  # TODO: We don't use structuredAttrs/arrays universally, so don't worry about idempotency.
+  appendToVar preConfigureHooks cudaSetupCMakeFlags
+  nixLog "added cudaSetupCMakeFlags to preConfigureHooks"
 
   # NOTE: setup.sh uses recordPropagatedDependencies in fixupPhase, which overwrites dependency files, so we must run
   # in postFixup.
-  if occursInArray cudaPropagateLibraries postFixupHooks; then
-    nixLog "skipping cudaPropagateLibraries, already present in postFixupHooks"
-  else
-    postFixupHooks+=(cudaPropagateLibraries)
-    nixLog "added cudaPropagateLibraries to postFixupHooks"
-  fi
+  # TODO: We don't use structuredAttrs/arrays universally, so don't worry about idempotency.
+  appendToVar postFixupHooks cudaPropagateLibraries
+  nixLog "added cudaPropagateLibraries to postFixupHooks"
 
   return 0
 }
