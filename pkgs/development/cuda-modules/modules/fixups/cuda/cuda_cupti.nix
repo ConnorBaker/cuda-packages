@@ -9,7 +9,7 @@ prevAttrs: {
         "dev"
         "include"
         "lib"
-        "static"
+        "samples"
       ] ++ lib.optionals (cudaConfig.hostNixSystem == "x86_64-linux") [ "static" ];
     };
   };
