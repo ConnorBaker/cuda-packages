@@ -10,6 +10,17 @@ nixLog "sourcing cudaHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targ
 # TODO(@connorbaker): Guard against being sourced multiple times.
 declare -Ag cudaHostPathsSeen
 
+# Declare the variable to avoid occursInArray throwing an error if it doesn't exist.
+declare -ag prePhases
+
+# NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
+# TODO(@connorbaker): Due to the order Nixpkgs setup sources files, dependencies are not sourced
+# prior to the current node. As such, even though we have occursInArray as one of our propagated
+# build inputs, we cannot use it at the time the hook is sourced.
+# See: https://github.com/NixOS/nixpkgs/pull/31414
+prePhases+=(cudaHookRegistration)
+nixLog "added cudaHookRegistration to prePhases"
+
 cudaHookRegistration() {
   # We use the `targetOffset` to choose the right env hook to accumulate the right
   # sort of deps (those with that offset).
@@ -34,8 +45,6 @@ cudaHookRegistration() {
 
   return 0
 }
-
-cudaHookRegistration
 
 cudaSetupCudaToolkitRoot() {
   if [[ -f "$1/nix-support/include-in-cudatoolkit-root" ]]; then

@@ -25,20 +25,13 @@ export NVCC_APPEND_FLAGS="${NVCC_APPEND_FLAGS:-}"
 declare -ag prePhases
 declare -ag postInstallCheckHooks
 
-nvccHookPreRegistration() {
-  # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
-  # NOTE: prePhases may not exist as an array.
-  if occursInArray nvccHookRegistration prePhases; then
-    nixLog "skipping nvccHookRegistration, already present in prePhases"
-  else
-    prePhases+=(nvccHookRegistration)
-    nixLog "added nvccHookRegistration to prePhases"
-  fi
-
-  return 0
-}
-
-nvccHookPreRegistration
+# NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
+# TODO(@connorbaker): Due to the order Nixpkgs setup sources files, dependencies are not sourced
+# prior to the current node. As such, even though we have occursInArray as one of our propagated
+# build inputs, we cannot use it at the time the hook is sourced.
+# See: https://github.com/NixOS/nixpkgs/pull/31414
+prePhases+=(nvccHookRegistration)
+nixLog "added nvccHookRegistration to prePhases"
 
 # Registering during prePhases ensures that all setup hooks are sourced prior to installing ours,
 # allowing us to always go after autoAddDriverRunpath and autoPatchelfHook.

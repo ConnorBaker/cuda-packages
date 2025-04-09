@@ -15,20 +15,13 @@ declare -ig cudaForceRpath="@cudaForceRpath@"
 # Declare the variable to avoid occursInArray throwing an error if it doesn't exist.
 declare -ag prePhases
 
-cudaCompatRunpathFixupHookPreRegistration() {
-  # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
-  # NOTE: prePhases may not exist as an array.
-  if occursInArray cudaCompatRunpathFixupHookRegistration prePhases; then
-    nixLog "skipping cudaCompatRunpathFixupHookRegistration, already present in prePhases"
-  else
-    prePhases+=(cudaCompatRunpathFixupHookRegistration)
-    nixLog "added cudaCompatRunpathFixupHookRegistration to prePhases"
-  fi
-
-  return 0
-}
-
-cudaCompatRunpathFixupHookPreRegistration
+# NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
+# TODO(@connorbaker): Due to the order Nixpkgs setup sources files, dependencies are not sourced
+# prior to the current node. As such, even though we have occursInArray as one of our propagated
+# build inputs, we cannot use it at the time the hook is sourced.
+# See: https://github.com/NixOS/nixpkgs/pull/31414
+prePhases+=(cudaCompatRunpathFixupHookRegistration)
+nixLog "added cudaCompatRunpathFixupHookRegistration to prePhases"
 
 # Registering during prePhases ensures that all setup hooks are sourced prior to installing ours,
 # allowing us to always go after autoAddDriverRunpath and autoPatchelfHook.

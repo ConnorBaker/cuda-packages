@@ -7,6 +7,17 @@ if ((${hostOffset:?} != -1)); then
 fi
 nixLog "sourcing markForCudaToolkitRootHook.bash (hostOffset=${hostOffset:?}) (targetOffset=${targetOffset:?})"
 
+# Declare the variable to avoid occursInArray throwing an error if it doesn't exist.
+declare -ag prePhases
+
+# NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
+# TODO(@connorbaker): Due to the order Nixpkgs setup sources files, dependencies are not sourced
+# prior to the current node. As such, even though we have occursInArray as one of our propagated
+# build inputs, we cannot use it at the time the hook is sourced.
+# See: https://github.com/NixOS/nixpkgs/pull/31414
+prePhases+=(markForCudaToolkitRootHookRegistration)
+nixLog "added markForCudaToolkitRootHookRegistration to prePhases"
+
 markForCudaToolkitRootHookRegistration() {
   if occursInArray markForCudaToolkitRoot fixupOutputHooks; then
     nixLog "skipping markForCudaToolkitRoot, already present in fixupOutputHooks"
@@ -17,8 +28,6 @@ markForCudaToolkitRootHookRegistration() {
 
   return 0
 }
-
-markForCudaToolkitRootHookRegistration
 
 markForCudaToolkitRoot() {
   nixDebugLog "creating ${prefix:?}/nix-support if it doesn't exist"
