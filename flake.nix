@@ -39,12 +39,7 @@
             cudaSupport = true;
           };
           localSystem = { inherit system; };
-          overlays = [
-            (import ./mkOverlay.nix {
-              inherit lib;
-              nixpkgsSrc = inputs.nixpkgs;
-            })
-          ];
+          overlays = [ inputs.self.overlays.default ];
         };
       # Memoization through lambda lifting.
       nixpkgsInstances = genAttrs systems mkNixpkgs;
@@ -59,8 +54,11 @@
 
       # NOTE: Unlike other flake attributes, hydraJobs is indexed by jobset name and *then* system name.
       # But it doesn't matter, from what I can tell. `nix-eval-jobs` handles it all the same.
-      flake.hydraJobs = import ./hydraJobs.nix {
-        inherit cudaLib lib nixpkgsInstances;
+      flake = {
+        hydraJobs = import ./hydraJobs.nix {
+          inherit cudaLib lib nixpkgsInstances;
+        };
+        overlays.default = import ./overlay.nix;
       };
 
       perSystem =

@@ -1,15 +1,19 @@
 # This is largely a shim for Nixpkgs.
-{ lib, nixpkgsSrc }:
+final': prev':
 let
-  inherit (lib.attrsets) genAttrs;
-  inherit (lib.fixedPoints) composeManyExtensions;
+  inherit (prev'.lib.attrsets) genAttrs getOutput;
+  inherit (prev'.lib.lists) concatMap map optionals;
+  inherit (prev'.lib.fixedPoints) composeManyExtensions;
 
-  extraAutoCalledPackages = import "${nixpkgsSrc}/pkgs/top-level/by-name-overlay.nix" ./pkgs/by-name;
+  extraAutoCalledPackages =
+    final: prev: import (prev.path + "/pkgs/top-level/by-name-overlay.nix") ./pkgs/by-name final prev;
+
   extraAutoCalledPackagesTests = final: prev: {
     tests = prev.tests // {
       deduplicateRunpathEntriesHook = final.deduplicateRunpathEntriesHook.passthru.tests;
     };
   };
+
   extraTesterPackages = final: prev: {
     testers = prev.testers // {
       makeMainWithRunpath = final.callPackage ./pkgs/build-support/testers/makeMainWithRunpath { };
@@ -24,6 +28,7 @@ let
       };
     };
   };
+
   extraPythonPackages = _: prev: {
     pythonPackagesExtensions = prev.pythonPackagesExtensions or [ ] ++ [
       (
@@ -42,22 +47,22 @@ let
       )
     ];
   };
+
   cudaPackages = import ./pkgs/top-level/cuda-packages.nix;
+
   packageFixes =
     final: prev:
     let
       cudartJoined = final.symlinkJoin {
         name = "cudart-joined";
-        paths = lib.concatMap (
+        paths = concatMap (
           # Don't include the stubs in the joined package.
-          output: lib.optionals (output != "stubs") [ final.cudaPackages.cuda_cudart.${output} ]
+          output: optionals (output != "stubs") [ final.cudaPackages.cuda_cudart.${output} ]
         ) final.cudaPackages.cuda_cudart.outputs;
       };
       nvccJoined = final.symlinkJoin {
         name = "nvcc-joined";
-        paths = lib.map (
-          output: final.cudaPackages.cuda_nvcc.${output}
-        ) final.cudaPackages.cuda_nvcc.outputs;
+        paths = map (output: final.cudaPackages.cuda_nvcc.${output}) final.cudaPackages.cuda_nvcc.outputs;
       };
     in
     {
@@ -86,7 +91,7 @@ let
           {
             env.LDFLAGS = builtins.toString [
               # Fake libnvidia-ml.so (the real one is deployed impurely)
-              "-L${lib.getOutput "stubs" final.cudaPackages.cuda_nvml_dev}/lib/stubs"
+              "-L${getOutput "stubs" final.cudaPackages.cuda_nvml_dev}/lib/stubs"
             ];
           };
 
@@ -101,4 +106,4 @@ composeManyExtensions [
   extraPythonPackages
   cudaPackages
   packageFixes
-]
+] final' prev'
