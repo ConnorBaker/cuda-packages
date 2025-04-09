@@ -6,23 +6,14 @@ top@{
 let
   inherit (builtins) toJSON throw warn;
   inherit (cudaConfig) data fixups manifests;
-  inherit (cudaLib.types)
-    attrs
-    cudaPackagesConfig
-    majorMinorPatchVersion
-    ;
+  inherit (cudaLib.types) attrs majorMinorPatchVersion;
   inherit (cudaLib.utils)
     cudaCapabilityIsDefault
     cudaCapabilityIsSupported
     getRedistSystem
     mkOptionsModule
     ;
-  inherit (lib.attrsets)
-    attrNames
-    genAttrs
-    hasAttr
-    ;
-  inherit (lib.options) mkOption;
+  inherit (lib.attrsets) attrNames hasAttr;
   inherit (lib.lists)
     concatMap
     filter
@@ -33,7 +24,7 @@ let
     subtractLists
     ;
   inherit (lib.modules) mkIf mkMerge mkOptionDefault;
-  inherit (lib.strings) optionalString versionOlder;
+  inherit (lib.strings) optionalString;
   inherit (lib.types) submodule;
 
   cudaConfig = top.config;
@@ -132,12 +123,16 @@ let
           {
             assertion =
               cudaPackagesConfig.hasJetsonCudaCapability -> cudaConfig.hostNixSystem == "aarch64-linux";
-            message = "${jetsonMesssagePrefix} require hostPlatform (currently ${cudaConfig.hostNixSystem}) to be aarch64";
+            message =
+              "${jetsonMesssagePrefix} require hostPlatform (currently ${cudaConfig.hostNixSystem}) "
+              + "to be aarch64";
           }
           {
             assertion =
               cudaPackagesConfig.hasJetsonCudaCapability -> requestedJetsonCudaCapabilities == cudaCapabilities;
-            message = "${jetsonMesssagePrefix} cannot be specified with non-Jetson capabilities (${toJSON requestedNonJetsonCudaCapabilities})";
+            message =
+              "${jetsonMesssagePrefix} cannot be specified with non-Jetson capabilities "
+              + "(${toJSON requestedNonJetsonCudaCapabilities})";
           }
           {
             assertion =
@@ -153,11 +148,14 @@ let
                   cudaCapability: cudaCapability != requestedAcceleratedCudaCapability
                 ) cudaCapabilities;
               in
-              "${acceleratedMessagePrefix} cannot be specified with any other capability (${toJSON otherCudaCapabilities}).";
+              "${acceleratedMessagePrefix} cannot be specified with any other capability "
+              + "(${toJSON otherCudaCapabilities}).";
           }
           {
             assertion = cudaPackagesConfig.cudaMajorMinorPatchVersion == cudaPackagesConfig.redists.cuda;
-            message = "CUDA version (${cudaPackagesConfig.cudaMajorMinorPatchVersion}) does not match redist version (${cudaPackagesConfig.redists.cuda})";
+            message =
+              "CUDA version (${cudaPackagesConfig.cudaMajorMinorPatchVersion}) does not match redist version "
+              + "(${cudaPackagesConfig.redists.cuda})";
           }
         ];
 
@@ -214,39 +212,4 @@ in
       );
     })
   ];
-
-  # Allow users extending CUDA package sets to specify the redist version to use.
-  options.cudaPackages = mkOption {
-    description = ''
-      Versioned configuration options for each version of CUDA package set produced.
-    '';
-    type = attrs majorMinorPatchVersion cudaPackagesConfig;
-    default = { };
-  };
-
-  config.cudaPackages = genAttrs cudaConfig.data.cudaMajorMinorPatchVersions (
-    cudaMajorMinorPatchVersion:
-    let
-      cudaPackagesConfig = cudaConfig.cudaPackages.${cudaMajorMinorPatchVersion};
-    in
-    {
-      packagesDirectories = [ ../packages ];
-      redists = {
-        cublasmp = "0.3.1";
-        cudnn = "9.7.1";
-        cudss = "0.4.0";
-        cuquantum = "24.11.0";
-        cusolvermp = "0.6.0";
-        cusparselt =
-          if versionOlder cudaPackagesConfig.cudaMajorMinorPatchVersion "12.8.0" then "0.6.3" else "0.7.0";
-        cutensor = "2.1.0";
-        nppplus = "0.9.0";
-        nvcomp = "4.2.0.11";
-        nvjpeg2000 = "0.8.1";
-        nvpl = "25.1";
-        nvtiff = "0.4.0";
-        tensorrt = if cudaPackagesConfig.hasJetsonCudaCapability then "10.7.0" else "10.8.0";
-      };
-    }
-  );
 }

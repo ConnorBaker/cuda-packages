@@ -10,7 +10,7 @@ let
 in
 {
   imports = [
-    ./cuda-packages.nix
+    ./cuda-packages
     ./data
     ./fixups
     ./manifests
