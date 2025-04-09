@@ -58,7 +58,7 @@ let
   expectedOutputs = [
     "out"
     "doc"
-    "sample"
+    "samples"
     "python"
     "bin"
     "dev"
@@ -240,7 +240,7 @@ in
         "lib64"
       ];
       static = [ "**/*.a" ];
-      sample = [ "samples" ];
+      samples = [ "samples" ];
       python = [ "**/*.whl" ];
       stubs = [
         "stubs"
@@ -263,7 +263,7 @@ in
       outputLib = [ "lib" ];
       outputOut = [ "out" ];
       outputPython = [ "python" ];
-      outputSample = [ "sample" ];
+      outputSamples = [ "samples" ];
       outputStatic = [ "static" ];
       outputStubs = [ "stubs" ];
     };
