@@ -40,7 +40,7 @@ in
         cublasmp = "0.4.0";
         cudnn = "9.8.0";
         cudss = "0.5.0";
-        cuquantum = "24.11.0";
+        cuquantum = "25.03.0";
         cusolvermp = "0.6.0";
         cusparselt = if versionOlder cudaMajorMinorPatchVersion "12.8.0" then "0.6.3" else "0.7.0";
         cutensor = "2.1.0";
