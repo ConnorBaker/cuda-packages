@@ -37,7 +37,7 @@ in
     {
       packagesDirectories = [ ../../packages ];
       redists = {
-        cublasmp = "0.3.1";
+        cublasmp = "0.4.0";
         cudnn = "9.7.1";
         cudss = "0.4.0";
         cuquantum = "24.11.0";
