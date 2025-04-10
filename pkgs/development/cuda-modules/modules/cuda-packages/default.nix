@@ -43,7 +43,7 @@ in
         cuquantum = "25.03.0";
         cusolvermp = "0.6.0";
         cusparselt = if versionOlder cudaMajorMinorPatchVersion "12.8.0" then "0.6.3" else "0.7.1";
-        cutensor = "2.1.0";
+        cutensor = "2.2.0";
         nppplus = "0.9.0";
         nvcomp = "4.2.0.11";
         nvjpeg2000 = "0.8.1";
