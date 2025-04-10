@@ -38,7 +38,7 @@ in
       packagesDirectories = [ ../../packages ];
       redists = {
         cublasmp = "0.4.0";
-        cudnn = "9.7.1";
+        cudnn = "9.8.0";
         cudss = "0.4.0";
         cuquantum = "24.11.0";
         cusolvermp = "0.6.0";
