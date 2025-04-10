@@ -33,13 +33,13 @@ stdenv.mkDerivation (finalAttrs: {
   # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
   name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "cudnn-frontend";
-  version = "1.10.0";
+  version = "1.11.0";
 
   src = fetchFromGitHub {
     owner = "ConnorBaker";
     repo = "cudnn-frontend";
-    rev = "0bbb0e949aac4f41e9d91f667a753ece24a22bb3";
-    hash = "sha256-nYbYEv1q5zZt/1VqKHL94XofttxrOvZSLjkL93bzvQE=";
+    rev = "5f2596c383a77312c43b63f7bbb067a3db512d2a";
+    hash = "sha256-r9wV4CaBLzQvo+3JFVjJbpjr1NBcM8vhaM2X09CdzZ4=";
   };
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a

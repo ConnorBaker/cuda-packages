@@ -8,6 +8,7 @@
   cuda_nvcc,
   cudaNamePrefix,
   fetchFromGitHub,
+  flags,
   gitUpdater,
   lib,
   mpi,
@@ -27,13 +28,13 @@ stdenv.mkDerivation (finalAttrs: {
   # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
   name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "nccl-tests";
-  version = "2.13.12";
+  version = "2.14.1";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "nccl-tests";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-4aHXIk5ydZsSARQw1T6Nx49FpQjwNEvVD6yfHoEGt8g=";
+    hash = "sha256-PntD5seMq7s0x4hOO/wBDQdElhKCY6mFrTf073mf7zM=";
   };
 
   postPatch = ''
@@ -66,6 +67,7 @@ stdenv.mkDerivation (finalAttrs: {
     # TODO: This won't work with cross-compilation since cuda_nvcc will come from hostPackages by default (aka pkgs).
     "CUDA_HOME=${getBin cuda_nvcc}"
     "NCCL_HOME=${nccl}"
+    "NVCC_GENCODE=${flags.gencodeString}"
   ] ++ optionals mpiSupport [ "MPI=1" ];
 
   enableParallelBuilding = true;

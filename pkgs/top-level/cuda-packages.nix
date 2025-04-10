@@ -181,7 +181,7 @@ final: _: {
   # notice.
   cudaPackages_12_2 = final.cudaPackagesVersions.cudaPackages_12_2_2;
   cudaPackages_12_6 = final.cudaPackagesVersions.cudaPackages_12_6_3;
-  cudaPackages_12_8 = final.cudaPackagesVersions.cudaPackages_12_8_0;
+  cudaPackages_12_8 = final.cudaPackagesVersions.cudaPackages_12_8_1;
   # Package set aliases with a major component refer to an alias with a major and minor component in final.
   # TODO: Deferring upgrade to CUDA 12.8 until separate compilation works.
   cudaPackages_12 = final.cudaPackages_12_6;

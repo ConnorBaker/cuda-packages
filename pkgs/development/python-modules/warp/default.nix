@@ -49,13 +49,13 @@ let
 
     pname = "warp";
 
-    version = "1.5.1-unstable-2025-01-15";
+    version = "1.7.0-unstable-2025-04-09";
 
     src = fetchFromGitHub {
       owner = "NVIDIA";
       repo = "warp";
-      rev = "c168fc67110dd887bd495052a27fc585b2826c98";
-      hash = "sha256-grAMMP8NeR5h9Of8iKzY5y+fdO1Wu2LDpbv7VzT9FAw=";
+      rev = "3635b9af0f398e4dd9dea5ee8d8d1448a73c174c";
+      hash = "sha256-cdleuvr89KrYsZ3Op7/3NpmwAmLNggI9XKGMu18e0ks=";
     };
 
     pyproject = true;
@@ -120,8 +120,8 @@ let
       "${python.pythonOnBuildForHost.interpreter}" build_lib.py \
         --cuda_path "${getBin cuda_nvcc}" \
         --libmathdx_path "${libmathdx}" \
-        --build_llvm \
-        --llvm_source_path "${llvmPackages.llvm.monorepoSrc}"
+        --quick \
+        --no_standalone
     '';
 
     dependencies = [

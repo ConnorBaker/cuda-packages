@@ -23,7 +23,7 @@ stdenv.mkDerivation (finalAttrs: {
   # NOTE: Does not depend on the CUDA package set, so do not use cudaNamePrefix to avoid causing
   # unnecessary / duplicate store paths.
   pname = "libmathdx";
-  version = "0.1.1";
+  version = "0.1.2";
 
   src =
     let
@@ -34,8 +34,8 @@ stdenv.mkDerivation (finalAttrs: {
         finalAttrs.version
       ];
       hashes = {
-        aarch64-linux = "sha256-OAp3QpfuF0GLdeoFZEjl+uKuapoJ+wkpe8Cu66ZS/7A=";
-        x86_64-linux = "sha256-kIvJd6UgDhIuBQaAz3Dy4zTbqzHaEQz5lW3PGEEfQZo=";
+        aarch64-linux = "";
+        x86_64-linux = "sha256-wD23ppuVCDUkmPVpZPoHa/miYGTF22YUiO8wCBqj1OY=";
       };
     in
     mapNullable (

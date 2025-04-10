@@ -29,13 +29,13 @@ stdenv.mkDerivation (finalAttrs: {
   # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
   name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "nccl";
-  version = "2.25.1-1";
+  version = "2.26.2-1";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "nccl";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-3snh0xdL9I5BYqdbqdl+noizJoI38mZRVOJChgEE1I8=";
+    hash = "sha256-iLEuru3gaNLcAdH4V8VIv3gjdTGjgb2/Mr5UKOh69N4=";
   };
 
   outputs = [
