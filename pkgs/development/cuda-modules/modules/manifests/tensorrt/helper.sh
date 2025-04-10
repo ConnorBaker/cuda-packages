@@ -15,11 +15,11 @@ mkRedistUrlRelativePath() {
   local archiveDir=""
   local archiveExtension=""
   local osName=""
-  local redistSystem=""
+  local platformName=""
   case "$redistSystem" in
-  linux-aarch64) archiveDir="tars" && archiveExtension="tar.gz" && osName="l4t" && redistSystem="aarch64-gnu" ;;
+  linux-aarch64) archiveDir="tars" && archiveExtension="tar.gz" && osName="l4t" && platformName="aarch64-gnu" ;;
   linux-sbsa)
-    archiveDir="tars" && archiveExtension="tar.gz" && redistSystem="aarch64-gnu"
+    archiveDir="tars" && archiveExtension="tar.gz" && platformName="aarch64-gnu"
     # 10.0-10.3 use Ubuntu 22.40
     # 10.4-10.6 use Ubuntu 24.04
     # 10.7+ use Linux
@@ -29,9 +29,9 @@ mkRedistUrlRelativePath() {
     *) osName="Linux" ;;
     esac
     ;;
-  linux-x86_64) archiveDir="tars" && archiveExtension="tar.gz" && osName="Linux" && redistSystem="x86_64-gnu" ;;
+  linux-x86_64) archiveDir="tars" && archiveExtension="tar.gz" && osName="Linux" && platformName="x86_64-gnu" ;;
   windows-x86_64)
-    archiveExtension="zip" && redistSystem="win10"
+    archiveExtension="zip" && platformName="win10"
     # Windows info is different for 10.0.*
     case "$tensorrtMinorVersion" in
     0) archiveDir="zips" && osName="Windows10" ;;
@@ -44,7 +44,7 @@ mkRedistUrlRelativePath() {
     ;;
   esac
 
-  local -r relativePath="tensorrt/$tensorrtMajorMinorPatchVersion/$archiveDir/TensorRT-${tensorrtMajorMinorPatchBuildVersion}.${osName}.${redistSystem}.cuda-${cudaMajorMinorVersion}.${archiveExtension}"
+  local -r relativePath="tensorrt/$tensorrtMajorMinorPatchVersion/$archiveDir/TensorRT-${tensorrtMajorMinorPatchBuildVersion}.${osName}.${platformName}.cuda-${cudaMajorMinorVersion}.${archiveExtension}"
   echo "$relativePath"
 }
 

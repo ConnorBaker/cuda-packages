@@ -1,6 +1,6 @@
 {
-    "release_date": "2025-01-29",
-    "release_label": "25.1",
+    "release_date": "2025-04-01",
+    "release_label": "25.1.1",
     "release_product": "nvpl",
     "nvpl_blas": {
         "name": "NVPL BLAS",
@@ -18,24 +18,24 @@
         "name": "NVPL Common",
         "license": "NVPL",
         "license_path": "nvpl_common/LICENSE.txt",
-        "version": "0.3.1",
+        "version": "0.3.2",
         "linux-sbsa": {
-            "relative_path": "nvpl_common/linux-sbsa/nvpl_common-linux-sbsa-0.3.1-archive.tar.xz",
-            "sha256": "8a516d983a5e6ddc299aacaccc7992c3028e1abbd020a47ffcdb0219187e41b6",
-            "md5": "7bfd1f8bc0dabe989424a2959f57667a",
-            "size": "9472"
+            "relative_path": "nvpl_common/linux-sbsa/nvpl_common-linux-sbsa-0.3.2-archive.tar.xz",
+            "sha256": "66c4d3d2772b10f40e5d92fa2bf92b68d33db58d4c448bfbb9f94bfe5ab94720",
+            "md5": "5d7b3e8835797efb380aa3ce222f722d",
+            "size": "9440"
         }
     },
     "nvpl_fft": {
         "name": "NVPL FFT",
         "license": "NVPL",
         "license_path": "nvpl_fft/LICENSE.txt",
-        "version": "0.4.0.1",
+        "version": "0.4.1",
         "linux-sbsa": {
-            "relative_path": "nvpl_fft/linux-sbsa/nvpl_fft-linux-sbsa-0.4.0.1-archive.tar.xz",
-            "sha256": "e0309f28a98a5f920919a9c6a766b89b507907bde66e665e0a239005c6942781",
-            "md5": "be8b19bef02231bda4b27bd36bb2f19e",
-            "size": "18679292"
+            "relative_path": "nvpl_fft/linux-sbsa/nvpl_fft-linux-sbsa-0.4.1-archive.tar.xz",
+            "sha256": "b7d114a795841f28109fcc1508a6848b33ab779bef01bacf143d3ea47a0fd0a1",
+            "md5": "95bcf05cdfc8d249cd86f90b4ec98c38",
+            "size": "18679000"
         }
     },
     "nvpl_lapack": {

@@ -1,5 +1,7 @@
 # tensorrt
 
+Requirements: <https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/support-matrix.html#support-matrix>
+
 These redistributable manifests are made by hand to allow TensorRT to be packaged with the same functionality the other NVIDIA redistributable libraries are packaged with.
 
 Only available from 10.0.0 and onwards, which is when NVIDIA stopped putting them behind a login wall.
@@ -25,4 +27,4 @@ main: storePath: /nix/store/l2hq83ihj3bcm4z836cz2dw3ilkhwrpy-TensorRT-10.2.0.19.
 }
 ```
 
-The `storePath` is useful for determining the date of the release.
+I set the `release_date` to the date of the corresponding release on their GitHub: <https://github.com/NVIDIA/TensorRT/releases>.

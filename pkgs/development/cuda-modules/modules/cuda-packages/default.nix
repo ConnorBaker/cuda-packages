@@ -47,9 +47,9 @@ in
         nppplus = "0.9.0";
         nvcomp = "4.2.0.11";
         nvjpeg2000 = "0.8.1";
-        nvpl = "25.1";
-        nvtiff = "0.4.0";
-        tensorrt = if hasJetsonCudaCapability then "10.7.0" else "10.8.0";
+        nvpl = "25.1.1";
+        nvtiff = "0.5.0";
+        tensorrt = if hasJetsonCudaCapability then "10.7.0" else "10.9.0";
       };
     }
   );
