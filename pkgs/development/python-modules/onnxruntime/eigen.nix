@@ -9,11 +9,11 @@ in
 fetchFromGitLab {
   owner = "libeigen";
   repo = "eigen";
-  rev = "e7248b26a1ed53fa030c5c459f7ea095dfd276ac";
-  hash = "sha256-uQ1YYV3ojbMVfHdqjXRyUymRPjJZV3WHT36PTxPRius=";
+  rev = "1d8b82b0740839c0de7f1242a3585e3390ff5f33";
+  hash = "sha256-keMdXlt4S99fx28Kl5tbSIQA2TeKWqV4syd9K2VAsF8=";
   meta.broken =
     let
-      versionDoesntMatchExpected = onnxruntime.version != "1.20.1-unstable-2024-12-03";
+      versionDoesntMatchExpected = onnxruntime.version != "1.21.0";
     in
     warnIf versionDoesntMatchExpected
       # https://github.com/microsoft/onnxruntime/blob/c4fb724e810bb496165b9015c77f402727392933/cmake/deps.txt

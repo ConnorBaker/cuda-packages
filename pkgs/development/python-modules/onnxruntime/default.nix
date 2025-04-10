@@ -72,6 +72,7 @@ let
   vendored = mapAttrs (const (flip callPackage { })) {
     cutlass = ./cutlass.nix;
     date = ./date.nix;
+    dlpack = ./dlpack.nix;
     eigen = ./eigen.nix;
     flatbuffers = ./flatbuffers.nix;
     safeint = ./safeint.nix;
@@ -87,7 +88,7 @@ let
     pname = "onnxruntime";
 
     # NOTE: Using newer version because nsync has been removed from the build system
-    version = "1.20.1-unstable-2024-12-03";
+    version = "1.21.0";
 
     # TODO: Currently failing with errors like:
     #
@@ -104,8 +105,8 @@ let
     src = fetchFromGitHub {
       owner = "microsoft";
       repo = "onnxruntime";
-      rev = "9b9f881475a12991d0abba0095c26dad8a4de5e9";
-      hash = "sha256-exXR7TmyzlBnM2njwkIvZ7Iko+ZF8vx6qrm8EYJwd+I=";
+      tag = "v${finalAttrs.version}";
+      hash = "sha256-BaHXpK6Ek+gsld7v+OBM+C3FjrPiyMQYP1liv7mEjho=";
       fetchSubmodules = true;
     };
 
@@ -232,6 +233,7 @@ let
       [
         # Must set to true to avoid CMake trying to download dependencies.
         (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
+        (cmakeBool "FETCHCONTENT_QUIET" false)
         (cmakeFeature "FETCHCONTENT_TRY_FIND_PACKAGE_MODE" "ALWAYS")
         # Configure build
         (cmakeBool "onnxruntime_BUILD_SHARED_LIB" true)
@@ -254,6 +256,7 @@ let
         (cmakeOptionType "PATH" "eigen_SOURCE_PATH" vendored.eigen.outPath)
         (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" vendored.cutlass.outPath)
         (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_DATE" vendored.date.outPath)
+        (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_DLPACK" vendored.dlpack.outPath)
         (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_FLATBUFFERS" vendored.flatbuffers.outPath)
         (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_SAFEINT" vendored.safeint.outPath)
       ];

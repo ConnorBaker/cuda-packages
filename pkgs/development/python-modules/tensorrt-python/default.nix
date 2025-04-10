@@ -63,7 +63,7 @@ let
       hash =
         {
           "10.7.0" = "sha256-sbp61GverIWrHKvJV+oO9TctFTO4WUmH0oInZIwqF/s=";
-          "10.8.0" = "sha256-SDlTZf8EQBq8vDCH3YFJCROHbf47RB5WUu4esLNpYuA=";
+          "10.9.0" = "sha256-J8K9RjeGIem5ZxXyU+Rne8uBbul54ie6P/Y1In2mQ0g=";
         }
         .${finalAttrs.version};
     };

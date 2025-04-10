@@ -39,10 +39,13 @@ let
       hash =
         {
           "10.7" = "sha256-1Y5jELqVkRkjeiEbF7GrPqAGZMu7U8JgmM3ZQbsG304=";
-          "10.8" = "sha256-wIi1+V8ZVs0tZxtfG0kxTZcB03IKMO1KJuWypaAFi3g=";
+          "10.9" = "sha256-4uYMtIsCQcXr9HzeqcHD/ysOFxJeejq43D/lfGj4MG4=";
         }
         .${finalAttrs.version};
     };
+
+    # TODO: 10.7 should include this patch:
+    # https://github.com/onnx/onnx-tensorrt/commit/87a6fc947a7a07afcd45eb5adf96a2c57281d18e
 
     outputs = [
       "out"
