@@ -1,7 +1,7 @@
 {
   autoFixElfFiles,
   arrayUtilities,
-  cudaConfig,
+  cudaStdenv,
   lib,
   patchelf,
 }:
@@ -18,7 +18,7 @@ prevAttrs: {
 
   autoPatchelfIgnoreMissingDeps =
     prevAttrs.autoPatchelfIgnoreMissingDeps or [ ]
-    ++ lib.optionals cudaConfig.hasJetsonCudaCapability [
+    ++ lib.optionals cudaStdenv.hasJetsonCudaCapability [
       "libnvrm_gpu.so"
       "libnvrm_mem.so"
       "libnvdla_runtime.so"
@@ -60,10 +60,12 @@ prevAttrs: {
 
   passthru = prevAttrs.passthru or { } // {
     # `cuda_compat` only works on aarch64-linux, and only when building for Jetson devices.
-    badPlatformsConditions = prevAttrs.passthru.badPlatformsConditions or { } // {
-      "Trying to use cuda_compat on aarch64-linux targeting non-Jetson devices" =
-        !cudaConfig.hasJetsonCudaCapability;
-    };
+    platformAssertions = prevAttrs.passthru.platformAssertions or [ ] ++ [
+      {
+        message = "building for Jetson CUDA capabilities";
+        assertion = cudaStdenv.hasJetsonCudaCapability;
+      }
+    ];
 
     # NOTE: Using multiple outputs with symlinks causes build cycles.
     # To avoid that (and troubleshooting why), we just use a single output.

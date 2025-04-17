@@ -2,15 +2,14 @@
   abseil-cpp,
   addDriverRunpath,
   buildPythonPackage,
-  config,
-  cudaConfig,
-  cudaPackages,
-  cudaSupport ? config.cudaSupport,
   callPackage,
   clog,
   cmake,
   coloredlogs,
+  config,
   cpuinfo,
+  cudaPackages,
+  cudaSupport ? config.cudaSupport,
   doCheck ? false,
   fetchFromGitHub,
   flatbuffers,
@@ -39,6 +38,7 @@ let
     cuda_cudart
     cuda_nvcc
     cudaOlder
+    cudaStdenv
     cudnn
     cudnn-frontend
     flags
@@ -349,7 +349,7 @@ let
         export LD_LIBRARY_PATH="''${LD_LIBRARY_PATH:-}"
       ''
       # NOTE: Ensure cuda_compat has a higher priority than the driver lib when it is in use.
-      + optionalString (cudaConfig.hasJetsonCudaCapability && cuda_compat != null) ''
+      + optionalString (cudaStdenv.hasJetsonCudaCapability && cuda_compat != null) ''
         addToSearchPath LD_LIBRARY_PATH "${cuda_compat}/compat"
       ''
       + ''

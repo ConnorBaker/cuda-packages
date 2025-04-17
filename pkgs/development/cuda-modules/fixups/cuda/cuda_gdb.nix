@@ -44,14 +44,13 @@ prevAttrs: {
     '';
 
   passthru = prevAttrs.passthru or { } // {
-    brokenConditions = prevAttrs.passthru.brokenConditions or { } // {
-      "Unsupported Python 3 version" =
-        (cudaAtLeast "12.5")
-        && (
-          lib.versionOlder python3MajorMinorVersion "3.8"
-          || lib.versionAtLeast python3MajorMinorVersion "3.13"
-        );
-    };
+    brokenAssertions = prevAttrs.passthru.brokenAssertions or [ ] ++ [
+      {
+        # TODO(@connorbaker): Figure out which are supported.
+        message = "python 3 version is supported";
+        assertion = true;
+      }
+    ];
 
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       outputs = [

@@ -1,47 +1,29 @@
 # Currently propagated by cuda_nvcc or cudatoolkit, rather than used directly
 {
   config,
-  cudaConfig,
   lib,
   makeSetupHook,
 }:
 let
-  inherit (cudaConfig) hostRedistSystem;
-  inherit (lib.attrsets) attrValues;
-  inherit (lib.lists) any;
-  inherit (lib.trivial) id warnIfNot;
+  finalAttrs = {
+    # NOTE: Does not depend on the CUDA package set, so do not use cudaNamePrefix to avoid causing
+    # unnecessary / duplicate store paths.
+    name = "cudaHook";
 
-  # NOTE: Does not depend on the CUDA package set, so do not use cudaNamePrefix to avoid causing
-  # unnecessary / duplicate store paths.
-  name = "cudaHook";
+    substitutions.cudaHook = placeholder "out";
 
-  platforms = [
-    "aarch64-linux"
-    "x86_64-linux"
-  ];
-  badPlatforms = lib.optionals isBadPlatform platforms;
-  badPlatformsConditions = {
-    "Platform is not supported" = hostRedistSystem == "unsupported";
+    meta = {
+      description = "Setup hook for CUDA packages";
+      platforms = [
+        "aarch64-linux"
+        "x86_64-linux"
+      ];
+      broken =
+        lib.warnIfNot config.cudaSupport
+          "CUDA support is disabled and you are building a CUDA package (${finalAttrs.name}); expect breakage!"
+          false;
+      maintainers = lib.teams.cuda.members;
+    };
   };
-  isBadPlatform = any id (attrValues badPlatformsConditions);
 in
-makeSetupHook {
-  inherit name;
-
-  substitutions.cudaHook = placeholder "out";
-
-  passthru = {
-    brokenConditions = { };
-    inherit badPlatformsConditions;
-  };
-
-  meta = {
-    description = "Setup hook for CUDA packages";
-    inherit badPlatforms platforms;
-    broken =
-      warnIfNot config.cudaSupport
-        "CUDA support is disabled and you are building a CUDA package (${name}); expect breakage!"
-        false;
-    maintainers = lib.teams.cuda.members;
-  };
-} ./cudaHook.bash
+makeSetupHook finalAttrs ./cudaHook.bash

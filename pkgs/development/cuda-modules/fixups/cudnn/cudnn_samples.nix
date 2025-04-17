@@ -22,10 +22,12 @@ finalAttrs: prevAttrs: {
   ];
 
   passthru = prevAttrs.passthru or { } // {
-    brokenConditions = prevAttrs.passthru.brokenConditions or { } // {
-      "FreeImage is required as a subdirectory and @connorbaker has not yet patched the build to find it" =
-        true;
-    };
+    brokenAssertions = prevAttrs.passthru.brokenAssertions or [ ] ++ [
+      {
+        message = "FreeImage is required as a subdirectory and @connorbaker has not yet patched the build to find it";
+        assertion = false;
+      }
+    ];
 
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       outputs = [

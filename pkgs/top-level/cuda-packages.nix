@@ -1,9 +1,5 @@
 final: _:
 let
-  # Version of the default CUDA package set.
-  # NOTE: This must be set manually to avoid infinite recursion.
-  defaultCudaMajorMinorPatchVersion = "12.6.3";
-
   cudaPackagesRoot = ../development/cuda-modules;
 
   dontRecurseForDerivationsOrEvaluate =
@@ -16,12 +12,24 @@ let
       __attrsFailEvaluation = true;
     };
 
-  fixups = import "${cudaPackagesRoot}/fixups" { inherit (final) cudaLib lib; };
+  fixups = import "${cudaPackagesRoot}/fixups" { inherit (final) lib; };
 
   # TODO: Is it possible to use eval-time fetchers to retrieve the manifests and import them?
   # How does flake-compat get away with doing that without it being considered IFD?
 
+  # NOTE: Because manifests are used to add redistributables to the package set,
+  # we cannot have values depend on the package set itself, or we run into infinite recursion.
   mkManifests =
+    let
+      # Since Jetson capabilities are never built by default, we can check if any of them were requested
+      # through final.config.cudaCapabilities and use that to determine if we should change some manifest versions.
+      # Copied from cudaStdenv.
+      jetsonCudaCapabilities = final.lib.filter (
+        cudaCapability: final.cudaLib.data.cudaCapabilityToInfo.${cudaCapability}.isJetson
+      ) final.cudaLib.data.allSortedCudaCapabilities;
+      hasJetsonCudaCapability =
+        final.lib.intersectLists jetsonCudaCapabilities (final.config.cudaCapabilities or [ ]) != [ ];
+    in
     cudaMajorMinorPatchVersion:
     final.lib.mapAttrs
       (
@@ -43,43 +51,11 @@ let
         nvjpeg2000 = "0.8.1";
         nvpl = "25.1.1";
         nvtiff = "0.5.0";
-        tensorrt = if final.cudaConfig.hasJetsonCudaCapability then "10.7.0" else "10.9.0";
+        tensorrt = if hasJetsonCudaCapability then "10.7.0" else "10.9.0";
       };
 in
 {
   cudaLib = import "${cudaPackagesRoot}/lib" { inherit (final) lib; };
-
-  # For inspecting the results of the module system evaluation.
-  cudaConfig =
-    let
-      mkFailedAssertionsString = final.lib.foldl' (
-        failedAssertionsString:
-        { assertion, message, ... }:
-        failedAssertionsString + final.lib.optionalString (!assertion) ("\n- " + message)
-      ) "";
-      failedAssertionsString = mkFailedAssertionsString cudaConfig.assertions;
-
-      mkWarningsString = final.lib.foldl' (warningsString: warning: warningsString + "\n- " + warning) "";
-      warningsString = mkWarningsString cudaConfig.warnings;
-
-      cudaConfig =
-        (final.lib.evalModules {
-          modules = [ "${cudaPackagesRoot}/modules" ];
-          specialArgs = {
-            inherit (final) cudaLib;
-            inherit defaultCudaMajorMinorPatchVersion;
-            cudaCapabilities = final.config.cudaCapabilities or [ ];
-            cudaForwardCompat = final.config.cudaForwardCompat or true;
-            hostNixSystem = final.stdenv.hostPlatform.system;
-          };
-        }).config;
-    in
-    if failedAssertionsString != "" then
-      throw "\nFailed assertions when evaluating CUDA configuration for default version ${defaultCudaMajorMinorPatchVersion}:${failedAssertionsString}"
-    else if warningsString != "" then
-      final.lib.warn "\nWarnings when constructing CUDA configuration for default version ${defaultCudaMajorMinorPatchVersion}:${warningsString}" cudaConfig
-    else
-      cudaConfig;
 
   # For adding packages in an ad-hoc manner.
   cudaPackagesExtensions = [ ];
@@ -101,8 +77,7 @@ in
   };
 
   # Package set aliases with a major component refer to an alias with a major and minor component in final.
-  cudaPackages_12 =
-    final.${final.cudaLib.utils.mkCudaPackagesVersionedName (final.lib.versions.majorMinor final.cudaConfig.defaultCudaMajorMinorPatchVersion)};
+  cudaPackages_12 = final.cudaPackages_12_6;
 
   # Unversioned package set alias refers to an alias with a major component in final.
   cudaPackages = final.cudaPackages_12;
@@ -125,6 +100,6 @@ in
     in
     dontRecurseForDerivationsOrEvaluate (
       final.cudaLib.utils.bimap final.cudaLib.utils.mkRealArchitecture mkPkgs
-        final.cudaConfig.data.cudaCapabilityToInfo
+        final.cudaLib.data.cudaCapabilityToInfo
     );
 }

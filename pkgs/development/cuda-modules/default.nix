@@ -13,7 +13,6 @@ in
 {
   config,
   cudaLib,
-  cudaConfig,
   emptyDirectory,
   cudaPackagesExtensions,
   lib,
@@ -120,13 +119,13 @@ let
       # NOTE: flags is defined here to prevent a collision with an attribute of the same name from cuda-modules/packages.
       flags =
         dontRecurseForDerivationsOrEvaluate (formatCapabilities {
-          inherit (cudaConfig) cudaCapabilities cudaForwardCompat;
-          inherit (cudaConfig.data) cudaCapabilityToInfo;
+          inherit (finalCudaPackages.cudaStdenv) cudaCapabilities cudaForwardCompat;
+          inherit (cudaLib.data) cudaCapabilityToInfo;
         })
         // {
           cudaComputeCapabilityToName = throw "cudaPackages.flags.cudaComputeCapabilityToName has been removed";
           dropDot = mkAlias "cudaPackages.flags.dropDot is deprecated, use cudaLibs.utils.dropDots instead" dropDots;
-          isJetsonBuild = mkAlias "cudaPackages.flags.isJetsonBuild is deprecated, use cudaConfig.hasJetsonCudaCapability instead" cudaConfig.hasJetsonCudaCapability;
+          isJetsonBuild = mkAlias "cudaPackages.flags.isJetsonBuild is deprecated, use cudaPackages.cudaStdenv.hasJetsonCudaCapability instead" finalCudaPackages.cudaStdenv.hasJetsonCudaCapability;
         };
 
       ## Aliases for deprecated attributes

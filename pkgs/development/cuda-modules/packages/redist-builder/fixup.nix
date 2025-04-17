@@ -3,30 +3,27 @@
   autoAddDriverRunpath,
   autoPatchelfHook,
   config,
-  cudaConfig,
   cudaHook,
+  cudaLib,
   cudaMajorMinorVersion,
   cudaMajorVersion,
   cudaNamePrefix,
+  cudaStdenv,
   lib,
   markForCudaToolkitRootHook,
   stdenv,
 }:
 let
-  inherit (cudaConfig) hasJetsonCudaCapability hostRedistSystem;
+  inherit (cudaLib.utils) mkFailedAssertionsString redistSystemIsSupported;
+  inherit (cudaStdenv) hostRedistSystem;
   inherit (lib)
     licenses
     sourceTypes
     teams
     ;
   inherit (lib.asserts) assertMsg;
-  inherit (lib.attrsets)
-    attrNames
-    attrValues
-    optionalAttrs
-    ;
+  inherit (lib.attrsets) attrNames;
   inherit (lib.lists)
-    any
     elem
     findFirst
     findFirstIndex
@@ -44,9 +41,7 @@ let
     stringLength
     substring
     ;
-  inherit (lib.trivial) flip id warnIfNot;
-
-  hasAnyTrueValue = attrs: any id (attrValues attrs);
+  inherit (lib.trivial) flip warnIf warnIfNot;
 
   mkOutputNameVar =
     output:
@@ -68,8 +63,7 @@ let
     "stubs"
   ];
 in
-# We need finalAttrs, so even if prevAttrs isn't used we still need to take it as an argument (see https://noogle.dev/f/lib/fixedPoints/toExtension).
-finalAttrs: _:
+finalAttrs: prevAttrs:
 let
   inherit (finalAttrs.passthru) redistBuilderArg;
   hasOutput = flip elem finalAttrs.outputs;
@@ -124,7 +118,7 @@ in
   # We do need some other phases, like configurePhase, so the multiple-output setup hook works.
   dontBuild = true;
 
-  nativeBuildInputs = [
+  nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
     ./redistBuilderHook.bash
     autoPatchelfHook
     # This hook will make sure libcuda can be found
@@ -135,9 +129,9 @@ in
     markForCudaToolkitRootHook
   ];
 
-  propagatedBuildInputs = [ cudaHook ];
+  propagatedBuildInputs = prevAttrs.propagatedBuildInputs or [ ] ++ [ cudaHook ];
 
-  buildInputs = [
+  buildInputs = prevAttrs.buildInputs or [ ] ++ [
     # autoPatchelfHook will search for a libstdc++ and we're giving it
     # one that is compatible with the rest of nixpkgs, even when
     # nvcc forces us to use an older gcc
@@ -149,7 +143,7 @@ in
 
   # Picked up by autoPatchelf
   # Needed e.g. for libnvrtc to locate (dlopen) libnvrtc-builtins
-  appendRunpaths = [ "$ORIGIN" ];
+  appendRunpaths = prevAttrs.appendRunpaths or [ ] ++ [ "$ORIGIN" ];
 
   # NOTE: We don't need to check for dev or doc, because those outputs are handled by
   # the multiple-outputs setup hook.
@@ -190,7 +184,7 @@ in
   doInstallCheck = true;
   allowFHSReferences = false;
 
-  passthru = {
+  passthru = prevAttrs.passthru or { } // {
     redistBuilderArg = {
       # The name of the redistributable to which this package belongs.
       redistName = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.redistName";
@@ -220,7 +214,7 @@ in
       # TODO(@connorbaker): Document these
       supportedRedistSystems = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.supportedRedistSystems";
       supportedNixSystems = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.supportedNixSystems";
-    };
+    } // prevAttrs.passthru.redistBuilderArg or { };
 
     # NOTE: Downstream may expand this to include other outputs, but they must remember to set the appropriate
     # outputNameVarFallbacks!
@@ -268,75 +262,88 @@ in
       outputStubs = [ "stubs" ];
     };
 
-    # Useful for introspecting why something went wrong. Maps descriptions of why the derivation would be marked as
-    # broken on have badPlatforms include the current platform.
-
-    # brokenConditions :: AttrSet Bool
-    # Sets `meta.broken = true` if any of the conditions are true.
+    # brokenAssertions :: AttrSet Bool
+    # Sets `meta.broken = true` if any of the assertions fail.
     # Example: Broken on a specific version of CUDA or when a dependency has a specific version.
-    # NOTE: Do not use this when a broken condition means evaluation will fail! For example, if
-    # a package is missing and is required for the build -- that should go in badPlatformsConditions,
+    # NOTE: Do not use this when a broken assertion means evaluation will fail! For example, if
+    # a package is missing and is required for the build -- that should go in platformAssertions,
     # because attempts to access attributes on the package will cause evaluation errors.
-    brokenConditions = {
-      # Typically this results in the static output being empty, as all libraries are moved
-      # back to the lib output.
-      "lib output follows static output" =
-        let
-          libIndex = findFirstIndex (x: x == "lib") null finalAttrs.outputs;
-          staticIndex = findFirstIndex (x: x == "static") null finalAttrs.outputs;
-        in
-        libIndex != null && staticIndex != null && libIndex > staticIndex;
-      "outputNameVarFallbacks is not a super set of expectedOutputs" =
-        subtractLists (map mkOutputNameVar finalAttrs.passthru.expectedOutputs) (
-          attrNames finalAttrs.passthru.outputNameVarFallbacks
-        ) != [ ];
-      "outputToPatterns is not a super set of expectedOutputs" =
-        subtractLists finalAttrs.passthru.expectedOutputs (attrNames finalAttrs.passthru.outputToPatterns)
-        != [ ];
-      # NOTE: We cannot (easily) check that all expected outputs have a corresponding outputNameVar attribute in
-      # finalAttrs because of the presence of attributes which use the "output" prefix but are not outputNameVars
-      # (e.g., outputChecks and outputName).
-    };
+    brokenAssertions = prevAttrs.passthru.brokenAssertions or [ ] ++ [
+      {
+        message = "lib output precedes static output";
+        assertion =
+          let
+            libIndex = findFirstIndex (x: x == "lib") null finalAttrs.outputs;
+            staticIndex = findFirstIndex (x: x == "static") null finalAttrs.outputs;
+          in
+          libIndex == null || staticIndex == null || libIndex < staticIndex;
+      }
+      {
+        # NOTE: We cannot (easily) check that all expected outputs have a corresponding outputNameVar attribute in
+        # finalAttrs because of the presence of attributes which use the "output" prefix but are not outputNameVars
+        # (e.g., outputChecks and outputName).
+        message = "outputNameVarFallbacks is a super set of expectedOutputs";
+        assertion =
+          subtractLists (map mkOutputNameVar finalAttrs.passthru.expectedOutputs) (
+            attrNames finalAttrs.passthru.outputNameVarFallbacks
+          ) == [ ];
+      }
+      {
+        message = "outputToPatterns is a super set of expectedOutputs";
+        assertion =
+          subtractLists finalAttrs.passthru.expectedOutputs (attrNames finalAttrs.passthru.outputToPatterns)
+          == [ ];
+      }
+    ];
 
-    # badPlatformsConditions :: AttrSet Bool
-    # Sets `meta.badPlatforms = meta.platforms` if any of the conditions are true.
+    # platformAssertions :: AttrSet Bool
+    # Sets `meta.badPlatforms = meta.platforms` if any of the assertions fail.
     # Example: Broken on a specific system when some condition is met, like targeting Jetson or
     # a required package missing.
-    # NOTE: Use this when a broken condition means evaluation can fail!
-    badPlatformsConditions =
-      let
-        isRedistSystemSbsaExplicitlySupported = elem "linux-sbsa" redistBuilderArg.supportedRedistSystems;
-        isRedistSystemAarch64ExplicitlySupported = elem "linux-aarch64" redistBuilderArg.supportedRedistSystems;
-      in
+    # NOTE: Use this when a failed assertion means evaluation can fail!
+    platformAssertions = prevAttrs.passthru.platformAssertions or [ ] ++ [
       {
-        "Platform is not supported" =
-          finalAttrs.src == null || hostRedistSystem == "unsupported" || finalAttrs.meta.platforms == [ ];
+        message = "src is non-null";
+        assertion = finalAttrs.src != null;
       }
-      // optionalAttrs (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isLinux) {
-        "aarch64-linux support is limited to linux-sbsa (server ARM devices) which is not the current target" =
-          isRedistSystemSbsaExplicitlySupported
-          && !isRedistSystemAarch64ExplicitlySupported
-          && hasJetsonCudaCapability;
-        "aarch64-linux support is limited to linux-aarch64 (Jetson devices) which is not the current target" =
-          !isRedistSystemSbsaExplicitlySupported
-          && isRedistSystemAarch64ExplicitlySupported
-          && !hasJetsonCudaCapability;
-      };
+      {
+        message = "hostRedistSystem (${hostRedistSystem}) is supported (${builtins.toJSON redistBuilderArg.supportedRedistSystems})";
+        assertion = redistSystemIsSupported hostRedistSystem redistBuilderArg.supportedRedistSystems;
+      }
+    ];
   };
 
-  meta = {
+  meta = prevAttrs.meta or { } // {
     description = "${redistBuilderArg.releaseName}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";
     sourceProvenance = [ sourceTypes.binaryNativeCode ];
+    platforms = redistBuilderArg.supportedNixSystems;
     broken =
+      let
+        failedAssertionsString = mkFailedAssertionsString finalAttrs.passthru.brokenAssertions;
+        hasFailedAssertions = failedAssertionsString != "";
+      in
       warnIfNot config.cudaSupport
         "CUDA support is disabled and you are building a CUDA package (${finalAttrs.finalPackage.name}); expect breakage!"
-        (hasAnyTrueValue finalAttrs.passthru.brokenConditions);
-    platforms = redistBuilderArg.supportedNixSystems;
-    badPlatforms = optionals (hasAnyTrueValue finalAttrs.passthru.badPlatformsConditions) (unique [
-      stdenv.buildPlatform.system
-      stdenv.hostPlatform.system
-      stdenv.targetPlatform.system
-    ]);
+        (
+          warnIf hasFailedAssertions
+            "Package ${finalAttrs.finalPackage.name} is marked broken due to the following failed assertions:${failedAssertionsString}"
+            hasFailedAssertions
+        );
+    badPlatforms =
+      let
+        failedAssertionsString = mkFailedAssertionsString finalAttrs.passthru.platformAssertions;
+        hasFailedAssertions = failedAssertionsString != "";
+      in
+      optionals
+        (warnIf hasFailedAssertions
+          "Package ${finalAttrs.finalPackage.name} is unsupported on this platform due to the following failed assertions:${failedAssertionsString}"
+          hasFailedAssertions
+        )
+        (unique [
+          cudaStdenv.buildPlatform.system
+          cudaStdenv.hostPlatform.system
+          cudaStdenv.targetPlatform.system
+        ]);
     license = licenses.nvidiaCudaRedist // {
       url =
         let

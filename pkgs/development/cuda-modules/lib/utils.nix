@@ -8,6 +8,24 @@ let
     typeOf
     unsafeDiscardStringContext
     ;
+  inherit (cudaLib.data) redistUrlPrefix;
+  inherit (cudaLib.utils)
+    attrPaths
+    dotsToUnderscores
+    dropDots
+    drvAttrPathsStrategy
+    drvAttrPathsStrategyImpl
+    flattenAttrs
+    mkCmakeCudaArchitecturesString
+    mkFailedAssertionsString
+    mkGencodeFlag
+    mkOptions
+    mkRealArchitecture
+    mkVirtualArchitecture
+    packagesFromDirectoryRecursive'
+    trimComponents
+    ;
+  inherit (lib) addErrorContext;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets)
     attrNames
@@ -25,27 +43,12 @@ let
     nameValuePair
     showAttrPath
     ;
-  inherit (cudaLib.data) redistUrlPrefix;
-  inherit (cudaLib.utils)
-    attrPaths
-    bimap
-    dotsToUnderscores
-    dropDots
-    drvAttrPathsStrategy
-    drvAttrPathsStrategyImpl
-    flattenAttrs
-    mkCmakeCudaArchitecturesString
-    mkGencodeFlag
-    mkOptions
-    mkRealArchitecture
-    mkVirtualArchitecture
-    packagesFromDirectoryRecursive'
-    trimComponents
-    ;
   inherit (lib.debug) traceIf;
   inherit (lib.fixedPoints) makeExtensible;
   inherit (lib.lists)
     concatMap
+    findFirst
+    foldl'
     head
     last
     map
@@ -59,6 +62,7 @@ let
     concatMapStringsSep
     concatStringsSep
     hasSuffix
+    optionalString
     replaceStrings
     versionAtLeast
     ;
@@ -211,6 +215,33 @@ in
           "archive.tar.xz"
         ])
       ];
+
+  mkFailedAssertionsString = foldl' (
+    failedAssertionsString:
+    { assertion, message }:
+    failedAssertionsString + optionalString (!assertion) ("\n- " + message)
+  ) "";
+
+  /**
+    Evaluate assertions and add error context to return value.
+
+    # Type
+
+    ```
+    evaluateAssertions
+      :: (assertions :: List { assertion :: Bool, message :: String })
+      -> Bool
+    ```
+  */
+  evaluateAssertions =
+    assertions:
+    let
+      failedAssertionsString = mkFailedAssertionsString assertions;
+    in
+    if failedAssertionsString != "" then
+      addErrorContext "with failed assertions:${failedAssertionsString}" false
+    else
+      true;
 
   /**
     A variant of `packagesFromDirectoryRecursive` which takes positional arguments and wraps the result of the
@@ -378,6 +409,16 @@ in
       "unsupported";
 
   /**
+    Returns a boolean indicating whether the provided redistSystem is supported by any of the redist systems.
+  */
+  redistSystemIsSupported =
+    redistSystem: redistSystems:
+    findFirst (
+      redistSystem':
+      redistSystem' == redistSystem || redistSystem' == "linux-all" || redistSystem' == "source"
+    ) null redistSystems != null;
+
+  /**
     Returns whether a capability should be built by default for a particular CUDA version.
 
     # Type
@@ -469,7 +510,7 @@ in
   mkCudaVariant = version: "cuda${major version}";
 
   /**
-    Utility function to generate a set of badPlatformsConditions for missing packages.
+    Utility function to generate assertions for missing packages.
 
     Used to mark a package as unsupported if any of its required packages are missing (null).
 
@@ -477,15 +518,17 @@ in
 
     Most commonly used in overrides files on a callPackage-provided attribute set of packages.
 
-    NOTE: We use badPlatformsConditions instead of brokenConditions because the presence of packages set to null
+    NOTE: We typically use platfromAssertions instead of brokenAssertions because the presence of packages set to null
     means evaluation will fail if package attributes are accessed without checking for null first. OfBorg
-    evaluation sets allowBroken to true, which means we can't rely on brokenConditions to prevent evaluation of
+    evaluation sets allowBroken to true, which means we can't rely on brokenAssertions to prevent evaluation of
     a package with missing dependencies.
 
     # Type
 
     ```
-    mkMissingPackagesBadPlatformsConditions :: (attrs :: AttrSet) -> AttrSet
+    mkMissingPackagesAssertions
+      :: (attrs :: AttrSet)
+      -> (assertions :: List { assertion :: Bool, message :: String })
     ```
 
     # Inputs
@@ -497,7 +540,7 @@ in
     # Examples
 
     :::{.example}
-    ## `cudaLib.utils.mkMissingPackagesBadPlatformsConditions` usage examples
+    ## `cudaLib.utils.mkMissingPackagesAssertions` usage examples
 
     ```nix
     {
@@ -508,21 +551,27 @@ in
     }:
     let
       inherit (lib.attrsets) recursiveUpdate;
-      inherit (cudaLib.utils) mkMissingPackagesBadPlatformsConditions;
+      inherit (cudaLib.utils) mkMissingPackagesAssertions;
     in
     prevAttrs: {
-      passthru = recursiveUpdate (prevAttrs.passthru or { }) {
-        badPlatformsConditions = mkMissingPackagesBadPlatformsConditions { inherit libcal; };
+      passthru = prevAttrs.passthru or { } // {
+        platformAssertions =
+          prevAttrs.passthru.platformAssertions or [ ]
+          ++ mkMissingPackagesAssertions { inherit libcal; };
       };
     }
     ```
     :::
   */
-  mkMissingPackagesBadPlatformsConditions = flip pipe [
+  mkMissingPackagesAssertions = flip pipe [
     # Take the attributes that are null.
     (filterAttrs (_: value: value == null))
-    # Map them to a set of badPlatformsConditions.
-    (bimap (name: "Required package ${name} is missing") (const true))
+    attrNames
+    # Map them to assertions.
+    (map (name: {
+      message = "${name} is available";
+      assertion = false;
+    }))
   ];
 
   /**
@@ -1028,7 +1077,7 @@ in
         if item.dep ? drvAttrs then map mkItem (getDepsFromValueSingleStep item.dep.drvAttrs) else [ ];
     });
 
-  # TODO: Copy these docs to the module system.
+  # TODO: These docs are incorrect.
 
   # Flags are determined based on your CUDA toolkit by default.  You may benefit
   # from improved performance, reduced file size, or greater hardware support by

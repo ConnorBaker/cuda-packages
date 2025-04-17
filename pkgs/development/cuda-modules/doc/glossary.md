@@ -13,11 +13,5 @@
 ## Top-level attributes
 
 - `cudaLib`
-- `cudaModules`
 - `cudaPackagesExtensions`
-- `cudaConfig`
 - `pkgsCuda`
-
-## CUDA package set attributes
-
-- `cudaPackagesConfig`

@@ -1,7 +1,6 @@
-{ cudaLib, lib }:
+{ lib }:
 let
   inherit (builtins) readDir;
-  inherit (cudaLib.types) redistName;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets) foldlAttrs optionalAttrs;
   inherit (lib.trivial) pathExists;
@@ -35,10 +34,7 @@ in
 foldlAttrs (
   acc: fileName: fileType:
   acc
-  // optionalAttrs (fileType == "directory") (
-    assert assertMsg (redistName.check fileName) "expected a redist name but got ${fileName}";
-    {
-      ${fileName} = mkFixups (./. + "/${fileName}");
-    }
-  )
+  // optionalAttrs (fileType == "directory") {
+    ${fileName} = mkFixups (./. + "/${fileName}");
+  }
 ) { } (readDir ./.)

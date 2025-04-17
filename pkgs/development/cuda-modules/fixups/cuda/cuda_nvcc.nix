@@ -1,10 +1,9 @@
 {
   cudaAtLeast,
-  cudaStdenv,
   cudaOlder,
+  cudaStdenv,
   lib,
   nvccHook,
-  stdenv,
 }:
 finalAttrs: prevAttrs: {
   # The nvcc and cicc binaries contain hard-coded references to /usr
@@ -129,10 +128,6 @@ finalAttrs: prevAttrs: {
     );
 
   passthru = prevAttrs.passthru or { } // {
-    inherit cudaStdenv;
-
-    nvccHostCCMatchesStdenvCC = cudaStdenv.cc == stdenv.cc;
-
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       # NOTE: May need to restrict cuda_nvcc to a single output to avoid breaking consumers which expect NVCC
       # to be within a single directory structure. This happens partly because NVCC is also home to NVVM.

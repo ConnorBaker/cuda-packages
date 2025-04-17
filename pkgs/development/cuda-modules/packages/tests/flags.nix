@@ -1,5 +1,4 @@
 {
-  cudaConfig,
   cudaLib,
   cudaNamePrefix,
   lib,
@@ -8,7 +7,7 @@
 }:
 let
   inherit (builtins) deepSeq toJSON tryEval;
-  inherit (cudaConfig.data) cudaCapabilityToInfo;
+  inherit (cudaLib.data) cudaCapabilityToInfo;
   inherit (cudaLib.utils) formatCapabilities;
   inherit (lib.asserts) assertMsg;
   inherit (stdenv) hostPlatform;

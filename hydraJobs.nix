@@ -129,7 +129,7 @@ let
   mkCudaPackagesJobs =
     pkgs: cudaCapability: cudaPackageSetName:
     let
-      inherit (pkgs.pkgsCuda.${realArch}.cudaConfig) hasJetsonCudaCapability;
+      inherit (cudaPackages.cudaStdenv) hasJetsonCudaCapability;
       inherit (pkgs.releaseTools) aggregate;
 
       cudaPackages = pkgs.pkgsCuda.${realArch}.${cudaPackageSetName};

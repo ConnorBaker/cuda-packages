@@ -1,5 +1,5 @@
 {
-  cudaConfig,
+  cudaStdenv,
   lib,
   libcublas,
   mpi,
@@ -13,7 +13,7 @@ prevAttrs: {
       libcublas
     ]
     # MPI brings in NCCL dependency by way of UCC/UCX.
-    ++ lib.optionals (!cudaConfig.hasJetsonCudaCapability) [
+    ++ lib.optionals (!cudaStdenv.hasJetsonCudaCapability) [
       mpi
       nccl
     ];

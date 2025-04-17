@@ -10,13 +10,9 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 
 Top-level:
 
-- `cudaConfig`: evaluated configuration for CUDA package sets
-  - includes `hostNixSystem`, `hostRedistSystem`, and `cudaCapabilities` (among others), which are helpful when writing modules for `cudaModules` with the goal of conditionally changing the build based on what's being targeted through `mkMerge` and `mkIf`.
-- `cudaLib`: types, data, and utility functions used in creation of the CUDA package sets
+- `cudaLib`: data and utility functions used in creation of the CUDA package sets
 - `cudaPackagesExtensions`: extensions (overlays) applied to each CUDA package set
   - an easy way to add packages to all CUDA package sets
-- `cudaModules`: modules which change the creation of CUDA package sets
-  - an easy way to add new CUDA package sets, change the defaults, or add packages to a specific CUDA package set
 
 ## Notes
 

@@ -1,16 +1,16 @@
 {
   callPackage,
-  cudaConfig,
-  cudaMajorVersion,
   cudaLib,
+  cudaMajorVersion,
+  cudaStdenv,
+  fetchurl,
   lib,
+  srcOnly,
   stdenv,
   stdenvNoCC,
-  srcOnly,
-  fetchurl,
 }:
 let
-  inherit (cudaConfig) hostRedistSystem;
+  inherit (cudaStdenv) hostRedistSystem;
   inherit (cudaLib.utils) getNixSystems mkCudaVariant mkRedistUrl;
   inherit (lib.attrsets)
     foldlAttrs

@@ -14,9 +14,9 @@ prevAttrs: {
   ];
 
   passthru = prevAttrs.passthru or { } // {
-    badPlatformsConditions =
-      prevAttrs.passthru.badPlatformsConditions or { }
-      // cudaLib.utils.mkMissingPackagesBadPlatformsConditions { inherit libcal; };
+    platformAssertions =
+      prevAttrs.passthru.platformAssertions or [ ]
+      ++ cudaLib.utils.mkMissingPackagesAssertions { inherit libcal; };
 
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       outputs = [

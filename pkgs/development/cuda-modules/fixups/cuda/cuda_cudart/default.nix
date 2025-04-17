@@ -5,7 +5,7 @@
   cuda_cccl,
   cuda_compat,
   cuda_nvcc,
-  cudaConfig,
+  cudaStdenv,
   lib,
   patchelf,
 }:
@@ -28,7 +28,7 @@ prevAttrs: {
     # - nv/target
     # TODO(@connorbaker): Check that the dependency offset for this is correct.
     ++ [ (lib.getOutput "include" cuda_cccl) ]
-    ++ lib.optionals (cudaConfig.hasJetsonCudaCapability && cuda_compat != null) [
+    ++ lib.optionals (cudaStdenv.hasJetsonCudaCapability && cuda_compat != null) [
       cuda_compat
     ];
 

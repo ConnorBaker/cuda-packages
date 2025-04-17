@@ -1,15 +1,15 @@
 {
   cmake,
-  cuda_cudart,
   cuda_cccl,
+  cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
   cuda_nvtx,
   cuda_profiler_api,
   cudaAtLeast,
-  cudaConfig,
   cudaNamePrefix,
   cudaOlder,
+  cudaStdenv,
   fetchFromGitHub,
   flags,
   lib,
@@ -176,7 +176,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   cmakeFlags = [
     (lib.cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
-    (lib.cmakeBool "BUILD_TEGRA" cudaConfig.hasJetsonCudaCapability)
+    (lib.cmakeBool "BUILD_TEGRA" cudaStdenv.hasJetsonCudaCapability)
   ];
 
   # TODO(@connorbaker):

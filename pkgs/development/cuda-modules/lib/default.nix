@@ -1,20 +1,14 @@
 { lib }:
 let
-  cudaLib = lib.fixedPoints.makeExtensible (
-    final:
-    let
-      callLibs =
-        file:
-        import file {
-          inherit lib;
-          cudaLib = final;
-        };
-    in
-    {
-      data = import ./data.nix;
-      types = callLibs ./types.nix;
-      utils = callLibs ./utils.nix;
-    }
-  );
+  cudaLib = lib.fixedPoints.makeExtensible (final: {
+    data = import ./data.nix {
+      inherit lib;
+      cudaLib = final;
+    };
+    utils = import ./utils.nix {
+      inherit lib;
+      cudaLib = final;
+    };
+  });
 in
 cudaLib

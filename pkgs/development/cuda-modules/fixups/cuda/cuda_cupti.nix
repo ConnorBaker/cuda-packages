@@ -1,4 +1,4 @@
-{ cudaConfig, lib }:
+{ cudaStdenv, lib }:
 prevAttrs: {
   allowFHSReferences = true;
 
@@ -10,7 +10,7 @@ prevAttrs: {
         "include"
         "lib"
         "samples"
-      ] ++ lib.optionals (cudaConfig.hostNixSystem == "x86_64-linux") [ "static" ];
+      ] ++ lib.optionals (cudaStdenv.hostNixSystem == "x86_64-linux") [ "static" ];
     };
   };
 }

@@ -2,6 +2,7 @@
   cudaLib,
   libcal ? null,
   libcublas,
+  nvshmem ? null, # TODO(@connorbaker): package this
 }:
 prevAttrs: {
   # TODO: Looks like the minimum supported capability is 7.0 as of the latest:
@@ -12,14 +13,9 @@ prevAttrs: {
   ];
 
   passthru = prevAttrs.passthru or { } // {
-    badPlatformsConditions =
-      prevAttrs.passthru.badPlatformsConditions or { }
-      // cudaLib.utils.mkMissingPackagesBadPlatformsConditions { inherit libcal; };
-
-    brokenConditions = prevAttrs.passthru.brokenConditions or { } // {
-      # TODO(@connorbaker):
-      "libcublasmp requires nvshmem which is not yet packaged" = true;
-    };
+    platformAssertions =
+      prevAttrs.passthru.platformAssertions or [ ]
+      ++ cudaLib.utils.mkMissingPackagesAssertions { inherit libcal nvshmem; };
 
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       outputs = [
