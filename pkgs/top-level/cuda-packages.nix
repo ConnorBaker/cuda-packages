@@ -1,32 +1,10 @@
+final: _:
 let
-  inherit (builtins) throw warn;
+  # Version of the default CUDA package set.
+  # NOTE: This must be set manually to avoid infinite recursion.
+  defaultCudaMajorMinorPatchVersion = "12.6.3";
 
-  lib = import ../../lib;
-  inherit (lib.attrsets)
-    mapAttrs
-    mergeAttrsList
-    ;
-  inherit (lib.customisation) callPackagesWith;
-  inherit (lib.fixedPoints) composeManyExtensions extends;
-  inherit (lib.lists) map;
-  inherit (lib.modules) evalModules;
-  inherit (lib.strings) versionAtLeast versionOlder;
-  inherit (lib.trivial)
-    const
-    flip
-    ;
-  inherit (lib.versions) major majorMinor;
-
-  cudaLib = import ../development/cuda-modules/lib { inherit lib; };
-  inherit (cudaLib.utils)
-    addNameToFetchFromGitLikeArgs
-    bimap
-    dropDots
-    formatCapabilities
-    mkCudaPackagesVersionedName
-    mkRealArchitecture
-    packagesFromDirectoryRecursive'
-    ;
+  cudaPackagesRoot = ../development/cuda-modules;
 
   dontRecurseForDerivationsOrEvaluate =
     attrs:
@@ -38,153 +16,94 @@ let
       __attrsFailEvaluation = true;
     };
 
-  mkCudaPackages =
-    final: cudaPackagesConfig:
-    let
-      # NOTE: This value is considered an implementation detail and should not be exposed in the attribute set.
-      inherit (cudaPackagesConfig) cudaMajorMinorPatchVersion;
+  fixups = import "${cudaPackagesRoot}/fixups" { inherit (final) cudaLib lib; };
 
-      cudaPackagesMajorMinorPatchVersionName = mkCudaPackagesVersionedName cudaMajorMinorPatchVersion;
+  # TODO: Is it possible to use eval-time fetchers to retrieve the manifests and import them?
+  # How does flake-compat get away with doing that without it being considered IFD?
 
-      mkAlias = if final.config.allowAliases then warn else flip const throw;
-
-      pkgs = dontRecurseForDerivationsOrEvaluate (
-        let
-          cudaPackagesMajorMinorPatchVersionName = mkCudaPackagesVersionedName cudaMajorMinorPatchVersion;
-          cudaPackagesMajorMinorVersionName = mkCudaPackagesVersionedName (
-            majorMinor cudaMajorMinorPatchVersion
-          );
-          cudaPackagesMajorVersionName = mkCudaPackagesVersionedName (major cudaMajorMinorPatchVersion);
-          cudaPackagesUnversionedName = "cudaPackages";
-        in
-        final.extend (
-          final: _: {
-            # cudaPackages_x_y = cudaPackages_x_y_z
-            ${cudaPackagesMajorMinorVersionName} =
-              final.cudaPackagesVersions.${cudaPackagesMajorMinorPatchVersionName};
-            # cudaPackages_x = cudaPackages_x_y
-            ${cudaPackagesMajorVersionName} = final.${cudaPackagesMajorMinorVersionName};
-            # cudaPackages = cudaPackages_x
-            ${cudaPackagesUnversionedName} = final.${cudaPackagesMajorVersionName};
-          }
-        )
-      );
-
-      cudaNamePrefix = "cuda${majorMinor cudaMajorMinorPatchVersion}";
-
-      # Our package set is either built from a fixed-point function (AKA self-map), or from recursively merging attribute sets.
-      # I choose recursively merging attribute sets because our scope is not flat, and with access to only the fixed point,
-      # we cannot build nested scopes incrementally (like adding aliases) because later definitions would overwrite earlier ones.
-      cudaPackagesFixedPoint =
-        finalCudaPackages:
-        mergeAttrsList (
-          [
-            {
-              inherit cudaNamePrefix;
-              cudaPackages = dontRecurseForDerivationsOrEvaluate finalCudaPackages;
-              cudaPackagesConfig = dontRecurseForDerivationsOrEvaluate cudaPackagesConfig;
-              # NOTE: dontRecurseForDerivationsOrEvaluate is applied earlier to avoid the need to maintain two copies of
-              # pkgs -- one with and one without it applied.
-              inherit pkgs;
-
-              # Core
-              callPackages = callPackagesWith (pkgs // finalCudaPackages);
-              cudaMajorMinorVersion = majorMinor cudaMajorMinorPatchVersion;
-              cudaMajorVersion = major cudaMajorMinorPatchVersion;
-
-              # Utilities
-              cudaAtLeast = versionAtLeast cudaMajorMinorPatchVersion;
-              cudaOlder = versionOlder cudaMajorMinorPatchVersion;
-
-              # Utility function for automatically naming fetchFromGitHub derivations with `name`.
-              fetchFromGitHub =
-                args: final.fetchFromGitHub (addNameToFetchFromGitLikeArgs final.fetchFromGitHub args);
-              fetchFromGitLab =
-                args: final.fetchFromGitLab (addNameToFetchFromGitLikeArgs final.fetchFromGitLab args);
-
-              # Aliases
-              # NOTE: flags is defined here to prevent a collision with an attribute of the same name from cuda-modules/packages.
-              flags =
-                dontRecurseForDerivationsOrEvaluate (formatCapabilities {
-                  inherit (final.cudaConfig.data) cudaCapabilityToInfo;
-                  inherit (cudaPackagesConfig) cudaCapabilities cudaForwardCompat;
-                })
-                // {
-                  cudaComputeCapabilityToName = throw "cudaPackages.flags.cudaComputeCapabilityToName has been removed";
-                  dropDot = mkAlias "cudaPackages.flags.dropDot is deprecated, use cudaLibs.utils.dropDots instead" dropDots;
-                  isJetsonBuild = mkAlias "cudaPackages.flags.isJetsonBuild is deprecated, use cudaPackages.cudaPackagesConfig.hasJetsonCudaCapability instead" cudaPackagesConfig.hasJetsonCudaCapability;
-                };
-
-              ## Aliases for deprecated attributes
-              autoAddCudaCompatRunpath = mkAlias "cudaPackages.autoAddCudaCompatRunpath is deprecated and no longer necessary" pkgs.emptyDirectory;
-              backendStdenv = mkAlias "cudaPackages.backendStdenv has been removed, use cudaPackages.cudaStdenv instead" finalCudaPackages.cudaStdenv;
-              cudaFlags = mkAlias "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
-              cudaMajorMinorPatchVersion = mkAlias "cudaPackages.cudaMajorMinorPatchVersion is an implementation detail, please use cudaPackages.cudaMajorMinorVersion instead" cudaPackagesConfig.cudaMajorMinorPatchVersion;
-              cudaVersion = mkAlias "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" finalCudaPackages.cudaMajorMinorVersion;
-              cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
-              markForCudatoolkitRootHook = mkAlias "cudaPackages.markForCudatoolkitRootHook has moved, use cudaPackages.markForCudaToolkitRootHook instead" finalCudaPackages.markForCudaToolkitRootHook;
-            }
-            # Redistributable packages
-            (mapAttrs (const finalCudaPackages.redist-builder) cudaPackagesConfig.redistBuilderArgs)
-          ]
-          # CUDA version-specific packages
-          # NOTE: No need for recurseIntoAttrs on the package set as packagesFromDirectoryRecursive' applies it automatically,
-          # and so the union of the attribute sets will have it as well.
-          ++ map (packagesFromDirectoryRecursive' finalCudaPackages.callPackage) cudaPackagesConfig.packagesDirectories
-        );
-    in
-    pkgs.makeScopeWithSplicing' {
-      otherSplices = pkgs.generateSplicesForMkScope [
-        "cudaPackagesVersions"
-        cudaPackagesMajorMinorPatchVersionName
-      ];
-      # User additions are included through cudaPackagesExtensions
-      f = extends (composeManyExtensions final.cudaPackagesExtensions) cudaPackagesFixedPoint;
-    };
+  mkManifests =
+    cudaMajorMinorPatchVersion:
+    final.lib.mapAttrs
+      (
+        name: version:
+        final.lib.importJSON "${cudaPackagesRoot}/manifests/${name}/redistrib_${version}.json"
+      )
+      {
+        cublasmp = "0.4.0";
+        cuda = cudaMajorMinorPatchVersion;
+        cudnn = "9.8.0";
+        cudss = "0.5.0";
+        cuquantum = "25.03.0";
+        cusolvermp = "0.6.0";
+        cusparselt =
+          if final.lib.versionOlder cudaMajorMinorPatchVersion "12.8.0" then "0.6.3" else "0.7.1";
+        cutensor = "2.2.0";
+        nppplus = "0.9.0";
+        nvcomp = "4.2.0.11";
+        nvjpeg2000 = "0.8.1";
+        nvpl = "25.1.1";
+        nvtiff = "0.5.0";
+        tensorrt = if final.cudaConfig.hasJetsonCudaCapability then "10.7.0" else "10.9.0";
+      };
 in
-final: _: {
-  # Make sure to use `lib` from `prev` to avoid attribute names (in which attribute sets are strict) depending on the
-  # fixed point, as this causes infinite recursion.
-  cudaLib = dontRecurseForDerivationsOrEvaluate cudaLib;
+{
+  cudaLib = import "${cudaPackagesRoot}/lib" { inherit (final) lib; };
 
   # For inspecting the results of the module system evaluation.
   cudaConfig =
-    dontRecurseForDerivationsOrEvaluate
-      (evalModules {
-        modules = [
-          ../development/cuda-modules/modules
-          {
+    let
+      mkFailedAssertionsString = final.lib.foldl' (
+        failedAssertionsString:
+        { assertion, message, ... }:
+        failedAssertionsString + final.lib.optionalString (!assertion) ("\n- " + message)
+      ) "";
+      failedAssertionsString = mkFailedAssertionsString cudaConfig.assertions;
+
+      mkWarningsString = final.lib.foldl' (warningsString: warning: warningsString + "\n- " + warning) "";
+      warningsString = mkWarningsString cudaConfig.warnings;
+
+      cudaConfig =
+        (final.lib.evalModules {
+          modules = [ "${cudaPackagesRoot}/modules" ];
+          specialArgs = {
+            inherit (final) cudaLib;
+            inherit defaultCudaMajorMinorPatchVersion;
             cudaCapabilities = final.config.cudaCapabilities or [ ];
             cudaForwardCompat = final.config.cudaForwardCompat or true;
-            cudaForceRpath = final.config.cudaForceRpath or false;
             hostNixSystem = final.stdenv.hostPlatform.system;
-          }
-        ] ++ final.cudaModules;
-        specialArgs = {
-          inherit (final) cudaLib;
-        };
-      }).config;
-
-  # For changing the manifests available.
-  cudaModules = [ ];
+          };
+        }).config;
+    in
+    if failedAssertionsString != "" then
+      throw "\nFailed assertions when evaluating CUDA configuration for default version ${defaultCudaMajorMinorPatchVersion}:${failedAssertionsString}"
+    else if warningsString != "" then
+      final.lib.warn "\nWarnings when constructing CUDA configuration for default version ${defaultCudaMajorMinorPatchVersion}:${warningsString}" cudaConfig
+    else
+      cudaConfig;
 
   # For adding packages in an ad-hoc manner.
   cudaPackagesExtensions = [ ];
 
-  # Versioned package sets
-  cudaPackagesVersions = dontRecurseForDerivationsOrEvaluate (
-    bimap mkCudaPackagesVersionedName (mkCudaPackages final) final.cudaConfig.cudaPackages
-  );
+  # CUDA package sets specify manifests and fixups.
+  cudaPackages_12_2 = final.callPackage cudaPackagesRoot {
+    inherit fixups;
+    manifests = mkManifests "12.2.2";
+  };
 
-  # Package set aliases with a major and minor component are drawn directly from final.cudaPackagesVersions.
-  # The patch-versioned package sets are not available at the top level because they may be removed without
-  # notice.
-  cudaPackages_12_2 = final.cudaPackagesVersions.cudaPackages_12_2_2;
-  cudaPackages_12_6 = final.cudaPackagesVersions.cudaPackages_12_6_3;
-  cudaPackages_12_8 = final.cudaPackagesVersions.cudaPackages_12_8_1;
+  cudaPackages_12_6 = final.callPackage cudaPackagesRoot {
+    inherit fixups;
+    manifests = mkManifests "12.6.3";
+  };
+
+  cudaPackages_12_8 = final.callPackage cudaPackagesRoot {
+    inherit fixups;
+    manifests = mkManifests "12.8.1";
+  };
+
   # Package set aliases with a major component refer to an alias with a major and minor component in final.
-  # TODO: Deferring upgrade to CUDA 12.8 until separate compilation works.
-  cudaPackages_12 = final.cudaPackages_12_6;
+  cudaPackages_12 =
+    final.${final.cudaLib.utils.mkCudaPackagesVersionedName (final.lib.versions.majorMinor final.cudaConfig.defaultCudaMajorMinorPatchVersion)};
+
   # Unversioned package set alias refers to an alias with a major component in final.
   cudaPackages = final.cudaPackages_12;
 
@@ -197,8 +116,7 @@ final: _: {
       mkPkgs =
         cudaCapabilityInfo:
         final.extend (
-          _: prev:
-          dontRecurseForDerivationsOrEvaluate {
+          _: prev: {
             config = prev.config // {
               cudaCapabilities = [ cudaCapabilityInfo.cudaCapability ];
             };
@@ -206,6 +124,7 @@ final: _: {
         );
     in
     dontRecurseForDerivationsOrEvaluate (
-      bimap mkRealArchitecture mkPkgs final.cudaConfig.data.cudaCapabilityToInfo
+      final.cudaLib.utils.bimap final.cudaLib.utils.mkRealArchitecture mkPkgs
+        final.cudaConfig.data.cudaCapabilityToInfo
     );
 }

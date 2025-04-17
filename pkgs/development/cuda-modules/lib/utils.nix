@@ -4,11 +4,6 @@ let
     deepSeq
     genericClosure
     getContext
-    match
-    pathExists
-    readDir
-    removeAttrs
-    substring
     tryEval
     typeOf
     unsafeDiscardStringContext
@@ -28,7 +23,6 @@ let
     mapAttrs
     mapAttrs'
     nameValuePair
-    optionalAttrs
     showAttrPath
     ;
   inherit (cudaLib.data) redistUrlPrefix;
@@ -49,7 +43,6 @@ let
     trimComponents
     ;
   inherit (lib.debug) traceIf;
-  inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) makeExtensible;
   inherit (lib.lists)
     concatMap
@@ -66,7 +59,6 @@ let
     concatMapStringsSep
     concatStringsSep
     hasSuffix
-    removePrefix
     replaceStrings
     versionAtLeast
     ;
@@ -279,52 +271,6 @@ in
             ''
         ) (builtins.readDir directory)
       );
-
-  /**
-    Much like `packagesFromDirectoryRecursive`, except instead of invoking `callPackage` on the leaves, this function
-    leaves them as paths.
-
-    # Type
-
-    ```
-    packageExprPathsFromDirectoryRecursive :: (directory :: Path) -> AttrSet
-    ```
-
-    # Inputs
-
-    `directory`
-
-    : The directory to recurse into
-  */
-  packageExprPathsFromDirectoryRecursive =
-    directory:
-    packagesFromDirectoryRecursive {
-      inherit directory;
-      callPackage = path: _: path;
-    };
-
-  /**
-    Much like `packagesFromDirectoryRecursive`, except instead of invoking `callPackage` on the leaves, this function
-    `import`s them.
-
-    # Type
-
-    ```
-    packageExprsFromDirectoryRecursive :: (directory :: Path) -> AttrSet
-    ```
-
-    # Inputs
-
-    `directory`
-
-    : The directory to recurse into
-  */
-  packageExprsFromDirectoryRecursive =
-    directory:
-    packagesFromDirectoryRecursive {
-      inherit directory;
-      callPackage = path: _: import path;
-    };
 
   /**
     Maps a NVIDIA redistributable system to Nix systems.
@@ -689,97 +635,6 @@ in
     TODO:
   */
   mkVirtualArchitecture = cudaCapability: "compute_" + dropDots cudaCapability;
-
-  /**
-    TODO:
-  */
-  addNameToFetchFromGitLikeArgs =
-    fetcher:
-    let
-      fetcherSupportsTagArg = fetcher.__functionArgs ? tag;
-    in
-    args:
-    if args ? name then
-      # Use `name` when provided.
-      args
-    else
-      let
-        inherit (args) owner repo rev;
-        hasTagArg = args ? tag;
-        revStrippedRefsTags = removePrefix "refs/tags/" rev;
-        tagInRev = revStrippedRefsTags != rev;
-        isHash = match "^[0-9a-f]{40}$" rev == [ ];
-        shortHash = substring 0 8 rev;
-
-        # If the fetcher doesn't support a `tag` argument, remove it and populate rev.
-        supportOldTaglessArgs =
-          if (!fetcherSupportsTagArg && hasTagArg) then
-            removeAttrs args [ "tag" ]
-            // optionalAttrs (!fetcherSupportsTagArg && hasTagArg) {
-              rev =
-                # Exactly one of tag or rev must be supplied.
-                assert args.rev or null == null;
-                "refs/tags/${args.tag}";
-            }
-          else
-            args;
-      in
-      supportOldTaglessArgs
-      // {
-        name = concatStringsSep "-" [
-          owner
-          repo
-          (
-            # If tag is present that takes precedence.
-            if args.tag or null != null then
-              args.tag
-            # If there's no tag, then rev *must* exist.
-            else if tagInRev then
-              revStrippedRefsTags
-            else if isHash then
-              shortHash
-            else
-              throw "Expected either a tag or a hash for the revision"
-          )
-        ];
-      };
-
-  /**
-    A total version of `readDir` which returns an empty attribute set if the directory does not exist.
-
-    # Type
-
-    ```
-    readDirIfExists :: (path :: Path) -> AttrSet
-    ```
-
-    # Inputs
-
-    `path`
-
-    : A path to a directory
-
-    # Examples
-
-    :::{.example}
-    ## `cudaLib.utils.readDirIfExists` usage examples
-
-    Assume the directory `./foo` exists and contains the files `bar` and `baz`.
-
-    ```nix
-    readDirIfExists ./foo
-    => { bar = "regular"; baz = "regular"; }
-    ```
-
-    Assume the directory `./oops` does not exist.
-
-    ```nix
-    readDirIfExists ./oops
-    => { }
-    ```
-    :::
-  */
-  readDirIfExists = path: optionalAttrs (pathExists path) (readDir path);
 
   /**
     Removes the dots from a string.

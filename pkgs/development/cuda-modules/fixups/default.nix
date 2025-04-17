@@ -1,22 +1,14 @@
-{
-  cudaLib,
-  lib,
-  ...
-}:
+{ cudaLib, lib }:
 let
   inherit (builtins) readDir;
-  inherit (cudaLib.types) redistName fixups;
+  inherit (cudaLib.types) redistName;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets) foldlAttrs optionalAttrs;
-  inherit (lib.options) mkOption;
-  inherit (lib.strings) hasSuffix removeSuffix;
   inherit (lib.trivial) pathExists;
+  inherit (lib.strings) hasSuffix removeSuffix;
 
   mkFixups =
     fixupFnDir:
-    let
-      fixupFnDirContents = readDir fixupFnDir;
-    in
     foldlAttrs (
       acc: fileName: fileType:
       let
@@ -38,23 +30,15 @@ let
       // {
         ${packageName} = fixupFnDir + "/${fileName}";
       }
-    ) { } fixupFnDirContents;
+    ) { } (readDir fixupFnDir);
 in
-{
-  options.fixups = mkOption {
-    description = "A mapping from redist name to package name to fixup function";
-    type = fixups;
-    default = { };
-  };
-
-  config.fixups = foldlAttrs (
-    acc: fileName: fileType:
-    acc
-    // optionalAttrs (fileType == "directory") (
-      assert assertMsg (redistName.check fileName) "expected a redist name but got ${fileName}";
-      {
-        ${fileName} = mkFixups (./. + "/${fileName}");
-      }
-    )
-  ) { } (readDir ./.);
-}
+foldlAttrs (
+  acc: fileName: fileType:
+  acc
+  // optionalAttrs (fileType == "directory") (
+    assert assertMsg (redistName.check fileName) "expected a redist name but got ${fileName}";
+    {
+      ${fileName} = mkFixups (./. + "/${fileName}");
+    }
+  )
+) { } (readDir ./.)

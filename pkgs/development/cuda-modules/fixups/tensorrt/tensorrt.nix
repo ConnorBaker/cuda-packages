@@ -2,7 +2,7 @@
 
   cuda_cudart,
   cudaLib,
-  cudaPackagesConfig,
+  cudaConfig,
   cudnn,
   cuda_nvrtc,
   lib,
@@ -11,7 +11,7 @@
   stdenv,
 }:
 let
-  inherit (cudaPackagesConfig) hasJetsonCudaCapability;
+  inherit (cudaConfig) hasJetsonCudaCapability;
   inherit (cudaLib.utils) majorMinorPatch;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) optionals;

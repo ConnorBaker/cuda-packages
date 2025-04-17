@@ -8,10 +8,6 @@ if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne 0 ]]; then
 fi
 nixLog "sourcing cudaCudartRunpathFixupHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
 
-# NOTE: This flag is duplicated in all CUDA setup hooks which modify ELF files to ensure consistency.
-# patchelf defaults to using RUNPATH, so to preserve RPATH we need to be uniform.
-declare -ig cudaForceRpath="@cudaForceRpath@"
-
 # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
 # TODO(@connorbaker): Due to the order Nixpkgs setup sources files, dependencies are not sourced
 # prior to the current node. As such, even though we have occursInArray as one of our propagated
@@ -64,12 +60,7 @@ cudaCudartRunpathFixup() {
   local -r newRunpathString="$(concatStringsSep ":" newRunpathEntries)"
   if [[ $originalRunpathString != "$newRunpathString" ]]; then
     nixInfoLog "replacing rpath of $path: $originalRunpathString -> $newRunpathString"
-    if ((cudaForceRpath)); then
-      patchelf --remove-rpath "$path"
-      patchelf --force-rpath --set-rpath "$newRunpathString" "$path"
-    else
-      patchelf --set-rpath "$newRunpathString" "$path"
-    fi
+    patchelf --set-rpath "$newRunpathString" "$path"
   fi
 
   return 0

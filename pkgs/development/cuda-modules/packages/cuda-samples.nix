@@ -7,9 +7,9 @@
   cuda_nvtx,
   cuda_profiler_api,
   cudaAtLeast,
+  cudaConfig,
   cudaNamePrefix,
   cudaOlder,
-  cudaPackagesConfig,
   fetchFromGitHub,
   flags,
   lib,
@@ -176,7 +176,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   cmakeFlags = [
     (lib.cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
-    (lib.cmakeBool "BUILD_TEGRA" cudaPackagesConfig.hasJetsonCudaCapability)
+    (lib.cmakeBool "BUILD_TEGRA" cudaConfig.hasJetsonCudaCapability)
   ];
 
   # TODO(@connorbaker):

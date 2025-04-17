@@ -4,8 +4,8 @@
   callPackages,
   config,
   cuda_nvcc,
+  cudaConfig,
   cudaNamePrefix,
-  cudaPackagesConfig,
   cudaStdenv,
   lib,
   makeSetupHook,
@@ -14,7 +14,7 @@
 }:
 let
   inherit (cuda_nvcc.passthru) nvccHostCCMatchesStdenvCC;
-  inherit (cudaPackagesConfig) cudaForceRpath hostRedistSystem;
+  inherit (cudaConfig) hostRedistSystem;
   inherit (lib.attrsets) attrValues optionalAttrs;
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id warnIfNot;
@@ -26,7 +26,7 @@ let
   # path from cudaStdenv's host compiler. Generalize this to Clang as well!
   substitutions =
     {
-      inherit cudaForceRpath nvccHostCCMatchesStdenvCC;
+      inherit nvccHostCCMatchesStdenvCC;
     }
     // optionalAttrs (!nvccHostCCMatchesStdenvCC) {
       cudaStdenvCCVersion = cudaStdenv.cc.version;

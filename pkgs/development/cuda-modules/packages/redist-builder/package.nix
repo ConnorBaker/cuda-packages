@@ -3,7 +3,6 @@
   cudaConfig,
   cudaMajorVersion,
   cudaLib,
-  cudaPackagesConfig,
   lib,
   stdenv,
   stdenvNoCC,
@@ -11,8 +10,8 @@
   fetchurl,
 }:
 let
-  inherit (cudaPackagesConfig) hostRedistSystem;
-  inherit (cudaLib.utils) getNixSystems mkRedistUrl;
+  inherit (cudaConfig) hostRedistSystem;
+  inherit (cudaLib.utils) getNixSystems mkCudaVariant mkRedistUrl;
   inherit (lib.attrsets)
     foldlAttrs
     hasAttr
@@ -32,6 +31,9 @@ let
   genericOverrideAttrsArg = mkOverrideAttrsArg ./fixup.nix;
 
   getSupportedReleases =
+    let
+      desiredCudaVariant = mkCudaVariant cudaMajorVersion;
+    in
     release:
     # Always show preference to the "source", then "linux-all" redistSystem if they are available, as they are
     # the most general.
@@ -46,15 +48,14 @@ let
     else
       let
         hasCudaVariants = release ? cuda_variant;
-        relevantCudaVariant = "cuda${cudaMajorVersion}";
       in
       foldlAttrs (
         acc: name: value:
         acc
         # If the value is an attribute, and when hasCudaVariants is true it has the relevant CUDA variant,
         # then add it to the set.
-        // optionalAttrs (isAttrs value && (hasCudaVariants -> hasAttr relevantCudaVariant value)) {
-          ${name} = value.${relevantCudaVariant} or value;
+        // optionalAttrs (isAttrs value && (hasCudaVariants -> hasAttr desiredCudaVariant value)) {
+          ${name} = value.${desiredCudaVariant} or value;
         }
       ) { } release;
 in
@@ -62,15 +63,12 @@ in
 {
   redistName,
   packageName,
+  release,
   # `fixupFn` is a `callPackage`-able arugment which is `callPackage`-ed and provided to the derivation's `overrideAttrs`.
   # It is responsible for setting up `passthru.redistBuilderArg.outputs`, among other things.
   fixupFn,
 }:
 let
-  manifestVersion = cudaPackagesConfig.redists.${redistName};
-  manifest = cudaConfig.manifests.${redistName}.${manifestVersion};
-  release = manifest.${packageName};
-
   supportedReleases = getSupportedReleases release;
 
   supportedNixSystems = pipe supportedReleases [

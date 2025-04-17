@@ -2,12 +2,12 @@
 # to accommodate automatic CUDAToolkit_ROOT construction
 {
   config,
-  cudaPackagesConfig,
+  cudaConfig,
   lib,
   makeSetupHook,
 }:
 let
-  inherit (cudaPackagesConfig) hostRedistSystem;
+  inherit (cudaConfig) hostRedistSystem;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any optionals;
   inherit (lib.trivial) id warnIfNot;

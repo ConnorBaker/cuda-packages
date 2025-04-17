@@ -3,6 +3,7 @@
   addDriverRunpath,
   buildPythonPackage,
   config,
+  cudaConfig,
   cudaPackages,
   cudaSupport ? config.cudaSupport,
   callPackage,
@@ -38,7 +39,6 @@ let
     cuda_cudart
     cuda_nvcc
     cudaOlder
-    cudaPackagesConfig
     cudnn
     cudnn-frontend
     flags
@@ -349,7 +349,7 @@ let
         export LD_LIBRARY_PATH="''${LD_LIBRARY_PATH:-}"
       ''
       # NOTE: Ensure cuda_compat has a higher priority than the driver lib when it is in use.
-      + optionalString (cudaPackagesConfig.hasJetsonCudaCapability && cuda_compat != null) ''
+      + optionalString (cudaConfig.hasJetsonCudaCapability && cuda_compat != null) ''
         addToSearchPath LD_LIBRARY_PATH "${cuda_compat}/compat"
       ''
       + ''

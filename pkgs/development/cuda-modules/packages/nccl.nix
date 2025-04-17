@@ -2,8 +2,8 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
+  cudaConfig,
   cudaNamePrefix,
-  cudaPackagesConfig,
   fetchFromGitHub,
   flags,
   lib,
@@ -14,7 +14,7 @@
   gitUpdater,
 }:
 let
-  inherit (cudaPackagesConfig) hasJetsonCudaCapability;
+  inherit (cudaConfig) hasJetsonCudaCapability;
   inherit (lib.attrsets)
     getBin
     getLib

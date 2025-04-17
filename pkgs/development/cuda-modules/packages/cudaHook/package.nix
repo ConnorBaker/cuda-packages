@@ -1,12 +1,12 @@
 # Currently propagated by cuda_nvcc or cudatoolkit, rather than used directly
 {
   config,
-  cudaPackagesConfig,
+  cudaConfig,
   lib,
   makeSetupHook,
 }:
 let
-  inherit (cudaPackagesConfig) hostRedistSystem;
+  inherit (cudaConfig) hostRedistSystem;
   inherit (lib.attrsets) attrValues;
   inherit (lib.lists) any;
   inherit (lib.trivial) id warnIfNot;

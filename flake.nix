@@ -20,7 +20,6 @@
     let
       inherit (inputs.flake-parts.lib) mkFlake;
       inherit (inputs.nixpkgs) lib;
-      inherit (lib.attrsets) genAttrs;
       cudaLib = import ./pkgs/development/cuda-modules/lib { inherit lib; };
       systems = [
         "aarch64-linux"
@@ -42,7 +41,7 @@
           overlays = [ inputs.self.overlays.default ];
         };
       # Memoization through lambda lifting.
-      nixpkgsInstances = genAttrs systems mkNixpkgs;
+      nixpkgsInstances = lib.genAttrs systems mkNixpkgs;
     in
     mkFlake { inherit inputs; } {
       inherit systems;

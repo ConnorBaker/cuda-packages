@@ -10,10 +10,6 @@ Most code lives in Nixpkgs and is copied/modified here for ease of development.
 
 Top-level:
 
-TODO: `hostRedistSystem` was moved from `cudaConfig` to `cudaPackagesConfig` because it is a function of the capabilities specified, and so can vary by package set.
-
-TODO: `cudaCapabilities` was introduced to `cudaPackagesConfig` to enable per-package-set configuration -- `cudaConfig.cudaCapabilities` provides defaults for all package sets.
-
 - `cudaConfig`: evaluated configuration for CUDA package sets
   - includes `hostNixSystem`, `hostRedistSystem`, and `cudaCapabilities` (among others), which are helpful when writing modules for `cudaModules` with the goal of conditionally changing the build based on what's being targeted through `mkMerge` and `mkIf`.
 - `cudaLib`: types, data, and utility functions used in creation of the CUDA package sets

@@ -3,17 +3,17 @@
   autoAddDriverRunpath,
   autoPatchelfHook,
   config,
+  cudaConfig,
   cudaHook,
   cudaMajorMinorVersion,
   cudaMajorVersion,
   cudaNamePrefix,
-  cudaPackagesConfig,
   lib,
   markForCudaToolkitRootHook,
   stdenv,
 }:
 let
-  inherit (cudaPackagesConfig) hasJetsonCudaCapability hostRedistSystem;
+  inherit (cudaConfig) hasJetsonCudaCapability hostRedistSystem;
   inherit (lib)
     licenses
     sourceTypes

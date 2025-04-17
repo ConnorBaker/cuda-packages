@@ -1,8 +1,7 @@
 {
-  addDriverRunpath,
   autoFixElfFiles,
   arrayUtilities,
-  cudaPackagesConfig,
+  cudaConfig,
   lib,
   patchelf,
 }:
@@ -19,7 +18,7 @@ prevAttrs: {
 
   autoPatchelfIgnoreMissingDeps =
     prevAttrs.autoPatchelfIgnoreMissingDeps or [ ]
-    ++ lib.optionals cudaPackagesConfig.hasJetsonCudaCapability [
+    ++ lib.optionals cudaConfig.hasJetsonCudaCapability [
       "libnvrm_gpu.so"
       "libnvrm_mem.so"
       "libnvdla_runtime.so"
@@ -47,7 +46,6 @@ prevAttrs: {
       substitute \
         ${./cudaCompatRunpathFixupHook.bash} \
         "''${out:?}/nix-support/setup-hook" \
-        --subst-var-by cudaForceRpath "${if cudaPackagesConfig.cudaForceRpath then "1" else "0"}" \
         --subst-var-by cudaCompatOutDir "''${out:?}/compat" \
         --subst-var-by cudaCompatLibDir "''${!outputLib:?}/lib"
 
@@ -64,7 +62,7 @@ prevAttrs: {
     # `cuda_compat` only works on aarch64-linux, and only when building for Jetson devices.
     badPlatformsConditions = prevAttrs.passthru.badPlatformsConditions or { } // {
       "Trying to use cuda_compat on aarch64-linux targeting non-Jetson devices" =
-        !cudaPackagesConfig.hasJetsonCudaCapability;
+        !cudaConfig.hasJetsonCudaCapability;
     };
 
     # NOTE: Using multiple outputs with symlinks causes build cycles.

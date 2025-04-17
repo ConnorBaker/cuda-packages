@@ -1,6 +1,5 @@
 {
   cudaConfig,
-  cudaPackagesConfig,
   cudaMajorMinorVersion,
   lib,
   pkgs,
@@ -17,10 +16,7 @@ let
   # Cf. https://github.com/NixOS/nixpkgs/pull/218265 for context
   defaultNvccHostCompilerMajorVersion =
     cudaConfig.data.nvccCompatibilities.${cudaMajorMinorVersion}.gcc.maxMajorVersion;
-  defaultNvccHostStdenv = pkgs."gcc${defaultNvccHostCompilerMajorVersion}Stdenv";
-  nvccConfig = cudaConfig.cudaPackages.${cudaPackagesConfig.cudaMajorMinorPatchVersion}.nvcc;
-  nvccHostStdenv =
-    if nvccConfig.hostStdenv != null then nvccConfig.hostStdenv else defaultNvccHostStdenv;
+  nvccHostStdenv = pkgs."gcc${defaultNvccHostCompilerMajorVersion}Stdenv";
   nvccStdenv = stdenvAdapters.useLibsFrom stdenv nvccHostStdenv;
 
   passthruExtra = {

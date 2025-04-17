@@ -5,7 +5,7 @@
   cuda_cccl,
   cuda_compat,
   cuda_nvcc,
-  cudaPackagesConfig,
+  cudaConfig,
   lib,
   patchelf,
 }:
@@ -28,7 +28,7 @@ prevAttrs: {
     # - nv/target
     # TODO(@connorbaker): Check that the dependency offset for this is correct.
     ++ [ (lib.getOutput "include" cuda_cccl) ]
-    ++ lib.optionals (cudaPackagesConfig.hasJetsonCudaCapability && cuda_compat != null) [
+    ++ lib.optionals (cudaConfig.hasJetsonCudaCapability && cuda_compat != null) [
       cuda_compat
     ];
 
@@ -99,7 +99,6 @@ prevAttrs: {
       substitute \
         ${./cudaCudartRunpathFixupHook.bash} \
         "''${!outputStubs:?}/nix-support/setup-hook" \
-        --subst-var-by cudaForceRpath "${if cudaPackagesConfig.cudaForceRpath then "1" else "0"}" \
         --subst-var-by cudartStubLibDir "''${!outputStubs:?}/lib" \
         --subst-var-by driverLibDir "${addDriverRunpath.driverLink}/lib"
 

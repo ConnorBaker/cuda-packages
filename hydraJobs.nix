@@ -4,7 +4,7 @@
   nixpkgsInstances,
 }:
 let
-  inherit (cudaLib.utils) flattenDrvTree mkCudaPackagesVersionedName mkRealArchitecture;
+  inherit (cudaLib.utils) flattenDrvTree mkRealArchitecture;
   inherit (lib.attrsets)
     attrValues
     intersectAttrs
@@ -127,17 +127,14 @@ let
     };
 
   mkCudaPackagesJobs =
-    pkgs: cudaCapability: cudaMajorMinorPatchVersion:
+    pkgs: cudaCapability: cudaPackageSetName:
     let
+      inherit (pkgs.pkgsCuda.${realArch}.cudaConfig) hasJetsonCudaCapability;
       inherit (pkgs.releaseTools) aggregate;
 
-      cudaPackages = pkgs.pkgsCuda.${realArch}.cudaPackagesVersions.${cudaPackagesVersionedName};
-
-      inherit (cudaPackages.cudaPackagesConfig) hasJetsonCudaCapability;
-
+      cudaPackages = pkgs.pkgsCuda.${realArch}.${cudaPackageSetName};
       realArch = mkRealArchitecture cudaCapability;
-      cudaPackagesVersionedName = mkCudaPackagesVersionedName cudaMajorMinorPatchVersion;
-      namePrefix = "${pkgs.system}-${realArch}-${cudaPackagesVersionedName}";
+      namePrefix = "${pkgs.system}-${realArch}-${cudaPackageSetName}";
 
       # TODO: Document requirement that hooks both have an attribute path ending with `Hook` and a `name` attribute
       # ending with `-hook`, and that setup hooks are all top-level.
@@ -148,8 +145,8 @@ let
       ];
 
       redists = pipe cudaPackages [
-        # Keep only the attribute names in cudaPackages which come from redistBuilderArgs
-        (intersectAttrs cudaPackages.cudaPackagesConfig.redistBuilderArgs)
+        # Keep only the attribute names in cudaPackages which come from fixups (are redistributables).
+        (intersectAttrs cudaPackages.fixups)
         attrValues
         # Filter out packages unavailable for the platform
         (filter (pkg: pkg.meta.available))
@@ -241,9 +238,9 @@ in
     {
       # Ada Lovelace
       ${mkRealArchitecture "8.9"} = {
-        ${mkCudaPackagesVersionedName "12.2.2"} = mkCudaPackagesJobs pkgs "8.9" "12.2.2";
-        ${mkCudaPackagesVersionedName "12.6.3"} = mkCudaPackagesJobs pkgs "8.9" "12.6.3";
-        ${mkCudaPackagesVersionedName "12.8.1"} = mkCudaPackagesJobs pkgs "8.9" "12.8.1";
+        cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_2";
+        cudaPackages_12_6 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_6";
+        cudaPackages_12_8 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_8";
       };
       python3Packages = mkPython3PackagesJobs "x86_64-linux-pkgs-python3Packages" pkgs.python3Packages;
     }
@@ -257,7 +254,7 @@ in
       # Jetson Orin
       ${mkRealArchitecture "8.7"} = {
         # JetPack 5 only supports up to 12.2.2
-        ${mkCudaPackagesVersionedName "12.2.2"} = mkCudaPackagesJobs pkgs "8.7" "12.2.2";
+        cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.7" "cudaPackages_12_2";
       };
       python3Packages = mkPython3PackagesJobs "aarch64-linux-pkgs-python3Packages" pkgs.python3Packages;
     }

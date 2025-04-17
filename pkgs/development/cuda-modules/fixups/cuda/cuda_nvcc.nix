@@ -2,7 +2,6 @@
   cudaAtLeast,
   cudaStdenv,
   cudaOlder,
-  cuda_nvcc,
   lib,
   nvccHook,
   stdenv,
