@@ -70,16 +70,9 @@
         {
           _module.args.pkgs = nixpkgsInstances.${system};
 
-          devShells = {
-            inherit (config.packages) cuda-redist;
-            default = config.treefmt.build.devShell;
-          };
+          devShells.default = config.treefmt.build.devShell;
 
           legacyPackages = pkgs;
-
-          packages = {
-            inherit (pkgs) cuda-redist;
-          };
 
           pre-commit.settings.hooks = {
             # Formatter checks
@@ -116,9 +109,6 @@
 
               # Nix
               nixfmt.enable = true;
-
-              # Python
-              ruff.enable = true;
 
               # Shell
               shellcheck.enable = true;
