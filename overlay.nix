@@ -41,7 +41,7 @@ let
           "onnxruntime"
           "onnx-tensorrt"
           "pycuda"
-          "tensorrt-python"
+          "tensorrt"
           "warp"
         ] (name: callPackage (./pkgs/development/python-modules + "/${name}") { })
       )

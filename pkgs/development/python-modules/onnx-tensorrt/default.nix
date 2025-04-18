@@ -9,13 +9,12 @@
   onnx,
   pycuda,
   setuptools,
-  tensorrt-python,
+  tensorrt, # NOTE: This is tensorrt-python, not the C++ library.
 }:
 let
   inherit (cudaPackages)
     cuda_cudart
     cuda_nvcc
-    tensorrt
     ;
   inherit (lib) licenses maintainers teams;
   inherit (lib.asserts) assertMsg;
@@ -30,7 +29,7 @@ let
     __structuredAttrs = false;
 
     pname = "onnx-tensorrt";
-    version = majorMinor tensorrt.version;
+    version = majorMinor cudaPackages.tensorrt.version;
 
     src = fetchFromGitHub {
       owner = "onnx";
@@ -114,14 +113,14 @@ let
     dependencies = [
       onnx
       pycuda
-      tensorrt-python
+      tensorrt
     ];
 
     buildInputs = [
       (getOutput "include" cuda_nvcc) # for crt/host_defines.h
       cppProtobuf
       cuda_cudart
-      tensorrt
+      cudaPackages.tensorrt
     ];
 
     propagatedBuildInputs = [ (getLib cuda_cudart) ];
@@ -182,5 +181,7 @@ in
 assert assertMsg (
   finalAttrs.version == majorMinor finalAttrs.version
 ) "Version must have only two components";
-assert assertMsg (finalAttrs.version == majorMinor tensorrt.version) "Version must match tensorrt";
+assert assertMsg (
+  finalAttrs.version == majorMinor cudaPackages.tensorrt.version
+) "Version must match tensorrt";
 buildPythonPackage finalAttrs
