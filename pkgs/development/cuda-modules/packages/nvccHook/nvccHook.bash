@@ -1,11 +1,15 @@
 # shellcheck shell=bash
 
-# TODO(@connorbaker): Why this offset?
+# nvccHook should only ever run when in nativeBuildInputs or the like.
 if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne -1 ]]; then
   nixInfoLog "skipping sourcing nvccHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
   return 0
+elif ((${nvccHookSourced:-0})); then
+  nixInfoLog "skipping sourcing nvccHook.bash (nvccHookSourced=${nvccHookSourced:-0})"
+  return 0
 fi
 nixLog "sourcing nvccHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
+declare -gir nvccHookSourced=1
 
 declare -ig nvccHostCCMatchesStdenvCC="@nvccHostCCMatchesStdenvCC@"
 declare -ig dontCompressCudaFatbin=${dontCompressCudaFatbin:-0}

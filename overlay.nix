@@ -1,9 +1,15 @@
 # This is largely a shim for Nixpkgs.
 final': prev':
 let
-  inherit (prev'.lib.attrsets) genAttrs getOutput;
-  inherit (prev'.lib.lists) concatMap map optionals;
+  inherit (prev'.lib.attrsets) genAttrs getBin getOutput;
+  inherit (prev'.lib.lists)
+    concatMap
+    filter
+    map
+    optionals
+    ;
   inherit (prev'.lib.fixedPoints) composeManyExtensions;
+  inherit (prev'.lib.strings) cmakeOptionType;
 
   extraAutoCalledPackages =
     final: prev: import (prev.path + "/pkgs/top-level/by-name-overlay.nix") ./pkgs/by-name final prev;
@@ -110,7 +116,7 @@ let
       };
     in
     {
-      mpi = prev.mpi.override (prevAttrs: {
+      openmpi = prev.openmpi.override (prevAttrs: {
         cudaPackages = prevAttrs.cudaPackages // {
           # Nothing else should be changed, so we don't override the scope.
           cuda_cudart = cudartJoined;
@@ -138,6 +144,19 @@ let
               "-L${getOutput "stubs" final.cudaPackages.cuda_nvml_dev}/lib/stubs"
             ];
           };
+
+      frei0r = prev.frei0r.overrideAttrs (prevAttrs: {
+        # Missing cuda_nvcc in nativeBuildInputs
+        nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
+          final.cudaPackages.cuda_nvcc
+        ];
+        # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs wihout strictdeps being enabled.
+        buildInputs = filter (drv: drv != final.cudaPackages.cuda_nvcc) prevAttrs.buildInputs;
+        # Uses old, deprecated FindCUDA.cmake
+        cmakeFlags = prevAttrs.cmakeFlags or [ ] ++ [
+          (cmakeOptionType "PATH" "CUDA_TOOLKIT_ROOT_DIR" "${getBin final.cudaPackages.cuda_nvcc}")
+        ];
+      });
 
       # Example of disabling cuda_compat for JetPack 6
       # cudaPackagesExtensions = prev.cudaPackagesExtensions or [ ] ++ [ (_: _: { cuda_compat = null; }) ];

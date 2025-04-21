@@ -1,12 +1,15 @@
 # shellcheck shell=bash
 
-# TODO(@connorbaker): Why this offset?
 # Stubs are a used during linking, so we only want to run if we're in buildInputs.
 if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne 0 ]]; then
   nixInfoLog "skipping sourcing cudaCudartRunpathFixupHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
   return 0
+elif ((${cudaCudartRunpathFixupHookSourced:-0})); then
+  nixInfoLog "skipping sourcing cudaCudartRunpathFixupHook.bash (cudaCudartRunpathFixupHookSourced=${cudaCudartRunpathFixupHookSourced:-0})"
+  return 0
 fi
 nixLog "sourcing cudaCudartRunpathFixupHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
+declare -gir cudaCudartRunpathFixupHookSourced=1
 
 # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
 # TODO(@connorbaker): Due to the order Nixpkgs setup sources files, dependencies are not sourced

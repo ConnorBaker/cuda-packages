@@ -1,11 +1,15 @@
 # shellcheck shell=bash
 
-# TODO(@connorbaker): Why this offset?
+# cudaHook should only run when in nativeBuildInputs or the like.
 if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne -1 ]]; then
   nixInfoLog "skipping sourcing cudaHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
   return 0
+elif ((${cudaHookSourced:-0})); then
+  nixInfoLog "skipping sourcing cudaHook.bash (cudaHookSourced=${cudaHookSourced:-0})"
+  return 0
 fi
 nixLog "sourcing cudaHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
+declare -gir cudaHookSourced=1
 
 # TODO(@connorbaker): Guard against being sourced multiple times.
 declare -Ag cudaHostPathsSeen

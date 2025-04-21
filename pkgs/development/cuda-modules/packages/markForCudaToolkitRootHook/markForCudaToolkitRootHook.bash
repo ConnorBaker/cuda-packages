@@ -1,11 +1,15 @@
 # shellcheck shell=bash
 
-# TODO(@connorbaker): Why this offset?
+# markForCudaToolkitRootHook should only run when in nativeBuildInputs or the like.
 if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne -1 ]]; then
   nixInfoLog "skipping sourcing markForCudaToolkitRootHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
   return 0
+elif ((${markForCudaToolkitRootHookSourced:-0})); then
+  nixInfoLog "skipping sourcing markForCudaToolkitRootHook.bash (markForCudaToolkitRootHookSourced=${markForCudaToolkitRootHookSourced:-0})"
+  return 0
 fi
 nixLog "sourcing markForCudaToolkitRootHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
+declare -gir markForCudaToolkitRootHookSourced=1
 
 # NOTE: Add to prePhases to ensure all setup hooks are sourced prior to running the order check.
 # TODO(@connorbaker): Due to the order Nixpkgs setup sources files, dependencies are not sourced
