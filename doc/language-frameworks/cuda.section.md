@@ -55,6 +55,17 @@ To use one or more CUDA packages in an expression, give the expression a `cudaPa
 { }
 ```
 
+In your package's derivation arguments, it is *strongly* recommended the following are set:
+
+```nix
+{
+  __structuredAttrs = true;
+  strictDeps = true;
+}
+```
+
+These settings ensure that the CUDA setup hooks function as intended.
+
 When using `callPackage`, you can choose to pass in a different variant, e.g. when a package requires a specific version of CUDA:
 
 ```nix
