@@ -138,11 +138,11 @@ let
       markForCudatoolkitRootHook = mkAlias "cudaPackages.markForCudatoolkitRootHook has moved, use cudaPackages.markForCudaToolkitRootHook instead" finalCudaPackages.markForCudaToolkitRootHook;
     }
     # Redistributable packages
-    // (mapAttrs (const finalCudaPackages.redist-builder) redistBuilderArgs)
+    // mapAttrs (const finalCudaPackages.redist-builder) redistBuilderArgs
     # CUDA version-specific packages
     # NOTE: No need for recurseIntoAttrs on the package set as packagesFromDirectoryRecursive' applies it automatically,
     # and so the union of the attribute sets will have it as well.
-    // (packagesFromDirectoryRecursive' finalCudaPackages.callPackage ./packages);
+    // packagesFromDirectoryRecursive' finalCudaPackages.callPackage ./packages;
 
 in
 pkgs'.makeScopeWithSplicing' {

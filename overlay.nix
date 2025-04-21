@@ -40,11 +40,11 @@ let
             # Could NOT find NCCL (missing: NCCL_INCLUDE_DIR)
             # USE_TENSORRT is unset in the printed config at the end of configurePhase.
             # Not sure if that's used directly or passed through to one of the vendored projects.
-            (prevPythonPackages.torch.override (prevAttrs: {
+            (prevPythonPackages.torch.override {
               # PyTorch doesn't need Triton to build.
               # Just include it in whichever package consumes pytorch.
               tritonSupport = false;
-            })).overrideAttrs
+            }).overrideAttrs
               (prevAttrs: {
                 buildInputs =
                   prevAttrs.buildInputs or [ ]
