@@ -1,3 +1,5 @@
+# NOTE: redist-builder should never take manifests or fixups as callPackage-provided arguments,
+# since we want to provide the flexibility to call it directly with a different fixup or manifest.
 {
   callPackage,
   cudaLib,

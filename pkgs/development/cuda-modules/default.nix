@@ -32,7 +32,7 @@ let
   inherit (lib.fixedPoints) composeManyExtensions extends;
   inherit (lib.lists) concatMap;
   inherit (lib.strings) versionAtLeast versionOlder;
-  inherit (lib.trivial) const flip;
+  inherit (lib.trivial) const flip importJSON;
   inherit (lib.versions) major majorMinor;
   inherit (cudaLib.utils)
     dropDots
@@ -115,6 +115,23 @@ let
       cudaAtLeast = versionAtLeast cudaMajorMinorPatchVersion;
       cudaOlder = versionOlder cudaMajorMinorPatchVersion;
 
+      # Alternative versions of select packages.
+      # Currently, this is only for CUDNN 8.9, which some packages rely on as they haven't moved to cudnn-frontend or cudnn 9 yet.
+      cudnn_8_9 = finalCudaPackages.redist-builder {
+        packageName = "cudnn";
+        redistName = "cudnn";
+        release =
+          let
+            manifest =
+              if finalCudaPackages.cudaStdenv.hasJetsonCudaCapability then
+                ./manifests/cudnn/redistrib_8.9.5.json
+              else
+                ./manifests/cudnn/redistrib_8.9.7.json;
+          in
+          (importJSON manifest).cudnn;
+        fixupFn = fixups.cudnn.cudnn;
+      };
+
       # Aliases
       # NOTE: flags is defined here to prevent a collision with an attribute of the same name from cuda-modules/packages.
       flags =
@@ -134,7 +151,6 @@ let
       cudaFlags = mkAlias "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
       cudaMajorMinorPatchVersion = mkAlias "cudaPackages.cudaMajorMinorPatchVersion is an implementation detail, please use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorPatchVersion;
       cudaVersion = mkAlias "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" finalCudaPackages.cudaMajorMinorVersion;
-      cudnn_8_9 = throw "cudaPackages.cudnn_8_9 has been removed, use cudaPackages.cudnn instead";
       markForCudatoolkitRootHook = mkAlias "cudaPackages.markForCudatoolkitRootHook has moved, use cudaPackages.markForCudaToolkitRootHook instead" finalCudaPackages.markForCudaToolkitRootHook;
     }
     # Redistributable packages

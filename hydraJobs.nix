@@ -253,13 +253,16 @@ let
         cudaPackages.nvccHook
       ];
 
-      redists = pipe cudaPackages [
-        # Keep only the attribute names in cudaPackages which come from fixups (are redistributables).
-        (intersectAttrs cudaPackages.fixups)
-        attrValues
-        # Filter out packages unavailable for the platform
-        (filter (pkg: pkg.meta.available))
-      ];
+      redists =
+        pipe cudaPackages [
+          # Keep only the attribute names in cudaPackages which come from fixups (are redistributables).
+          (intersectAttrs cudaPackages.fixups)
+          attrValues
+          # Filter out packages unavailable for the platform
+          (filter (pkg: pkg.meta.available))
+        ]
+        # Special case for cudnn_8_9, which is constructed manually
+        ++ optionals (cudaPackages.cudnn_8_9.meta.available) [ cudaPackages.cudnn_8_9 ];
 
       core =
         [
@@ -267,11 +270,11 @@ let
           cudaPackages.cudnn-frontend
           cudaPackages.cutlass
           cudaPackages.libmathdx
-          cudaPackages.tests.saxpy
+          cudaPackages.tests.saxpy # TODO: This doesn't actually run saxpy
         ]
         # Non-Jetson packages
         ++ optionals (!hasJetsonCudaCapability) [
-          cudaPackages.nccl # TODO: Exclude on jetson systems
+          cudaPackages.nccl
           cudaPackages.nccl-tests
         ];
 
