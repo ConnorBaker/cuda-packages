@@ -61,6 +61,14 @@ finalAttrs: prevAttrs: {
         fi
       done
       unset -v dir
+
+      if [[ -d "$NIX_BUILD_TOP/$sourceRoot/targets" ]]; then
+        nixLog "removing targets directory"
+        rm --recursive --verbose "$NIX_BUILD_TOP/$sourceRoot/targets" || {
+          nixErrorLog "could not delete $NIX_BUILD_TOP/$sourceRoot/targets: $(ls -laR "$NIX_BUILD_TOP/$sourceRoot/targets")"
+          exit 1
+        }
+      fi
     '';
 
   autoPatchelfIgnoreMissingDeps =
@@ -78,13 +86,20 @@ finalAttrs: prevAttrs: {
       mkdir "''${!outputInclude:?}/include/onnx"
       pushd "''${!outputInclude:?}/include" >/dev/null
       nixLog "creating symlinks for Onnx header files"
-      ln -srt "''${!outputInclude:?}/include/onnx/" NvOnnx*.h
+      ln -srvt "''${!outputInclude:?}/include/onnx/" NvOnnx*.h
       popd >/dev/null
     ''
     # Move the python directory, which contains header files, to the include output.
     + ''
       nixLog "moving python directory to include output"
       moveToOutput python "''${!outputInclude:?}"
+
+      nixLog "remove python wheels"
+      rm --verbose "''${!outputInclude:?}"/python/*.whl
+    ''
+    + ''
+      nixLog "moving data directory to samples output"
+      moveToOutput data "''${!outputSamples:?}"
     '';
 
   # Tell autoPatchelf about runtime dependencies.
@@ -111,7 +126,6 @@ finalAttrs: prevAttrs: {
     # The CUDNN used with TensorRT.
     inherit cudnn;
 
-    # TODO(@connorbaker): Clean up the outputs to remove the python wheels, sample data, etc.
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       outputs = [
         "out"
@@ -119,7 +133,6 @@ finalAttrs: prevAttrs: {
         "dev"
         "include"
         "lib"
-        # "python" # We use tensorrt-oss for this
         "samples"
         "static"
         "stubs"
