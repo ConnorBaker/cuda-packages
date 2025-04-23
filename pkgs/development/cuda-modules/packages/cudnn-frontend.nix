@@ -38,8 +38,8 @@ stdenv.mkDerivation (finalAttrs: {
   src = fetchFromGitHub {
     owner = "ConnorBaker";
     repo = "cudnn-frontend";
-    rev = "5f2596c383a77312c43b63f7bbb067a3db512d2a";
-    hash = "sha256-r9wV4CaBLzQvo+3JFVjJbpjr1NBcM8vhaM2X09CdzZ4=";
+    rev = "f02c52023d0242079e22d7073dee0aeb1970e3f9";
+    hash = "sha256-Zdx07ZVD10o2E0wXz6ldRns1UOKBI1un+tr9fkXKfEs=";
   };
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a
