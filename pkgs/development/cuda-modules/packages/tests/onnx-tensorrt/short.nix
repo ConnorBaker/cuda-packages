@@ -1,6 +1,7 @@
 {
   cuda_cudart,
   cudaNamePrefix,
+  onnx-tensorrt,
   python3,
   writeShellApplication,
 }:
@@ -21,7 +22,7 @@ writeShellApplication {
   text = ''
     args=(
       python3
-      "${python3.pkgs.onnx-tensorrt.test_script}/onnx_backend_test.py"
+      "${onnx-tensorrt.test_script}/onnx_backend_test.py"
     )
 
     if (( $# != 0 ))
@@ -35,6 +36,7 @@ writeShellApplication {
       echo "Running with default arguments: ''${args[*]}" >&2
     fi
 
+    mkdir -p "$HOME/.onnx"
     chmod -R +w "$HOME/.onnx"
     "''${args[@]}"
   '';

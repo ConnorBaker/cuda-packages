@@ -111,6 +111,7 @@ finalAttrs: prevAttrs: {
     # The CUDNN used with TensorRT.
     inherit cudnn;
 
+    # TODO(@connorbaker): Clean up the outputs to remove the python wheels, sample data, etc.
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       outputs = [
         "out"

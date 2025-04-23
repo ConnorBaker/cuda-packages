@@ -55,7 +55,7 @@ To use one or more CUDA packages in an expression, give the expression a `cudaPa
 { }
 ```
 
-In your package's derivation arguments, it is *strongly* recommended the following are set:
+In your package's derivation arguments, it is _strongly_ recommended the following are set:
 
 ```nix
 {

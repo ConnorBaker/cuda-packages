@@ -54,7 +54,9 @@ let
           pkgs.hwloc
           pkgs.magma-cuda-static
           pkgs.nvidia-optical-flow-sdk
-          # pkgs.onnxruntime # TODO(@connorbaker): rebase on upstream and patch; my local copy builds both CPP and Python
+          pkgs.onnx
+          pkgs.onnx-tensorrt
+          pkgs.onnxruntime
           pkgs.opencv4
         ]
         # TODO(@connorbaker): Should these be able to build on Jetson?

@@ -43,9 +43,7 @@ let
   #     /home/connorbaker/.cache/warp/1.5.0
   # True
   finalAttrs = {
-    # Must opt-out of __structuredAttrs which is set to true by default by cudaPackages.callPackage, but currently
-    # incompatible with Python packaging: https://github.com/NixOS/nixpkgs/pull/347194.
-    __structuredAttrs = false;
+    __structuredAttrs = true;
 
     pname = "warp";
 

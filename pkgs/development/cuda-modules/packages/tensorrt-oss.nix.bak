@@ -1,0 +1,179 @@
+# TODO: Produce only the binary samples and use to verify the build.
+{
+  cmake,
+  config,
+  cudaLib,
+  flags,
+  onnx,
+  onnx-tensorrt,
+  cuda_profiler_api,
+  fetchFromGitHub,
+  lib,
+  python3Packages,
+  stdenv,
+  cuda_cudart,
+  cuda_nvcc,
+  tensorrt,
+}:
+let
+  inherit (cudaLib.utils) majorMinorPatch;
+  inherit (lib) licenses maintainers teams;
+  inherit (lib.attrsets) getLib getOutput;
+  inherit (lib.lists) elemAt;
+  inherit (lib.strings) cmakeBool cmakeFeature replaceStrings;
+  inherit (lib.versions) splitVersion;
+
+  pythonVersionComponents = splitVersion python3Packages.python.version;
+  pythonMajorVersion = elemAt pythonVersionComponents 0;
+  pythonMinorVersion = elemAt pythonVersionComponents 1;
+in
+stdenv.mkDerivation (finalAttrs: {
+  __structuredAttrs = true;
+  strictDeps = true;
+
+  pname = "tensorrt-oss";
+
+  version = majorMinorPatch tensorrt.version;
+
+  src = fetchFromGitHub {
+    owner = "NVIDIA";
+    repo = "TensorRT";
+    tag = "v${finalAttrs.version}";
+    hash =
+      {
+        "10.7.0" = "sha256-sbp61GverIWrHKvJV+oO9TctFTO4WUmH0oInZIwqF/s=";
+        "10.9.0" = "sha256-J8K9RjeGIem5ZxXyU+Rne8uBbul54ie6P/Y1In2mQ0g=";
+      }
+      .${finalAttrs.version};
+  };
+
+  nativeBuildInputs =
+    [
+      onnx.passthru.cppProtobuf
+      cuda_nvcc
+      cmake
+    ]
+    ++ (with python3Packages; [
+      build
+      pypaInstallHook
+      setuptools
+    ]);
+
+  postPatch =
+    ''
+      nixLog "patching $PWD/CMakeLists.txt to avoid manually setting CMAKE_CXX_COMPILER"
+      substituteInPlace "$PWD"/CMakeLists.txt \
+        --replace-fail \
+          'find_program(CMAKE_CXX_COMPILER NAMES $ENV{CXX} g++)' \
+          '# find_program(CMAKE_CXX_COMPILER NAMES $ENV{CXX} g++)'
+
+      nixLog "patching $PWD/CMakeLists.txt to use find_package(CUDAToolkit) instead of find_package(CUDA)"
+      substituteInPlace "$PWD"/CMakeLists.txt \
+        --replace-fail \
+          'find_package(CUDA ''${CUDA_VERSION} REQUIRED)' \
+          'find_package(CUDAToolkit REQUIRED)'
+
+      nixLog "patching $PWD/CMakeLists.txt to fix CMake logic error"
+      substituteInPlace "$PWD"/CMakeLists.txt \
+        --replace-fail \
+          'list(APPEND CMAKE_CUDA_ARCHITECTURES SM)' \
+          'list(APPEND CMAKE_CUDA_ARCHITECTURES "''${SM}")'
+
+      nixLog "patching $PWD/python/CMakeLists.txt to correct hints for python3"
+      substituteInPlace "$PWD"/python/CMakeLists.txt \
+        --replace-fail \
+          'HINTS ''${EXT_PATH}/''${PYTHON} /usr/include/''${PYTHON}' \
+          'HINTS "${python3Packages.python}/include/''${PYTHON}"'
+
+      for script in "$PWD"/python/packaging/bindings_wheel/tensorrt/plugin/_{lib,tensor,top_level}.py; do
+        nixLog "patching $script to remove invalid escape sequence '\s'"
+        substituteInPlace "$script" --replace-fail '\s' 's'
+      done
+    ''
+    # Patch files in packaging
+    # Largely taken from https://github.com/NVIDIA/TensorRT/blob/08ad45bf3df848e722dfdc7d01474b5ba2eff7e9/python/build.sh.
+    + ''
+      for file in $(find "$PWD"/python/packaging -type f); do
+        nixLog "patching $file to include TensorRT version"
+        substituteInPlace "$file" \
+          --replace-quiet \
+            '##TENSORRT_VERSION##' \
+            '${tensorrt.version}' \
+          --replace-quiet \
+            '##TENSORRT_MAJMINPATCH##' \
+            '${finalAttrs.version}' \
+          --replace-quiet \
+            '##TENSORRT_PYTHON_VERSION##' \
+            '${finalAttrs.version}' \
+          --replace-quiet \
+            '##TENSORRT_MODULE##' \
+            'tensorrt'
+      done
+    '';
+
+  cmakeBuildDir = "python/build";
+
+  # The CMakeLists.txt file is in the python directory, one level up from the build directory.
+  cmakeDir = "..";
+
+  cmakeFlags = [
+    # Use tensorrt for these components; we only really want the samples.
+    # (cmakeBool "BUILD_PARSERS" false)
+    # (cmakeBool "BUILD_PLUGINS" false)
+
+    # Build configuration
+    (cmakeFeature "CMAKE_BUILD_TYPE" "Release")
+    (cmakeFeature "TENSORRT_MODULE" "tensorrt")
+    (cmakeFeature "EXT_PATH" "/dev/null") # Must be set, too lazy to patch around it
+    (cmakeFeature "PYTHON_MAJOR_VERSION" pythonMajorVersion)
+    (cmakeFeature "PYTHON_MINOR_VERSION" pythonMinorVersion)
+    (cmakeFeature "TARGET" stdenv.hostPlatform.parsed.cpu.name)
+    (cmakeFeature "GPU_ARCHS" (replaceStrings [ ";" ] [ " " ] flags.cmakeCudaArchitecturesString))
+  ];
+
+  postBuild = ''
+    nixLog "copying build artifacts to $NIX_BUILD_TOP/$sourceRoot/python/packaging/bindings_wheel"
+    cp -rv "$PWD/tensorrt" "$NIX_BUILD_TOP/$sourceRoot/python/packaging/bindings_wheel"
+
+    pushd "$NIX_BUILD_TOP/$sourceRoot/python/packaging/bindings_wheel"
+    nixLog "building Python wheel from $PWD"
+    pyproject-build \
+      --no-isolation \
+      --outdir "$NIX_BUILD_TOP/$sourceRoot/$cmakeBuildDir/dist/" \
+      --wheel
+    popd >/dev/null
+  '';
+
+  buildInputs = [
+    (getLib tensorrt)
+    (getOutput "include" tensorrt)
+    cuda_cudart
+    cuda_profiler_api
+    python3Packages.pybind11
+    onnx-tensorrt
+    onnx
+  ];
+
+  # dontInstall = true;
+
+  doCheck = false; # This derivation produces samples that require a GPU to run.
+
+  # Copy the Python include directory to the output.
+  # postInstall = ''
+  #   nixLog "installing Python header files"
+  #   mkdir -p "$out/python"
+  #   cp -r "$NIX_BUILD_TOP/$sourceRoot/include" "$out/python/"
+  # '';
+
+  meta = {
+    broken = !config.cudaSupport;
+    description = "Open Source Software (OSS) components of NVIDIA TensorRT";
+    homepage = "https://github.com/NVIDIA/TensorRT";
+    license = licenses.asl20;
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
+    maintainers = (with maintainers; [ connorbaker ]) ++ teams.cuda.members;
+  };
+})

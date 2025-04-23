@@ -44,7 +44,7 @@ let
           causal-conv1d = prevPythonPackages.causal-conv1d.overrideAttrs (prevAttrs: {
             # Missing cuda_nvcc in nativeBuildInputs
             nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ final.cudaPackages.cuda_nvcc ];
-            # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs wihout strictdeps being enabled.
+            # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs wihout strictDeps being enabled.
             buildInputs = filter (drv: drv != final.cudaPackages.cuda_nvcc) prevAttrs.buildInputs;
             # TODO: https://github.com/Dao-AILab/causal-conv1d/blob/82867a9d2e6907cc0f637ac6aff318f696838548/setup.py#L40
             # TODO: https://github.com/Dao-AILab/causal-conv1d/blob/82867a9d2e6907cc0f637ac6aff318f696838548/setup.py#L173
@@ -58,7 +58,7 @@ let
           mamba-ssm = prevPythonPackages.mamba-ssm.overrideAttrs (prevAttrs: {
             # Missing cuda_nvcc in nativeBuildInputs
             nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ final.cudaPackages.cuda_nvcc ];
-            # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs wihout strictdeps being enabled.
+            # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs wihout strictDeps being enabled.
             buildInputs = filter (drv: drv != final.cudaPackages.cuda_nvcc) prevAttrs.buildInputs;
             # NOTE: "No CUDA runtime is found" is an expected message given we don't allow GPU access in the build.
             # TODO: https://github.com/state-spaces/mamba/blob/2e16fc3062cdcd4ebef27a9aa4442676e1c7edf4/setup.py#L175
@@ -113,11 +113,29 @@ let
                 '';
             }
           );
+
+          onnxruntime = finalPythonPackages.callPackage ./pkgs/development/python-modules/onnxruntime {
+            onnxruntime = final.onnxruntime.override {
+              python3Packages = finalPythonPackages;
+              pythonSupport = true;
+            };
+          };
+
+          onnx-tensorrt = finalPythonPackages.callPackage ./pkgs/development/python-modules/onnx-tensorrt {
+            onnx-tensorrt = final.onnx-tensorrt.override {
+              python3Packages = finalPythonPackages;
+              pythonSupport = true;
+            };
+          };
+
+          onnx = finalPythonPackages.callPackage ./pkgs/development/python-modules/onnx {
+            onnx = final.onnx.override {
+              python3Packages = finalPythonPackages;
+              pythonSupport = true;
+            };
+          };
         }
         // genAttrs [
-          "onnx"
-          "onnxruntime"
-          "onnx-tensorrt"
           "pycuda"
           "tensorrt"
           "warp"
@@ -128,7 +146,7 @@ let
 
   cudaPackages = import ./pkgs/top-level/cuda-packages.nix;
 
-  packageFixes =
+  extraPackages =
     final: prev:
     let
       cudartJoined = final.symlinkJoin {
@@ -178,13 +196,21 @@ let
         nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [
           final.cudaPackages.cuda_nvcc
         ];
-        # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs wihout strictdeps being enabled.
+        # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs wihout strictDeps being enabled.
         buildInputs = filter (drv: drv != final.cudaPackages.cuda_nvcc) prevAttrs.buildInputs;
         # Uses old, deprecated FindCUDA.cmake
         cmakeFlags = prevAttrs.cmakeFlags or [ ] ++ [
           (cmakeOptionType "PATH" "CUDA_TOOLKIT_ROOT_DIR" "${getBin final.cudaPackages.cuda_nvcc}")
         ];
       });
+
+      onnxruntime = final.callPackage ./pkgs/development/libraries/onnxruntime {
+        inherit (final.darwin.apple_sdk.frameworks) Foundation;
+      };
+
+      onnx-tensorrt = final.callPackage ./pkgs/development/libraries/onnx-tensorrt { };
+
+      onnx = final.callPackage ./pkgs/development/libraries/onnx { };
 
       # Example of disabling cuda_compat for JetPack 6
       # cudaPackagesExtensions = prev.cudaPackagesExtensions or [ ] ++ [ (_: _: { cuda_compat = null; }) ];
@@ -196,5 +222,5 @@ composeManyExtensions [
   extraTesterPackages
   extraPythonPackages
   cudaPackages
-  packageFixes
+  extraPackages
 ] final' prev'

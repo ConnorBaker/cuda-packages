@@ -34,9 +34,7 @@ let
   };
 in
 buildPythonPackage {
-  # Must opt-out of __structuredAttrs which is set to true by default by cudaPackages.callPackage, but currently
-  # incompatible with Python packaging: https://github.com/NixOS/nixpkgs/pull/347194.
-  __structuredAttrs = false;
+  __structuredAttrs = true;
 
   pname = "pycuda";
   version = "2024.1.2-unstable-2024-11-05";
