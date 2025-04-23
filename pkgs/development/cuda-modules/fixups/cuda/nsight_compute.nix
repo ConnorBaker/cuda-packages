@@ -32,6 +32,7 @@ let
   inherit (lib.attrsets) getLib getOutput;
   inherit (lib.lists) optionals;
   inherit (lib.strings) optionalString;
+  inherit (lib.versions) majorMinor;
   inherit (gst_all_1)
     gst-plugins-base
     gstreamer
@@ -267,12 +268,12 @@ finalAttrs: prevAttrs: {
       qtpositioning
       qtwebengine
     ]
-    ++ optionals (finalAttrs.version == "2023.2.2.3") [
+    ++ optionals (majorMinor finalAttrs.version == "2023.2") [
       gst-plugins-base
       gstreamer
       libtiff_4_4 # libtiff.so.5
     ]
-    ++ optionals (finalAttrs.version == "2025.1.0.14") [
+    ++ optionals (majorMinor finalAttrs.version == "2025.1") [
       cuda_nvml_dev
       libtiff_4_4 # libtiff.so.5
     ];
