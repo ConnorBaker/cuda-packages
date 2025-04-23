@@ -136,6 +136,7 @@ let
           };
         }
         // genAttrs [
+          "cupy"
           "pycuda"
           "tensorrt"
           "warp"

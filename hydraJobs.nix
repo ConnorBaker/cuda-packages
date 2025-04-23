@@ -172,7 +172,7 @@ let
       inherit (python3Packages.pkgs.releaseTools) aggregate;
       core = [
         python3Packages.causal-conv1d
-        # python3Packages.cupy # TODO(@connorbaker): Requires CUDNN 8.9?
+        python3Packages.cupy
         python3Packages.faiss
         python3Packages.mamba-ssm
         python3Packages.numba
@@ -262,7 +262,7 @@ let
           (filter (pkg: pkg.meta.available))
         ]
         # Special case for cudnn_8_9, which is constructed manually
-        ++ optionals (cudaPackages.cudnn_8_9.meta.available) [ cudaPackages.cudnn_8_9 ];
+        ++ optionals cudaPackages.cudnn_8_9.meta.available [ cudaPackages.cudnn_8_9 ];
 
       core =
         [

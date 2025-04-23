@@ -116,7 +116,7 @@ let
       cudaOlder = versionOlder cudaMajorMinorPatchVersion;
 
       # Alternative versions of select packages.
-      # Currently, this is only for CUDNN 8.9, which some packages rely on as they haven't moved to cudnn-frontend or cudnn 9 yet.
+      # This should be minimized as much as possible.
       cudnn_8_9 = finalCudaPackages.redist-builder {
         packageName = "cudnn";
         redistName = "cudnn";
