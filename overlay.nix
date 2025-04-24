@@ -137,6 +137,8 @@ let
         }
         // genAttrs [
           "cupy"
+          "modelopt"
+          "modelopt-core"
           "pycuda"
           "tensorrt"
           "warp"

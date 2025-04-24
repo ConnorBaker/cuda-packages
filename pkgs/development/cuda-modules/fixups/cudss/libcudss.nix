@@ -19,6 +19,8 @@ prevAttrs: {
     ];
 
   # Update the CMake configurations
+  # TODO: failing on cudaPackages_12_8 for SBSA:
+  # cuda12.8-libcudss> substituteStream() in derivation cuda12.8-libcudss-0.5.0.16: ERROR: pattern INTERFACE_LINK_DIRECTORIES\ \"/usr/local/cuda/targets/aarch64-linux/lib64\" doesn't match anything in file '/nix/store/spl124lj3aq1x1yzsjvahymc3kvw6z8d-cuda12.8-libcudss-0.5.0.16-dev/lib/cmake/cudss/cudss-static-targets.cmake'
   postFixup =
     let
       usrLocalCudaLib64Path = lib.concatStringsSep "/" (

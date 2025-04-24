@@ -170,28 +170,34 @@ let
     namePrefix: python3Packages:
     let
       inherit (python3Packages.pkgs.releaseTools) aggregate;
-      core = [
-        python3Packages.causal-conv1d
-        python3Packages.cupy
-        python3Packages.faiss
-        python3Packages.mamba-ssm
-        python3Packages.numba
-        python3Packages.nvidia-ml-py
-        python3Packages.onnx
-        python3Packages.onnx-tensorrt
-        python3Packages.onnxruntime
-        python3Packages.pycuda
-        python3Packages.pynvml
-        python3Packages.pytorch-metric-learning
-        python3Packages.pytorch3d
-        python3Packages.tensorrt
-        python3Packages.torch
-        python3Packages.torchaudio
-        python3Packages.torchvision
-        python3Packages.triton
-        python3Packages.warp
-        python3Packages.xformers
-      ];
+      core =
+        [
+          python3Packages.causal-conv1d
+          python3Packages.cupy
+          python3Packages.faiss
+          python3Packages.mamba-ssm
+          python3Packages.numba
+          python3Packages.nvidia-ml-py
+          python3Packages.onnx
+          python3Packages.onnx-tensorrt
+          python3Packages.onnxruntime
+          python3Packages.pycuda
+          python3Packages.pynvml
+          python3Packages.pytorch-metric-learning
+          python3Packages.pytorch3d
+          python3Packages.tensorrt
+          python3Packages.torch
+          python3Packages.torchaudio
+          python3Packages.torchvision
+          python3Packages.triton
+          python3Packages.warp
+          python3Packages.xformers
+        ]
+        # TODO(@connorbaker): Fix these so they can build on SBSA.
+        ++ optionals python3Packages.pkgs.stdenv.hostPlatform.isx86 [
+          python3Packages.modelopt
+          python3Packages.modelopt-core
+        ];
       extras = [
         python3Packages.accelerate
         python3Packages.array-api-compat
