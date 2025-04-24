@@ -86,6 +86,7 @@ in
   # TODO(@connorbaker): Yes, it is computationally expensive to call nixpkgsFun.
   # No, I can't think of a different way to force re-evaluation of the fixed point -- the problem being that
   # pkgs.config is not part of the fixed point.
+  # NOTE: Not every architecture is supported by every CUDA version!
   pkgsCuda =
     let
       mkPkgs =
@@ -93,6 +94,7 @@ in
         final.extend (
           _: prev: {
             config = prev.config // {
+              cudaSupport = true;
               cudaCapabilities = [ cudaCapabilityInfo.cudaCapability ];
             };
           }
