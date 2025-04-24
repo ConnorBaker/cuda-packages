@@ -262,7 +262,7 @@ in
       outputStubs = [ "stubs" ];
     };
 
-    # brokenAssertions :: AttrSet Bool
+    # brokenAssertions :: [Attrs]
     # Sets `meta.broken = true` if any of the assertions fail.
     # Example: Broken on a specific version of CUDA or when a dependency has a specific version.
     # NOTE: Do not use this when a broken assertion means evaluation will fail! For example, if
@@ -296,21 +296,26 @@ in
       }
     ];
 
-    # platformAssertions :: AttrSet Bool
+    # platformAssertions :: [Attrs]
     # Sets `meta.badPlatforms = meta.platforms` if any of the assertions fail.
     # Example: Broken on a specific system when some condition is met, like targeting Jetson or
     # a required package missing.
     # NOTE: Use this when a failed assertion means evaluation can fail!
-    platformAssertions = prevAttrs.passthru.platformAssertions or [ ] ++ [
-      {
-        message = "src is non-null";
-        assertion = finalAttrs.src != null;
-      }
-      {
-        message = "hostRedistSystem (${hostRedistSystem}) is supported (${builtins.toJSON redistBuilderArg.supportedRedistSystems})";
-        assertion = redistSystemIsSupported hostRedistSystem redistBuilderArg.supportedRedistSystems;
-      }
-    ];
+    platformAssertions =
+      let
+        isSupportedRedistSystem = redistSystemIsSupported hostRedistSystem redistBuilderArg.supportedRedistSystems;
+      in
+      prevAttrs.passthru.platformAssertions or [ ]
+      ++ [
+        {
+          message = "src is null if and only if hostRedistSystem is unsupported";
+          assertion = (finalAttrs.src == null) == !isSupportedRedistSystem;
+        }
+        {
+          message = "hostRedistSystem (${hostRedistSystem}) is supported (${builtins.toJSON redistBuilderArg.supportedRedistSystems})";
+          assertion = isSupportedRedistSystem;
+        }
+      ];
   };
 
   meta = prevAttrs.meta or { } // {

@@ -59,14 +59,6 @@ prevAttrs: {
     '';
 
   passthru = prevAttrs.passthru or { } // {
-    # `cuda_compat` only works on aarch64-linux, and only when building for Jetson devices.
-    platformAssertions = prevAttrs.passthru.platformAssertions or [ ] ++ [
-      {
-        message = "building for Jetson CUDA capabilities";
-        assertion = cudaStdenv.hasJetsonCudaCapability;
-      }
-    ];
-
     # NOTE: Using multiple outputs with symlinks causes build cycles.
     # To avoid that (and troubleshooting why), we just use a single output.
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
