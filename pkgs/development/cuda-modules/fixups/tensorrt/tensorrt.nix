@@ -31,6 +31,24 @@ finalAttrs: prevAttrs: {
     ]
     ++ optionals hasJetsonCudaCapability [ libcudla ];
 
+  # TODO(@connorbaker): Seems like NVIDIA may have accidentally included a copy of a windows library in their tarball.
+  # $ du -sh result-lib/lib/*
+  # 1.9G	result-lib/lib/libnvinfer_builder_resource.so.10.9.0
+  # 1.9G	result-lib/lib/libnvinfer_builder_resource_win.so.10.9.0
+  # 1.0K	result-lib/lib/libnvinfer_dispatch.so
+  # 1.1M	result-lib/lib/libnvinfer_dispatch.so.10.9.0
+  # 1.0K	result-lib/lib/libnvinfer_lean.so
+  # 107M	result-lib/lib/libnvinfer_lean.so.10.9.0
+  # 1.0K	result-lib/lib/libnvinfer_plugin.so
+  # 53M	result-lib/lib/libnvinfer_plugin.so.10.9.0
+  # 1.0K	result-lib/lib/libnvinfer.so
+  # 642M	result-lib/lib/libnvinfer.so.10.9.0
+  # 1.0K	result-lib/lib/libnvinfer_vc_plugin.so
+  # 901K	result-lib/lib/libnvinfer_vc_plugin.so.10.9.0
+  # 1.0K	result-lib/lib/libnvonnxparser.so
+  # 1.0K	result-lib/lib/libnvonnxparser.so.10
+  # 4.4M	result-lib/lib/libnvonnxparser.so.10.9.0
+
   preInstall =
     let
       inherit (stdenv.hostPlatform) parsed;
