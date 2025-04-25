@@ -90,6 +90,16 @@ When using `callPackage`, you can choose to pass in a different variant, e.g. wh
 }
 ```
 
+### Using cudaPackages.pkgs {#cuda-using-cudapackages-pkgs}
+
+Each CUDA package set has a `pkgs` attribute, which is an instance of Nixpkgs where enclosing CUDA package set is made the default CUDA package set. This was done primarily to avoid package set leakage, wherein a member of a non-default CUDA package set has a (potentially transitive) dependency on a member of the default CUDA package set.
+
+:::{.note}
+Package set leakage is a common problem in Nixpkgs, and is not limited to CUDA package sets.
+:::
+
+As an added benefit of `pkgs` being configured this way, building a package with a non-default version of CUDA is as simple as accessing an attribute. As an example, `cudaPackages_12_8.pkgs.opencv` provides OpenCV built against CUDA 12.8.
+
 ### Choosing a stdenv {#cuda-choosing-a-stdenv}
 
 NVCC has a supported range of host compilers (GCC and Clang), which it wraps presents itself as when doing C-preprocessing/C++ templating. NVCC implements its own functionality for CUDA source files, but otherwise delegates to the host compiler. Generally, NVCC is very tightly coupled to GCC/Clang, e.g. the NVCC C/C++ pre-processor may not be able to parse or use `libc`/`libcpp` headers from newer host compilers when they use new language functionality.
@@ -193,16 +203,6 @@ To illustrate: support for Blackwell (e.g., `sm_100`) was only added in CUDA 12.
 :::
 
 The `pkgsCuda` attribute set makes it possible to access packages built for a specific architecture without needing to manually call `pkgs.extend` and supply a new `config`. As an example, `pkgsCuda.sm_89.python3Packages.torch` provides PyTorch built for Ada Lovelace GPUs.
-
-## Using cudaPackages.pkgs {#cuda-using-cudapackages-pkgs}
-
-Each CUDA package set has a `pkgs` attribute, which is an instance of Nixpkgs where enclosing CUDA package set is made the default CUDA package set. This was done primarily to avoid package set leakage, wherein a member of a non-default CUDA package set has a (potentially transitive) dependency on a member of the default CUDA package set.
-
-:::{.note}
-Package set leakage is a common problem in Nixpkgs, and is not limited to CUDA package sets.
-:::
-
-As an added benefit of `pkgs` being configured this way, building a package with a non-default version of CUDA is as simple as accessing an attribute. As an example, `cudaPackages_12_8.pkgs.opencv` provides OpenCV built against CUDA 12.8.
 
 ## Using CUDA with containers {#cuda-using-cuda-with-containers}
 
