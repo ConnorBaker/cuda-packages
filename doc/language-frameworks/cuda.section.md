@@ -80,7 +80,7 @@ When using `callPackage`, you can choose to pass in a different variant, e.g. wh
 }
 ```
 
-### Using the package set's pkgs attribute {#cuda-using-the-package-sets-pkgs-attribute}
+### Using pkgs {#cuda-using-pkgs}
 
 Each CUDA package set has a `pkgs` attribute, which is an instance of Nixpkgs where enclosing CUDA package set is made the default CUDA package set. This was done primarily to avoid package set leakage, wherein a member of a non-default CUDA package set has a (potentially transitive) dependency on a member of the default CUDA package set.
 
@@ -126,8 +126,6 @@ effectiveStdenv.mkDerivation { ... }
 
 ### Common patterns {#cuda-common-patterns}
 
-#### nativeBuildInputs and buildInputs {#cuda-buildinputs-and-nativebuildinputs}
-
 Generally, compiling CUDA device code requires `cuda_nvcc`. As a compiler, it should typically only ever be added to `nativeBuildInputs`. However, in the rare case that a package needs to compile CUDA device code at runtime, it should be added to `buildInputs` as well.
 
 The CUDA runtime library, `cuda_cudart`, is usually added to `buildInputs` as it is required for any CUDA application to run.
@@ -145,12 +143,19 @@ stdenv.mkDerivation {
 }
 ```
 
-#### CMake patterns {#cuda-cmake-patterns}
+#### Bazel {#cuda-bazel}
+
+TODO(@connorbaker): document. Note that Bazel doesn't have rules for splayed CUDA installations (add reference), so there's a need to `symlinkJoin`. Create section for symlinkJoin to note pecularities, like removal of some files in `nix-support` and need to be careful about ensuring setup hooks are available/not clobbered.
+
+#### CMake {#cuda-cmake}
+
+Support for CMake is provided by the `cudaHook` and `nvccHook` setup hooks in `cudaPackages`. The `cudaHook` is added to the `propagatedBuildInputs` of all packages constructed by `redist-builder` (the majority of the package set) and `nvccHook` is added to the `propagatedBuildInputs` of `cuda_nvcc`. As such, adding members of `cudaPackages` to `nativeBuildInputs` and `buildInputs` will automatically add the relevant setup hooks to the package.
 
 The CUDA NVCC compiler requires flags to determine which hardware you want to target for in terms of SASS (real hardware) or PTX (JIT kernels). Given CMake has standardized the format for these flags, we provide a utility function:
 
 ```nix
 {
+  cmake,
   cudaPackages,
   lib,
   stdenv,
@@ -158,11 +163,20 @@ The CUDA NVCC compiler requires flags to determine which hardware you want to ta
 stdenv.mkDerivation {
   __structuredAttrs = true;
   strictDeps = true;
+  nativeBuildInputs = [
+    cmake
+    cudaPackages.cuda_nvcc
+  ];
+  buildInputs = [ cudaPackages.cuda_cudart ];
   cmakeFlags = [
     (lib.cmakeFeature "CMAKE_CUDA_ARCHITECTURES" cudaPackages.flags.cmakeCudaArchitecturesString)
   ];
 }
 ```
+
+### Make {#cuda-make}
+
+TODO(@connorbaker): document. Make sure to include notes about projects hardcoding `CUDA_ARCHS` or `CUDA_HOME` (or similar variables) in their Makefiles and the need to patch them.
 
 ## Using pkgsCuda {#cuda-using-pkgscuda}
 
@@ -183,7 +197,7 @@ In `pkgsCuda`, the `cudaForwardCompat` option is set to `false` because exactly 
 :::{.important}
 Not every version of CUDA supports every architecture!
 
-To illustrate: support for Blackwell (e.g., `sm_100`) was only added in CUDA 12.8. Assume our Nixpkgs' default CUDA package set is for CUDA 12.6. Then the Nixpkgs instance available through `pkgsCuda.sm_100` is useless, since packages like `pkgsCuda.sm_100.opencv` and `pkgsCuda.sm_100.python3Packages.torch` will try to generate code for `sm_100`, an architecture unknown to CUDA 12.6. In such a case, you should use `pkgsCuda.sm_100.cudaPackages_12_8.pkgs` instead (see [Using the package set's pkgs attribute](#cuda-using-the-package-sets-pkgs-attribute) for more details).
+To illustrate: support for Blackwell (e.g., `sm_100`) was only added in CUDA 12.8. Assume our Nixpkgs' default CUDA package set is for CUDA 12.6. Then the Nixpkgs instance available through `pkgsCuda.sm_100` is useless, since packages like `pkgsCuda.sm_100.opencv` and `pkgsCuda.sm_100.python3Packages.torch` will try to generate code for `sm_100`, an architecture unknown to CUDA 12.6. In such a case, you should use `pkgsCuda.sm_100.cudaPackages_12_8.pkgs` instead (see [Using pkgs](#cuda-using-pkgs) for more details).
 :::
 
 The `pkgsCuda` attribute set makes it possible to access packages built for a specific architecture without needing to manually call `pkgs.extend` and supply a new `config`. As an example, `pkgsCuda.sm_89.python3Packages.torch` provides PyTorch built for Ada Lovelace GPUs.
