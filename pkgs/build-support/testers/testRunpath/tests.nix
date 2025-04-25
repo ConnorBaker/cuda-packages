@@ -1,5 +1,5 @@
 # NOTE: We must use `pkgs.runCommand` instead of `testers.runCommand` for negative tests -- those wrapped with
-# `testers.testBuildFailure`. This is due to the fact that `testers.testBuildFailure` modifies the derivation such that
+# `testers.testBuildFailure'`. This is due to the fact that `testers.testBuildFailure'` modifies the derivation such that
 # it produces an output containing the exit code, logs, and other things. Since `testers.runCommand` expects the empty
 # derivation, it produces a hash mismatch.
 {

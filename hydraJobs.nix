@@ -180,6 +180,7 @@ let
   mkPython3PackagesJobs =
     namePrefix: python3Packages:
     let
+      inherit (python3Packages.pkgs.cudaPackages.cudaStdenv) hasJetsonCudaCapability;
       inherit (python3Packages.pkgs.releaseTools) aggregate;
       core =
         [
@@ -204,10 +205,10 @@ let
           python3Packages.warp
           python3Packages.xformers
         ]
-        # TODO(@connorbaker): Fix these so they can build on SBSA.
-        ++ optionals python3Packages.pkgs.stdenv.hostPlatform.isx86 [
+        ++ optionals (!hasJetsonCudaCapability) [
           python3Packages.modelopt
           python3Packages.modelopt-core
+          python3Packages.nvcomp
         ];
       extras = [
         python3Packages.accelerate

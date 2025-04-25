@@ -139,6 +139,7 @@ let
           "cupy"
           "modelopt"
           "modelopt-core"
+          "nvcomp"
           "pycuda"
           "tensorrt"
           "warp"
