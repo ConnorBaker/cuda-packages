@@ -95,6 +95,7 @@ in
           _: prev: {
             config = prev.config // {
               cudaSupport = true;
+              cudaForwardCompat = false; # Not supported by accelerated architectures.
               cudaCapabilities = [ cudaCapabilityInfo.cudaCapability ];
             };
           }

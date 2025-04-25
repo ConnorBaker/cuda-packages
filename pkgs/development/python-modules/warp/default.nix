@@ -146,6 +146,7 @@ let
       homepage = "https://github.com/NVIDIA/warp";
       license = {
         fullName = "NVIDIA Software License Agreement";
+        shortName = "NVIDIA SLA";
         url = "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/";
         free = false;
       };

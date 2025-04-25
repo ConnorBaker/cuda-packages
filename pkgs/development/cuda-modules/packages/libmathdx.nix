@@ -67,6 +67,7 @@ stdenv.mkDerivation (finalAttrs: {
     homepage = "https://developer.nvidia.com/cublasdx-downloads";
     license = {
       fullName = "LICENSE AGREEMENT FOR NVIDIA MATH LIBRARIES SOFTWARE DEVELOPMENT KITS";
+      shortName = "NVIDIA Math Libraries EULA";
       url = "https://developer.download.nvidia.com/compute/mathdx/License.txt";
       free = false;
     };
