@@ -17,6 +17,7 @@
   stdenv,
 }:
 let
+  inherit (lib) licenses maintainers teams;
   inherit (lib.lists) optionals;
   inherit (lib.strings)
     cmakeBool
@@ -119,11 +120,11 @@ stdenv.mkDerivation (finalAttrs: {
   meta = {
     description = "A c++ wrapper for the cudnn backend API";
     homepage = "https://github.com/NVIDIA/cudnn-frontend";
-    license = lib.licenses.mit;
+    license = licenses.mit;
     platforms = [
       "aarch64-linux"
       "x86_64-linux"
     ];
-    maintainers = (with lib.maintainers; [ connorbaker ]) ++ lib.teams.cuda.members;
+    maintainers = [ maintainers.connorbaker ] ++ teams.cuda.members;
   };
 })

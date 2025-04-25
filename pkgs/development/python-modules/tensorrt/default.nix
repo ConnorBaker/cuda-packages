@@ -3,7 +3,6 @@
   build,
   buildPythonPackage,
   cmake,
-  config,
   cudaLib,
   cudaPackages,
   fetchFromGitHub,
@@ -180,7 +179,6 @@ let
     pythonImportsCheck = [ "tensorrt" ];
 
     meta = {
-      broken = !config.cudaSupport;
       description = "Open Source Software (OSS) components of NVIDIA TensorRT";
       homepage = "https://github.com/NVIDIA/TensorRT";
       license = licenses.asl20;

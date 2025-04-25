@@ -4,6 +4,7 @@
   stdenv,
 }:
 let
+  inherit (lib) maintainers teams;
   inherit (lib.strings) concatStringsSep;
   inherit (lib.trivial) mapNullable;
   baseURL = "https://developer.download.nvidia.com/compute/cublasdx/redist/cublasdx";
@@ -75,6 +76,6 @@ stdenv.mkDerivation (finalAttrs: {
       "aarch64-linux"
       "x86_64-linux"
     ];
-    maintainers = (with lib.maintainers; [ connorbaker ]) ++ lib.teams.cuda.members;
+    maintainers = [ maintainers.connorbaker ] ++ teams.cuda.members;
   };
 })

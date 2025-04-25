@@ -70,7 +70,8 @@
       # But it doesn't matter, from what I can tell. `nix-eval-jobs` handles it all the same.
       flake = {
         hydraJobs = import ./hydraJobs.nix {
-          inherit cudaLib lib nixpkgsInstances;
+          inherit cudaLib lib;
+          inherit (inputs.self) legacyPackages;
         };
         overlays.default = import ./overlay.nix;
       };

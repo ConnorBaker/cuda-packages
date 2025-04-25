@@ -14,7 +14,7 @@
   stdenv,
 }:
 let
-  inherit (cudaLib.utils) mkFailedAssertionsString redistSystemIsSupported;
+  inherit (cudaLib.utils) mkMetaBadPlatforms mkMetaBroken redistSystemIsSupported;
   inherit (cudaStdenv) hostRedistSystem;
   inherit (lib)
     licenses
@@ -30,10 +30,8 @@ let
     foldl'
     intersectLists
     map
-    optionals
     subtractLists
     tail
-    unique
     ;
   inherit (lib.strings)
     concatMapStringsSep
@@ -41,7 +39,7 @@ let
     stringLength
     substring
     ;
-  inherit (lib.trivial) flip warnIf warnIfNot;
+  inherit (lib.trivial) flip;
 
   mkOutputNameVar =
     output:
@@ -263,12 +261,16 @@ in
     };
 
     # brokenAssertions :: [Attrs]
-    # Sets `meta.broken = true` if any of the assertions fail.
+    # Used by mkMetaBroken to set `meta.broken`.
     # Example: Broken on a specific version of CUDA or when a dependency has a specific version.
     # NOTE: Do not use this when a broken assertion means evaluation will fail! For example, if
     # a package is missing and is required for the build -- that should go in platformAssertions,
     # because attempts to access attributes on the package will cause evaluation errors.
     brokenAssertions = prevAttrs.passthru.brokenAssertions or [ ] ++ [
+      {
+        message = "CUDA support is enabled by config.cudaSupport";
+        assertion = config.cudaSupport;
+      }
       {
         message = "lib output precedes static output";
         assertion =
@@ -297,7 +299,7 @@ in
     ];
 
     # platformAssertions :: [Attrs]
-    # Sets `meta.badPlatforms = meta.platforms` if any of the assertions fail.
+    # Used by mkMetaBadPlatforms to set `meta.badPlatforms`.
     # Example: Broken on a specific system when some condition is met, like targeting Jetson or
     # a required package missing.
     # NOTE: Use this when a failed assertion means evaluation can fail!
@@ -322,33 +324,8 @@ in
     description = "${redistBuilderArg.releaseName}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";
     sourceProvenance = [ sourceTypes.binaryNativeCode ];
     platforms = redistBuilderArg.supportedNixSystems;
-    broken =
-      let
-        failedAssertionsString = mkFailedAssertionsString finalAttrs.passthru.brokenAssertions;
-        hasFailedAssertions = failedAssertionsString != "";
-      in
-      warnIfNot config.cudaSupport
-        "CUDA support is disabled and you are building a CUDA package (${finalAttrs.finalPackage.name}); expect breakage!"
-        (
-          warnIf hasFailedAssertions
-            "Package ${finalAttrs.finalPackage.name} is marked broken due to the following failed assertions:${failedAssertionsString}"
-            hasFailedAssertions
-        );
-    badPlatforms =
-      let
-        failedAssertionsString = mkFailedAssertionsString finalAttrs.passthru.platformAssertions;
-        hasFailedAssertions = failedAssertionsString != "";
-      in
-      optionals
-        (warnIf hasFailedAssertions
-          "Package ${finalAttrs.finalPackage.name} is unsupported on this platform due to the following failed assertions:${failedAssertionsString}"
-          hasFailedAssertions
-        )
-        (unique [
-          cudaStdenv.buildPlatform.system
-          cudaStdenv.hostPlatform.system
-          cudaStdenv.targetPlatform.system
-        ]);
+    broken = mkMetaBroken (!(config.inHydra or false)) finalAttrs;
+    badPlatforms = mkMetaBadPlatforms (!(config.inHydra or false)) finalAttrs;
     license = licenses.nvidiaCudaRedist // {
       url =
         let

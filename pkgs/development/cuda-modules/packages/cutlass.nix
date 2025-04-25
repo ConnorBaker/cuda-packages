@@ -22,6 +22,7 @@
   gitUpdater,
 }:
 let
+  inherit (lib) licenses maintainers teams;
   inherit (lib.asserts) assertMsg;
   inherit (lib.lists) optionals;
   inherit (lib.strings) cmakeBool cmakeFeature optionalString;
@@ -142,7 +143,7 @@ stdenv.mkDerivation (finalAttrs: {
     # tests.test = cutlass.overrideAttrs { doCheck = true; };
   };
 
-  meta = with lib; {
+  meta = {
     description = "CUDA Templates for Linear Algebra Subroutines";
     homepage = "https://github.com/NVIDIA/cutlass";
     license = licenses.asl20;
@@ -150,6 +151,6 @@ stdenv.mkDerivation (finalAttrs: {
       "aarch64-linux"
       "x86_64-linux"
     ];
-    maintainers = (with maintainers; [ connorbaker ]) ++ teams.cuda.members;
+    maintainers = [ maintainers.connorbaker ] ++ teams.cuda.members;
   };
 })

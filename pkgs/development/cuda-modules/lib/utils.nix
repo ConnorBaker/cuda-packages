@@ -69,7 +69,9 @@ let
   inherit (lib.trivial)
     const
     flip
+    id
     pipe
+    warnIf
     ;
   inherit (lib.versions) major splitVersion;
 in
@@ -237,11 +239,78 @@ in
     assertions:
     let
       failedAssertionsString = mkFailedAssertionsString assertions;
+      hasNoFailedAssertions = failedAssertionsString == "";
     in
-    if failedAssertionsString != "" then
-      addErrorContext "with failed assertions:${failedAssertionsString}" false
-    else
-      true;
+    (
+      if hasNoFailedAssertions then
+        id
+      else
+        addErrorContext "with failed assertions:${failedAssertionsString}"
+    )
+      hasNoFailedAssertions;
+
+  /**
+    Returns a boolean indicating whether the package is broken as a result of `finalAttrs.passthru.brokenAssertions`,
+    optionally logging evaluation warnings for each reason.
+
+    NOTE: This function requires `finalAttrs.passthru.brokenAssertions` to be a list of assertions and
+    `finalAttrs.finalPackage.name` to be available.
+
+    # Type
+
+    ```
+    mkMetaBroken :: (warn :: Bool) -> (finalAttrs :: AttrSet) -> Bool
+    ```
+
+    # Inputs
+
+    `warn`
+
+    : A boolean indicating whether to log warnings
+
+    `finalAttrs`
+
+    : The final attributes of the package
+  */
+  mkMetaBroken =
+    warn: finalAttrs:
+    let
+      failedAssertionsString = mkFailedAssertionsString finalAttrs.passthru.brokenAssertions;
+      hasFailedAssertions = failedAssertionsString != "";
+    in
+    warnIf (warn && hasFailedAssertions)
+      "Package ${finalAttrs.finalPackage.name} is marked as broken due to the following failed assertions:${failedAssertionsString}"
+      hasFailedAssertions;
+
+  /**
+    Returns a list of bad platforms for a given package if assertsions in `finalAttrs.passthru.platformAssertions` fail,
+    optionally logging evaluation warnings for each reason.
+
+    NOTE: This function requires `finalAttrs.passthru.platformAssertions` to be a list of assertions and
+    `finalAttrs.finalPackage.name` and `finalAttrs.finalPackage.stdenv` to be available.
+
+    # Type
+
+    ```
+    mkMetaBadPlatforms :: (warn :: Bool) -> (finalAttrs :: AttrSet) -> List String
+    ```
+  */
+  mkMetaBadPlatforms =
+    warn: finalAttrs:
+    let
+      failedAssertionsString = mkFailedAssertionsString finalAttrs.passthru.platformAssertions;
+      hasFailedAssertions = failedAssertionsString != "";
+      finalStdenv = finalAttrs.finalPackage.stdenv;
+    in
+    warnIf (warn && hasFailedAssertions)
+      "Package ${finalAttrs.finalPackage.name} is unsupported on this platform due to the following failed assertions:${failedAssertionsString}"
+      (
+        optionals hasFailedAssertions (unique [
+          finalStdenv.buildPlatform.system
+          finalStdenv.hostPlatform.system
+          finalStdenv.targetPlatform.system
+        ])
+      );
 
   /**
     A variant of `packagesFromDirectoryRecursive` which takes positional arguments and wraps the result of the

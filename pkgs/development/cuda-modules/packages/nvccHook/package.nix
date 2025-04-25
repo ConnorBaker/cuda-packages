@@ -12,10 +12,9 @@
   stdenv,
 }:
 let
-  inherit (cudaLib.utils) mkFailedAssertionsString;
+  inherit (cudaLib.utils) mkMetaBroken;
   inherit (cudaStdenv) nvccHostCCMatchesStdenvCC;
   inherit (lib.attrsets) optionalAttrs;
-  inherit (lib.trivial) warnIf warnIfNot;
 
   finalAttrs = {
     # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
@@ -78,18 +77,7 @@ let
         "aarch64-linux"
         "x86_64-linux"
       ];
-      broken =
-        let
-          failedAssertionsString = mkFailedAssertionsString finalAttrs.passthru.brokenAssertions;
-          hasFailedAssertions = failedAssertionsString != "";
-        in
-        warnIfNot config.cudaSupport
-          "CUDA support is disabled and you are building a CUDA package (${finalAttrs.name}); expect breakage!"
-          (
-            warnIf hasFailedAssertions
-              "Package ${finalAttrs.name} is marked broken due to the following failed assertions:${failedAssertionsString}"
-              hasFailedAssertions
-          );
+      broken = mkMetaBroken (!(config.inHydra or false)) finalAttrs;
       maintainers = lib.teams.cuda.members;
     };
   };

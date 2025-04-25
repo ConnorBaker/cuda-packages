@@ -3,9 +3,7 @@
   build,
   buildPythonPackage,
   cmake,
-  config,
   cudaPackages,
-  cudaSupport ? config.cudaSupport,
   fetchFromGitHub,
   lib,
   llvmPackages,
@@ -142,7 +140,6 @@ let
 
     meta = {
       description = "A Python framework for high performance GPU simulation and graphics";
-      broken = !cudaSupport;
       homepage = "https://github.com/NVIDIA/warp";
       license = {
         fullName = "NVIDIA Software License Agreement";

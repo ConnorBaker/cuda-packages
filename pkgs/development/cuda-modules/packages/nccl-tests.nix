@@ -6,6 +6,7 @@
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
+  cudaLib,
   cudaNamePrefix,
   fetchFromGitHub,
   flags,
@@ -18,6 +19,8 @@
   which,
 }:
 let
+  inherit (cudaLib.utils) mkMetaBroken;
+  inherit (lib) licenses maintainers teams;
   inherit (lib.attrsets) getBin;
   inherit (lib.lists) optionals;
 in
@@ -81,12 +84,21 @@ stdenv.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  passthru.updateScript = gitUpdater {
-    inherit (finalAttrs) pname version;
-    rev-prefix = "v";
+  passthru = {
+    brokenAssertions = [
+      {
+        message = "mpi is non-null when mpiSupport is true";
+        assertion = mpiSupport -> mpi != null;
+      }
+    ];
+
+    updateScript = gitUpdater {
+      inherit (finalAttrs) pname version;
+      rev-prefix = "v";
+    };
   };
 
-  meta = with lib; {
+  meta = {
     description = "Tests to check both the performance and the correctness of NVIDIA NCCL operations";
     homepage = "https://github.com/NVIDIA/nccl-tests";
     platforms = [
@@ -94,7 +106,7 @@ stdenv.mkDerivation (finalAttrs: {
       "x86_64-linux"
     ];
     license = licenses.bsd3;
-    broken = !config.cudaSupport || (mpiSupport && mpi == null);
-    maintainers = (with maintainers; [ jmillerpdt ]) ++ teams.cuda.members;
+    broken = mkMetaBroken (!(config.inHydra or false)) finalAttrs;
+    maintainers = [ maintainers.jmillerpdt ] ++ teams.cuda.members;
   };
 })

@@ -1,8 +1,6 @@
 {
   cmake,
-  config,
   cudaPackages,
-  cudaSupport ? config.cudaSupport,
   fetchFromGitHub,
   lib,
   onnx,
@@ -157,7 +155,6 @@ stdenv.mkDerivation (finalAttrs: {
   # TODO(@connorbaker): This derivation should contain CPP tests for onnx.
 
   meta = {
-    broken = !cudaSupport;
     description = "TensorRT backend for Onnx";
     homepage = "https://github.com/onnx/onnx-tensorrt";
     license = licenses.asl20;

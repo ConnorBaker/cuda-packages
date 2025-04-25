@@ -1,6 +1,5 @@
 # Currently propagated by cuda_nvcc or cudatoolkit, rather than used directly
 {
-  config,
   lib,
   makeSetupHook,
 }:
@@ -18,10 +17,6 @@ let
         "aarch64-linux"
         "x86_64-linux"
       ];
-      broken =
-        lib.warnIfNot config.cudaSupport
-          "CUDA support is disabled and you are building a CUDA package (${finalAttrs.name}); expect breakage!"
-          false;
       maintainers = lib.teams.cuda.members;
     };
   };

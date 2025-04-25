@@ -1,10 +1,8 @@
 {
   boost,
   buildPythonPackage,
-  config,
   cudaLib,
   cudaPackages,
-  cudaSupport ? config.cudaSupport,
   fetchFromGitHub,
   lib,
   mako,
@@ -89,7 +87,6 @@ buildPythonPackage {
   '';
 
   meta = {
-    broken = !cudaSupport;
     description = "CUDA integration for Python";
     homepage = "https://github.com/inducer/pycuda/";
     license = licenses.mit;

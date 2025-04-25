@@ -1,9 +1,11 @@
 {
+  config,
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
-  cudaStdenv,
+  cudaLib,
   cudaNamePrefix,
+  cudaStdenv,
   fetchFromGitHub,
   flags,
   lib,
@@ -14,13 +16,14 @@
   gitUpdater,
 }:
 let
+  inherit (cudaLib.utils) mkMetaBadPlatforms;
   inherit (cudaStdenv) hasJetsonCudaCapability;
+  inherit (lib) licenses maintainers teams;
   inherit (lib.attrsets)
     getBin
     getLib
     getOutput
     ;
-  inherit (lib.lists) optionals;
 in
 stdenv.mkDerivation (finalAttrs: {
   __structuredAttrs = true;
@@ -89,23 +92,29 @@ stdenv.mkDerivation (finalAttrs: {
     moveToOutput lib/libnccl_static.a "$static"
   '';
 
-  passthru.updateScript = gitUpdater {
-    inherit (finalAttrs) pname version;
-    rev-prefix = "v";
+  passthru = {
+    platformAssertions = [
+      {
+        message = "target is not a Jetson device";
+        assertion = !hasJetsonCudaCapability;
+      }
+    ];
+
+    updateScript = gitUpdater {
+      inherit (finalAttrs) pname version;
+      rev-prefix = "v";
+    };
   };
 
-  meta = with lib; {
+  meta = {
     description = "Multi-GPU and multi-node collective communication primitives for NVIDIA GPUs";
     homepage = "https://developer.nvidia.com/nccl";
     license = licenses.bsd3;
-    platforms =
-      optionals (!hasJetsonCudaCapability) [
-        "aarch64-linux"
-      ]
-      ++ [
-        "x86_64-linux"
-      ];
-    badPlatforms = optionals hasJetsonCudaCapability [ "aarch64-linux" ];
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
+    badPlatforms = mkMetaBadPlatforms (!(config.inHydra or false)) finalAttrs;
     maintainers =
       (with maintainers; [
         mdaiter

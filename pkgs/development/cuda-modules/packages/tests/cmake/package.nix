@@ -43,7 +43,7 @@ let
 
   isBroken = _: prevAttrs: {
     meta = prevAttrs.meta or { } // {
-      broken = true; # Tries to detect the native architecture, which is impure.
+      broken = true;
     };
   };
 

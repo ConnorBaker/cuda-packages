@@ -1,7 +1,7 @@
 {
   cudaLib,
   lib,
-  nixpkgsInstances,
+  legacyPackages,
 }:
 let
   inherit (cudaLib.utils) flattenDrvTree mkRealArchitecture;
@@ -20,6 +20,17 @@ let
     optionals
     ;
   inherit (lib.trivial) pipe;
+
+  # The evaluation warnings which preced eval errors
+  mkPkgsForHydra =
+    pkgs:
+    pkgs.extend (
+      _: prev: {
+        config = prev.config // {
+          inHydra = true;
+        };
+      }
+    );
 
   getPassthruTests =
     let
@@ -351,7 +362,7 @@ in
 {
   x86_64-linux =
     let
-      pkgs = nixpkgsInstances.x86_64-linux;
+      pkgs = mkPkgsForHydra legacyPackages.x86_64-linux;
     in
     {
       # Ada Lovelace
@@ -366,7 +377,7 @@ in
 
   aarch64-linux =
     let
-      pkgs = nixpkgsInstances.aarch64-linux;
+      pkgs = mkPkgsForHydra legacyPackages.aarch64-linux;
     in
     {
       # Jetson Orin

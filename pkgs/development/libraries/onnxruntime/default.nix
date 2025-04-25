@@ -24,7 +24,6 @@
   ncclSupport ? (cudaSupport && cudaPackages.nccl.meta.available),
   nlohmann_json,
   onnx-tensorrt,
-  onnxruntime, # For passthru.tests
   patchelf,
   pkg-config,
   python3Packages,
@@ -50,7 +49,7 @@ let
     nccl
     tensorrt
     ;
-  inherit (lib) licenses maintainers;
+  inherit (lib) licenses maintainers platforms;
   inherit (lib.attrsets)
     getBin
     getLib
@@ -382,7 +381,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   # TODO(@connorbaker): This derivation should contain CPP tests for onnxruntime.
 
-  meta = with lib; {
+  meta = {
     description = "Cross-platform, high performance scoring engine for ML models";
     longDescription = ''
       ONNX Runtime is a performance-focused complete scoring engine
@@ -394,7 +393,7 @@ stdenv.mkDerivation (finalAttrs: {
       compatibility.
     '';
     homepage = "https://github.com/microsoft/onnxruntime";
-    changelog = "https://github.com/microsoft/onnxruntime/releases/tag/v${version}";
+    changelog = "https://github.com/microsoft/onnxruntime/releases/tag/v${finalAttrs.version}";
     # https://github.com/microsoft/onnxruntime/blob/master/BUILD.md#architectures
     platforms = platforms.unix;
     license = licenses.mit;
