@@ -41,10 +41,20 @@ The `cudaCapabilities` configuration option specifies a list of CUDA capabilitie
 
 The `cudaForwardCompat` boolean configuration option determines whether PTX support for future hardware is enabled.
 
+## Configuring CUDA package sets {#cuda-configuring-cuda-package-sets}
+
+CUDA package sets are scopes, so they provide the usual `overrideScope` attribute for overriding package attributes.
+
+::: {.important}
+The `manifests` and `fixups` attribute sets are not part of the CUDA package set fixed-point, but are instead provided as explicit arguments to `callPackage` in the construction of the package set. As such, for changes to `manifests` or `fixups` to take effect, they should be modified through the package set's `override` attribute.
+:::
+
+CUDA package sets are created by `callPackage` and provided explicit `manifests` and `fixups` attributes. The `manifests` attribute contains the JSON manifest files to use for a particular package set, while the `fixups` attribute set is a mapping from package name to a `callPackage`-able expression which will be provided to `overrideAttrs` on the result of `redist-builder`. Changing the version of a redistributable (like cuDNN) involves calling `override` on the relevant CUDA package set and overriding the corresponding entry in the `manifests` and `fixups` arguments provided to `callPackage`.
+
 ## Using cudaPackages {#cuda-using-cudapackages}
 
 ::: {.important}
-For information on how to package CUDA-accelerated software, see [Packaging CUDA-accelerated software](#cuda-packaging-cuda-accelerated-software).
+A non-trivial amount of CUDA package discoverability and usability relies on the various setup hooks used by a CUDA package set. As a result, users will likely encounter issues trying to perform builds within a `devShell` without manually invoking phases.
 :::
 
 Nixpkgs makes CUDA package sets available under a number of attributes. While versioned package sets are available (e.g., `cudaPackages_12_2`), it is recommended to use the unversioned `cudaPackages` attribute, which is an alias to the latest version, as versioned attributes are periodically removed.
@@ -80,56 +90,6 @@ When using `callPackage`, you can choose to pass in a different variant, e.g. wh
 }
 ```
 
-### Configuring the package set {#cuda-configuring-the-package-set}
-
-CUDA package sets are scopes, so they provide the usual `overrideScope` attribute for overriding package attributes.
-
-::: {.important}
-The `manifests` and `fixups` attribute sets are not part of the CUDA package set fixed-point, but are instead provided as explicit arguments to `callPackage` in the construction of the package set. As such, for changes to `manifests` or `fixups` to take effect, they should be modified through the package set's `override` attribute.
-:::
-
-CUDA package sets are created by `callPackage` and provided explicit `manifests` and `fixups` attributes. The `manifests` attribute contains the JSON manifest files to use for a particular package set, while the `fixups` attribute set is a mapping from package name to a `callPackage`-able expression which will be provided to `overrideAttrs` on the result of `redist-builder`. Changing the version of a redistributable (like cuDNN) involves calling `override` on the relevant CUDA package set and overriding the corresponding entry in the `manifests` and `fixups` arguments provided to `callPackage`.
-
-## Using cudaPackages.pkgs {#cuda-using-cudapackages-pkgs}
-
-Each CUDA package set has a `pkgs` attribute, which is an instance of Nixpkgs where enclosing CUDA package set is made the default CUDA package set. This was done primarily to avoid package set leakage, wherein a member of a non-default CUDA package set has a (potentially transitive) dependency on a member of the default CUDA package set.
-
-:::{.note}
-Package set leakage is a common problem in Nixpkgs, and is not limited to CUDA package sets.
-:::
-
-As an added benefit of `pkgs` being configured this way, building a package with a non-default version of CUDA is as simple as accessing an attribute. As an example, `cudaPackages_12_8.pkgs.opencv` provides OpenCV built against CUDA 12.8.
-
-## Using pkgsCuda {#cuda-using-pkgscuda}
-
-The `pkgsCuda` attribute set maps CUDA architectures (e.g., `sm_89` for Ada Lovelace, or `sm_90a` for accelerated Hopper) to Nixpkgs instances configured to support exactly that architecture. As an example, `pkgsCuda.sm_89` is a Nixpkgs instance extending `pkgs` and setting the following values in `config`:
-
-```nix
-{
-  cudaSupport = true;
-  cudaCapabilities = [ "8.9" ];
-  cudaForwardCompat = false;
-}
-```
-
-:::{.note}
-In `pkgsCuda`, the `cudaForwardCompat` option is set to `false` because exactly one CUDA architecture should be supported by the attached instance of Nixpkgs. Furthermore, some architectures, including accelerated architectures like `sm_90a`, cannot be built with forward compatibility.
-:::
-
-:::{.important}
-Not every version of CUDA supports every architecture!
-
-To illustrate: support for Blackwell (e.g., `sm_100`) was only added in CUDA 12.8. Assume our Nixpkgs' default CUDA package set is for CUDA 12.6. Then the Nixpkgs instance available through `pkgsCuda.sm_100` is useless, since packages like `pkgsCuda.sm_100.opencv` and `pkgsCuda.sm_100.python3Packages.torch` will try to generate code for `sm_100`, an architecture unknown to CUDA 12.6. In such a case, you should use `pkgsCuda.sm_100.cudaPackages_12_8.pkgs` instead (see [Using cudaPackages.pkgs](#cuda-using-cudapackages-pkgs) for more details).
-:::
-
-The `pkgsCuda` attribute set makes it possible to access packages built for a specific architecture without needing to manually call `pkgs.extend` and supply a new `config`. As an example, `pkgsCuda.sm_89.python3Packages.torch` provides PyTorch built for Ada Lovelace GPUs.
-
-## Packaging CUDA-accelerated software {#cuda-packaging-cuda-accelerated-software}
-
-::: {.important}
-A non-trivial amount of CUDA package discoverability and usability relies on the various setup hooks used by a CUDA package set. As a result, users will likely encounter issues trying to perform builds within a `devShell` without manually invoking phases.
-:::
-
 ### Choosing a stdenv {#cuda-choosing-a-stdenv}
 
 NVCC has a supported range of host compilers (GCC and Clang), which it wraps presents itself as when doing C-preprocessing/C++ templating. NVCC implements its own functionality for CUDA source files, but otherwise delegates to the host compiler. Generally, NVCC is very tightly coupled to GCC/Clang, e.g. the NVCC C/C++ pre-processor may not be able to parse or use `libc`/`libcpp` headers from newer host compilers when they use new language functionality.
@@ -156,7 +116,7 @@ effectiveStdenv.mkDerivation { ... }
 
 ### The dangers of symlinkJoin {#cuda-the-dangers-of-symlinkjoin}
 
-TODO(@connorbaker): document need for like removal of some files in `nix-support` and need to be careful about ensuring setup hooks are available/not clobbered.
+TODO(@connorbaker): document need for removal of some files in `nix-support` and need to be careful about ensuring setup hooks are available/not clobbered.
 
 ### Common build system patterns {#cuda-common-build-system-patterns}
 
@@ -176,6 +136,8 @@ stdenv.mkDerivation {
   buildInputs = [ cudaPackages.cuda_cudart ];
 }
 ```
+
+In every case, ensure projects do not hardcode things like CUDA installation directories or device code to generate. If they do, you will need to patch the project to use the corresponding values provided by the CUDA package set. Since these values are typically created by the project author, the names are not standardized or documented (as they are considered a build system detail). As such, you will likely need to read the project's documentation and source code to determine what values to patch.
 
 #### Bazel {#cuda-bazel}
 
@@ -208,9 +170,39 @@ stdenv.mkDerivation {
 }
 ```
 
-#### Make {#cuda-make}
+## Using pkgsCuda {#cuda-using-pkgscuda}
 
-TODO(@connorbaker): document. Make sure to include notes about projects hardcoding `CUDA_ARCHS` or `CUDA_HOME` (or similar variables) in their Makefiles and the need to patch them.
+The `pkgsCuda` attribute set maps CUDA architectures (e.g., `sm_89` for Ada Lovelace, or `sm_90a` for accelerated Hopper) to Nixpkgs instances configured to support exactly that architecture. As an example, `pkgsCuda.sm_89` is a Nixpkgs instance extending `pkgs` and setting the following values in `config`:
+
+```nix
+{
+  cudaSupport = true;
+  cudaCapabilities = [ "8.9" ];
+  cudaForwardCompat = false;
+}
+```
+
+:::{.note}
+In `pkgsCuda`, the `cudaForwardCompat` option is set to `false` because exactly one CUDA architecture should be supported by the attached instance of Nixpkgs. Furthermore, some architectures, including accelerated architectures like `sm_90a`, cannot be built with forward compatibility.
+:::
+
+:::{.important}
+Not every version of CUDA supports every architecture!
+
+To illustrate: support for Blackwell (e.g., `sm_100`) was only added in CUDA 12.8. Assume our Nixpkgs' default CUDA package set is for CUDA 12.6. Then the Nixpkgs instance available through `pkgsCuda.sm_100` is useless, since packages like `pkgsCuda.sm_100.opencv` and `pkgsCuda.sm_100.python3Packages.torch` will try to generate code for `sm_100`, an architecture unknown to CUDA 12.6. In such a case, you should use `pkgsCuda.sm_100.cudaPackages_12_8.pkgs` instead (see [Using cudaPackages.pkgs](#cuda-using-cudapackages-pkgs) for more details).
+:::
+
+The `pkgsCuda` attribute set makes it possible to access packages built for a specific architecture without needing to manually call `pkgs.extend` and supply a new `config`. As an example, `pkgsCuda.sm_89.python3Packages.torch` provides PyTorch built for Ada Lovelace GPUs.
+
+## Using cudaPackages.pkgs {#cuda-using-cudapackages-pkgs}
+
+Each CUDA package set has a `pkgs` attribute, which is an instance of Nixpkgs where enclosing CUDA package set is made the default CUDA package set. This was done primarily to avoid package set leakage, wherein a member of a non-default CUDA package set has a (potentially transitive) dependency on a member of the default CUDA package set.
+
+:::{.note}
+Package set leakage is a common problem in Nixpkgs, and is not limited to CUDA package sets.
+:::
+
+As an added benefit of `pkgs` being configured this way, building a package with a non-default version of CUDA is as simple as accessing an attribute. As an example, `cudaPackages_12_8.pkgs.opencv` provides OpenCV built against CUDA 12.8.
 
 ## Using CUDA with containers {#cuda-using-cuda-with-containers}
 
