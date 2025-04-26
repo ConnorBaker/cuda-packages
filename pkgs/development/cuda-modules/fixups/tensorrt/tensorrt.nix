@@ -19,7 +19,8 @@ let
 in
 finalAttrs: prevAttrs:
 let
-  versionTriple = majorMinorPatch finalAttrs.version;
+  majorMinorPatchVersion = majorMinorPatch finalAttrs.version;
+  majorVersion = lib.versions.major finalAttrs.version;
 in
 {
   allowFHSReferences = true;
@@ -107,27 +108,28 @@ in
     ''
     # Remove the Windows library used for cross-compilation if it exists.
     + ''
-      if [[ -e "''${!outputLib:?}/lib/libnvinfer_builder_resource_win.so.${versionTriple}" ]]; then
+      if [[ -e "''${!outputLib:?}/lib/libnvinfer_builder_resource_win.so.${majorMinorPatchVersion}" ]]; then
         nixLog "removing Windows library"
-        rm --verbose "''${!outputLib:?}/lib/libnvinfer_builder_resource_win.so.${versionTriple}"
+        rm --verbose "''${!outputLib:?}/lib/libnvinfer_builder_resource_win.so.${majorMinorPatchVersion}"
       fi
+    ''
+    # Remove the stub libraries.
+    + ''
+      nixLog "removing stub libraries"
+      rm --recursive --verbose "''${!outputLib:?}/lib/stubs" || {
+        nixErrorLog "could not delete ''${!outputLib:?}/lib/stubs"
+        exit 1
+      }
     '';
 
   # Tell autoPatchelf about runtime dependencies.
   postFixup =
     prevAttrs.postFixup or ""
     + ''
-      nixLog "patchelf-ing ''${!outputLib:?}/lib/libnvinfer.so.* with runtime dependencies"
+      nixLog "patchelf-ing ''${!outputBin:?}/bin/trtexec with runtime dependencies"
       patchelf \
-        --add-needed libnvinfer.so \
-        "''${!outputLib:?}/lib/libnvinfer.so.${versionTriple}" \
-        "''${!outputLib:?}/lib/libnvinfer_plugin.so.${versionTriple}" \
-        "''${!outputLib:?}/lib/libnvinfer_builder_resource.so.${versionTriple}"
-      nixLog "patchelf-ing ''${!outputLib:?}/lib/libnvinfer.so with runtime dependencies"
-      patchelf \
-        "''${!outputLib:?}/lib/libnvinfer.so" \
-        --add-needed libnvrtc.so \
-        --add-needed libnvrtc-builtins.so
+        "''${!outputBin:?}/bin/trtexec" \
+        --add-needed libnvinfer_plugin.so.${majorVersion}
     '';
 
   passthru = prevAttrs.passthru or { } // {
@@ -143,7 +145,7 @@ in
         "lib"
         "samples"
         "static"
-        "stubs"
+        # "stubs" removed in postInstall
       ];
     };
   };
