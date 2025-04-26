@@ -17,7 +17,11 @@ let
   inherit (lib.lists) optionals;
   inherit (lib.strings) concatStringsSep;
 in
-finalAttrs: prevAttrs: {
+finalAttrs: prevAttrs:
+let
+  versionTriple = majorMinorPatch finalAttrs.version;
+in
+{
   allowFHSReferences = true;
 
   nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ patchelf ];
@@ -30,24 +34,6 @@ finalAttrs: prevAttrs: {
       cuda_cudart
     ]
     ++ optionals hasJetsonCudaCapability [ libcudla ];
-
-  # TODO(@connorbaker): Seems like NVIDIA may have accidentally included a copy of a windows library in their tarball.
-  # $ du -sh result-lib/lib/*
-  # 1.9G	result-lib/lib/libnvinfer_builder_resource.so.10.9.0
-  # 1.9G	result-lib/lib/libnvinfer_builder_resource_win.so.10.9.0
-  # 1.0K	result-lib/lib/libnvinfer_dispatch.so
-  # 1.1M	result-lib/lib/libnvinfer_dispatch.so.10.9.0
-  # 1.0K	result-lib/lib/libnvinfer_lean.so
-  # 107M	result-lib/lib/libnvinfer_lean.so.10.9.0
-  # 1.0K	result-lib/lib/libnvinfer_plugin.so
-  # 53M	result-lib/lib/libnvinfer_plugin.so.10.9.0
-  # 1.0K	result-lib/lib/libnvinfer.so
-  # 642M	result-lib/lib/libnvinfer.so.10.9.0
-  # 1.0K	result-lib/lib/libnvinfer_vc_plugin.so
-  # 901K	result-lib/lib/libnvinfer_vc_plugin.so.10.9.0
-  # 1.0K	result-lib/lib/libnvonnxparser.so
-  # 1.0K	result-lib/lib/libnvonnxparser.so.10
-  # 4.4M	result-lib/lib/libnvonnxparser.so.10.9.0
 
   preInstall =
     let
@@ -118,13 +104,17 @@ finalAttrs: prevAttrs: {
     + ''
       nixLog "moving data directory to samples output"
       moveToOutput data "''${!outputSamples:?}"
+    ''
+    # Remove the Windows library used for cross-compilation if it exists.
+    + ''
+      if [[ -e "''${!outputLib:?}/lib/libnvinfer_builder_resource_win.so.${versionTriple}" ]]; then
+        nixLog "removing Windows library"
+        rm --verbose "''${!outputLib:?}/lib/libnvinfer_builder_resource_win.so.${versionTriple}"
+      fi
     '';
 
   # Tell autoPatchelf about runtime dependencies.
   postFixup =
-    let
-      versionTriple = majorMinorPatch finalAttrs.version;
-    in
     prevAttrs.postFixup or ""
     + ''
       nixLog "patchelf-ing ''${!outputLib:?}/lib/libnvinfer.so.* with runtime dependencies"
