@@ -126,7 +126,25 @@ effectiveStdenv.mkDerivation { ... }
 
 ### The dangers of symlinkJoin {#cuda-the-dangers-of-symlinkjoin}
 
-TODO(@connorbaker): document need for removal of some files in `nix-support` and need to be careful about ensuring setup hooks are available/not clobbered.
+A number of build systems (recent versions of CMake excluded) expect a monolithic CUDA installation and use paths relative to that root to resolve dependencies on different CUDA components. Such expectations are invalidated when building with Nixpkgs, as our CUDA installations are split into multiple directories -- generally per-component and per-output type (e.g., `lib`, `bin`, `include`, etc.).
+
+In situations where patching a project's build system is infeasible, `symlinkJoin` can be used to create a monolithic CUDA installation. However, this is not without its own pitfalls: since `symlinkJoin` does not clobber existing files, a naive `symlinkJoin` will not produce the desired result, as only the first observed file in `nix-support` will be included in the resulting `nix-support` directory.
+
+Generally, there are three types of files CUDA packages place in `nix-support` directories:
+
+1. `setup-hook` files, which are used to set up the environment for the package.
+2. `include-in-cudatoolkit-root` files, which are used to mark the output for processing by `cudaHook`
+3. Dependency files, like `propagated-build-inputs` or `propagated-host-host-deps`, which are produced during `fixupPhase`
+
+The `setup-hook` files cannot be concatenated, as they include `return` statements to guard against multiple invocations. Instead, they should be copied to the `nix-support` directory of the `symlinkJoin` output under different names and sourced, one by one, in a new `setup-hook`.
+
+The `include-in-cudatoolkit-root` can be left unmodified in the `symlinkJoin` output, as it is an empty file, so they are all identical.
+
+Finally, the corresponding dependency files from each path should have references to other paths in the `symlinkJoin` replaced with the `symlinkJoin` output, be deduplicated, and concatenated with a space.
+
+:::{.important}
+The concatenation of dependency files with a space is based on the implementation of `recordPropagatedDependencies` in `stdenv`'s `setup.sh` using `printWords`. If this implementation changes, the concatenation method will need to be updated as well.
+:::
 
 ### Common build system patterns {#cuda-common-build-system-patterns}
 
