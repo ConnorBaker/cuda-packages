@@ -1,6 +1,6 @@
 {
-  autoPatchelfHook,
   buildPythonPackage,
+  cudaPackages,
   fetchurl,
   lib,
   python,
@@ -77,9 +77,6 @@ let
         url = "https://pypi.nvidia.com/nvidia-modelopt-core/${wheelName}#sha256=${wheelSha256}";
       };
 
-      # included to fail on missing dependencies
-      nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
-
       unpackPhase = ''
         mkdir -p dist
         cp -v "$src" "dist/${wheelName}"
@@ -88,13 +85,14 @@ let
 
       pythonImportsCheck = [ "modelopt_core" ];
 
-      # TODO: Need a meta attribute.
-
-      # TODO: Unsupported on Jetson devices.
-      meta.platforms = [
-        "aarch64-linux"
-        "x86_64-linux"
-      ];
+      # TODO: Need to finish meta attribute.
+      meta = {
+        broken = cudaPackages.cudaStdenv.hasJetsonCudaCapability;
+        platforms = [
+          "aarch64-linux"
+          "x86_64-linux"
+        ];
+      };
     };
 in
 buildPythonPackage finalAttrs

@@ -23,7 +23,6 @@ buildPythonPackage {
   __structuredAttrs = true;
 
   inherit (cudaPackages.cutlass)
-    meta
     pname
     version
     ;
@@ -132,8 +131,12 @@ buildPythonPackage {
         '';
   };
 
-  # NOTE: Include required architectures in compatibility check.
-  # https://github.com/NVIDIA/cutlass/tree/main?tab=readme-ov-file#compatibility
+  meta = cudaPackages.cutlass.meta // {
+    broken =
+      cudaPackages.cutlass.meta.broken
+      # TODO: Not yet working with CUDA 12.2 due to dependency on cuda-python.
+      || cudaPackages.cudaMajorMinorVersion == "12.2";
+  };
 
   # TODO: CUTLASS looks like it caches kernel compilation in a database store alongside it.
   # That won't work for us since the store path is immutable.

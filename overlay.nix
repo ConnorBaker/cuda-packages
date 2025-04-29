@@ -44,7 +44,7 @@ let
           causal-conv1d = prevPythonPackages.causal-conv1d.overrideAttrs (prevAttrs: {
             # Missing cuda_nvcc in nativeBuildInputs
             nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ final.cudaPackages.cuda_nvcc ];
-            # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs wihout strictDeps being enabled.
+            # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs without strictDeps being enabled.
             buildInputs = filter (drv: drv != final.cudaPackages.cuda_nvcc) prevAttrs.buildInputs;
             # TODO: https://github.com/Dao-AILab/causal-conv1d/blob/82867a9d2e6907cc0f637ac6aff318f696838548/setup.py#L40
             # TODO: https://github.com/Dao-AILab/causal-conv1d/blob/82867a9d2e6907cc0f637ac6aff318f696838548/setup.py#L173
@@ -58,7 +58,7 @@ let
           mamba-ssm = prevPythonPackages.mamba-ssm.overrideAttrs (prevAttrs: {
             # Missing cuda_nvcc in nativeBuildInputs
             nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ final.cudaPackages.cuda_nvcc ];
-            # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs wihout strictDeps being enabled.
+            # Cannot have cuda_nvcc in both nativeBuildInputs and buildInputs without strictDeps being enabled.
             buildInputs = filter (drv: drv != final.cudaPackages.cuda_nvcc) prevAttrs.buildInputs;
             # NOTE: "No CUDA runtime is found" is an expected message given we don't allow GPU access in the build.
             # TODO: https://github.com/state-spaces/mamba/blob/2e16fc3062cdcd4ebef27a9aa4442676e1c7edf4/setup.py#L175
@@ -87,7 +87,7 @@ let
                     final.cudaPackages.libcudss
                     final.cudaPackages.libcufile
                   ]
-                  ++ final.lib.optionals final.cudaPackages.nccl.meta.available [ final.cudaPackages.nccl.static ];
+                  ++ optionals final.cudaPackages.nccl.meta.available [ final.cudaPackages.nccl.static ];
 
                 USE_CUFILE = 1;
               });
@@ -140,13 +140,16 @@ let
           "cuda-python"
           "cupy"
           "cutlass"
+          "flash-attn"
           "modelopt"
           "modelopt-core"
           "nvcomp"
           "pyclibrary"
           "pycuda"
           "pyglove"
+          "schedulefree"
           "tensorrt"
+          "transformer-engine"
           "warp"
         ] (name: finalPythonPackages.callPackage (./pkgs/development/python-modules + "/${name}") { })
       )

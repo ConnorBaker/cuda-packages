@@ -1,6 +1,6 @@
 {
-  autoPatchelfHook,
   buildPythonPackage,
+  cudaPackages,
   cython,
   fetchFromGitHub,
   lib,
@@ -16,7 +16,6 @@
   scipy,
   setuptools-scm,
   setuptools,
-  stdenv,
   torch,
   torchprofile,
   torchvision,
@@ -53,9 +52,6 @@ buildPythonPackage {
     tqdm
   ];
 
-  # included to fail on missing dependencies
-  nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
-
   doCheck = true;
 
   pythonImportsCheck = [ "modelopt" ];
@@ -90,7 +86,7 @@ buildPythonPackage {
     description = "A c++ wrapper for the cudnn backend API";
     homepage = "https://github.com/NVIDIA/TensorRT-Model-Optimizer";
     license = lib.licenses.asl20;
-    # TODO: Unsupported on Jetson devices.
+    broken = cudaPackages.cudaStdenv.hasJetsonCudaCapability;
     platforms = [
       "aarch64-linux"
       "x86_64-linux"

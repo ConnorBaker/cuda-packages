@@ -1,9 +1,11 @@
 {
   addDriverRunpath,
   cmake,
+  config,
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
+  cudaLib,
   cudaNamePrefix,
   cudnn,
   fetchFromGitHub,
@@ -23,11 +25,18 @@
   gitUpdater,
 }:
 let
+  inherit (cudaLib.utils) mkMetaBadPlatforms;
   inherit (lib) licenses maintainers teams;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets) getBin;
-  inherit (lib.lists) optionals;
-  inherit (lib.strings) cmakeBool cmakeFeature optionalString;
+  inherit (lib.lists) all optionals;
+  inherit (lib.strings)
+    cmakeBool
+    cmakeFeature
+    optionalString
+    versionAtLeast
+    ;
+  inherit (lib.trivial) flip;
 in
 # TODO: Tests.
 assert assertMsg (!enableTools) "enableTools is not yet implemented";
@@ -200,6 +209,15 @@ stdenv.mkDerivation (finalAttrs: {
     };
     # TODO:
     # tests.test = cutlass.overrideAttrs { doCheck = true; };
+
+    # Include required architectures in compatibility check.
+    # https://github.com/NVIDIA/cutlass/tree/main?tab=readme-ov-file#compatibility
+    platformAssertions = [
+      {
+        message = "all capabilities are >= 7.0 (${builtins.toJSON flags.cudaCapabilities})";
+        assertion = all (flip versionAtLeast "7.0") flags.cudaCapabilities;
+      }
+    ];
   };
 
   meta = {
@@ -210,6 +228,7 @@ stdenv.mkDerivation (finalAttrs: {
       "aarch64-linux"
       "x86_64-linux"
     ];
+    badPlatforms = mkMetaBadPlatforms (!(config.inHydra or false)) finalAttrs;
     maintainers = [ maintainers.connorbaker ] ++ teams.cuda.members;
   };
 })

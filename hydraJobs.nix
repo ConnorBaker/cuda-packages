@@ -199,41 +199,39 @@ let
   mkPython3PackagesJobs =
     namePrefix: python3Packages:
     let
-      inherit (python3Packages.pkgs.cudaPackages.cudaStdenv) hasJetsonCudaCapability;
       inherit (python3Packages.pkgs.releaseTools) aggregate;
-      core =
-        [
-          python3Packages.causal-conv1d
-          python3Packages.cupy
-          # CUTLASS and related packages are disabled for now because not fully set up for 12.2
-          # python3Packages.cutlass
-          # python3Packages.cuda-bindings
-          # python3Packages.cuda-python
-          python3Packages.faiss
-          python3Packages.mamba-ssm
-          python3Packages.numba
-          python3Packages.nvidia-ml-py
-          python3Packages.onnx
-          python3Packages.onnx-tensorrt
-          python3Packages.onnxruntime
-          python3Packages.pyclibrary
-          python3Packages.pycuda
-          python3Packages.pynvml
-          python3Packages.pytorch-metric-learning
-          python3Packages.pytorch3d
-          python3Packages.tensorrt
-          python3Packages.torch
-          python3Packages.torchaudio
-          python3Packages.torchvision
-          python3Packages.triton
-          python3Packages.warp
-          python3Packages.xformers
-        ]
-        ++ optionals (!hasJetsonCudaCapability) [
-          python3Packages.modelopt
-          python3Packages.modelopt-core
-          python3Packages.nvcomp
-        ];
+      core = filter (drv: drv.meta.available && !drv.meta.broken) [
+        python3Packages.causal-conv1d
+        python3Packages.cuda-bindings
+        python3Packages.cuda-python
+        python3Packages.cupy
+        python3Packages.cutlass
+        python3Packages.faiss
+        python3Packages.flash-attn
+        python3Packages.mamba-ssm
+        python3Packages.modelopt
+        python3Packages.modelopt-core
+        python3Packages.numba
+        python3Packages.nvcomp
+        python3Packages.nvidia-ml-py
+        python3Packages.onnx
+        python3Packages.onnx-tensorrt
+        python3Packages.onnxruntime
+        python3Packages.pyclibrary
+        python3Packages.pycuda
+        python3Packages.pynvml
+        python3Packages.pytorch-metric-learning
+        python3Packages.pytorch3d
+        python3Packages.schedulefree
+        python3Packages.tensorrt
+        python3Packages.torch
+        python3Packages.torchaudio
+        python3Packages.torchvision
+        python3Packages.transformer-engine
+        python3Packages.triton
+        python3Packages.warp
+        python3Packages.xformers
+      ];
       extras = [
         python3Packages.accelerate
         python3Packages.array-api-compat
