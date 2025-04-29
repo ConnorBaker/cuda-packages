@@ -145,6 +145,7 @@ let
           "nvcomp"
           "pyclibrary"
           "pycuda"
+          "pyglove"
           "tensorrt"
           "warp"
         ] (name: finalPythonPackages.callPackage (./pkgs/development/python-modules + "/${name}") { })
