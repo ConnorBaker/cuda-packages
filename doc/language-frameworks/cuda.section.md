@@ -2,7 +2,7 @@
 
 Compute Unified Device Architecture (CUDA) is a parallel computing platform and application programming interface (API) model created by NVIDIA. It's commonly used to accelerate computationally intensive problems and has been widely adopted for High Performance Computing (HPC) and Machine Learning (ML) applications.
 
-CUDA-only packages are stored in the `cudaPackages` packages sets. Nixpkgs provides a number of different CUDA package sets, each based on a different CUDA release. All of these package sets include common CUDA packages like `libcublas`, `cudnn`, `tensorrt`, and `nccl`.
+Packages which require CUDA are typically stored in the `cudaPackages` packages sets. Nixpkgs provides a number of different CUDA package sets, each based on a different CUDA release. All of these package sets include common CUDA packages like `libcublas`, `cudnn`, `tensorrt`, and `nccl`.
 
 ## Configuring Nixpkgs for CUDA {#cuda-configuring-nixpkgs-for-cuda}
 
@@ -43,13 +43,25 @@ The `cudaForwardCompat` boolean configuration option determines whether PTX supp
 
 ## Configuring CUDA package sets {#cuda-configuring-cuda-package-sets}
 
-CUDA package sets are scopes, so they provide the usual `overrideScope` attribute for overriding package attributes.
+CUDA package sets are created by `callPackage` and provided explicit `manifests` and `fixups` attributes.
 
 ::: {.important}
 The `manifests` and `fixups` attribute sets are not part of the CUDA package set fixed-point, but are instead provided as explicit arguments to `callPackage` in the construction of the package set. As such, for changes to `manifests` or `fixups` to take effect, they should be modified through the package set's `override` attribute.
 :::
 
-CUDA package sets are created by `callPackage` and provided explicit `manifests` and `fixups` attributes. The `manifests` attribute contains the JSON manifest files to use for a particular package set, while the `fixups` attribute set is a mapping from package name to a `callPackage`-able expression which will be provided to `overrideAttrs` on the result of `redist-builder`. Changing the version of a redistributable (like cuDNN) involves calling `override` on the relevant CUDA package set and overriding the corresponding entry in the `manifests` and `fixups` arguments provided to `callPackage`.
+The `manifests` attribute contains the JSON manifest files to use for a particular package set, while the `fixups` attribute set is a mapping from package name to a `callPackage`-able expression which will be provided to `overrideAttrs` on the result of `redist-builder`. Changing the version of a redistributable (like cuDNN) involves calling `override` on the relevant CUDA package set and overriding the corresponding entry in the `manifests` and `fixups` arguments provided to `callPackage`.
+
+## Extending CUDA package sets {#cuda-extending-cuda-package-sets}
+
+CUDA package sets are scopes, so they provide the usual `overrideScope` attribute for overriding package attributes (see the note about `manifests` and `fixups` in [Configuring CUDA package sets](#cuda-configuring-cuda-package-sets)).
+
+Inspired by `pythonPackagesExtensions`, the `cudaPackagesExtensions` attribute is a list of extensions applied to every version of the CUDA package set, allowing modification of all versions of the CUDA package set without having to know what they are or invoke them explicitly. As an example, disabling `cuda_compat` across all CUDA package sets can be accomplished with this overlay:
+
+```nix
+_: prev: {
+  cudaPackagesExtensions = prev.cudaPackagesExtensions ++ [ (_: _: { cuda_compat = null; }) ];
+}
+```
 
 ## Using cudaPackages {#cuda-using-cudapackages}
 
@@ -106,9 +118,9 @@ NVCC has a supported range of host compilers (GCC and Clang), which it wraps pre
 
 NVCC is wrapped and includes a setup hook to ensure it has a supported host compiler available and that the host compiler links against the same `glibc`/`glibcxx` the rest of the Nixpkgs does (using those provided by `pkgs.stdenv`). As such, There are two choices of `stdenv` when packaging a CUDA application: `pkgs.stdenv` and `cudaPackages.cudaStdenv`.
 
-The benefit of using `pkgs.stdenv` is that adding CUDA support to a package is as simple as adding the relevant members of `cudaPackages` to `nativeBuildInputs` and `buildInputs` conditioned on `config.cudaSupport`. However, the largest (known) drawback is that using `pkgs.stdenv` breaks LTO (Link Time Optimization) because the host compiler used by NVCC is not the same as the host compiler used by `pkgs.stdenv` and the linker cannot work across object files produced by different compilers or compiler versions.
+The benefit of using `pkgs.stdenv` is that adding CUDA support to a package is as simple as adding the relevant members of `cudaPackages` to `nativeBuildInputs` and `buildInputs` conditioned on `config.cudaSupport`. However, the largest (known) drawback is that using `pkgs.stdenv` breaks Link Time Optimization (LTO) because the host compiler used by NVCC is not the same as the host compiler used by `pkgs.stdenv` and the linker cannot work across object files produced by different compilers or compiler versions.
 
-The benefit of using `cudaPackages.cudaStdenv` then is that it allows for LTO to work; the drawback is that adding CUDA support is much more invasive given the need for logic in the package expression which selects a stdenv based on `config.cudaSupport`. Such conditional logic is usually called the `effectiveStdenv` pattern:
+The benefit of using `cudaPackages.cudaStdenv` then is that it allows for LTO to work; the drawback is that adding CUDA support is much more invasive given the need for logic in the package expression which selects a `stdenv` based on `config.cudaSupport`. Such conditional logic is usually called the `effectiveStdenv` pattern:
 
 ```nix
 {
@@ -165,7 +177,7 @@ stdenv.mkDerivation {
 }
 ```
 
-In every case, ensure projects do not hardcode things like CUDA installation directories or device code to generate. If they do, you will need to patch the project to use the corresponding values provided by the CUDA package set. Since these values are typically created by the project author, the names are not standardized or documented (as they are considered a build system detail). As such, you will likely need to read the project's documentation and source code to determine what values to patch.
+In every case, ensure projects do not hard-code things like CUDA installation directories or device code to generate. If they do, you will need to patch the project to use the corresponding values provided by the CUDA package set. Since these values are typically created by the project author, the names are not standardized or documented (as they are considered a build system detail). As such, you will likely need to read the project's documentation and source code to determine what values to patch.
 
 #### Bazel {#cuda-bazel}
 
