@@ -36,20 +36,17 @@ buildPythonPackage {
     chmod +w dist
   '';
 
-  nativeBuildInputs = [ cuda_nvcc ];
+  nativeBuildInputs = [ cuda_nvcc ]; # Needed for pythonImportsCheckPhase
 
   dependencies = [
+    cuda_cudart
+    cuda_nvcc
     cuda-python
     networkx
     numpy
     pydot
     scipy
     treelib
-  ];
-
-  propagatedBuildInputs = [
-    cuda_cudart
-    cuda_nvcc
   ];
 
   doCheck = false;
