@@ -136,11 +136,13 @@ let
           };
         }
         // genAttrs [
+          "bitsandbytes"
           "cuda-bindings"
           "cuda-python"
           "cupy"
           "cutlass"
           "flash-attn"
+          "mmdet"
           "modelopt"
           "modelopt-core"
           "nvcomp"

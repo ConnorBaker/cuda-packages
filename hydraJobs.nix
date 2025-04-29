@@ -201,6 +201,7 @@ let
     let
       inherit (python3Packages.pkgs.releaseTools) aggregate;
       core = filter (drv: drv.meta.available && !drv.meta.broken) [
+        python3Packages.bitsandbytes
         python3Packages.causal-conv1d
         python3Packages.cuda-bindings
         python3Packages.cuda-python
