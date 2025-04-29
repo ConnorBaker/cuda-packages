@@ -36,17 +36,28 @@ buildPythonPackage {
     chmod +w dist
   '';
 
-  nativeBuildInputs = [ cuda_nvcc ]; # Needed for pythonImportsCheckPhase
-
   dependencies = [
-    cuda_cudart
-    cuda_nvcc
     cuda-python
     networkx
     numpy
     pydot
     scipy
     treelib
+  ];
+
+  # When building intermediate Python packages, we use `dependencies`, which maps to propagatedBuildInputs.
+  # However, when we run python packages, we do so on the build/host platform.
+  propagatedNativeBuildInputs = [
+    # no cuda_cudart
+    cuda_nvcc # cutlass in buildInputs -> cuda_nvcc in be nativeBuildInputs
+  ];
+  propagatedBuildInputs = [
+    cuda_cudart # cutlass in buildInputs -> cuda_cudart in buildInputs
+    cuda_nvcc # cutlass in nativeBuildInputs -> cuda_nvcc in nativeBuildInputs
+  ];
+  depsTargetTargetPropagated = [
+    cuda_cudart # cutlass in nativeBuildInputs -> cuda_cudart in buildInputs
+    # no cuda_nvcc
   ];
 
   doCheck = false;
