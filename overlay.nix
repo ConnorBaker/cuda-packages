@@ -136,10 +136,14 @@ let
           };
         }
         // genAttrs [
+          "cuda-bindings"
+          "cuda-python"
           "cupy"
+          "cutlass"
           "modelopt"
           "modelopt-core"
           "nvcomp"
+          "pyclibrary"
           "pycuda"
           "tensorrt"
           "warp"

@@ -1,6 +1,7 @@
 # shellcheck shell=bash
 
-# markForCudaToolkitRootHook should only run when in nativeBuildInputs or the like.
+# markForCudaToolkitRootHook should only run when in nativeBuildInputs or the like, as it is meant to be included,
+# but not propagated by, CUDA packages.
 if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne -1 ]]; then
   nixInfoLog "skipping sourcing markForCudaToolkitRootHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
   return 0

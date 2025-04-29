@@ -1,15 +1,9 @@
 # shellcheck shell=bash
 
-# cudaHook should only run when in nativeBuildInputs or the like.
-if [[ -n ${strictDeps:-} && ${hostOffset:-0} -ne -1 ]]; then
-  nixInfoLog "skipping sourcing cudaHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
-  return 0
-elif ((${cudaHookSourced:-0})); then
-  nixInfoLog "skipping sourcing cudaHook.bash (cudaHookSourced=${cudaHookSourced:-0})"
-  return 0
-fi
+# cudaHook is somewhat unique in that it can run from any offset -- it may be included by way of cuda_nvcc,
+# which is frequently in nativeBuildInputs, or it may be included by way of runtime library, which is in buildInputs.
+# As such, we don't prevent it from running in multiple offsets.
 nixLog "sourcing cudaHook.bash (hostOffset=${hostOffset:-0}) (targetOffset=${targetOffset:-0})"
-declare -gir cudaHookSourced=1
 
 # TODO(@connorbaker): Guard against being sourced multiple times.
 declare -Ag cudaHostPathsSeen
@@ -23,12 +17,10 @@ declare -Ag cudaHostPathsSeen
 appendToVar prePhases cudaHookRegistration
 nixLog "added cudaHookRegistration to prePhases"
 
-# We use the `targetOffset` to choose the right env hook to accumulate the right
-# sort of deps (those with that offset).
 # NOTE: addEnvHooks must occur before the prePhases are run, so we must
 # register the hook here.
-addEnvHooks "${targetOffset:-0}" cudaSetupCudaToolkitRoot
-nixLog "added cudaSetupCudaToolkitRoot to envHooks for targetOffset=${targetOffset:-0}"
+addEnvHooks "${hostOffset:-0}" cudaSetupCudaToolkitRoot
+nixLog "added cudaSetupCudaToolkitRoot to envHooks for hostOffset=${hostOffset:-0}"
 
 cudaHookRegistration() {
   # TODO: We don't use structuredAttrs/arrays universally, so don't worry about idempotency.
@@ -45,7 +37,7 @@ cudaHookRegistration() {
 }
 
 cudaSetupCudaToolkitRoot() {
-  if [[ -f "$1/nix-support/include-in-cudatoolkit-root" ]]; then
+  if [[ -f "$1/nix-support/include-in-cudatoolkit-root" ]] && ((${cudaHostPathsSeen[$1]-0} == 0)); then
     cudaHostPathsSeen[$1]=1
     addToSearchPathWithCustomDelimiter ";" CUDAToolkit_ROOT "$1"
     nixLog "added $1 to CUDAToolkit_ROOT"

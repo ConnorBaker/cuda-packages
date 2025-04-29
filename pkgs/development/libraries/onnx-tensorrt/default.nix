@@ -123,6 +123,8 @@ stdenv.mkDerivation (finalAttrs: {
 
   postInstall =
     # Install the header files to the include directory.
+    # NOTE: This moves us to sourceRoot, which is the directory containing dists, so the python hook will see it and
+    # install it.
     ''
       cd "$NIX_BUILD_TOP/$sourceRoot"
       nixLog "installing header files"

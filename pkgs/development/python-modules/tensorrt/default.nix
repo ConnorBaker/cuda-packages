@@ -153,7 +153,7 @@ let
       nixLog "building Python wheel from $PWD"
       pyproject-build \
         --no-isolation \
-        --outdir "$NIX_BUILD_TOP/$sourceRoot/$cmakeBuildDir/dist/" \
+        --outdir "$NIX_BUILD_TOP/$sourceRoot/''${cmakeBuildDir:?}/dist/" \
         --wheel
       popd >/dev/null
     '';

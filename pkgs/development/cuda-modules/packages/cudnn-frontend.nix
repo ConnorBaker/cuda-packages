@@ -39,6 +39,7 @@ stdenv.mkDerivation (finalAttrs: {
   src = fetchFromGitHub {
     owner = "ConnorBaker";
     repo = "cudnn-frontend";
+    # NOTE: This rev includes https://github.com/NVIDIA/cudnn-frontend/pull/125.
     rev = "f02c52023d0242079e22d7073dee0aeb1970e3f9";
     hash = "sha256-Zdx07ZVD10o2E0wXz6ldRns1UOKBI1un+tr9fkXKfEs=";
   };

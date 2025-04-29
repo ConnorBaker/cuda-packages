@@ -25,10 +25,8 @@ buildPythonPackage {
 
   format = "wheel";
 
-  nativeBuildInputs =
-    [ pytestCheckHook ]
-    # included to fail on missing dependencies
-    ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
+  # included to fail on missing dependencies
+  nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
 
   unpackPhase = ''
     cp -rv "$src" dist
@@ -43,6 +41,8 @@ buildPythonPackage {
   dependencies = [ onnx.passthru.pyProtobuf ];
 
   doCheck = true;
+
+  nativeCheckInputs = [ pytestCheckHook ];
 
   checkInputs = [
     google-re2

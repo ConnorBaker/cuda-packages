@@ -41,7 +41,7 @@ let
         else if isAttrs testOrTestSuite then
           concatMap go (attrValues testOrTestSuite)
         else
-          builtins.throw "Expected passthru.tests to contain derivations or attribute sets of derivations";
+          [ ];
     in
     pkg: go (pkg.passthru.tests or { });
 
@@ -146,6 +146,14 @@ let
         };
         constituents = map hydraJob core;
       };
+      # core-tests = aggregate {
+      #   name = "${namePrefix}-core-tests";
+      #   meta = {
+      #     description = "Test suites for non-members of the CUDA package set which are required to build";
+      #     maintainers = lib.teams.cuda.members;
+      #   };
+      #   constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) core;
+      # };
       extras = aggregate {
         name = "${namePrefix}-extras";
         meta = {
@@ -153,8 +161,19 @@ let
           maintainers = lib.teams.cuda.members;
         };
         # TODO(@connorbaker): Temporarily disabled.
-        constituents = map hydraJob [ ];
+        # constituents = map hydraJob extras;
+        constituents = [ ];
       };
+      # extras-tests = aggregate {
+      #   name = "${namePrefix}-extras-tests";
+      #   meta = {
+      #     description = "Test suites for non-members of the CUDA package set which are not required to build";
+      #     maintainers = lib.teams.cuda.members;
+      #   };
+      #   # TODO(@connorbaker): Temporarily disabled.
+      #   # constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) extras;
+      #   constituents = [ ];
+      # };
     }
     # Since the CUDA package sets *depend on* the setup hooks (and not the other way around), it doesn't make sense
     # to build them for arbitrary prefixes (including variants of `pkgs` with different default CUDA package sets).
@@ -186,6 +205,10 @@ let
         [
           python3Packages.causal-conv1d
           python3Packages.cupy
+          # CUTLASS and related packages are disabled for now because not fully set up for 12.2
+          # python3Packages.cutlass
+          # python3Packages.cuda-bindings
+          # python3Packages.cuda-python
           python3Packages.faiss
           python3Packages.mamba-ssm
           python3Packages.numba
@@ -193,6 +216,7 @@ let
           python3Packages.onnx
           python3Packages.onnx-tensorrt
           python3Packages.onnxruntime
+          python3Packages.pyclibrary
           python3Packages.pycuda
           python3Packages.pynvml
           python3Packages.pytorch-metric-learning
@@ -242,6 +266,14 @@ let
         };
         constituents = map hydraJob core;
       };
+      # core-tests = aggregate {
+      #   name = "${namePrefix}-core-tests";
+      #   meta = {
+      #     description = "Test suites for non-members of the CUDA package set which are required to build";
+      #     maintainers = lib.teams.cuda.members;
+      #   };
+      #   constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) core;
+      # };
       extras = aggregate {
         name = "${namePrefix}-extras";
         meta = {
@@ -249,8 +281,19 @@ let
           maintainers = lib.teams.cuda.members;
         };
         # TODO(@connorbaker): Temporarily disabled.
-        constituents = map hydraJob [ ];
+        # constituents = map hydraJob extras;
+        constituents = [ ];
       };
+      # extras-tests = aggregate {
+      #   name = "${namePrefix}-extras-tests";
+      #   meta = {
+      #     description = "Test suites for non-members of the CUDA package set which are not required to build";
+      #     maintainers = lib.teams.cuda.members;
+      #   };
+      #   # TODO(@connorbaker): Temporarily disabled.
+      #   # constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) extras;
+      #   constituents = [ ];
+      # };
     };
 
   mkCudaPackagesJobs =
@@ -284,6 +327,7 @@ let
 
       core =
         [
+          cudaPackages.cuda-samples
           cudaPackages.cudatoolkit
           cudaPackages.cudnn-frontend
           cudaPackages.cutlass
@@ -325,6 +369,14 @@ let
         };
         constituents = map hydraJob redists;
       };
+      redists-tests = aggregate {
+        name = "${namePrefix}-redists-tests";
+        meta = {
+          description = "Test suites for CUDA packages redistributables which are required to build";
+          maintainers = lib.teams.cuda.members;
+        };
+        constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) redists;
+      };
       core = aggregate {
         name = "${namePrefix}-core";
         meta = {
@@ -333,6 +385,14 @@ let
         };
         constituents = map hydraJob core;
       };
+      core-tests = aggregate {
+        name = "${namePrefix}-core-tests";
+        meta = {
+          description = "Test suites for members of the CUDA package set, excluding redistributables, which are required to build";
+          maintainers = lib.teams.cuda.members;
+        };
+        constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) core;
+      };
       extras = aggregate {
         name = "${namePrefix}-extras";
         meta = {
@@ -340,6 +400,14 @@ let
           maintainers = lib.teams.cuda.members;
         };
         constituents = map hydraJob extras;
+      };
+      extras-tests = aggregate {
+        name = "${namePrefix}-extras-tests";
+        meta = {
+          description = "Test suites for members of the CUDA package set which are not required to build";
+          maintainers = lib.teams.cuda.members;
+        };
+        constituents = concatMap (pkg: map hydraJob (getPassthruTests pkg)) extras;
       };
       # NOTE: The `all` job is helpful for keeping an eye on total package set closure size. Additionally, having a
       # single closure for the entire package set lets us more easily debug and troubleshoot mishaps where members of

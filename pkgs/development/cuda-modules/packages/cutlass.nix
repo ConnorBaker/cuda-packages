@@ -13,9 +13,10 @@
   libcublas,
   libcurand,
   ninja,
-  python3,
   stdenv,
+  python3Packages,
   # Options
+  pythonSupport ? true,
   enableF16C ? false,
   enableTools ? false,
   # passthru.updateScript
@@ -24,10 +25,10 @@
 let
   inherit (lib) licenses maintainers teams;
   inherit (lib.asserts) assertMsg;
+  inherit (lib.attrsets) getBin;
   inherit (lib.lists) optionals;
   inherit (lib.strings) cmakeBool cmakeFeature optionalString;
 in
-# TODO: This can also be packaged for Python!
 # TODO: Tests.
 assert assertMsg (!enableTools) "enableTools is not yet implemented";
 stdenv.mkDerivation (finalAttrs: {
@@ -37,25 +38,34 @@ stdenv.mkDerivation (finalAttrs: {
   # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
   name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "cutlass";
-  version = "3.9-unstable-2025-04-03";
+  version = "3.9.0";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "cutlass";
-    rev = "df8a550d3917b0e97f416b2ed8c2d786f7f686a3";
-    hash = "sha256-d4czDoEv0Focf1bJHOVGX4BDS/h5O7RPoM/RrujhgFQ=";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-Q6y/Z6vahASeSsfxvZDwbMFHGx8CnsF90IlveeVLO9g=";
   };
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a
   # superset of the `out` (`bin`) or `dev` outputs (whih is what the multiple-outputs setup hook does by default).
-  outputs = [ "out" ];
+  outputs = [ "out" ] ++ optionals pythonSupport [ "dist" ];
 
-  nativeBuildInputs = [
-    cuda_nvcc
-    cmake
-    ninja
-    python3
-  ];
+  nativeBuildInputs =
+    [
+      cuda_nvcc
+      cmake
+      ninja
+      python3Packages.python # Python is always required
+    ]
+    ++ optionals pythonSupport (
+      with python3Packages;
+      [
+        build
+        pythonOutputDistHook
+        setuptools
+      ]
+    );
 
   postPatch =
     # Prepend some commands to the CUDA.cmake file so it can find the CUDA libraries using CMake's FindCUDAToolkit
@@ -74,6 +84,48 @@ stdenv.mkDerivation (finalAttrs: {
       endforeach()
       EOF
       cat ./_CUDA_Prepend.cmake ./_CUDA_Append.cmake > ./CUDA.cmake
+    ''
+    # Patch cutlass to use the provided NVCC.
+    # '_CUDA_INSTALL_PATH = os.getenv("CUDA_INSTALL_PATH", _cuda_install_path_from_nvcc())' \
+    # '_CUDA_INSTALL_PATH = "${getBin cuda_nvcc}"'
+    + ''
+      nixLog "patching python bindings to make cuda_install_path fail"
+      substituteInPlace ./python/cutlass/__init__.py \
+        --replace-fail \
+          'def cuda_install_path():' \
+      '
+      def cuda_install_path():
+          raise RuntimeException("not supported with Nixpkgs CUDA packaging")
+      '
+    ''
+    # Patch the python bindings to use environment variables set by Nixpkgs.
+    # https://github.com/NVIDIA/cutlass/blob/e94e888df3551224738bfa505787b515eae8352f/python/cutlass/backend/compiler.py#L80
+    # https://github.com/NVIDIA/cutlass/blob/e94e888df3551224738bfa505787b515eae8352f/python/cutlass/backend/compiler.py#L81
+    # https://github.com/NVIDIA/cutlass/blob/e94e888df3551224738bfa505787b515eae8352f/python/cutlass/backend/compiler.py#L317
+    # https://github.com/NVIDIA/cutlass/blob/e94e888df3551224738bfa505787b515eae8352f/python/cutlass/backend/compiler.py#L319
+    # https://github.com/NVIDIA/cutlass/blob/e94e888df3551224738bfa505787b515eae8352f/python/cutlass/backend/compiler.py#L344
+    # https://github.com/NVIDIA/cutlass/blob/e94e888df3551224738bfa505787b515eae8352f/python/cutlass/backend/compiler.py#L360
+    + ''
+      nixLog "patching python bindings to use environment variables"
+      substituteInPlace ./python/cutlass/backend/compiler.py \
+        --replace-fail \
+          'self.include_paths = include_paths' \
+          'self.include_paths = include_paths + [root + "/include" for root in os.getenv("CUDAToolkit_ROOT").split(";")]' \
+        --replace-fail \
+          'self.flags = flags' \
+          'self.flags = flags + ["-L" + root + "/lib" for root in os.getenv("CUDAToolkit_ROOT").split(";")]' \
+        --replace-fail \
+          "\''${cuda_install_path}/bin/nvcc" \
+          '${getBin cuda_nvcc}/bin/nvcc' \
+        --replace-fail \
+          '"cuda_install_path": cuda_install_path(),' \
+          "" \
+        --replace-fail \
+          'f"{cuda_install_path()}/bin/nvcc"' \
+          '"${getBin cuda_nvcc}/bin/nvcc"' \
+        --replace-fail \
+          'cuda_install_path() + "/include",' \
+          ""
     '';
 
   enableParallelBuilding = true;
@@ -112,11 +164,17 @@ stdenv.mkDerivation (finalAttrs: {
     # NOTE: Good explanation of unity builds:
     #       https://www.methodpark.de/blog/how-to-speed-up-clang-tidy-with-unity-builds.
     (cmakeBool "CUTLASS_UNITY_BUILD_ENABLED" false)
-
-    # NOTE: Can change the size of the executables
-    (cmakeBool "CUTLASS_NVCC_EMBED_CUBIN" true)
-    (cmakeBool "CUTLASS_NVCC_EMBED_PTX" true)
   ];
+
+  postBuild = lib.optionalString pythonSupport ''
+    pushd "$NIX_BUILD_TOP/$sourceRoot"
+    nixLog "building Python wheel"
+    pyproject-build \
+      --no-isolation \
+      --outdir "$NIX_BUILD_TOP/$sourceRoot/''${cmakeBuildDir:?}/dist/" \
+      --wheel
+    popd >/dev/null
+  '';
 
   doCheck = false;
 
@@ -124,6 +182,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   # NOTE: Because the test cases immediately create and try to run the binaries, we don't have an opportunity
   # to patch them with autoAddDriverRunpath. To get around this, we add the driver runpath to the environment.
+  # TODO: This would break Jetson when using cuda_compat, as it must come first.
   preCheck = optionalString finalAttrs.doCheck ''
     export LD_LIBRARY_PATH="$(readlink -mnv "${addDriverRunpath.driverLink}/lib")"
   '';
