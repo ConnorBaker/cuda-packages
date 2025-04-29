@@ -225,6 +225,7 @@ let
         python3Packages.schedulefree
         python3Packages.tensorrt
         python3Packages.torch
+        python3Packages.torch-tensorrt
         python3Packages.torchaudio
         python3Packages.torchvision
         python3Packages.transformer-engine

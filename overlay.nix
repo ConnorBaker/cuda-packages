@@ -149,6 +149,7 @@ let
           "pyglove"
           "schedulefree"
           "tensorrt"
+          "torch-tensorrt"
           "transformer-engine"
           "warp"
         ] (name: finalPythonPackages.callPackage (./pkgs/development/python-modules + "/${name}") { })
