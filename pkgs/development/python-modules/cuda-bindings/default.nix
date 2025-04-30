@@ -16,6 +16,7 @@
 }:
 let
   inherit (cudaPackages)
+    cudaOlder
     cuda_cudart
     cuda_profiler_api
     cuda_nvrtc
@@ -93,7 +94,6 @@ let
     preConfigure =
       let
         parallelEnvName = {
-          "12.2" = "PARALLEL_LEVEL";
           "12.6" = "PARALLEL_LEVEL";
           "12.8" = "CUDA_PYTHON_PARALLEL_LEVEL";
         };
@@ -164,8 +164,7 @@ let
     meta = {
       description = "Low-level CUDA interfaces";
       homepage = "https://nvidia.github.io/cuda-python/cuda-bindings/latest/overview.html";
-      # TODO: Does not exist in the 12.2 version.
-      inherit (cuda-python.meta) broken;
+      broken = cuda-python.meta.broken || cudaOlder "12.6";
       license = {
         fullName = "NVIDIA Software License Agreement";
         shortName = "NVIDIA SLA";

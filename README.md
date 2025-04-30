@@ -26,20 +26,15 @@ Top-level:
 ## Todo
 
 - Packages with `stubs` outputs should have a hook for the stub output which replaces RPATH entries pointing to the stub with driverLink or cuda_compat, where appropriate
-- Hook which runs `nvprune` on the outputs of redistributable packages to slim them down for requested capabilities -- could be put solely in `redist-builder`
 - Discovered in the process of examining `saxpy`'s build, using `declare NIX_DEBUG=4` and `export NIX_DEBUG=4` yield different logs and results!
   - Only `export` shows the before and after flags used with toolchain invocations -- `declare` does not!
   - Only `declare` yields an output with the same RUNPATH as the original -- with `export`, entries are missing!
-- docs/tests for `arrayUtilities`
-- docs for `deduplicateRunpathEntriesHook`
-- docs/tests for CUDA hooks using `arrayUtilities`
 - think about creating `noRunpathAmbiguityHook` -- a runpath is considered "ambiguous" if it has multiple paths to the same library name
   - This is a sign that the package is linking against the same library multiple times (different versions?), which might be a source of undefined behavior depending on the order paths are resolved
 - `cuda_compat` should only be used when the host driver is not equal to the version of the CUDA package set currently being used.
   - Would detecting that would be impure?
 - Update `modules/cuda-capability-to-info.nix` for Jetson devices (i.e., Xavier and Orin on JetPack 5 max out at 12.2 with `cuda_compat`)
   - This would require knowing what the host driver version is, which is impure
-- A bunch of stuff (including docs)
 - Figure out why separable compilation isn't working.
 - Additional packages:
   - https://developer.download.nvidia.com/compute/redist/nvshmem/

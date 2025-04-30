@@ -56,7 +56,6 @@ let
       inherit (pkgs.releaseTools) aggregate;
       setup-hooks = [
         pkgs.arrayUtilities
-        # pkgs.deduplicateRunpathEntriesHook
       ];
       core =
         [

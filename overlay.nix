@@ -14,16 +14,9 @@ let
   extraAutoCalledPackages =
     final: prev: import (prev.path + "/pkgs/top-level/by-name-overlay.nix") ./pkgs/by-name final prev;
 
-  extraAutoCalledPackagesTests = final: prev: {
-    tests = prev.tests // {
-      deduplicateRunpathEntriesHook = final.deduplicateRunpathEntriesHook.passthru.tests;
-    };
-  };
-
   extraTesterPackages = final: prev: {
     testers = prev.testers // {
       makeMainWithRunpath = final.callPackage ./pkgs/build-support/testers/makeMainWithRunpath { };
-      testRunpath = final.callPackage ./pkgs/build-support/testers/testRunpath { };
     };
 
     tests = prev.tests // {
@@ -31,7 +24,6 @@ let
         makeMainWithRunpath =
           final.callPackages ./pkgs/build-support/testers/makeMainWithRunpath/tests.nix
             { };
-        testRunpath = final.callPackages ./pkgs/build-support/testers/testRunpath/tests.nix { };
       };
     };
   };
@@ -243,7 +235,6 @@ let
 in
 composeManyExtensions [
   extraAutoCalledPackages
-  extraAutoCalledPackagesTests
   extraTesterPackages
   extraPythonPackages
   (import ./pkgs/top-level/cuda-packages.nix)

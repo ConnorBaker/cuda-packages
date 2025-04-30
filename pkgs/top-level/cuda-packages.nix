@@ -31,32 +31,30 @@ let
       ) final.cudaLib.data.allSortedCudaCapabilities;
       hasJetsonCudaCapability =
         final.lib.intersectLists jetsonCudaCapabilities (final.config.cudaCapabilities or [ ]) != [ ];
-    in
-    cudaMajorMinorPatchVersion:
-    final.lib.mapAttrs
-      (
+      importManifest =
         name: version:
         final.lib.importJSON (
           final.cudaLib.data.cudaPackagesPath + "/manifests/${name}/redistrib_${version}.json"
-        )
-      )
-      {
-        cublasmp = "0.4.0";
-        cuda = cudaMajorMinorPatchVersion;
-        cudnn = "9.8.0";
-        cudss = "0.5.0";
-        cuquantum = "25.03.0";
-        cusolvermp = "0.6.0";
-        cusparselt =
-          if final.lib.versionOlder cudaMajorMinorPatchVersion "12.8.0" then "0.6.3" else "0.7.1";
-        cutensor = "2.2.0";
-        nppplus = "0.10.0";
-        nvcomp = "4.2.0.11";
-        nvjpeg2000 = "0.8.1";
-        nvpl = "25.1.1";
-        nvtiff = "0.5.0";
-        tensorrt = if hasJetsonCudaCapability then "10.7.0" else "10.9.0";
-      };
+        );
+    in
+    cudaMajorMinorPatchVersion:
+    final.lib.mapAttrs importManifest {
+      cublasmp = "0.4.0";
+      cuda = cudaMajorMinorPatchVersion;
+      cudnn = "9.8.0";
+      cudss = "0.5.0";
+      cuquantum = "25.03.0";
+      cusolvermp = "0.6.0";
+      cusparselt =
+        if final.lib.versionOlder cudaMajorMinorPatchVersion "12.8.0" then "0.6.3" else "0.7.1";
+      cutensor = "2.2.0";
+      nppplus = "0.10.0";
+      nvcomp = "4.2.0.11";
+      nvjpeg2000 = "0.8.1";
+      nvpl = "25.1.1";
+      nvtiff = "0.5.0";
+      tensorrt = if hasJetsonCudaCapability then "10.7.0" else "10.9.0";
+    };
 in
 {
   cudaLib = import ../development/cuda-modules/lib { inherit (final) lib; };
