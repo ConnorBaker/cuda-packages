@@ -148,6 +148,7 @@ let
         }
         // genAttrs [
           "bitsandbytes"
+          "codetr"
           "cuda-bindings"
           "cuda-python"
           "cupy"

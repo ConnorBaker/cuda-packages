@@ -203,6 +203,7 @@ let
       core = filter (drv: drv.meta.available && !drv.meta.broken) [
         python3Packages.bitsandbytes
         python3Packages.causal-conv1d
+        python3Packages.codetr
         python3Packages.cuda-bindings
         python3Packages.cuda-python
         python3Packages.cupy
