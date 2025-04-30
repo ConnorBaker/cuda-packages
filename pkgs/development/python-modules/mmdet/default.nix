@@ -1,26 +1,18 @@
 {
   buildPythonPackage,
-  cffi,
-  cudaLib,
-  # cudaPackages,
-  buildPackages,
   fetchFromGitHub,
-  future,
   lib,
-  numpy,
-  ninja,
-  pybind11,
-  mmcv,
-  pythonOlder,
-  setuptools,
-  tensorrt,
-  torch,
-  typing-extensions,
   matplotlib,
+  mmcv,
+  ninja,
+  pkgsBuildHost,
   pycocotools,
+  pythonOlder,
   scipy,
+  setuptools,
   shapely,
   terminaltables,
+  torch,
   tqdm,
 }:
 buildPythonPackage {
@@ -42,7 +34,7 @@ buildPythonPackage {
 
   env = {
     FORCE_CUDA = "1";
-    CUDA_HOME = lib.getBin buildPackages.cudaPackages.cuda_nvcc;
+    CUDA_HOME = lib.getBin pkgsBuildHost.cudaPackages.cuda_nvcc;
   };
 
   build-system = [
@@ -71,7 +63,6 @@ buildPythonPackage {
 
   doCheck = false;
 
-  # TODO: Requires GPU.
   pythonImportsCheck = [ "mmdet" ];
 
   # TODO: Tests to evaluate whether the package works.
