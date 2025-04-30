@@ -1,7 +1,5 @@
 final: _:
 let
-  cudaPackagesRoot = ../development/cuda-modules;
-
   dontRecurseForDerivationsOrEvaluate =
     attrs:
     attrs
@@ -12,7 +10,11 @@ let
       __attrsFailEvaluation = true;
     };
 
-  fixups = import "${cudaPackagesRoot}/fixups" { inherit (final) lib; };
+  # NOTE: We avoid path interpolation because it would copy the cudaPackagesPath to a new store output:
+  # https://nix.dev/manual/nix/2.28/language/string-interpolation#interpolated-expression
+  # Instead, concatenate the path with the string.
+
+  fixups = import (final.cudaLib.data.cudaPackagesPath + "/fixups") { inherit (final) lib; };
 
   # TODO: Is it possible to use eval-time fetchers to retrieve the manifests and import them?
   # How does flake-compat get away with doing that without it being considered IFD?
@@ -34,7 +36,9 @@ let
     final.lib.mapAttrs
       (
         name: version:
-        final.lib.importJSON "${cudaPackagesRoot}/manifests/${name}/redistrib_${version}.json"
+        final.lib.importJSON (
+          final.cudaLib.data.cudaPackagesPath + "/manifests/${name}/redistrib_${version}.json"
+        )
       )
       {
         cublasmp = "0.4.0";
@@ -55,23 +59,23 @@ let
       };
 in
 {
-  cudaLib = import "${cudaPackagesRoot}/lib" { inherit (final) lib; };
+  cudaLib = import ../development/cuda-modules/lib { inherit (final) lib; };
 
   # For adding packages in an ad-hoc manner.
   cudaPackagesExtensions = [ ];
 
   # CUDA package sets specify manifests and fixups.
-  cudaPackages_12_2 = final.callPackage cudaPackagesRoot {
+  cudaPackages_12_2 = final.callPackage final.cudaLib.data.cudaPackagesPath {
     inherit fixups;
     manifests = mkManifests "12.2.2";
   };
 
-  cudaPackages_12_6 = final.callPackage cudaPackagesRoot {
+  cudaPackages_12_6 = final.callPackage final.cudaLib.data.cudaPackagesPath {
     inherit fixups;
     manifests = mkManifests "12.6.3";
   };
 
-  cudaPackages_12_8 = final.callPackage cudaPackagesRoot {
+  cudaPackages_12_8 = final.callPackage final.cudaLib.data.cudaPackagesPath {
     inherit fixups;
     manifests = mkManifests "12.8.1";
   };

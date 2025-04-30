@@ -1,6 +1,17 @@
 { cudaLib, lib }:
 {
   /**
+    The path to the CUDA packages root directory, for use with `callPackage` to create new package sets.
+
+    # Type
+
+    ```
+    cudaPackagesPath :: Path
+    ```
+  */
+  cudaPackagesPath = ./..;
+
+  /**
     A list of redistributable systems to use in creation of the `redistSystem` option type.
 
     # Type
