@@ -2,7 +2,8 @@
   buildPythonPackage,
   cffi,
   cudaLib,
-  cudaPackages,
+  # cudaPackages,
+  buildPackages,
   fetchFromGitHub,
   future,
   lib,
@@ -41,6 +42,7 @@ buildPythonPackage {
 
   env = {
     FORCE_CUDA = "1";
+    CUDA_HOME = lib.getBin buildPackages.cudaPackages.cuda_nvcc;
   };
 
   build-system = [
@@ -48,61 +50,29 @@ buildPythonPackage {
     setuptools
   ];
 
-  # postPatch = ''
-  #   nixLog "patching $PWD/setup.py"
-  #   substituteInPlace "$PWD/setup.py" \
-  #     --replace-fail \
-  #     'def get_root_dir() -> Path:' \
-  #   '
-  #   def get_root_dir() -> Path:
-  #       return Path(".")
-  #   '
-
-  #   nixLog "patching $PWD/dev_dep_versions.yml"
-  #   substituteInPlace "$PWD/dev_dep_versions.yml" \
-  #     --replace-fail \
-  #       '__cuda_version__: "12.4"' \
-  #       '__cuda_version__: "${cudaPackages.cudaMajorMinorVersion}"' \
-  #     --replace-fail \
-  #       '__tensorrt_version__: "10.3.0"' \
-  #       '__tensorrt_version__: "${cudaLib.utils.majorMinorPatch tensorrt.version}"'
-
-  #   nixLog "patching $PWD/pyproject.toml"
-  #   substituteInPlace "$PWD/pyproject.toml" \
-  #     --replace-fail \
-  #       "tensorrt-cu12==10.3.0" \
-  #       "tensorrt" \
-  #     --replace-fail \
-  #       '"tensorrt-cu12-bindings==10.3.0",' \
-  #       "" \
-  #     --replace-fail \
-  #       '"tensorrt-cu12-libs==10.3.0",' \
-  #       "" \
-  #     --replace-fail \
-  #       "pybind11==2.6.2" \
-  #       "pybind11"
-  # '';
+  postPatch = ''
+    nixLog "patching $PWD/mmdet/__init__.py to ease version constraint on mmcv"
+    substituteInPlace "$PWD/mmdet/__init__.py" \
+      --replace-fail \
+        "mmcv_maximum_version = '2.2.0'" \
+        "mmcv_maximum_version = '2.9.9'"
+  '';
 
   dependencies = [
-    # cffi
-    # future
-    # numpy
-    # tensorrt
-    torch
-    # typing-extensions
-    mmcv
     matplotlib
+    mmcv
     pycocotools
     scipy
     shapely
     terminaltables
+    torch
     tqdm
   ];
 
   doCheck = false;
 
   # TODO: Requires GPU.
-  # pythonImportsCheck = [ "mmdet" ];
+  pythonImportsCheck = [ "mmdet" ];
 
   # TODO: Tests to evaluate whether the package works.
 

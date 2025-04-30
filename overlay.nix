@@ -69,6 +69,17 @@ let
             };
           });
 
+          # Fails due to distutils missing.
+          # NOTE: Why does it take overridePythonAttrs to make this work?
+          mmengine = prevPythonPackages.mmengine.overridePythonAttrs { doCheck = false; };
+
+          mmcv = prevPythonPackages.mmcv.overridePythonAttrs (prevAttrs: {
+            # CUDA_HOME is only expected to contain a working nvcc in /bin.
+            env.CUDA_HOME = final.lib.optionalString finalPythonPackages.torch.cudaSupport "${final.lib.getBin final.cudaPackages.cuda_nvcc}";
+            # Fails due to distutils missing.
+            disabledTests = prevAttrs.disabledTests ++ [ "test_env" ];
+          });
+
           torch =
             # Could not find CUPTI library, using CPU-only Kineto build
             # Could NOT find NCCL (missing: NCCL_INCLUDE_DIR)
@@ -159,8 +170,6 @@ let
     ];
   };
 
-  cudaPackages = import ./pkgs/top-level/cuda-packages.nix;
-
   extraPackages =
     final: prev:
     let
@@ -236,6 +245,6 @@ composeManyExtensions [
   extraAutoCalledPackagesTests
   extraTesterPackages
   extraPythonPackages
-  cudaPackages
+  (import ./pkgs/top-level/cuda-packages.nix)
   extraPackages
 ] final' prev'
