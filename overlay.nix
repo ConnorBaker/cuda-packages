@@ -150,6 +150,7 @@ let
           "modelopt"
           "modelopt-core"
           "nvcomp"
+          "nvdlfw-inspect"
           "pyclibrary"
           "pycuda"
           "pyglove"
