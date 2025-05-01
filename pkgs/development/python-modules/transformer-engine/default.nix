@@ -7,6 +7,8 @@
   importlib-metadata,
   lib,
   ninja,
+  nvdlfw-inspect,
+  pkgsBuildHost,
   pydantic,
   setuptools,
   torch,
@@ -32,15 +34,15 @@ buildPythonPackage {
   __structuredAttrs = true;
 
   pname = "transformer_engine";
-  version = "2.1-unstable-2025-04-08";
+  version = "2.2-unstable-2025-05-01";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "TransformerEngine";
-    rev = "9d4e11eaa508383e35b510dc338e58b09c30be73";
+    rev = "8030a448093d1e2ef0717e40e35d86939ea55cff";
     fetchSubmodules = true;
     # TODO: Use our cudnn-frontend and googletest
-    hash = "sha256-ELUM13VyZ3H9bFQgnM6+QvS8pJfuUkBsP1fAjxU3s5c=";
+    hash = "sha256-bKIXAld24G/nyUn1TXUts6Dzw0KXTAy4+HuYAsI5/aU=";
   };
 
   pyproject = true;
@@ -50,7 +52,8 @@ buildPythonPackage {
   postPatch =
     # Patch out the wonky CUDNN and NVRTC loading code by replacing the docstrings.
     ''
-      substituteInPlace transformer_engine/common/__init__.py \
+      nixLog "patching out dlopen calls to CUDNN and NVRTC"
+      substituteInPlace "$PWD/transformer_engine/common/__init__.py" \
         --replace-fail \
           '"""Load CUDNN shared library."""' \
           'return ctypes.CDLL("${getLib cudnn}/lib/libcudnn.so", mode=ctypes.RTLD_GLOBAL)' \
@@ -58,32 +61,46 @@ buildPythonPackage {
           '"""Load NVRTC shared library."""' \
           'return ctypes.CDLL("${getLib cuda_nvrtc}/lib/libnvrtc.so", mode=ctypes.RTLD_GLOBAL)'
     ''
-    # We don't have residual packages to remove:
-    # https://github.com/NVIDIA/TransformerEngine/blob/838345eba4fdd2a169dd9e087d39c30a360e684a/setup.py#L146-L148
-    + ''
-      substituteInPlace setup.py \
-        --replace-fail \
-          'uninstall_te_wheel_packages()' \
-          ""
-    ''
     # Replace the default /usr/local/cuda path with the one for cuda_cudart headers.
     # https://github.com/NVIDIA/TransformerEngine/blob/main/transformer_engine/common/util/cuda_runtime.cpp#L120-L124
     + ''
-      substituteInPlace transformer_engine/common/util/cuda_runtime.cpp \
+      nixLog "patching out cuda_runtime.cpp to use Nixpkgs CUDA packaging"
+      substituteInPlace "$PWD/transformer_engine/common/util/cuda_runtime.cpp" \
         --replace-fail \
           '{"", "/usr/local/cuda"}' \
           '{"", "${getOutput "include" cuda_cudart}/include"}'
     ''
     # Allow newer versions of flash-attention to be used.
     + ''
-      substituteInPlace transformer_engine/pytorch/dot_product_attention/utils.py \
+      nixLog "patching out flash-attention version check"
+      substituteInPlace "$PWD/transformer_engine/pytorch/attention/dot_product_attention/utils.py" \
         --replace-fail \
           'max_version = PkgVersion("2.7.4.post1")' \
           'max_version = PkgVersion("2.99.99")'
+    ''
+    # Patch the setup script to recognize our Python packages
+    + ''
+      nixLog "patching setup.py to use Nixpkgs Python packaging"
+      local -a packageNames=(
+        nvidia-cuda-runtime-cu12
+        nvidia-cublas-cu12
+        nvidia-cudnn-cu12
+        nvidia-cuda-cccl-cu12
+        nvidia-cuda-nvcc-cu12
+        nvidia-nvtx-cu12
+        nvidia-cuda-nvrtc-cu12
+      )
+      for packageName in "''${packageNames[@]}"; do
+        substituteInPlace "$PWD/setup.py" \
+          --replace-fail \
+            "\"$packageName\"," \
+            ""
+      done
+      unset -v packageNames
     '';
 
   preConfigure = ''
-    export CUDA_HOME="${getBin cuda_nvcc}"
+    export CUDA_HOME="${getBin pkgsBuildHost.cudaPackages.cuda_nvcc}"
     export NVTE_CUDA_ARCHS="${flags.cmakeCudaArchitecturesString}"
     export NVTE_FRAMEWORK=pytorch
   '';
@@ -107,6 +124,7 @@ buildPythonPackage {
 
   dependencies = [
     importlib-metadata
+    nvdlfw-inspect
     pydantic
     torch
   ];
