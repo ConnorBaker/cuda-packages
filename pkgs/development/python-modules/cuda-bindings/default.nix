@@ -24,6 +24,7 @@ let
     ;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) optionals;
+  inherit (lib.strings) optionalString;
   inherit (lib.versions) majorMinor;
   majorMinorVersion = majorMinor finalAttrs.version;
   finalAttrs = {
@@ -89,6 +90,23 @@ let
           --replace-fail \
             'so_name = "libnvJitLink.so"' \
             'so_name = "${getLib libnvjitlink}/lib/libnvJitLink.so"'
+      ''
+      # Patch version string nonsense. Only 12.6 uses versioneer.
+      + optionalString (majorMinorVersion == "12.6") ''
+        nixLog "patching $PWD/setup.py to replace versioneer"
+        substituteInPlace "$PWD/setup.py" \
+          --replace-fail \
+            'cmdclass = versioneer.get_cmdclass(cmdclass)' \
+            "" \
+          --replace-fail \
+            'version=versioneer.get_version(),' \
+            'version="${finalAttrs.version}",'
+
+        nixLog "patching $PWD/cuda/bindings/_version.py to replace version string"
+        substituteInPlace "$PWD/cuda/bindings/_version.py" \
+          --replace-fail \
+            '"0+unknown"' \
+            '"${finalAttrs.version}"'
       '';
 
     preConfigure =

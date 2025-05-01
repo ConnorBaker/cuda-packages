@@ -32,6 +32,8 @@ let
     ;
   inherit (lib.lists) map optionals;
   inherit (lib.strings) optionalString versionAtLeast versionOlder;
+  inherit (lib.versions) majorMinor;
+  majorMinorVersion = majorMinor finalAttrs.version;
 
   # Only needed for the 12.2 release, which has a different source layout.
   # Later releases shunted the CUDA bindings into a separate package (cuda-bindings).
@@ -73,16 +75,21 @@ let
     };
 
     sourceRoot =
-      finalAttrs.src.name + optionalString (versionAtLeast finalAttrs.version "12.6") "/cuda_python";
+      if finalAttrs.version == "12.2.1" then
+        finalAttrs.src.name
+      else if finalAttrs.version == "12.6.2.post1" then
+        "${finalAttrs.src.name}/cuda_core"
+      else if finalAttrs.version == "12.8.0" then
+        "${finalAttrs.src.name}/cuda_python"
+      else
+        builtins.throw "Unsupported CUDA version: ${finalAttrs.version}";
 
     pyproject = true;
 
     build-system =
       [ setuptools ]
-      ++ optionals (versionOlder finalAttrs.version "12.6") [
-        cython
-        pyclibrary
-      ];
+      ++ optionals (versionOlder finalAttrs.version "12.6") [ pyclibrary ]
+      ++ optionals (versionOlder finalAttrs.version "12.8") [ cython ];
 
     # Replace relative dlopen calls with absolute paths to the libraries
     # NOTE: For cuda_nvcc, the nnvm directory is in the bin output.
@@ -108,7 +115,9 @@ let
       export PARALLEL_LEVEL="$NIX_BUILD_CORES"
     '';
 
-    dependencies = optionals (versionAtLeast finalAttrs.version "12.6") [ cuda-bindings ];
+    dependencies =
+      optionals (majorMinorVersion == "12.6") [ numpy ]
+      ++ optionals (versionAtLeast finalAttrs.version "12.6") [ cuda-bindings ];
 
     # NOTE: Tests are in the cuda-bindings package.
     doCheck = false;

@@ -23,6 +23,7 @@ buildPythonPackage {
   __structuredAttrs = true;
 
   inherit (cudaPackages.cutlass)
+    meta
     pname
     version
     ;
@@ -137,13 +138,6 @@ buildPythonPackage {
           python3 "${cudaPackages.cutlass.src}/test/python/pycute/run_all_tests.py"
           touch "$out"
         '';
-  };
-
-  meta = cudaPackages.cutlass.meta // {
-    broken =
-      cudaPackages.cutlass.meta.broken
-      # TODO: Not yet working with CUDA 12.2 due to dependency on cuda-python.
-      || cudaPackages.cudaMajorMinorVersion == "12.2";
   };
 
   # TODO: CUTLASS looks like it caches kernel compilation in a database store alongside it.
