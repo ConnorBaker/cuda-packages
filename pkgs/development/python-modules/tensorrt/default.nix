@@ -70,7 +70,7 @@ let
       # https://github.com/NVIDIA/TensorRT/pull/4434
       (fetchpatch2 {
         name = "cmake-fix-templating-of-sm-architecture.patch";
-        url = "https://github.com/NVIDIA/TensorRT/commit/26b433f9803299d014d35d4e905eaff679e22dab.patch";
+        url = "https://github.com/NVIDIA/TensorRT/commit/9e0835ac8a8f07c8f7194d7b174282bac3b23550.patch";
         hash = "sha256-Bj4k/9Heq3CPayDl5azVTYuRUkc/KT8ESwgwBXdJvmg=";
       })
     ];
