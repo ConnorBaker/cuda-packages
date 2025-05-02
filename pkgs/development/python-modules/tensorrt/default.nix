@@ -6,6 +6,7 @@
   cudaLib,
   cudaPackages,
   fetchFromGitHub,
+  fetchpatch2,
   lib,
   onnx-tensorrt,
   onnx,
@@ -18,10 +19,10 @@
 }:
 let
   inherit (cudaLib.utils) majorMinorPatch;
-  inherit (cudaPackages) cuda_cudart tensorrt;
+  inherit (cudaPackages) cuda_cudart cudaStdenv tensorrt;
   inherit (lib) licenses maintainers teams;
   inherit (lib.attrsets) getLib getOutput;
-  inherit (lib.lists) elemAt;
+  inherit (lib.lists) elemAt optionals;
   inherit (lib.strings) cmakeFeature;
   inherit (lib.versions) splitVersion;
 
@@ -65,6 +66,15 @@ let
         .${finalAttrs.version};
     };
 
+    patches = optionals (finalAttrs.version == "10.9.0") [
+      # https://github.com/NVIDIA/TensorRT/pull/4434
+      (fetchpatch2 {
+        name = "cmake-fix-templating-of-sm-architecture.patch";
+        url = "https://github.com/NVIDIA/TensorRT/commit/26b433f9803299d014d35d4e905eaff679e22dab.patch";
+        hash = "sha256-Bj4k/9Heq3CPayDl5azVTYuRUkc/KT8ESwgwBXdJvmg=";
+      })
+    ];
+
     build-system = [
       build
       cmake
@@ -89,12 +99,6 @@ let
           --replace-fail \
             'find_package(CUDA ''${CUDA_VERSION} REQUIRED)' \
             'find_package(CUDAToolkit REQUIRED)'
-
-        nixLog "patching $PWD/CMakeLists.txt to fix CMake logic error"
-        substituteInPlace "$PWD"/CMakeLists.txt \
-          --replace-fail \
-            'list(APPEND CMAKE_CUDA_ARCHITECTURES SM)' \
-            'list(APPEND CMAKE_CUDA_ARCHITECTURES "''${SM}")'
 
         nixLog "patching $PWD/python/CMakeLists.txt to correct hints for python3"
         substituteInPlace "$PWD"/python/CMakeLists.txt \
@@ -169,14 +173,8 @@ let
 
     doCheck = false; # This derivation produces samples that require a GPU to run.
 
-    # Copy the Python include directory to the output.
-    # postInstall = ''
-    #   nixLog "installing Python header files"
-    #   mkdir -p "$out/python"
-    #   cp -r "$NIX_BUILD_TOP/$sourceRoot/include" "$out/python/"
-    # '';
-
-    pythonImportsCheck = [ "tensorrt" ];
+    # On Jetson, trying to import the package requires `libnvdla_compiler.so` (from the host driver) be available.
+    pythonImportsCheck = optionals (!cudaStdenv.hasJetsonCudaCapability) [ "tensorrt" ];
 
     meta = {
       description = "Open Source Software (OSS) components of NVIDIA TensorRT";
