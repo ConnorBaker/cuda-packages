@@ -4,7 +4,6 @@
   libcublas,
   mpi,
   nccl,
-  stdenv,
 }:
 prevAttrs: {
   buildInputs =
