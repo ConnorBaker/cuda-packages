@@ -19,13 +19,7 @@ let
     ;
   inherit (lib) addErrorContext;
   inherit (lib.customisation) extendDerivation;
-  inherit (lib.lists)
-    filter
-    head
-    intersectLists
-    length
-    subtractLists
-    ;
+  inherit (lib.lists) filter intersectLists subtractLists;
 
   # NOTE: By virtue of processing a sorted list (allSortedCudaCapabilities), our groups will be sorted.
 
@@ -101,13 +95,6 @@ let
       # they are built with different settings and cannot be mixed.
       jetsonMesssagePrefix = "Jetson CUDA capabilities (${toJSON passthruExtra.requestedJetsonCudaCapabilities})";
 
-      # Architecture-specific capabilities are not built by default and cannot be built with other capabilities.
-      architectureSpecificMessagePrefix = "Architecture-specific CUDA capabilities (${toJSON passthruExtra.requestedArchitectureSpecificCudaCapabilities})";
-
-      # Family-specific capabilities are not built by default and cannot be built with other families.
-      # TODO(@connorbaker): Find a way to check for family-specific capabilities.
-      # familySpecificMessagePrefix = "Family-specific CUDA capabilities (${toJSON passthruExtra.requestedFamilySpecificCudaCapabilities})";
-
       # Remove all known capabilities from the user's list to find unrecognized capabilities.
       unrecognizedCudaCapabilities = subtractLists allSortedCudaCapabilities passthruExtra.cudaCapabilities;
 
@@ -126,7 +113,7 @@ let
       {
         message =
           "${jetsonMesssagePrefix} require hostPlatform (currently ${passthruExtra.hostNixSystem}) "
-          + "to be aarch64";
+          + "to be aarch64-linux";
         assertion = passthruExtra.hasJetsonCudaCapability -> passthruExtra.hostNixSystem == "aarch64-linux";
       }
       {
@@ -144,23 +131,6 @@ let
         assertion =
           passthruExtra.hasJetsonCudaCapability
           -> passthruExtra.requestedJetsonCudaCapabilities == passthruExtra.cudaCapabilities;
-      }
-      {
-        message = "${architectureSpecificMessagePrefix} do not support forward compatibility.";
-        assertion = passthruExtra.hasArchitectureSpecificCudaCapability -> !passthruExtra.cudaForwardCompat;
-      }
-      {
-        message =
-          let
-            requestedArchitectureSpecificCudaCapability = head passthruExtra.requestedArchitectureSpecificCudaCapabilities;
-            otherCudaCapabilities = filter (
-              cudaCapability: cudaCapability != requestedArchitectureSpecificCudaCapability
-            ) passthruExtra.cudaCapabilities;
-          in
-          "${architectureSpecificMessagePrefix} cannot be specified with any other capability "
-          + "(${toJSON otherCudaCapabilities}).";
-        assertion =
-          passthruExtra.hasArchitectureSpecificCudaCapability -> length passthruExtra.cudaCapabilities == 1;
       }
     ];
 

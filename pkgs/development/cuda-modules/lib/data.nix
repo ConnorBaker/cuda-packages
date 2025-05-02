@@ -69,10 +69,6 @@
   /**
     Attribute set of supported CUDA capability mapped to information about that capability.
 
-    NOTE: Building for an architecture-specific feature set (a capability with an `a` suffix) is neither forward nor
-    backwards compatible with the baseline feature set. For example, device code targeting `10.0a` will not work on a
-    a device presenting as `10.0`, and vice versa.
-
     NOTE: For more on baseline, architecture-specific, and family-specific feature sets, see
     https://developer.nvidia.com/blog/nvidia-blackwell-and-nvidia-cuda-12-9-introduce-family-specific-architecture-features.
 
@@ -118,10 +114,12 @@
     `isArchitectureSpecific`
 
     : Whether this capability is an architecture-specific feature set.
+      NOTE: These architectures are only built upon request.
 
     `isFamilySpecific`
 
     : Whether this capability is a family-specific feature set.
+      NOTE: These architectures are only built upon request.
 
     `minCudaMajorMinorVersion`
 

@@ -13,7 +13,6 @@ let
   inherit (stdenv) hostPlatform;
 in
 # When changing names or formats: pause, validate, and update the assert
-# TODO(@connorbaker): Add assertions for mixing baseline/architecture-specific/family-specific feature sets.
 assert assertMsg (
   cudaCapabilityToInfo ? "7.5" && cudaCapabilityToInfo ? "8.6"
 ) "The following test requires both 7.5 and 8.6 be known CUDA capabilities";
@@ -146,28 +145,6 @@ assert
       Expected: ${toJSON expected}
       Actual: ${toJSON actualWrapped}
     '';
-# Check mixed architecture-specific and baseline feature sets
-assert assertMsg (
-  cudaCapabilityToInfo ? "9.0" && cudaCapabilityToInfo ? "9.0a"
-) "The following test requires both 9.0 and 9.0a be known CUDA capabilities";
-assert
-  let
-    expected = false;
-    actual = formatCapabilities {
-      inherit cudaCapabilityToInfo;
-      cudaCapabilities = [
-        "9.0"
-        "9.0a"
-      ];
-    };
-    actualWrapped = (tryEval (deepSeq actual actual)).value;
-  in
-  assertMsg (expected == actualWrapped) ''
-    Architecture-specifc feature sets cannot be mixed with baseline feature sets.
-    Capability 9.0 is not an architecture-specific feature set and should not be allowed with 9.0a.
-    Expected: ${toJSON expected}
-    Actual: ${toJSON actualWrapped}
-  '';
 runCommand "${cudaNamePrefix}-tests-flags"
   {
     __structuredAttrs = true;
