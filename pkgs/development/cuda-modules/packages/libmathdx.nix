@@ -35,7 +35,7 @@ stdenv.mkDerivation (finalAttrs: {
         finalAttrs.version
       ];
       hashes = {
-        aarch64-linux = "";
+        aarch64-linux = "sha256-CTf1Unt+QBYZ+OsypQU0ppf4ucsEaFMaro9srvlnt1Y=";
         x86_64-linux = "sha256-wD23ppuVCDUkmPVpZPoHa/miYGTF22YUiO8wCBqj1OY=";
       };
     in
