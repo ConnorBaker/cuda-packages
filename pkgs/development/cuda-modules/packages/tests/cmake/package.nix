@@ -30,13 +30,13 @@ let
       (fetchpatch2 {
         name = "find-cuda-toolkit-check-for-language-enablement.patch";
         url = "https://gitlab.kitware.com/cmake/cmake/-/commit/c5d81a246852e1ad81a3d55fcaff7e6feb779db7.patch";
-        hash = "sha256-8M+C/8bRScVybzvocwSadWL7+DXz5RR/tsnQBZjxNkI=";
+        hash = "sha256-oGxzbp+x88+79V+Cyx0l7+nMxX+n3ixzAFKPK26NMI8=";
       })
       # https://gitlab.kitware.com/cmake/cmake/-/merge_requests/10289
       (fetchpatch2 {
         name = "update-arch-supported-by-cuda-12_8.patch";
         url = "https://gitlab.kitware.com/cmake/cmake/-/commit/a745b6869ee3681e39544d96d936c95c196c7398.patch";
-        hash = "sha256-5NkIgK/ewUye9F6LL1JIM2mMuFcEvELdAFybdZaYzK0=";
+        hash = "sha256-B6ny6AZFIcyFhsEnzNk7+vJTb36HeguM53sk/LCnjS4=";
       })
     ];
   });
