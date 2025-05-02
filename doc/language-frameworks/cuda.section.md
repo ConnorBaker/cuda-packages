@@ -241,7 +241,7 @@ stdenv.mkDerivation {
 
 ## Using pkgsCuda {#cuda-using-pkgscuda}
 
-The `pkgsCuda` attribute set maps CUDA architectures (e.g., `sm_89` for Ada Lovelace, or `sm_90a` for accelerated Hopper) to Nixpkgs instances configured to support exactly that architecture. As an example, `pkgsCuda.sm_89` is a Nixpkgs instance extending `pkgs` and setting the following values in `config`:
+The `pkgsCuda` attribute set maps CUDA architectures (e.g., `sm_89` for Ada Lovelace or `sm_90a` for architecture-specific Hopper) to Nixpkgs instances configured to support exactly that architecture. As an example, `pkgsCuda.sm_89` is a Nixpkgs instance extending `pkgs` and setting the following values in `config`:
 
 ```nix
 {
@@ -252,7 +252,7 @@ The `pkgsCuda` attribute set maps CUDA architectures (e.g., `sm_89` for Ada Love
 ```
 
 :::{.note}
-In `pkgsCuda`, the `cudaForwardCompat` option is set to `false` because exactly one CUDA architecture should be supported by the attached instance of Nixpkgs. Furthermore, some architectures, including accelerated architectures like `sm_90a`, cannot be built with forward compatibility.
+In `pkgsCuda`, the `cudaForwardCompat` option is set to `false` because exactly one CUDA architecture should be supported by the attached instance of Nixpkgs. Furthermore, some architectures, including architecture-specific feature sets like `sm_90a`, cannot be built with forward compatibility.
 :::
 
 :::{.important}

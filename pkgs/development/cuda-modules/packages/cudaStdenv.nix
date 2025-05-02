@@ -21,26 +21,24 @@ let
   inherit (lib.customisation) extendDerivation;
   inherit (lib.lists)
     filter
-    groupBy
     head
     intersectLists
     length
     subtractLists
     ;
 
-  # NOTE: By virtue of processing a sorted list, our groups will be sorted.
-  cudaCapabilitiesByKind = groupBy (
-    cudaCapability:
-    let
-      cudaCapabilityInfo = cudaCapabilityToInfo.${cudaCapability};
-    in
-    # NOTE: Assumption here that there are no accelerated Jetson capabilities
-    if cudaCapabilityInfo.isAccelerated then
-      "acceleratedCudaCapabilities"
-    else if cudaCapabilityInfo.isJetson then
-      "jetsonCudaCapabilities"
-    else
-      "cudaCapabilities"
+  # NOTE: By virtue of processing a sorted list (allSortedCudaCapabilities), our groups will be sorted.
+
+  architectureSpecificCudaCapabilities = filter (
+    cudaCapability: cudaCapabilityToInfo.${cudaCapability}.isArchitectureSpecific
+  ) allSortedCudaCapabilities;
+
+  familySpecificCudaCapabilities = filter (
+    cudaCapability: cudaCapabilityToInfo.${cudaCapability}.isFamilySpecific
+  ) allSortedCudaCapabilities;
+
+  jetsonCudaCapabilities = filter (
+    cudaCapability: cudaCapabilityToInfo.${cudaCapability}.isJetson
   ) allSortedCudaCapabilities;
 
   passthruExtra = {
@@ -64,7 +62,7 @@ let
     ) allSortedCudaCapabilities;
 
     # Find the default set of capabilities for this CUDA version using the list of supported capabilities.
-    # Does not include Jetson or accelerated capabilities.
+    # Includes only baseline capabilities.
     defaultCudaCapabilities = filter (
       cudaCapability: cudaCapabilityIsDefault cudaMajorMinorVersion cudaCapabilityToInfo.${cudaCapability}
     ) passthruExtra.supportedCudaCapabilities;
@@ -76,18 +74,21 @@ let
       else
         passthruExtra.defaultCudaCapabilities;
 
-    # Requested accelerated CUDA capabilities.
-    requestedAcceleratedCudaCapabilities =
-      intersectLists (cudaCapabilitiesByKind.acceleratedCudaCapabilities or [ ])
-        passthruExtra.cudaCapabilities;
+    # Requested architecture-specific CUDA capabilities.
+    requestedArchitectureSpecificCudaCapabilities = intersectLists architectureSpecificCudaCapabilities passthruExtra.cudaCapabilities;
 
-    # Whether the requested CUDA capabilities include accelerated CUDA capabilities.
-    hasAcceleratedCudaCapability = passthruExtra.requestedAcceleratedCudaCapabilities != [ ];
+    # Whether the requested CUDA capabilities include architecture-specific CUDA capabilities.
+    hasArchitectureSpecificCudaCapability =
+      passthruExtra.requestedArchitectureSpecificCudaCapabilities != [ ];
 
-    # The requested Jetson CUDA capabilities.
-    requestedJetsonCudaCapabilities = intersectLists (cudaCapabilitiesByKind.jetsonCudaCapabilities
-      or [ ]
-    ) passthruExtra.cudaCapabilities;
+    # Requested family-specific CUDA capabilities.
+    requestedFamilySpecificCudaCapabilities = intersectLists familySpecificCudaCapabilities passthruExtra.cudaCapabilities;
+
+    # Whether the requested CUDA capabilities include family-specific CUDA capabilities.
+    hasFamilySpecificCudaCapability = passthruExtra.requestedFamilySpecificCudaCapabilities != [ ];
+
+    # Requested Jetson CUDA capabilities.
+    requestedJetsonCudaCapabilities = intersectLists jetsonCudaCapabilities passthruExtra.cudaCapabilities;
 
     # Whether the requested CUDA capabilities include Jetson CUDA capabilities.
     hasJetsonCudaCapability = passthruExtra.requestedJetsonCudaCapabilities != [ ];
@@ -100,8 +101,12 @@ let
       # they are built with different settings and cannot be mixed.
       jetsonMesssagePrefix = "Jetson CUDA capabilities (${toJSON passthruExtra.requestedJetsonCudaCapabilities})";
 
-      # Accelerated devices are not built by default and cannot be built with other capabilities.
-      acceleratedMessagePrefix = "Accelerated CUDA capabilities (${toJSON passthruExtra.requestedAcceleratedCudaCapabilities})";
+      # Architecture-specific capabilities are not built by default and cannot be built with other capabilities.
+      architectureSpecificMessagePrefix = "Architecture-specific CUDA capabilities (${toJSON passthruExtra.requestedArchitectureSpecificCudaCapabilities})";
+
+      # Family-specific capabilities are not built by default and cannot be built with other families.
+      # TODO(@connorbaker): Find a way to check for family-specific capabilities.
+      # familySpecificMessagePrefix = "Family-specific CUDA capabilities (${toJSON passthruExtra.requestedFamilySpecificCudaCapabilities})";
 
       # Remove all known capabilities from the user's list to find unrecognized capabilities.
       unrecognizedCudaCapabilities = subtractLists allSortedCudaCapabilities passthruExtra.cudaCapabilities;
@@ -129,7 +134,9 @@ let
           let
             # Find the capabilities which are not Jetson capabilities.
             requestedNonJetsonCudaCapabilities = subtractLists (
-              passthruExtra.requestedJetsonCudaCapabilities ++ passthruExtra.requestedAcceleratedCudaCapabilities
+              passthruExtra.requestedJetsonCudaCapabilities
+              ++ passthruExtra.requestedArchitectureSpecificCudaCapabilities
+              ++ passthruExtra.requestedFamilySpecificCudaCapabilities
             ) passthruExtra.cudaCapabilities;
           in
           "${jetsonMesssagePrefix} cannot be specified with non-Jetson capabilities "
@@ -139,21 +146,21 @@ let
           -> passthruExtra.requestedJetsonCudaCapabilities == passthruExtra.cudaCapabilities;
       }
       {
-        message = "${acceleratedMessagePrefix} do not support forward compatibility.";
-        assertion = passthruExtra.hasAcceleratedCudaCapability -> !passthruExtra.cudaForwardCompat;
+        message = "${architectureSpecificMessagePrefix} do not support forward compatibility.";
+        assertion = passthruExtra.hasArchitectureSpecificCudaCapability -> !passthruExtra.cudaForwardCompat;
       }
       {
         message =
           let
-            requestedAcceleratedCudaCapability = head passthruExtra.requestedAcceleratedCudaCapabilities;
+            requestedArchitectureSpecificCudaCapability = head passthruExtra.requestedArchitectureSpecificCudaCapabilities;
             otherCudaCapabilities = filter (
-              cudaCapability: cudaCapability != requestedAcceleratedCudaCapability
+              cudaCapability: cudaCapability != requestedArchitectureSpecificCudaCapability
             ) passthruExtra.cudaCapabilities;
           in
-          "${acceleratedMessagePrefix} cannot be specified with any other capability "
+          "${architectureSpecificMessagePrefix} cannot be specified with any other capability "
           + "(${toJSON otherCudaCapabilities}).";
         assertion =
-          passthruExtra.hasAcceleratedCudaCapability -> length passthruExtra.cudaCapabilities == 1;
+          passthruExtra.hasArchitectureSpecificCudaCapability -> length passthruExtra.cudaCapabilities == 1;
       }
     ];
 

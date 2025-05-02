@@ -490,6 +490,8 @@ in
   /**
     Returns whether a capability should be built by default for a particular CUDA version.
 
+    Capabilities built by default are baseline, non-Jetson capabilities with relatively recent CUDA support.
+
     # Type
 
     ```
@@ -516,7 +518,10 @@ in
         cudaCapabilityInfo.dontDefaultAfterCudaMajorMinorVersion == null
         || versionAtLeast cudaCapabilityInfo.dontDefaultAfterCudaMajorMinorVersion cudaMajorMinorVersion;
     in
-    recentCapability && !cudaCapabilityInfo.isJetson && !cudaCapabilityInfo.isAccelerated;
+    recentCapability
+    && !cudaCapabilityInfo.isJetson
+    && !cudaCapabilityInfo.isArchitectureSpecific
+    && !cudaCapabilityInfo.isFamilySpecific;
 
   /**
     Returns whether a capability is supported for a particular CUDA version.
