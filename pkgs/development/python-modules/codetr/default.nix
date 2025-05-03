@@ -173,6 +173,7 @@ buildPythonPackage {
     license = lib.licenses.asl20;
     platforms = lib.platforms.linux;
     maintainers = with lib.maintainers; [ connorbaker ];
-    broken = !config.cudaSupport;
+    # TODO(@connorbaker): Avoid including cuda-python.meta.broken.
+    broken = !config.cudaSupport || cuda-python.meta.broken;
   };
 }

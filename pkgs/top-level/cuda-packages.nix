@@ -78,6 +78,11 @@ in
     manifests = mkManifests "12.8.1";
   };
 
+  cudaPackages_12_9 = final.callPackage final.cudaLib.data.cudaPackagesPath {
+    inherit fixups;
+    manifests = mkManifests "12.9.0";
+  };
+
   # Package set aliases with a major component refer to an alias with a major and minor component in final.
   cudaPackages_12 = final.cudaPackages_12_6;
 

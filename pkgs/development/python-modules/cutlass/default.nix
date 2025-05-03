@@ -23,7 +23,6 @@ buildPythonPackage {
   __structuredAttrs = true;
 
   inherit (cudaPackages.cutlass)
-    meta
     pname
     version
     ;
@@ -143,4 +142,9 @@ buildPythonPackage {
   # TODO: CUTLASS looks like it caches kernel compilation in a database store alongside it.
   # That won't work for us since the store path is immutable.
   # https://github.com/NVIDIA/cutlass/blob/e94e888df3551224738bfa505787b515eae8352f/python/cutlass/backend/compiler.py#L132
+
+  meta = cudaPackages.cutlass.meta // {
+    # TODO(@connorbaker): Avoid including cuda-python.meta.broken.
+    broken = cudaPackages.cutlass.meta.broken || cuda-python.meta.broken;
+  };
 }

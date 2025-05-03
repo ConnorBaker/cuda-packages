@@ -439,6 +439,7 @@ in
         cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_2";
         cudaPackages_12_6 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_6";
         cudaPackages_12_8 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_8";
+        cudaPackages_12_9 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_9";
       };
       python3Packages = mkPython3PackagesJobs "x86_64-linux-pkgs-python3Packages" pkgs.python3Packages;
     }

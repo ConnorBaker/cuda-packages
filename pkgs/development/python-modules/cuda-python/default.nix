@@ -53,10 +53,21 @@ let
     "12.8" = "12.8.0";
   };
 
+  # NVIDIA is horrible about tagging releases and making release branches, so it's a mix of both.
+  revs = {
+    # Latest from release/12.2.x branch as of 2025-05-02
+    "12.2.1" = "e3a8ff9a8acc79057c0c2bfe80c97cfdfd146f03";
+    # Latest 12.6.x tag as of 2025-05-02
+    "12.6.2.post1" = "92aa73156ec6d0af689f72ca4d8f6bf39871afb9";
+    # Latest from release/12.8.0 branch as of 2025-05-02
+    "12.8.0" = "4afc87c577046a6b6b3368a12fcf98b574e69b24";
+    # NOTE: 12.9 support is blocked on https://github.com/NVIDIA/cuda-python/pull/597
+  };
+
   hashes = {
     "12.2.1" = "sha256-zIsQt6jLssvzWmTgP9S8moxzzyPNpNjfcGgmAA2v2E8=";
     "12.6.2.post1" = "sha256-MG6q+Hyo0H4XKZLbtFQqfen6T2gxWzyk1M9jWryjjj4=";
-    "12.8.0" = "sha256-7e9w70KkC6Pcvyu6Cwt5Asrc3W9TgsjiGvArRTer6Oc=";
+    "12.8.0" = "sha256-AptPxatZwzWhzUNxKHX3KTKLQSLYwCWQj2UwyTbxeaY=";
   };
 
   finalAttrs = {
@@ -67,12 +78,16 @@ let
 
     disabled = pythonOlder "3.7";
 
-    src = fetchFromGitHub {
-      owner = "NVIDIA";
-      repo = "cuda-python";
-      tag = "v${finalAttrs.version}";
-      hash = hashes.${finalAttrs.version} or "";
-    };
+    src =
+      if hasAttr cudaMajorMinorVersion versions then
+        fetchFromGitHub {
+          owner = "NVIDIA";
+          repo = "cuda-python";
+          rev = revs.${finalAttrs.version};
+          hash = hashes.${finalAttrs.version};
+        }
+      else
+        null;
 
     sourceRoot =
       if finalAttrs.version == "12.2.1" then
