@@ -441,8 +441,10 @@ in
         cudaPackages_12_8 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_8";
         cudaPackages_12_9 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_9";
       };
+      # Default set of capabilities
       python3Packages = mkPython3PackagesJobs "x86_64-linux-pkgs-python3Packages" pkgs.python3Packages;
     }
+    # Default set of capabilities
     // mkPkgsJobs "x86_64-linux-pkgs" pkgs;
 
   aarch64-linux =
@@ -450,12 +452,30 @@ in
       pkgs = mkPkgsForHydra legacyPackages.aarch64-linux;
     in
     {
+      # Jetson Xavier
+      ${mkRealArchitecture "7.2"} = {
+        # JetPack 5 only supports up to 12.2.2
+        cudaPackages_12_2 = mkCudaPackagesJobs pkgs "7.2" "cudaPackages_12_2";
+      };
       # Jetson Orin
       ${mkRealArchitecture "8.7"} = {
         # JetPack 5 only supports up to 12.2.2
         cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.7" "cudaPackages_12_2";
+        # JetPack 6 supports 12.4 and beyond
+        cudaPackages_12_6 = mkCudaPackagesJobs pkgs "8.7" "cudaPackages_12_6";
+        cudaPackages_12_8 = mkCudaPackagesJobs pkgs "8.7" "cudaPackages_12_8";
+        cudaPackages_12_9 = mkCudaPackagesJobs pkgs "8.7" "cudaPackages_12_9";
       };
+      # Ada Lovelace
+      ${mkRealArchitecture "8.9"} = {
+        cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_2";
+        cudaPackages_12_6 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_6";
+        cudaPackages_12_8 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_8";
+        cudaPackages_12_9 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_9";
+      };
+      # Default set of capabilities
       python3Packages = mkPython3PackagesJobs "aarch64-linux-pkgs-python3Packages" pkgs.python3Packages;
     }
+    # Default set of capabilities
     // mkPkgsJobs "aarch64-linux-pkgs" pkgs;
 }
