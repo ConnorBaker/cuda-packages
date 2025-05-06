@@ -4,6 +4,7 @@
   config,
   cudaPackages,
   fetchFromGitHub,
+  fetchpatch2,
   importlib-metadata,
   lib,
   ninja,
@@ -34,16 +35,31 @@ buildPythonPackage {
   __structuredAttrs = true;
 
   pname = "transformer_engine";
-  version = "2.2-unstable-2025-05-01";
+  version = "2.2-unstable-2025-05-05";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "TransformerEngine";
-    rev = "8030a448093d1e2ef0717e40e35d86939ea55cff";
+    rev = "5bee81e2f4edc7ff10908d0943cba84a9831fde5";
     fetchSubmodules = true;
     # TODO: Use our cudnn-frontend and googletest
-    hash = "sha256-bKIXAld24G/nyUn1TXUts6Dzw0KXTAy4+HuYAsI5/aU=";
+    hash = "sha256-2rU37OuEmUVOlUjhi1KllSSJyuFixY1Tn7XpkFexHP8=";
   };
+
+  patches = [
+    # https://github.com/NVIDIA/TransformerEngine/pull/1733
+    (fetchpatch2 {
+      name = "pr-1733.patch";
+      url = "https://github.com/NVIDIA/TransformerEngine/commit/753242305d6a3186a2baf541b16c14fc20655f05.patch";
+      hash = "sha256-MfjiTAQ61PI8YTgGnklDbPpMF7YACB00jGa/ihJCl0E=";
+    })
+    # https://github.com/NVIDIA/TransformerEngine/pull/1736
+    (fetchpatch2 {
+      name = "pr-1736.patch";
+      url = "https://github.com/NVIDIA/TransformerEngine/commit/218e45c95c0db5c0a3db235d0a69067d2e41382e.patch";
+      hash = "sha256-dpcU+SlbW3LLYptaRsg5m90Z+qQF+FObnV10LyFUrOA=";
+    })
+  ];
 
   pyproject = true;
 
