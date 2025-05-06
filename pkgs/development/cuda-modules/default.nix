@@ -152,6 +152,7 @@ let
       cudaMajorMinorPatchVersion = mkAlias "cudaPackages.cudaMajorMinorPatchVersion is an implementation detail, please use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorPatchVersion;
       cudaVersion = mkAlias "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" finalCudaPackages.cudaMajorMinorVersion;
       markForCudatoolkitRootHook = mkAlias "cudaPackages.markForCudatoolkitRootHook has moved, use cudaPackages.markForCudaToolkitRootHook instead" finalCudaPackages.markForCudaToolkitRootHook;
+      cusparselt = mkAlias "cudaPackages.cusparselt is deprecated, use cudaPackages.libcusparse_lt instead" finalCudaPackages.libcusparse_lt;
     }
     # Redistributable packages
     // mapAttrs (const finalCudaPackages.redist-builder) redistBuilderArgs
