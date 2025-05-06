@@ -16,15 +16,16 @@
 }:
 let
   inherit (cudaPackages)
-    cudaOlder
     cuda_cudart
-    cuda_profiler_api
+    cuda_nvcc
     cuda_nvrtc
+    cuda_profiler_api
+    cudaOlder
     libnvjitlink
     ;
-  inherit (lib.attrsets) getLib;
+  inherit (lib.attrsets) getBin getLib;
   inherit (lib.lists) optionals;
-  inherit (lib.strings) optionalString;
+  inherit (lib.strings) optionalString versionAtLeast versionOlder;
   inherit (lib.versions) majorMinor;
   majorMinorVersion = majorMinor finalAttrs.version;
   finalAttrs = {
@@ -69,9 +70,6 @@ let
       ''
       # Replace relative dlopen calls with absolute paths to the libraries
       # NOTE: For cuda_nvcc, the nnvm directory is in the bin output.
-      # NOTE: For cuda_cudart, post-12.8 the file has changed from cuda/bindings/_lib/cyruntime/cyruntime.pyx.in to
-      # cuda/bindings/cyruntime.pyx.in.
-      # NOTE: Post-12.8, cuda/bindings/_internal/nvvm_linux.pyx will need to be patched for libnvvm.so.
       + ''
         nixLog "patching $PWD/cuda/bindings/_bindings/cynvrtc.pyx.in to replace relative dlopen"
         substituteInPlace "$PWD/cuda/bindings/_bindings/cynvrtc.pyx.in" \
@@ -79,17 +77,38 @@ let
             "handle = dlfcn.dlopen('libnvrtc.so.12'" \
             "handle = dlfcn.dlopen('${getLib cuda_nvrtc}/lib/libnvrtc.so.12'"
 
-        nixLog "patching $PWD/cuda/bindings/_lib/cyruntime/cyruntime.pyx.in to replace relative dlopen"
-        substituteInPlace "$PWD/cuda/bindings/_lib/cyruntime/cyruntime.pyx.in" \
-          --replace-fail \
-            "handle = dlfcn.dlopen('libcudart.so.12'" \
-            "handle = dlfcn.dlopen('${getLib cuda_cudart}/lib/libcudart.so.12'"
-
         nixLog "patching $PWD/cuda/bindings/_internal/nvjitlink_linux.pyx to replace relative dlopen"
         substituteInPlace "$PWD/cuda/bindings/_internal/nvjitlink_linux.pyx" \
           --replace-fail \
             'so_name = "libnvJitLink.so"' \
             'so_name = "${getLib libnvjitlink}/lib/libnvJitLink.so"'
+      ''
+      # NOTE: For cuda_cudart, post-12.8 the file has changed from cuda/bindings/_lib/cyruntime/cyruntime.pyx.in to
+      # cuda/bindings/cyruntime.pyx.in.
+      + (
+        let
+          filePath =
+            if versionOlder finalAttrs.version "12.9" then
+              "cuda/bindings/_lib/cyruntime/cyruntime.pyx.in"
+            else
+              "cuda/bindings/cyruntime.pyx.in";
+        in
+        ''
+          nixLog "patching $PWD/${filePath} to replace relative dlopen"
+          substituteInPlace "$PWD/${filePath}" \
+            --replace-fail \
+              "handle = dlfcn.dlopen('libcudart.so.12'" \
+              "handle = dlfcn.dlopen('${getLib cuda_cudart}/lib/libcudart.so.12'"
+        ''
+      )
+      # Only version 12.9+ includes nvvm.
+      # NVVM is in the bin output of cuda_nvcc.
+      + optionalString (versionAtLeast finalAttrs.version "12.9") ''
+        nixLog "patching $PWD/cuda/bindings/_internal/nvvm_linux.pyx to replace relative dlopen"
+        substituteInPlace "$PWD/cuda/bindings/_internal/nvvm_linux.pyx" \
+          --replace-fail \
+            'so_name = "libnvvm.so"' \
+            'so_name = "${getBin cuda_nvcc}/nvvm/lib/libnvvm.so"'
       ''
       # Patch version string nonsense. Only 12.6 uses versioneer.
       + optionalString (majorMinorVersion == "12.6") ''
@@ -111,13 +130,11 @@ let
 
     preConfigure =
       let
-        parallelEnvName = {
-          "12.6" = "PARALLEL_LEVEL";
-          "12.8" = "CUDA_PYTHON_PARALLEL_LEVEL";
-        };
+        parallelEnvName =
+          if versionOlder finalAttrs.version "12.8" then "PARALLEL_LEVEL" else "CUDA_PYTHON_PARALLEL_LEVEL";
       in
       ''
-        export ${parallelEnvName.${majorMinorVersion}}="$NIX_BUILD_CORES"
+        export ${parallelEnvName}="$NIX_BUILD_CORES"
       '';
 
     buildInputs = [
