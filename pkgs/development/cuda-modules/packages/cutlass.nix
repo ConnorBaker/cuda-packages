@@ -47,13 +47,13 @@ stdenv.mkDerivation (finalAttrs: {
   # NOTE: Depends on the CUDA package set, so use cudaNamePrefix.
   name = "${cudaNamePrefix}-${finalAttrs.pname}-${finalAttrs.version}";
   pname = "cutlass";
-  version = "3.9.1";
+  version = "3.9.2";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "cutlass";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-KAKvrdciQ98Kf4hl81a840Oz4Lcri7CraXDiA5WW6ls=";
+    hash = "sha256-teziPNA9csYvhkG5t2ht8W8x5+1YGGbHm8VKx4JoxgI=";
   };
 
   # TODO: As a header-only library, we should make sure we have an `include` directory or similar which is not a
