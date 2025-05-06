@@ -75,6 +75,9 @@
     NOTE: For information on when support for a given architecture was added, see
     https://docs.nvidia.com/cuda/parallel-thread-execution/#release-notes
 
+    NOTE: For baseline feature sets, `dontDefaultAfterCudaMajorMinorVersion` is generally set to the CUDA release
+    immediately prior to TensorRT removing support for that architecture.
+
     Many thanks to Arnon Shimoni for maintaining a list of these architectures and capabilities.
     Without your work, this would have been much more difficult.
     https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
@@ -180,6 +183,9 @@
         "6.0" = {
           archName = "Pascal";
           minCudaMajorMinorVersion = "10.0";
+          # Removed from TensorRT 10.0, which corresponds to CUDA 12.4 release.
+          # https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-1001/support-matrix/index.html
+          dontDefaultAfterCudaMajorMinorVersion = "12.3";
         };
 
         # GTX 1080, GTX 1070, GTX 1060, GTX 1050, GTX 1030 (GP108), GT 1010 (GP108) Titan Xp, Tesla
@@ -187,12 +193,18 @@
         "6.1" = {
           archName = "Pascal";
           minCudaMajorMinorVersion = "10.0";
+          # Removed from TensorRT 10.0, which corresponds to CUDA 12.4 release.
+          # https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-1001/support-matrix/index.html
+          dontDefaultAfterCudaMajorMinorVersion = "12.3";
         };
 
         # DGX-1 with Volta, Tesla V100, GTX 1180 (GV104), Titan V, Quadro GV100
         "7.0" = {
           archName = "Volta";
           minCudaMajorMinorVersion = "10.0";
+          # Removed from TensorRT 10.5, which corresponds to CUDA 12.6 release.
+          # https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-1050/support-matrix/index.html
+          dontDefaultAfterCudaMajorMinorVersion = "12.5";
         };
 
         # Jetson AGX Xavier, Drive AGX Pegasus, Xavier NX
