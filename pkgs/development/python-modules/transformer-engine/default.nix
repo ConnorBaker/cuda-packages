@@ -53,12 +53,13 @@ buildPythonPackage {
       url = "https://github.com/NVIDIA/TransformerEngine/commit/753242305d6a3186a2baf541b16c14fc20655f05.patch";
       hash = "sha256-MfjiTAQ61PI8YTgGnklDbPpMF7YACB00jGa/ihJCl0E=";
     })
+    # NOTE: Disabled since row-wise quantization is not supported yet.
     # https://github.com/NVIDIA/TransformerEngine/pull/1736
-    (fetchpatch2 {
-      name = "pr-1736.patch";
-      url = "https://github.com/NVIDIA/TransformerEngine/commit/218e45c95c0db5c0a3db235d0a69067d2e41382e.patch";
-      hash = "sha256-dpcU+SlbW3LLYptaRsg5m90Z+qQF+FObnV10LyFUrOA=";
-    })
+    # (fetchpatch2 {
+    #   name = "pr-1736.patch";
+    #   url = "https://github.com/NVIDIA/TransformerEngine/commit/218e45c95c0db5c0a3db235d0a69067d2e41382e.patch";
+    #   hash = "sha256-dpcU+SlbW3LLYptaRsg5m90Z+qQF+FObnV10LyFUrOA=";
+    # })
   ];
 
   pyproject = true;
