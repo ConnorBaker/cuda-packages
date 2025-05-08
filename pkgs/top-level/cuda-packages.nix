@@ -111,7 +111,8 @@ in
         );
     in
     dontRecurseForDerivationsOrEvaluate (
-      final.cudaLib.utils.bimap final.cudaLib.utils.mkRealArchitecture mkPkgs
-        final.cudaLib.data.cudaCapabilityToInfo
+      final.lib.mapAttrs' (
+        name: value: final.lib.nameValuePair (final.cudaLib.utils.mkRealArchitecture name) (mkPkgs value)
+      ) final.cudaLib.data.cudaCapabilityToInfo
     );
 }

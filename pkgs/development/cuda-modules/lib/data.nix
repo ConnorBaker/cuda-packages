@@ -86,7 +86,7 @@
 
     ```
     cudaCapabilityToInfo ::
-      Attrs
+      AttrSet
         CudaCapability
         { archName :: String
         , cudaCapability :: CudaCapability
@@ -398,7 +398,7 @@
     # Type
 
     ```
-    cudaArchNameToCapabilities :: Attrs NonEmptyStr (NonEmptyListOf CudaCapability)
+    cudaArchNameToCapabilities :: AttrSet NonEmptyStr (NonEmptyListOf CudaCapability)
     ```
   */
   cudaArchNameToCapabilities = lib.groupBy (
@@ -425,7 +425,12 @@
     # Type
 
     ```
-    nvccCompatibilities :: Attrs
+    nvccCompatibilities ::
+      AttrSet
+        String
+        { clang :: { maxMajorVersion :: String, minMajorVersion :: String }
+        , gcc :: { maxMajorVersion :: String, minMajorVersion :: String }
+        }
     ```
   */
   nvccCompatibilities = {

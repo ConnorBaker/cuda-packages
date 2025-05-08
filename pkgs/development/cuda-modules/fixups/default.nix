@@ -5,8 +5,8 @@ lib.concatMapAttrs (
   let
     # Fixup is in `./${attrName}.nix` or in `./${fileName}/default.nix`:
     attrName = lib.removeSuffix ".nix" fileName;
-    value = import (./. + "/${fileName}");
+    fixup = import (./. + "/${fileName}");
     isFixup = fileName != "default.nix";
   in
-  lib.optionalAttrs isFixup { ${attrName} = value; }
+  lib.optionalAttrs isFixup { ${attrName} = fixup; }
 ) (builtins.readDir ./.)

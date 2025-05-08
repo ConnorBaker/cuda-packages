@@ -1,15 +1,3 @@
-let
-  inherit (builtins) throw warn;
-  dontRecurseForDerivationsOrEvaluate =
-    attrs:
-    attrs
-    // {
-      # Don't recurse for derivations
-      recurseForDerivations = false;
-      # Don't attempt eval
-      __attrsFailEvaluation = true;
-    };
-in
 {
   config,
   cudaLib,
@@ -22,6 +10,7 @@ in
   manifests,
 }:
 let
+  inherit (builtins) throw warn;
   inherit (lib.attrsets)
     attrNames
     hasAttr
@@ -29,6 +18,7 @@ let
     mergeAttrsList
     ;
   inherit (lib.customisation) callPackagesWith;
+  inherit (lib.filesystem) packagesFromDirectoryRecursive;
   inherit (lib.fixedPoints) composeManyExtensions extends;
   inherit (lib.lists) concatMap;
   inherit (lib.strings) versionAtLeast versionOlder;
@@ -38,21 +28,30 @@ let
     dropDots
     formatCapabilities
     mkCudaPackagesVersionedName
-    packagesFromDirectoryRecursive'
     ;
+
+  dontRecurseForDerivationsOrEvaluate =
+    attrs:
+    attrs
+    // {
+      # Don't recurse for derivations
+      recurseForDerivations = false;
+      # Don't attempt eval
+      __attrsFailEvaluation = true;
+    };
 
   # NOTE: This value is considered an implementation detail and should not be exposed in the attribute set.
   cudaMajorMinorPatchVersion = manifests.cuda.release_label;
+  cudaMajorMinorVersion = majorMinor cudaMajorMinorPatchVersion;
+  cudaMajorVersion = major cudaMajorMinorPatchVersion;
 
-  cudaPackagesMajorMinorVersionName = mkCudaPackagesVersionedName (
-    majorMinor cudaMajorMinorPatchVersion
-  );
+  cudaPackagesMajorMinorVersionName = mkCudaPackagesVersionedName cudaMajorMinorVersion;
 
   mkAlias = if config.allowAliases then warn else flip const throw;
 
   pkgs' = dontRecurseForDerivationsOrEvaluate (
     let
-      cudaPackagesMajorVersionName = mkCudaPackagesVersionedName (major cudaMajorMinorPatchVersion);
+      cudaPackagesMajorVersionName = mkCudaPackagesVersionedName cudaMajorVersion;
       cudaPackagesUnversionedName = "cudaPackages";
     in
     pkgs.extend (
@@ -65,7 +64,7 @@ let
     )
   );
 
-  cudaNamePrefix = "cuda${majorMinor cudaMajorMinorPatchVersion}";
+  cudaNamePrefix = "cuda${cudaMajorMinorVersion}";
 
   cudaPackagesFixedPoint =
     finalCudaPackages:
@@ -91,8 +90,6 @@ let
       );
     in
     {
-      inherit cudaNamePrefix;
-
       # NOTE: dontRecurseForDerivationsOrEvaluate is applied earlier to avoid the need to maintain two copies of
       # pkgs -- one with and one without it applied.
       pkgs = pkgs';
@@ -108,8 +105,7 @@ let
       inherit fixups manifests;
 
       # Versions
-      cudaMajorMinorVersion = majorMinor cudaMajorMinorPatchVersion;
-      cudaMajorVersion = major cudaMajorMinorPatchVersion;
+      inherit cudaNamePrefix cudaMajorMinorVersion cudaMajorVersion;
 
       # Utilities
       cudaAtLeast = versionAtLeast cudaMajorMinorPatchVersion;
@@ -157,10 +153,10 @@ let
     # Redistributable packages
     // mapAttrs (const finalCudaPackages.redist-builder) redistBuilderArgs
     # CUDA version-specific packages
-    # NOTE: No need for recurseIntoAttrs on the package set as packagesFromDirectoryRecursive' applies it automatically,
-    # and so the union of the attribute sets will have it as well.
-    // packagesFromDirectoryRecursive' finalCudaPackages.callPackage ./packages;
-
+    // packagesFromDirectoryRecursive {
+      inherit (finalCudaPackages) callPackage;
+      directory = ./packages;
+    };
 in
 pkgs'.makeScopeWithSplicing' {
   otherSplices = pkgs'.generateSplicesForMkScope [ cudaPackagesMajorMinorVersionName ];
