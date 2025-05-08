@@ -51,6 +51,10 @@ The `manifests` and `fixups` attribute sets are not part of the CUDA package set
 
 The `manifests` attribute contains the JSON manifest files to use for a particular package set, while the `fixups` attribute set is a mapping from package name to a `callPackage`-able expression which will be provided to `overrideAttrs` on the result of `redist-builder`. Changing the version of a redistributable (like cuDNN) involves calling `override` on the relevant CUDA package set and overriding the corresponding entry in the `manifests` and `fixups` arguments provided to `callPackage`.
 
+::: {.important}
+The fixup is chosen by `pname`, so packages with multiple versions (e.g., `cudnn`, `cudnn_8_9`, etc.) all share a single fixup function (i.e., `fixups/cudnn.nix`).
+:::
+
 As an example, you can change the version of a redistributable in the CUDA package set with this overlay:
 
 ```nix

@@ -77,12 +77,12 @@ let
             packageName:
             # Only add the configuration for the package from the manifest if we have a fixup for it.
             # NOTE: Since manifests have non-package keys, this also gets rid of entries like "release_label".
-            lib.optionals (hasAttr packageName fixups.${redistName}) [
+            lib.optionals (hasAttr packageName fixups) [
               {
                 ${packageName} = {
                   inherit packageName redistName;
                   release = manifests.${redistName}.${packageName};
-                  fixupFn = fixups.${redistName}.${packageName};
+                  fixupFn = fixups.${packageName};
                 };
               }
             ]
@@ -129,7 +129,7 @@ let
                 ./manifests/cudnn/redistrib_8.9.7.json;
           in
           (importJSON manifest).cudnn;
-        fixupFn = fixups.cudnn.cudnn;
+        fixupFn = fixups.cudnn;
       };
 
       # Aliases

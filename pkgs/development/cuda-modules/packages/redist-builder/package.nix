@@ -141,4 +141,7 @@ let
     (mkOverrideAttrsArg fixupFn)
   ];
 in
+# Last step before returning control to `callPackage` (adds the `.override` method)
+# we'll apply (`overrideAttrs`) necessary package-specific "fixup" functions.
+# Order is significant.
 stdenv.mkDerivation (finalAttrs: extension finalAttrs { })
