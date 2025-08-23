@@ -4,7 +4,7 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
       url = "github:hercules-ci/flake-parts";
     };
-    nixpkgs.url = "github:ConnorBaker/nixpkgs/feat/arrayUtilities";
+    nixpkgs.url = "github:ConnorBaker/nixpkgs/feat/arrayUtilities-remaining";
     git-hooks-nix = {
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:cachix/git-hooks.nix";
@@ -20,7 +20,6 @@
     let
       inherit (inputs.flake-parts.lib) mkFlake;
       inherit (inputs.nixpkgs) lib;
-      cudaLib = import ./pkgs/development/cuda-modules/lib { inherit lib; };
       systems = [
         "aarch64-linux"
         "x86_64-linux"
@@ -70,7 +69,7 @@
       # But it doesn't matter, from what I can tell. `nix-eval-jobs` handles it all the same.
       flake = {
         hydraJobs = import ./hydraJobs.nix {
-          inherit cudaLib lib;
+          inherit lib;
           inherit (inputs.self) legacyPackages;
         };
         overlays.default = import ./overlay.nix;

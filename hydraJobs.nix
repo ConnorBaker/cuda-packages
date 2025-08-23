@@ -1,10 +1,8 @@
 {
-  cudaLib,
   lib,
   legacyPackages,
 }:
 let
-  inherit (cudaLib.utils) mkRealArchitecture;
   inherit (lib.attrsets)
     attrValues
     intersectAttrs
@@ -301,6 +299,7 @@ let
     let
       inherit (cudaPackages.cudaStdenv) hasJetsonCudaCapability;
       inherit (pkgs.releaseTools) aggregate;
+      inherit (pkgs._cuda.lib) mkRealArchitecture;
 
       cudaPackages = pkgs.pkgsCuda.${realArch}.${cudaPackageSetName};
       realArch = mkRealArchitecture cudaCapability;
@@ -417,6 +416,7 @@ in
   x86_64-linux =
     let
       pkgs = mkPkgsForHydra legacyPackages.x86_64-linux;
+      inherit (pkgs._cuda.lib) mkRealArchitecture;
     in
     {
       # Ada Lovelace
@@ -435,6 +435,7 @@ in
   aarch64-linux =
     let
       pkgs = mkPkgsForHydra legacyPackages.aarch64-linux;
+      inherit (pkgs._cuda.lib) mkRealArchitecture;
     in
     {
       # Jetson Xavier
