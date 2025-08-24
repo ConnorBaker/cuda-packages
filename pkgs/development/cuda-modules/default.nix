@@ -88,6 +88,8 @@ let
           ) (attrNames manifests.${redistName})
         ) (attrNames manifests)
       );
+
+      redistPackages = mapAttrs (const finalCudaPackages.redist-builder) redistBuilderArgs;
     in
     {
       # NOTE: dontRecurseForDerivationsOrEvaluate is applied earlier to avoid the need to maintain two copies of
@@ -110,6 +112,17 @@ let
       # Utilities
       cudaAtLeast = versionAtLeast cudaMajorMinorPatchVersion;
       cudaOlder = versionOlder cudaMajorMinorPatchVersion;
+      unpackedRedistPackages = pkgs'.linkFarm "unpackedRedistPackages" (
+        lib.concatMapAttrs (
+          name: drv:
+          lib.optionalAttrs (drv.src != null) {
+            ${name} = drv.src;
+          }
+        ) redistPackages
+      );
+
+      # cuda_compat isn't always available; use null to avoid missing attribute errors.
+      cuda_compat = null;
 
       # Alternative versions of select packages.
       # This should be minimized as much as possible.
@@ -155,7 +168,7 @@ let
       cusparselt = mkAlias "cudaPackages.cusparselt is deprecated, use cudaPackages.libcusparse_lt instead" finalCudaPackages.libcusparse_lt;
     }
     # Redistributable packages
-    // mapAttrs (const finalCudaPackages.redist-builder) redistBuilderArgs
+    // redistPackages
     # CUDA version-specific packages
     // packagesFromDirectoryRecursive {
       inherit (finalCudaPackages) callPackage;

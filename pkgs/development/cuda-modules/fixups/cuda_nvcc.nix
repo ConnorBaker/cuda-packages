@@ -1,8 +1,10 @@
 {
+  _cuda,
   backendStdenv,
   cudaAtLeast,
   cudaOlder,
   lib,
+  libnvvm ? null,
   nvccHook,
 }:
 finalAttrs: prevAttrs: {
@@ -65,10 +67,19 @@ finalAttrs: prevAttrs: {
   # PTXAS_FLAGS     +=
 
   postInstall =
+    let
+      # TODO: Should we also patch the LIBRARIES line's use of $(TOP)/$(_TARGET_DIR_)?
+      oldNvvmDir = lib.concatStringsSep "/" (
+        [ "$(TOP)" ]
+        ++ lib.optionals (cudaOlder "12.5") [ "$(_NVVM_BRANCH_)" ]
+        ++ lib.optionals (cudaAtLeast "12.5") [ "nvvm" ]
+      );
+      newNvvmDir = if cudaOlder "13.0" then ''''${!outputBin:?}/nvvm'' else libnvvm.outPath;
+    in
     prevAttrs.postInstall or ""
     + lib.optionalString finalAttrs.finalPackage.meta.available (
-      # Always move the nvvm directory to the bin output.
-      ''
+      # From CUDA 13.0, NVVM is available as a separate library and not bundled in the NVCC redist.
+      lib.optionalString (cudaOlder "13.0") ''
         moveToOutput "nvvm" "''${!outputBin:?}"
         mv --verbose --no-clobber "''${!outputBin:?}/nvvm/lib64" "''${!outputBin:?}/nvvm/lib"
       ''
@@ -89,50 +100,49 @@ finalAttrs: prevAttrs: {
             '$(TOP)/$(_TARGET_DIR_)/include' \
             "''${!outputInclude:?}/include"
       ''
-      # Fixup the nvcc.profile to use the correct paths for the backend compiler and NVVM.
-      + (
-        let
-          # TODO: Should we also patch the LIBRARIES line's use of $(TOP)/$(_TARGET_DIR_)?
-          oldNvvmDir = lib.concatStringsSep "/" (
-            [ "$(TOP)" ]
-            ++ lib.optionals (cudaOlder "12.5") [ "$(_NVVM_BRANCH_)" ]
-            ++ lib.optionals (cudaAtLeast "12.5") [ "nvvm" ]
-          );
-          newNvvmDir = ''''${!outputBin:?}/nvvm'';
-        in
-        # Unconditional patching to switch to the correct NVVM paths.
-        # NOTE: In our replacement substitution, we use double quotes to allow for variable expansion.
-        # NOTE: We use a trailing slash only on the NVVM directory replacement to prevent partial matches.
-        ''
-          nixLog "patching nvcc.profile to use the correct NVVM paths"
-          substituteInPlace "''${!outputBin:?}/bin/nvcc.profile" \
-            --replace-fail \
-              '${oldNvvmDir}/' \
-              "${newNvvmDir}/"
-        ''
-        # Add the dependency on backendStdenv.cc and the new NVVM directories to the nvcc.profile.
-        # NOTE: Escape the dollar sign in the variable expansion to prevent early expansion.
-        + ''
-          nixLog "adding backendStdenv.cc and ${newNvvmDir} to nvcc.profile"
-          cat << EOF >> "''${!outputBin:?}/bin/nvcc.profile"
+      # Fixup the nvcc.profile to use the correct paths for NVVM.
+      # NOTE: In our replacement substitution, we use double quotes to allow for variable expansion.
+      # NOTE: We use a trailing slash only on the NVVM directory replacement to prevent partial matches.
+      # + lib.optionalString (cudaOlder "13.0") ''
+      + ''
+        nixLog "patching nvcc.profile to use the correct NVVM paths"
+        substituteInPlace "''${!outputBin:?}/bin/nvcc.profile" \
+          --replace-fail \
+            '${oldNvvmDir}/' \
+            "${newNvvmDir}/"
 
-          # Fix a compatible backend compiler
-          PATH += "${backendStdenv.cc}/bin":
+        nixLog "adding ${newNvvmDir} to nvcc.profile"
+        cat << EOF >> "''${!outputBin:?}/bin/nvcc.profile"
 
-          # Expose the split-out nvvm
-          LIBRARIES =+ \$(_SPACE_) "-L${newNvvmDir}/lib"
-          INCLUDES =+ \$(_SPACE_) "-I${newNvvmDir}/include"
-          EOF
-        ''
-      )
+        # Expose the split-out nvvm
+        LIBRARIES =+ \$(_SPACE_) "-L${newNvvmDir}/lib"
+        INCLUDES =+ \$(_SPACE_) "-I${newNvvmDir}/include"
+        EOF
+      ''
+      # Add the dependency on backendStdenv.cc to the nvcc.profile.
+      + ''
+        nixLog "adding backendStdenv.cc to nvcc.profile"
+        cat << EOF >> "''${!outputBin:?}/bin/nvcc.profile"
+
+        # Fix a compatible backend compiler
+        PATH += "${backendStdenv.cc}/bin":
+        EOF
+      ''
     );
 
   passthru = prevAttrs.passthru or { } // {
+    platformAssertions =
+      prevAttrs.passthru.platformAssertions or [ ]
+      ++ lib.optionals (cudaAtLeast "13.0") (_cuda.lib._mkMissingPackagesAssertions { inherit libnvvm; });
+
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       # NOTE: May need to restrict cuda_nvcc to a single output to avoid breaking consumers which expect NVCC
       # to be within a single directory structure. This happens partly because NVCC is also home to NVVM.
       outputs = [
         "out"
+      ]
+      # CUDA 13.0 has essentially nothing other than binaries.
+      ++ lib.optionals (cudaOlder "13.0") [
         "bin"
         "dev"
         "include"

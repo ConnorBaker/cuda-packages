@@ -1,11 +1,14 @@
 {
+  _cuda,
   addDriverRunpath,
   arrayUtilities,
   autoFixElfFiles,
   backendStdenv,
   cuda_cccl,
   cuda_compat,
+  cuda_crt ? null,
   cuda_nvcc,
+  cudaAtLeast,
   lib,
   patchelf,
 }:
@@ -24,6 +27,8 @@ prevAttrs: {
     # - crt/host_config.h
     # TODO(@connorbaker): Check that the dependency offset for this is correct.
     ++ [ (lib.getOutput "include" cuda_nvcc) ]
+    # TODO(@connorbaker): From CUDA 13.0, crt/host_config.h is in cuda_crt
+    ++ lib.optionals (cudaAtLeast "13.0") [ (lib.getOutput "include" cuda_crt) ]
     # Add the dependency on CCCL's include directory.
     # - nv/target
     # TODO(@connorbaker): Check that the dependency offset for this is correct.
@@ -112,6 +117,12 @@ prevAttrs: {
     '';
 
   passthru = prevAttrs.passthru or { } // {
+    platformAssertions =
+      prevAttrs.passthru.platformAssertions or [ ]
+      ++ lib.optionals (cudaAtLeast "13.0") (
+        _cuda.lib._mkMissingPackagesAssertions { inherit cuda_crt; }
+      );
+
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       # NOTE: A number of packages expect cuda_cudart to be in a single directory.
       outputs = [

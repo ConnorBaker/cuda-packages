@@ -180,6 +180,28 @@ let
       };
     in
     {
+      opencv = prev.opencv.overrideAttrs (
+        finalAttrs: prevAttrs: {
+          src = final.fetchFromGitHub {
+            owner = "opencv";
+            repo = "opencv";
+            # tag = finalAttrs.version;
+            rev = "28d410cecff7a6fbeac3f1aba3ecc78248671829";
+            hash = "sha256-CsG54cDkKJmpF04lccycqOF2c61QKNERmN8A0KrrlP4=";
+          };
+
+          # NOTE: 4.12 doesn't work with CUDA 13.0.
+          # Build fails with template errors. Unsure if caused by forcing C++17, use of GCC 15.
+          version = "4.12.0-unstable-2025-08-20";
+
+          # Thrust requires C++17 which somehow isn't set despite cmakeFlags.
+          # env.CXXFLAGS = " -std=c++17";
+          # cmakeFlags = prevAttrs.cmakeFlags or [ ] ++ [
+          #   (final.lib.cmakeFeature "CMAKE_CUDA_STANDARD" "17")
+          # ];
+        }
+      );
+
       # openmpi = prev.openmpi.override (prevAttrs: {
       #   cudaPackages = prevAttrs.cudaPackages // {
       #     # Nothing else should be changed, so we don't override the scope.
