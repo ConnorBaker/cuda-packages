@@ -63,7 +63,8 @@ stdenv.mkDerivation (finalAttrs: {
     cuda_cccl # <nv/target>
     cuda_cudart
     nccl
-  ] ++ optionals mpiSupport [ mpi ];
+  ]
+  ++ optionals mpiSupport [ mpi ];
 
   makeFlags = [
     # NOTE: CUDA_HOME is expected to have the bin directory
@@ -71,7 +72,8 @@ stdenv.mkDerivation (finalAttrs: {
     "CUDA_HOME=${getBin cuda_nvcc}"
     "NCCL_HOME=${nccl}"
     "NVCC_GENCODE=${flags.gencodeString}"
-  ] ++ optionals mpiSupport [ "MPI=1" ];
+  ]
+  ++ optionals mpiSupport [ "MPI=1" ];
 
   enableParallelBuilding = true;
 

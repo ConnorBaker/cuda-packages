@@ -101,15 +101,14 @@ let
           cuda_cudart
         ];
 
-        cmakeFlags =
-          [
-            (cmakeBool "CMAKE_VERBOSE_MAKEFILE" true)
-            (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
-          ]
-          ++ optionals finalAttrs.requireCxxStandard14 [
-            (cmakeFeature "CMAKE_CXX_STANDARD" "14")
-            (cmakeFeature "CMAKE_CUDA_STANDARD" "14")
-          ];
+        cmakeFlags = [
+          (cmakeBool "CMAKE_VERBOSE_MAKEFILE" true)
+          (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
+        ]
+        ++ optionals finalAttrs.requireCxxStandard14 [
+          (cmakeFeature "CMAKE_CXX_STANDARD" "14")
+          (cmakeFeature "CMAKE_CUDA_STANDARD" "14")
+        ];
 
         # The build *is* the check.
         doCheck = false;

@@ -10,7 +10,8 @@ prevAttrs: {
         "include"
         "lib"
         "samples"
-      ] ++ lib.optionals (backendStdenv.hostNixSystem == "x86_64-linux") [ "static" ];
+      ]
+      ++ lib.optionals (backendStdenv.hostNixSystem == "x86_64-linux") [ "static" ];
     };
   };
 }

@@ -7,15 +7,13 @@
   zlib,
 }:
 finalAttrs: prevAttrs: {
-  postUnpack =
-    prevAttrs.postUnpack or ""
-    + ''
-      nixLog "moving collectx_bringup to the top level of source root"
-      mv --verbose --no-clobber \
-        "$PWD/${finalAttrs.src.name}/opt/nvidia/collectx_bringup"/* \
-        "$PWD/${finalAttrs.src.name}/"
-      rm --dir --verbose --recursive "$PWD/${finalAttrs.src.name}/opt"
-    '';
+  postUnpack = prevAttrs.postUnpack or "" + ''
+    nixLog "moving collectx_bringup to the top level of source root"
+    mv --verbose --no-clobber \
+      "$PWD/${finalAttrs.src.name}/opt/nvidia/collectx_bringup"/* \
+      "$PWD/${finalAttrs.src.name}/"
+    rm --dir --verbose --recursive "$PWD/${finalAttrs.src.name}/opt"
+  '';
 
   buildInputs = prevAttrs.buildInputs or [ ] ++ [
     curl

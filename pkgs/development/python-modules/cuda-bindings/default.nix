@@ -44,7 +44,8 @@ let
       cython
       pyclibrary
       setuptools
-    ] ++ optionals (majorMinorVersion == "12.6") [ versioneer ];
+    ]
+    ++ optionals (majorMinorVersion == "12.6") [ versioneer ];
 
     postPatch =
       # NOTE: This seems... wrong?

@@ -44,22 +44,22 @@ stdenv.mkDerivation (finalAttrs: {
     "dev"
     "static"
     "test_script"
-  ] ++ optionals pythonSupport [ "dist" ];
+  ]
+  ++ optionals pythonSupport [ "dist" ];
 
-  nativeBuildInputs =
+  nativeBuildInputs = [
+    cmake
+    cppProtobuf
+    cuda_nvcc
+  ]
+  ++ optionals pythonSupport (
+    with python3Packages;
     [
-      cmake
-      cppProtobuf
-      cuda_nvcc
+      build
+      pythonOutputDistHook
+      setuptools
     ]
-    ++ optionals pythonSupport (
-      with python3Packages;
-      [
-        build
-        pythonOutputDistHook
-        setuptools
-      ]
-    );
+  );
 
   postPatch =
     # Ensure Onnx is found by CMake rather than using the vendored version.

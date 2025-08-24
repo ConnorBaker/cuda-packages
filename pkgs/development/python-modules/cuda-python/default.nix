@@ -104,10 +104,11 @@ let
 
     pyproject = true;
 
-    build-system =
-      [ setuptools ]
-      ++ optionals (versionOlder finalAttrs.version "12.6") [ pyclibrary ]
-      ++ optionals (versionOlder finalAttrs.version "12.8") [ cython ];
+    build-system = [
+      setuptools
+    ]
+    ++ optionals (versionOlder finalAttrs.version "12.6") [ pyclibrary ]
+    ++ optionals (versionOlder finalAttrs.version "12.8") [ cython ];
 
     # Replace relative dlopen calls with absolute paths to the libraries
     # NOTE: For cuda_nvcc, the nnvm directory is in the bin output.

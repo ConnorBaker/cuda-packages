@@ -197,41 +197,39 @@ finalAttrs: prevAttrs: {
       rmdir "''${sourceRoot:?}/nsight-compute/2023.2.2" "''${sourceRoot:?}/nsight-compute"
     '';
 
-  postPatch =
-    prevAttrs.postPatch or ""
-    + ''
-      for kind in host target; do
-        nixLog "removing unsupported ''${kind}s for host redist system ${hostRedistSystem}"
-        if [[ ! -d "$kind" ]]; then
-          nixLog "directory $kind does not exist, skipping"
-          continue
-        fi
-        pushd "$kind" >/dev/null
-        for dir in *; do
-          case "${hostRedistSystem}" in
-          linux-aarch64|linux-sbsa)
-            case "$dir" in
-            linux-*-a64) nixLog "keeping $dir";;
-            *) nixLog "removing $dir" && rm -r "$dir";;
-            esac
-            ;;
-          linux-x86_64)
-            case "$dir" in
-            linux-*-x64|target-linux-x64) nixLog "keeping $dir";;
-            *) nixLog "removing $dir" && rm -r "$dir";;
-            esac
-            ;;
-          *) nixLogError "unknown host redist system: ${hostRedistSystem}" && exit 1;;
+  postPatch = prevAttrs.postPatch or "" + ''
+    for kind in host target; do
+      nixLog "removing unsupported ''${kind}s for host redist system ${hostRedistSystem}"
+      if [[ ! -d "$kind" ]]; then
+        nixLog "directory $kind does not exist, skipping"
+        continue
+      fi
+      pushd "$kind" >/dev/null
+      for dir in *; do
+        case "${hostRedistSystem}" in
+        linux-aarch64|linux-sbsa)
+          case "$dir" in
+          linux-*-a64) nixLog "keeping $dir";;
+          *) nixLog "removing $dir" && rm -r "$dir";;
           esac
-        done
-        popd >/dev/null
+          ;;
+        linux-x86_64)
+          case "$dir" in
+          linux-*-x64|target-linux-x64) nixLog "keeping $dir";;
+          *) nixLog "removing $dir" && rm -r "$dir";;
+          esac
+          ;;
+        *) nixLogError "unknown host redist system: ${hostRedistSystem}" && exit 1;;
+        esac
       done
+      popd >/dev/null
+    done
 
-      patchShebangs .
+    patchShebangs .
 
-      nixLog "removing vendored Mesa components"
-      rm -rf host/*/Mesa
-    '';
+    nixLog "removing vendored Mesa components"
+    rm -rf host/*/Mesa
+  '';
 
   dontWrapQtApps = true;
 
@@ -278,19 +276,17 @@ finalAttrs: prevAttrs: {
       libtiff_4_4 # libtiff.so.5
     ];
 
-  postInstall =
-    prevAttrs.postInstall or ""
-    + ''
-      moveToOutput docs "''${doc:?}"
-      if [[ -e "$out/ncu" && -e "$out/ncu-ui" ]]; then
-        nixLog "symlinking executables to bin dir"
-        mkdir -p "$out/bin"
-        # TODO(@connorbaker): This should fail if there is not exactly one host/target.
-        ln -snf "$out/target/"linux-*"/ncu" "$out/bin/ncu"
-        ln -snf "$out/host/"linux-*"/ncu-ui" "$out/bin/ncu-ui"
-        rm "$out/ncu" "$out/ncu-ui"
-      fi
-    '';
+  postInstall = prevAttrs.postInstall or "" + ''
+    moveToOutput docs "''${doc:?}"
+    if [[ -e "$out/ncu" && -e "$out/ncu-ui" ]]; then
+      nixLog "symlinking executables to bin dir"
+      mkdir -p "$out/bin"
+      # TODO(@connorbaker): This should fail if there is not exactly one host/target.
+      ln -snf "$out/target/"linux-*"/ncu" "$out/bin/ncu"
+      ln -snf "$out/host/"linux-*"/ncu-ui" "$out/bin/ncu-ui"
+      rm "$out/ncu" "$out/ncu-ui"
+    fi
+  '';
 
   passthru = prevAttrs.passthru or { } // {
     inherit libtiff_4_4;

@@ -29,28 +29,27 @@ let
 
     # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
     # path from backendStdenv's host compiler. Generalize this to Clang as well!
-    substitutions =
-      {
-        inherit nvccHostCCMatchesStdenvCC;
-      }
-      // optionalAttrs (!nvccHostCCMatchesStdenvCC) {
-        backendStdenvCCVersion = backendStdenv.cc.version;
-        backendStdenvCCHostPlatformConfig = backendStdenv.hostPlatform.config;
-        backendStdenvCCFullPath = "${backendStdenv.cc}/bin/${backendStdenv.cc.targetPrefix}c++";
-        backendStdenvCCUnwrappedCCRoot = backendStdenv.cc.cc.outPath;
-        backendStdenvCCUnwrappedCCLibRoot = backendStdenv.cc.cc.lib.outPath;
+    substitutions = {
+      inherit nvccHostCCMatchesStdenvCC;
+    }
+    // optionalAttrs (!nvccHostCCMatchesStdenvCC) {
+      backendStdenvCCVersion = backendStdenv.cc.version;
+      backendStdenvCCHostPlatformConfig = backendStdenv.hostPlatform.config;
+      backendStdenvCCFullPath = "${backendStdenv.cc}/bin/${backendStdenv.cc.targetPrefix}c++";
+      backendStdenvCCUnwrappedCCRoot = backendStdenv.cc.cc.outPath;
+      backendStdenvCCUnwrappedCCLibRoot = backendStdenv.cc.cc.lib.outPath;
 
-        stdenvCCVersion = stdenv.cc.version;
-        stdenvCCHostPlatformConfig = stdenv.hostPlatform.config;
-        stdenvCCFullPath = "${stdenv.cc}/bin/${stdenv.cc.targetPrefix}c++";
-        stdenvCCUnwrappedCCRoot = stdenv.cc.cc.outPath;
-        stdenvCCUnwrappedCCLibRoot = stdenv.cc.cc.lib.outPath;
+      stdenvCCVersion = stdenv.cc.version;
+      stdenvCCHostPlatformConfig = stdenv.hostPlatform.config;
+      stdenvCCFullPath = "${stdenv.cc}/bin/${stdenv.cc.targetPrefix}c++";
+      stdenvCCUnwrappedCCRoot = stdenv.cc.cc.outPath;
+      stdenvCCUnwrappedCCLibRoot = stdenv.cc.cc.lib.outPath;
 
-        # TODO: Setting cudaArchs means that we have to recompile a large number of packages because `cuda_nvcc`
-        # propagates this hook, and so the input derivations change.
-        # This wouldn't be an issue if we had content addressed derivations.
-        # cudaArchs = cmakeCudaArchitecturesString;
-      };
+      # TODO: Setting cudaArchs means that we have to recompile a large number of packages because `cuda_nvcc`
+      # propagates this hook, and so the input derivations change.
+      # This wouldn't be an issue if we had content addressed derivations.
+      # cudaArchs = cmakeCudaArchitecturesString;
+    };
 
     passthru = {
       inherit (finalAttrs) substitutions;

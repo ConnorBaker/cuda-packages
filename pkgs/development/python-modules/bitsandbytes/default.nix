@@ -50,13 +50,12 @@ buildPythonPackage {
         "cuda_binary_path = PACKAGE_DIR / 'libbitsandbytes_cuda${cudaVersionString}.so'"
   '';
 
-  nativeBuildInputs =
-    [
-      cmake
-    ]
-    ++ lib.optionals cudaSupport [
-      cuda_nvcc
-    ];
+  nativeBuildInputs = [
+    cmake
+  ]
+  ++ lib.optionals cudaSupport [
+    cuda_nvcc
+  ];
 
   build-system = [
     setuptools
@@ -68,11 +67,12 @@ buildPythonPackage {
     libcusparse
   ];
 
-  cmakeFlags =
-    [ (lib.cmakeFeature "COMPUTE_BACKEND" (if cudaSupport then "cuda" else "cpu")) ]
-    ++ lib.optionals cudaSupport [
-      (lib.cmakeFeature "COMPUTE_CAPABILITY" flags.cmakeCudaArchitecturesString)
-    ];
+  cmakeFlags = [
+    (lib.cmakeFeature "COMPUTE_BACKEND" (if cudaSupport then "cuda" else "cpu"))
+  ]
+  ++ lib.optionals cudaSupport [
+    (lib.cmakeFeature "COMPUTE_CAPABILITY" flags.cmakeCudaArchitecturesString)
+  ];
 
   preBuild = ''
     make -j $NIX_BUILD_CORES

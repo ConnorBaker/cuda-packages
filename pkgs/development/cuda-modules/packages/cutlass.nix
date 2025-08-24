@@ -60,21 +60,20 @@ stdenv.mkDerivation (finalAttrs: {
   # superset of the `out` (`bin`) or `dev` outputs (whih is what the multiple-outputs setup hook does by default).
   outputs = [ "out" ] ++ optionals pythonSupport [ "dist" ];
 
-  nativeBuildInputs =
+  nativeBuildInputs = [
+    cuda_nvcc
+    cmake
+    ninja
+    python3Packages.python # Python is always required
+  ]
+  ++ optionals pythonSupport (
+    with python3Packages;
     [
-      cuda_nvcc
-      cmake
-      ninja
-      python3Packages.python # Python is always required
+      build
+      pythonOutputDistHook
+      setuptools
     ]
-    ++ optionals pythonSupport (
-      with python3Packages;
-      [
-        build
-        pythonOutputDistHook
-        setuptools
-      ]
-    );
+  );
 
   postPatch =
     # Prepend some commands to the CUDA.cmake file so it can find the CUDA libraries using CMake's FindCUDAToolkit
@@ -139,16 +138,15 @@ stdenv.mkDerivation (finalAttrs: {
 
   enableParallelBuilding = true;
 
-  buildInputs =
-    [
-      cuda_cudart
-      cuda_nvrtc
-      libcurand
-    ]
-    ++ optionals enableTools [
-      cudnn
-      libcublas
-    ];
+  buildInputs = [
+    cuda_cudart
+    cuda_nvrtc
+    libcurand
+  ]
+  ++ optionals enableTools [
+    cudnn
+    libcublas
+  ];
 
   cmakeFlags = [
     (cmakeFeature "CUTLASS_NVCC_ARCHS" flags.cmakeCudaArchitecturesString)

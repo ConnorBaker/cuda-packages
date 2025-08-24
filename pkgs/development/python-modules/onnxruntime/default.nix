@@ -54,34 +54,33 @@ buildPythonPackage {
   ];
 
   # Libraries are not linked correctly.
-  buildInputs =
-    [
-      oneDNN
-      re2
-      onnx.passthru.cppProtobuf
+  buildInputs = [
+    oneDNN
+    re2
+    onnx.passthru.cppProtobuf
 
-      # https://github.com/NixOS/nixpkgs/pull/357656 patches the onnx lib to ${pkgs.onnxruntime}/lib
-      # but these files are copied into this package too. If the original non-python onnxruntime
-      # package is GC-ed, cuda support in this python package will break.
-      # Two options, rebuild onnxruntime twice with the different paths hard-coded, or just hold a runtime
-      # dependency between the two. Option 2, because onnxruntime takes forever to build with cuda support.
-      onnxruntime
-    ]
-    ++ lib.optionals cudaSupport (
-      with cudaPackages;
-      (
-        [
-          libcublas # libcublasLt.so.XX libcublas.so.XX
-          libcurand # libcurand.so.XX
-          libcufft # libcufft.so.XX
-          cudnn # libcudnn.soXX
-          cuda_cudart # libcudart.so.XX
-        ]
-        ++ lib.optionals ncclSupport [
-          nccl # libnccl.so.XX
-        ]
-      )
-    );
+    # https://github.com/NixOS/nixpkgs/pull/357656 patches the onnx lib to ${pkgs.onnxruntime}/lib
+    # but these files are copied into this package too. If the original non-python onnxruntime
+    # package is GC-ed, cuda support in this python package will break.
+    # Two options, rebuild onnxruntime twice with the different paths hard-coded, or just hold a runtime
+    # dependency between the two. Option 2, because onnxruntime takes forever to build with cuda support.
+    onnxruntime
+  ]
+  ++ lib.optionals cudaSupport (
+    with cudaPackages;
+    (
+      [
+        libcublas # libcublasLt.so.XX libcublas.so.XX
+        libcurand # libcurand.so.XX
+        libcufft # libcufft.so.XX
+        cudnn # libcudnn.soXX
+        cuda_cudart # libcudart.so.XX
+      ]
+      ++ lib.optionals ncclSupport [
+        nccl # libnccl.so.XX
+      ]
+    )
+  );
 
   propagatedBuildInputs = [
     coloredlogs

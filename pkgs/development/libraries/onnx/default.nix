@@ -64,25 +64,25 @@ stdenv.mkDerivation (finalAttrs: {
   outputs = [
     "out"
     "dev"
-  ] ++ optionals pythonSupport [ "dist" ];
+  ]
+  ++ optionals pythonSupport [ "dist" ];
 
-  nativeBuildInputs =
+  nativeBuildInputs = [
+    cppProtobuf
+    python # NOTE: apparently required regardless of pythonSupport
+    # NOTE: We need CMake for both the non-python and python builds, but we don't want two copies of it on the path.
+    # The cmake python package seems to work for both, so we use that.
+    python3Packages.cmake
+  ]
+  ++ optionals pythonSupport (
+    with python3Packages;
     [
-      cppProtobuf
-      python # NOTE: apparently required regardless of pythonSupport
-      # NOTE: We need CMake for both the non-python and python builds, but we don't want two copies of it on the path.
-      # The cmake python package seems to work for both, so we use that.
-      python3Packages.cmake
+      build
+      pybind11
+      pythonOutputDistHook
+      setuptools
     ]
-    ++ optionals pythonSupport (
-      with python3Packages;
-      [
-        build
-        pybind11
-        pythonOutputDistHook
-        setuptools
-      ]
-    );
+  );
 
   # Patch script template
   postPatch = ''

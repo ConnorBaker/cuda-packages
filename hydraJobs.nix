@@ -55,24 +55,23 @@ let
       setup-hooks = [
         pkgs.arrayUtilities
       ];
-      core =
-        [
-          pkgs.ffmpeg
-          pkgs.gpu-burn
-          pkgs.hwloc
-          pkgs.magma-cuda-static
-          pkgs.nvidia-optical-flow-sdk
-          pkgs.onnx
-          pkgs.onnx-tensorrt
-          pkgs.onnxruntime
-          pkgs.opencv4
-        ]
-        # TODO(@connorbaker): Should these be able to build on Jetson?
-        ++ optionals (!hasJetsonCudaCapability) [
-          pkgs.openmpi
-          pkgs.ucc
-          pkgs.ucx
-        ];
+      core = [
+        pkgs.ffmpeg
+        pkgs.gpu-burn
+        pkgs.hwloc
+        pkgs.magma-cuda-static
+        pkgs.nvidia-optical-flow-sdk
+        pkgs.onnx
+        pkgs.onnx-tensorrt
+        pkgs.onnxruntime
+        pkgs.opencv4
+      ]
+      # TODO(@connorbaker): Should these be able to build on Jetson?
+      ++ optionals (!hasJetsonCudaCapability) [
+        pkgs.openmpi
+        pkgs.ucc
+        pkgs.ucx
+      ];
       extras = [
         # nvtop?
         # pkgs.katago and the various versions with different backends
@@ -324,20 +323,19 @@ let
         # Special case for cudnn_8_9, which is constructed manually
         ++ optionals cudaPackages.cudnn_8_9.meta.available [ cudaPackages.cudnn_8_9 ];
 
-      core =
-        [
-          cudaPackages.cuda-samples
-          cudaPackages.cudatoolkit
-          cudaPackages.cudnn-frontend
-          cudaPackages.cutlass
-          cudaPackages.libmathdx
-          cudaPackages.tests.saxpy # TODO: This doesn't actually run saxpy
-        ]
-        # Non-Jetson packages
-        ++ optionals (!hasJetsonCudaCapability) [
-          cudaPackages.nccl
-          cudaPackages.nccl-tests
-        ];
+      core = [
+        cudaPackages.cuda-samples
+        cudaPackages.cudatoolkit
+        cudaPackages.cudnn-frontend
+        cudaPackages.cutlass
+        cudaPackages.libmathdx
+        cudaPackages.tests.saxpy # TODO: This doesn't actually run saxpy
+      ]
+      # Non-Jetson packages
+      ++ optionals (!hasJetsonCudaCapability) [
+        cudaPackages.nccl
+        cudaPackages.nccl-tests
+      ];
 
       extras = [ ];
     in

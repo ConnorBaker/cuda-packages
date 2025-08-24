@@ -84,53 +84,53 @@ let
     nativeBuildInputs = [
       onnx.passthru.cppProtobuf
       pypaInstallHook
-    ] ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ]; # included to fail on missing dependencies
+    ]
+    ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ]; # included to fail on missing dependencies
 
-    postPatch =
-      ''
-        nixLog "patching $PWD/CMakeLists.txt to avoid manually setting CMAKE_CXX_COMPILER"
-        substituteInPlace "$PWD"/CMakeLists.txt \
-          --replace-fail \
-            'find_program(CMAKE_CXX_COMPILER NAMES $ENV{CXX} g++)' \
-            '# find_program(CMAKE_CXX_COMPILER NAMES $ENV{CXX} g++)'
+    postPatch = ''
+      nixLog "patching $PWD/CMakeLists.txt to avoid manually setting CMAKE_CXX_COMPILER"
+      substituteInPlace "$PWD"/CMakeLists.txt \
+        --replace-fail \
+          'find_program(CMAKE_CXX_COMPILER NAMES $ENV{CXX} g++)' \
+          '# find_program(CMAKE_CXX_COMPILER NAMES $ENV{CXX} g++)'
 
-        nixLog "patching $PWD/CMakeLists.txt to use find_package(CUDAToolkit) instead of find_package(CUDA)"
-        substituteInPlace "$PWD"/CMakeLists.txt \
-          --replace-fail \
-            'find_package(CUDA ''${CUDA_VERSION} REQUIRED)' \
-            'find_package(CUDAToolkit REQUIRED)'
+      nixLog "patching $PWD/CMakeLists.txt to use find_package(CUDAToolkit) instead of find_package(CUDA)"
+      substituteInPlace "$PWD"/CMakeLists.txt \
+        --replace-fail \
+          'find_package(CUDA ''${CUDA_VERSION} REQUIRED)' \
+          'find_package(CUDAToolkit REQUIRED)'
 
-        nixLog "patching $PWD/python/CMakeLists.txt to correct hints for python3"
-        substituteInPlace "$PWD"/python/CMakeLists.txt \
-          --replace-fail \
-            'HINTS ''${EXT_PATH}/''${PYTHON} /usr/include/''${PYTHON}' \
-            'HINTS "${python}/include/''${PYTHON}"'
+      nixLog "patching $PWD/python/CMakeLists.txt to correct hints for python3"
+      substituteInPlace "$PWD"/python/CMakeLists.txt \
+        --replace-fail \
+          'HINTS ''${EXT_PATH}/''${PYTHON} /usr/include/''${PYTHON}' \
+          'HINTS "${python}/include/''${PYTHON}"'
 
-        for script in "$PWD"/python/packaging/bindings_wheel/tensorrt/plugin/_{lib,tensor,top_level}.py; do
-          nixLog "patching $script to remove invalid escape sequence '\s'"
-          substituteInPlace "$script" --replace-fail '\s' 's'
-        done
-      ''
-      # Patch files in packaging
-      # Largely taken from https://github.com/NVIDIA/TensorRT/blob/08ad45bf3df848e722dfdc7d01474b5ba2eff7e9/python/build.sh.
-      + ''
-        for file in $(find "$PWD"/python/packaging -type f); do
-          nixLog "patching $file to include TensorRT version"
-          substituteInPlace "$file" \
-            --replace-quiet \
-              '##TENSORRT_VERSION##' \
-              '${tensorrt.version}' \
-            --replace-quiet \
-              '##TENSORRT_MAJMINPATCH##' \
-              '${finalAttrs.version}' \
-            --replace-quiet \
-              '##TENSORRT_PYTHON_VERSION##' \
-              '${finalAttrs.version}' \
-            --replace-quiet \
-              '##TENSORRT_MODULE##' \
-              'tensorrt'
-        done
-      '';
+      for script in "$PWD"/python/packaging/bindings_wheel/tensorrt/plugin/_{lib,tensor,top_level}.py; do
+        nixLog "patching $script to remove invalid escape sequence '\s'"
+        substituteInPlace "$script" --replace-fail '\s' 's'
+      done
+    ''
+    # Patch files in packaging
+    # Largely taken from https://github.com/NVIDIA/TensorRT/blob/08ad45bf3df848e722dfdc7d01474b5ba2eff7e9/python/build.sh.
+    + ''
+      for file in $(find "$PWD"/python/packaging -type f); do
+        nixLog "patching $file to include TensorRT version"
+        substituteInPlace "$file" \
+          --replace-quiet \
+            '##TENSORRT_VERSION##' \
+            '${tensorrt.version}' \
+          --replace-quiet \
+            '##TENSORRT_MAJMINPATCH##' \
+            '${finalAttrs.version}' \
+          --replace-quiet \
+            '##TENSORRT_PYTHON_VERSION##' \
+            '${finalAttrs.version}' \
+          --replace-quiet \
+            '##TENSORRT_MODULE##' \
+            'tensorrt'
+      done
+    '';
 
     cmakeBuildDir = "python/build";
 

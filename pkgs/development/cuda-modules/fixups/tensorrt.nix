@@ -122,14 +122,12 @@ in
     '';
 
   # Tell autoPatchelf about runtime dependencies.
-  postFixup =
-    prevAttrs.postFixup or ""
-    + ''
-      nixLog "patchelf-ing ''${!outputBin:?}/bin/trtexec with runtime dependencies"
-      patchelf \
-        "''${!outputBin:?}/bin/trtexec" \
-        --add-needed libnvinfer_plugin.so.${majorVersion}
-    '';
+  postFixup = prevAttrs.postFixup or "" + ''
+    nixLog "patchelf-ing ''${!outputBin:?}/bin/trtexec with runtime dependencies"
+    patchelf \
+      "''${!outputBin:?}/bin/trtexec" \
+      --add-needed libnvinfer_plugin.so.${majorVersion}
+  '';
 
   passthru = prevAttrs.passthru or { } // {
     # The CUDNN used with TensorRT.

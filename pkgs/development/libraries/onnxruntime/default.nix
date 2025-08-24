@@ -123,7 +123,8 @@ stdenv.mkDerivation (finalAttrs: {
   outputs = [
     "out"
     "dev"
-  ] ++ optionals pythonSupport [ "dist" ];
+  ]
+  ++ optionals pythonSupport [ "dist" ];
 
   # No one has time for your games, onnxruntime.
   env.NIX_CFLAGS_COMPILE = builtins.toString [ "-Wno-error" ];
@@ -138,105 +139,102 @@ stdenv.mkDerivation (finalAttrs: {
   # NOTE: Blocked moving to newer protobuf:
   # https://github.com/microsoft/onnxruntime/issues/21308
 
-  nativeBuildInputs =
+  nativeBuildInputs = [
+    abseil-cpp
+    cmake
+    patchelf
+    pkg-config
+    python3Packages.python
+    cppProtobuf
+    flatbuffers_23
+  ]
+  ++ optionals pythonSupport (
+    with python3Packages;
     [
-      abseil-cpp
-      cmake
-      patchelf
-      pkg-config
-      python3Packages.python
-      cppProtobuf
-      flatbuffers_23
+      pip
+      python
+      pythonOutputDistHook
+      setuptools
+      wheel
     ]
-    ++ optionals pythonSupport (
-      with python3Packages;
-      [
-        pip
-        python
-        pythonOutputDistHook
-        setuptools
-        wheel
-      ]
-    )
-    ++ optionals cudaSupport [
-      cuda_nvcc
-    ];
+  )
+  ++ optionals cudaSupport [
+    cuda_nvcc
+  ];
 
-  buildInputs =
+  buildInputs = [
+    clog
+    cpuinfo
+    eigen
+    glibcLocales
+    howard-hinnant-date
+    libpng
+    microsoft-gsl
+    mp11
+    nlohmann_json
+    re2
+    zlib
+  ]
+  ++ optionals pythonSupport (
+    with python3Packages;
     [
-      clog
-      cpuinfo
-      eigen
-      glibcLocales
-      howard-hinnant-date
-      libpng
-      microsoft-gsl
-      mp11
-      nlohmann_json
-      re2
-      zlib
+      numpy
+      pybind11
+      packaging
     ]
-    ++ optionals pythonSupport (
-      with python3Packages;
-      [
-        numpy
-        pybind11
-        packaging
-      ]
-    )
-    ++ optionals stdenv.hostPlatform.isDarwin [
-      Foundation
-      libiconv
-    ]
-    ++ optionals cudaSupport [
-      cuda_cccl # CUDA 11.x <cub/cub.cuh>, CUDA 12.x <nv/target>
-      cuda_cudart
-      cudnn # cudnn.h
-      cudnn-frontend # cudnn_frontend.h
-      libcublas # cublas_v2.h
-      libcufft # cufft.h
-      libcurand # curand.h
-      libcusparse # cusparse.h
-      onnx-tensorrt
-      tensorrt
-    ]
-    ++ optionals ncclSupport [ nccl ];
+  )
+  ++ optionals stdenv.hostPlatform.isDarwin [
+    Foundation
+    libiconv
+  ]
+  ++ optionals cudaSupport [
+    cuda_cccl # CUDA 11.x <cub/cub.cuh>, CUDA 12.x <nv/target>
+    cuda_cudart
+    cudnn # cudnn.h
+    cudnn-frontend # cudnn_frontend.h
+    libcublas # cublas_v2.h
+    libcufft # cufft.h
+    libcurand # curand.h
+    libcusparse # cusparse.h
+    onnx-tensorrt
+    tensorrt
+  ]
+  ++ optionals ncclSupport [ nccl ];
 
-  postPatch =
-    ''
-      substituteInPlace cmake/libonnxruntime.pc.cmake.in \
-        --replace-fail \
-          '$'{prefix}/@CMAKE_INSTALL_ \
-          "@CMAKE_INSTALL_"
-    ''
-    # Don't require the static libraries
-    + ''
-      substituteInPlace cmake/onnxruntime_providers_tensorrt.cmake \
-        --replace-fail \
-          'set(onnxparser_link_libs nvonnxparser_static)' \
-          'set(onnxparser_link_libs nvonnxparser)'
-    ''
-    # Update cudnn_frontend to use our Nixpkgs-provided copy
-    + ''
-      echo "find_package(cudnn_frontend REQUIRED)" > cmake/external/cudnn_frontend.cmake
-    ''
-    # Disable failing tests.
-    # TODO: Is this on all platforms, or just x86_64-linux?
-    + ''
-      substituteInPlace onnxruntime/test/shared_lib/test_inference.cc \
-        --replace-fail \
-          'TEST(CApiTest, custom_op_set_input_memory_type) {' \
-          'TEST(CApiTest, DISABLED_custom_op_set_input_memory_type) {'
-      substituteInPlace onnxruntime/test/providers/cpu/activation/activation_op_test.cc \
-        --replace-fail \
-          'TEST_F(ActivationOpTest, ONNX_Gelu) {' \
-          'TEST_F(ActivationOpTest, DISABLED_ONNX_Gelu) {'
-    ''
-    # TODO: Verify this fails.
-    # https://github.com/NixOS/nixpkgs/pull/226734#issuecomment-1663028691
-    + optionalString isAarch64Linux ''
-      rm -v onnxruntime/test/optimizer/nhwc_transformer_test.cc
-    '';
+  postPatch = ''
+    substituteInPlace cmake/libonnxruntime.pc.cmake.in \
+      --replace-fail \
+        '$'{prefix}/@CMAKE_INSTALL_ \
+        "@CMAKE_INSTALL_"
+  ''
+  # Don't require the static libraries
+  + ''
+    substituteInPlace cmake/onnxruntime_providers_tensorrt.cmake \
+      --replace-fail \
+        'set(onnxparser_link_libs nvonnxparser_static)' \
+        'set(onnxparser_link_libs nvonnxparser)'
+  ''
+  # Update cudnn_frontend to use our Nixpkgs-provided copy
+  + ''
+    echo "find_package(cudnn_frontend REQUIRED)" > cmake/external/cudnn_frontend.cmake
+  ''
+  # Disable failing tests.
+  # TODO: Is this on all platforms, or just x86_64-linux?
+  + ''
+    substituteInPlace onnxruntime/test/shared_lib/test_inference.cc \
+      --replace-fail \
+        'TEST(CApiTest, custom_op_set_input_memory_type) {' \
+        'TEST(CApiTest, DISABLED_custom_op_set_input_memory_type) {'
+    substituteInPlace onnxruntime/test/providers/cpu/activation/activation_op_test.cc \
+      --replace-fail \
+        'TEST_F(ActivationOpTest, ONNX_Gelu) {' \
+        'TEST_F(ActivationOpTest, DISABLED_ONNX_Gelu) {'
+  ''
+  # TODO: Verify this fails.
+  # https://github.com/NixOS/nixpkgs/pull/226734#issuecomment-1663028691
+  + optionalString isAarch64Linux ''
+    rm -v onnxruntime/test/optimizer/nhwc_transformer_test.cc
+  '';
 
   # TODO(@connorbaker): This probably won't work for Darwin.
   # Use the same build dir the bash script wrapping the python script wrapping CMake expects us to use.
@@ -252,38 +250,37 @@ stdenv.mkDerivation (finalAttrs: {
     appendToVar NVCC_PREPEND_FLAGS "-Xcudafe=--diag_suppress=2803"
   '';
 
-  cmakeFlags =
-    [
-      # Must set to true to avoid CMake trying to download dependencies.
-      (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
-      (cmakeBool "FETCHCONTENT_QUIET" false)
-      (cmakeFeature "FETCHCONTENT_TRY_FIND_PACKAGE_MODE" "ALWAYS")
-      # Configure build
-      (cmakeBool "onnxruntime_BUILD_SHARED_LIB" true)
-      (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" finalAttrs.doCheck) # TODO: Build unit tests so long as they don't require GPU access.
-      (cmakeBool "onnxruntime_ENABLE_LTO" (!cudaSupport)) # NOTE: Cannot enable LTO when building objects with different compiler versions, like the compiler used by NVCC.
-      (cmakeBool "onnxruntime_USE_CUDA" cudaSupport)
-      (cmakeBool "onnxruntime_USE_NCCL" ncclSupport)
-      (cmakeBool "onnxruntime_ENABLE_PYTHON" true)
-      (cmakeBool "onnxruntime_USE_FULL_PROTOBUF" true) # NOTE: Using protobuf_21-lite causes linking errors
-    ]
-    # Our vendored libraries
-    ++ [
-      (cmakeFeature "FETCHCONTENT_SOURCE_DIR_DLPACK" dlpack.outPath)
-      (cmakeFeature "FETCHCONTENT_SOURCE_DIR_MP11" mp11.outPath)
-      (cmakeFeature "FETCHCONTENT_SOURCE_DIR_ONNX" onnx.outPath)
-      (cmakeFeature "FETCHCONTENT_SOURCE_DIR_SAFEINT" safeint.outPath)
-    ]
-    # CUDA
-    ++ optionals cudaSupport [
-      # TODO(@connorbaker): Unclear if this actually causes onnxruntime to use onnx-tensorrt;
-      # the CMake code indicates it merely searches for the library for the parser wherever tensorrt was discovered.
-      (cmakeBool "onnxruntime_USE_TENSORRT_BUILTIN_PARSER" false) # Use onnx-tensorrt
-      (cmakeBool "onnxruntime_USE_TENSORRT" true)
-      (cmakeFeature "onnxruntime_NVCC_THREADS" "1")
-      (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
-      (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" cutlass.outPath)
-    ];
+  cmakeFlags = [
+    # Must set to true to avoid CMake trying to download dependencies.
+    (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
+    (cmakeBool "FETCHCONTENT_QUIET" false)
+    (cmakeFeature "FETCHCONTENT_TRY_FIND_PACKAGE_MODE" "ALWAYS")
+    # Configure build
+    (cmakeBool "onnxruntime_BUILD_SHARED_LIB" true)
+    (cmakeBool "onnxruntime_BUILD_UNIT_TESTS" finalAttrs.doCheck) # TODO: Build unit tests so long as they don't require GPU access.
+    (cmakeBool "onnxruntime_ENABLE_LTO" (!cudaSupport)) # NOTE: Cannot enable LTO when building objects with different compiler versions, like the compiler used by NVCC.
+    (cmakeBool "onnxruntime_USE_CUDA" cudaSupport)
+    (cmakeBool "onnxruntime_USE_NCCL" ncclSupport)
+    (cmakeBool "onnxruntime_ENABLE_PYTHON" true)
+    (cmakeBool "onnxruntime_USE_FULL_PROTOBUF" true) # NOTE: Using protobuf_21-lite causes linking errors
+  ]
+  # Our vendored libraries
+  ++ [
+    (cmakeFeature "FETCHCONTENT_SOURCE_DIR_DLPACK" dlpack.outPath)
+    (cmakeFeature "FETCHCONTENT_SOURCE_DIR_MP11" mp11.outPath)
+    (cmakeFeature "FETCHCONTENT_SOURCE_DIR_ONNX" onnx.outPath)
+    (cmakeFeature "FETCHCONTENT_SOURCE_DIR_SAFEINT" safeint.outPath)
+  ]
+  # CUDA
+  ++ optionals cudaSupport [
+    # TODO(@connorbaker): Unclear if this actually causes onnxruntime to use onnx-tensorrt;
+    # the CMake code indicates it merely searches for the library for the parser wherever tensorrt was discovered.
+    (cmakeBool "onnxruntime_USE_TENSORRT_BUILTIN_PARSER" false) # Use onnx-tensorrt
+    (cmakeBool "onnxruntime_USE_TENSORRT" true)
+    (cmakeFeature "onnxruntime_NVCC_THREADS" "1")
+    (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
+    (cmakeOptionType "PATH" "FETCHCONTENT_SOURCE_DIR_CUTLASS" cutlass.outPath)
+  ];
 
   # TODO: Removed Ninja since it gets added to cmakeFlags and we'd need to filter it out prior to passing it to the Python script.
   # Allow CMake to run its configuration setup hook to fully populate the cmakeFlags shell variable.

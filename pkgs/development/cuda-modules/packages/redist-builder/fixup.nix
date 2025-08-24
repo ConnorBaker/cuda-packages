@@ -212,7 +212,8 @@ in
       # TODO(@connorbaker): Document these
       supportedRedistSystems = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.supportedRedistSystems";
       supportedNixSystems = builtins.throw "redist-builder: ${finalAttrs.name} did not set passthru.redistBuilderArg.supportedNixSystems";
-    } // prevAttrs.passthru.redistBuilderArg or { };
+    }
+    // prevAttrs.passthru.redistBuilderArg or { };
 
     # NOTE: Downstream may expand this to include other outputs, but they must remember to set the appropriate
     # outputNameVarFallbacks!

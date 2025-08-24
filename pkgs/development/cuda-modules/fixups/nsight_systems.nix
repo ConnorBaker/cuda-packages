@@ -65,18 +65,16 @@ in
     "nsight-systems/*/*/python/bin/python"
   ];
 
-  postPatch =
-    prevAttrs.postPatch or ""
-    + ''
-      for pattern in "''${rmPatterns[@]}"; do
-        for path in $pattern; do
-          rm -rv $path
-        done
+  postPatch = prevAttrs.postPatch or "" + ''
+    for pattern in "''${rmPatterns[@]}"; do
+      for path in $pattern; do
+        rm -rv $path
       done
-      unset -v path
-      unset -v pattern
-      patchShebangs nsight-systems
-    '';
+    done
+    unset -v path
+    unset -v pattern
+    patchShebangs nsight-systems
+  '';
 
   nativeBuildInputs = prevAttrs.nativeBuildInputs or [ ] ++ [ wrapQtAppsHook ];
 
