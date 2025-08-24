@@ -180,25 +180,56 @@ let
       };
     in
     {
-      opencv = prev.opencv.overrideAttrs (
+      # NOTE: opencv is an alias to opencv4; make sure to override the actual derivation and not the alias.
+      opencv4 = prev.opencv4.overrideAttrs (
+        let
+          contribSrc = final.fetchFromGitHub {
+            owner = "opencv";
+            repo = "opencv_contrib";
+            rev = "2a82fa641582f1af9959fd31cef7888ad5a39c14";
+            hash = "sha256-cfGBqo/OT93oV09jqhHF4GfWaJGFa0IzZXtoANnQBSI=";
+          };
+        in
         finalAttrs: prevAttrs: {
           src = final.fetchFromGitHub {
             owner = "opencv";
             repo = "opencv";
-            # tag = finalAttrs.version;
             rev = "28d410cecff7a6fbeac3f1aba3ecc78248671829";
             hash = "sha256-CsG54cDkKJmpF04lccycqOF2c61QKNERmN8A0KrrlP4=";
           };
 
           # NOTE: 4.12 doesn't work with CUDA 13.0.
-          # Build fails with template errors. Unsure if caused by forcing C++17, use of GCC 15.
+          # There are a number of upstream PRs required, including at least
+          # https://github.com/opencv/opencv/pull/27636.
           version = "4.12.0-unstable-2025-08-20";
 
-          # Thrust requires C++17 which somehow isn't set despite cmakeFlags.
-          # env.CXXFLAGS = " -std=c++17";
-          # cmakeFlags = prevAttrs.cmakeFlags or [ ] ++ [
-          #   (final.lib.cmakeFeature "CMAKE_CUDA_STANDARD" "17")
-          # ];
+          postUnpack = ''
+            cp --no-preserve=mode -r "${contribSrc}/modules" "$NIX_BUILD_TOP/source/opencv_contrib"
+          '';
+
+          cmakeFlags =
+            prevAttrs.cmakeFlags or [ ]
+            ++ final.lib.optionals (final.cudaPackages.cudaAtLeast "13.0") [
+              # NOTE: -Wno-deprecated-declarations:
+              # Huge number of deprecation warnings for CUDA 13.0
+              # /build/source/opencv_contrib/cudev/include/opencv2/cudev/util/vec_traits.hpp:138:98: warning: 'double4' is deprecated: use double4_16a or double4_32a [-Wdeprecated-declarations]
+              #   138 | CV_CUDEV_VEC_TRAITS_INST(double)
+              # NOTE: -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT=1:
+              # TODO(@connorbaker): This is an odd error to get given that we *do* change the language standard for OpenCV to C++17:
+              # https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/libraries/opencv/4.x.nix#L466
+              # In file included from /nix/store/kmmz1q61p1a6mv1c8yw9wihmdakqlc11-cuda13.0-cuda_cccl-13.0.50-include/include/thrust/detail/config/config.h:37,
+              #                  from /nix/store/kmmz1q61p1a6mv1c8yw9wihmdakqlc11-cuda13.0-cuda_cccl-13.0.50-include/include/thrust/detail/config.h:22,
+              #                  from /nix/store/kmmz1q61p1a6mv1c8yw9wihmdakqlc11-cuda13.0-cuda_cccl-13.0.50-include/include/thrust/tuple.h:32,
+              #                  from /build/source/opencv_contrib/cudev/include/opencv2/cudev/util/detail/tuple.hpp:49,
+              #                  from /build/source/opencv_contrib/cudev/include/opencv2/cudev/util/tuple.hpp:50,
+              #                  from /build/source/opencv_contrib/cudev/include/opencv2/cudev.hpp:55,
+              #                  from /build/source/opencv_contrib/cudev/test/test_precomp.hpp:47,
+              #                  from /build/source/opencv_contrib/cudev/test/test_cmp_op.cu:44:
+              # /nix/store/kmmz1q61p1a6mv1c8yw9wihmdakqlc11-cuda13.0-cuda_cccl-13.0.50-include/include/thrust/detail/config/cpp_dialect.h:78:6: error: #error Thrust requires at least C++17. Define CCCL_IGNORE_DEPRECATED_CPP_>
+              #    78 | #    error Thrust requires at least C++17. Define CCCL_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.
+              #       |      ^~~~~
+              (final.lib.cmakeFeature "CUDA_NVCC_FLAGS" "-Wno-deprecated-declarations -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT=1")
+            ];
         }
       );
 
