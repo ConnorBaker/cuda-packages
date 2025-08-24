@@ -40,7 +40,7 @@ let
       nvcomp = "4.2.0.11";
       nvjpeg2000 = "0.8.1";
       nvpl = "25.1.1";
-      nvtiff = "0.5.0";
+      nvtiff = "0.5.1";
       tensorrt = if hasJetsonCudaCapability then "10.7.0" else "10.9.0";
     };
 in
@@ -63,7 +63,7 @@ in
 
   cudaPackages_12_9 = final.callPackage ../development/cuda-modules {
     inherit fixups;
-    manifests = mkManifests "12.9.0";
+    manifests = mkManifests "12.9.1";
   };
 
   # Package set aliases with a major component refer to an alias with a major and minor component in final.
