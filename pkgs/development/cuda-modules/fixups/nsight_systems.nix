@@ -1,8 +1,8 @@
 {
+  _cuda,
   boost178,
   cuda_cudart,
   cuda_nvml_dev,
-  cudaLib,
   e2fsprogs,
   gst_all_1,
   lib,
@@ -18,7 +18,7 @@
   xorg,
 }:
 let
-  inherit (cudaLib.utils) majorMinorPatch;
+  inherit (_cuda.lib) majorMinorPatch;
   inherit (gst_all_1)
     gst-plugins-base
     gstreamer

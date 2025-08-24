@@ -1,7 +1,7 @@
 {
+  backendStdenv,
   cudaAtLeast,
   cudaOlder,
-  cudaStdenv,
   lib,
   nvccHook,
 }:
@@ -12,7 +12,7 @@ finalAttrs: prevAttrs: {
   # Entries here will be in nativeBuildInputs when cuda_nvcc is in nativeBuildInputs
   propagatedBuildInputs = prevAttrs.propagatedBuildInputs or [ ] ++ [
     nvccHook
-    cudaStdenv.cc
+    backendStdenv.cc
   ];
 
   # Patch the nvcc.profile.
@@ -110,14 +110,14 @@ finalAttrs: prevAttrs: {
               '${oldNvvmDir}/' \
               "${newNvvmDir}/"
         ''
-        # Add the dependency on cudaStdenv.cc and the new NVVM directories to the nvcc.profile.
+        # Add the dependency on backendStdenv.cc and the new NVVM directories to the nvcc.profile.
         # NOTE: Escape the dollar sign in the variable expansion to prevent early expansion.
         + ''
-          nixLog "adding cudaStdenv.cc and ${newNvvmDir} to nvcc.profile"
+          nixLog "adding backendStdenv.cc and ${newNvvmDir} to nvcc.profile"
           cat << EOF >> "''${!outputBin:?}/bin/nvcc.profile"
 
           # Fix a compatible backend compiler
-          PATH += "${cudaStdenv.cc}/bin":
+          PATH += "${backendStdenv.cc}/bin":
 
           # Expose the split-out nvvm
           LIBRARIES =+ \$(_SPACE_) "-L${newNvvmDir}/lib"

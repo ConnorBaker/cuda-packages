@@ -1,5 +1,5 @@
 {
-  cudaLib,
+  _cuda,
   libcal ? null,
   libcublas,
   nvshmem ? null, # TODO(@connorbaker): package this
@@ -15,7 +15,7 @@ prevAttrs: {
   passthru = prevAttrs.passthru or { } // {
     platformAssertions =
       prevAttrs.passthru.platformAssertions or [ ]
-      ++ cudaLib.utils.mkMissingPackagesAssertions { inherit libcal nvshmem; };
+      ++ _cuda.lib._mkMissingPackagesAssertions { inherit libcal nvshmem; };
 
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       outputs = [

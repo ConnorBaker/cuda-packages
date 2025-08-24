@@ -86,7 +86,7 @@ buildPythonPackage {
     description = "A c++ wrapper for the cudnn backend API";
     homepage = "https://github.com/NVIDIA/TensorRT-Model-Optimizer";
     license = lib.licenses.asl20;
-    broken = cudaPackages.cudaStdenv.hasJetsonCudaCapability;
+    broken = cudaPackages.backendStdenv.hasJetsonCudaCapability;
     platforms = [
       "aarch64-linux"
       "x86_64-linux"

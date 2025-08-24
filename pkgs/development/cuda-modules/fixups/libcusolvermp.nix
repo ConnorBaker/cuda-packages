@@ -1,6 +1,6 @@
 {
+  _cuda,
   cuda_cudart,
-  cudaLib,
   libcal ? null,
   libcublas,
   libcusolver,
@@ -16,7 +16,7 @@ prevAttrs: {
   passthru = prevAttrs.passthru or { } // {
     platformAssertions =
       prevAttrs.passthru.platformAssertions or [ ]
-      ++ cudaLib.utils.mkMissingPackagesAssertions { inherit libcal; };
+      ++ _cuda.lib._mkMissingPackagesAssertions { inherit libcal; };
 
     redistBuilderArg = prevAttrs.passthru.redistBuilderArg or { } // {
       outputs = [

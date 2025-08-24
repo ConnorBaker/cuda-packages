@@ -1,8 +1,8 @@
-{ cudaStdenv, lib }:
+{ backendStdenv, lib }:
 prevAttrs: {
   autoPatchelfIgnoreMissingDeps =
     prevAttrs.autoPatchelfIgnoreMissingDeps or [ ]
-    ++ lib.optionals cudaStdenv.hasJetsonCudaCapability [
+    ++ lib.optionals backendStdenv.hasJetsonCudaCapability [
       "libnvcudla.so"
     ];
 

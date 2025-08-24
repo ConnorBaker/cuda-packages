@@ -1,5 +1,5 @@
 {
-  cudaStdenv,
+  backendStdenv,
   lib,
   libcublas,
   mpi,
@@ -10,7 +10,7 @@ prevAttrs: {
     prevAttrs.buildInputs or [ ]
     ++ [ libcublas ]
     # MPI brings in NCCL dependency by way of UCC/UCX.
-    ++ lib.optionals (!cudaStdenv.hasJetsonCudaCapability) [
+    ++ lib.optionals (!backendStdenv.hasJetsonCudaCapability) [
       mpi
       nccl
     ];

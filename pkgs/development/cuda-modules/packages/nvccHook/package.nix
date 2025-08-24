@@ -1,19 +1,19 @@
 {
+  _cuda,
   arrayUtilities,
   autoFixElfFiles,
+  backendStdenv,
   callPackages,
   config,
-  cudaLib,
   cudaNamePrefix,
-  cudaStdenv,
   lib,
   makeSetupHook,
   patchelf,
   stdenv,
 }:
 let
-  inherit (cudaLib.utils) mkMetaBroken;
-  inherit (cudaStdenv) nvccHostCCMatchesStdenvCC;
+  inherit (_cuda.lib) _mkMetaBroken;
+  inherit (backendStdenv) nvccHostCCMatchesStdenvCC;
   inherit (lib.attrsets) optionalAttrs;
 
   finalAttrs = {
@@ -28,17 +28,17 @@ let
     ];
 
     # TODO(@connorbaker): The setup hook tells CMake not to link paths which include a GCC-specific compiler
-    # path from cudaStdenv's host compiler. Generalize this to Clang as well!
+    # path from backendStdenv's host compiler. Generalize this to Clang as well!
     substitutions =
       {
         inherit nvccHostCCMatchesStdenvCC;
       }
       // optionalAttrs (!nvccHostCCMatchesStdenvCC) {
-        cudaStdenvCCVersion = cudaStdenv.cc.version;
-        cudaStdenvCCHostPlatformConfig = cudaStdenv.hostPlatform.config;
-        cudaStdenvCCFullPath = "${cudaStdenv.cc}/bin/${cudaStdenv.cc.targetPrefix}c++";
-        cudaStdenvCCUnwrappedCCRoot = cudaStdenv.cc.cc.outPath;
-        cudaStdenvCCUnwrappedCCLibRoot = cudaStdenv.cc.cc.lib.outPath;
+        backendStdenvCCVersion = backendStdenv.cc.version;
+        backendStdenvCCHostPlatformConfig = backendStdenv.hostPlatform.config;
+        backendStdenvCCFullPath = "${backendStdenv.cc}/bin/${backendStdenv.cc.targetPrefix}c++";
+        backendStdenvCCUnwrappedCCRoot = backendStdenv.cc.cc.outPath;
+        backendStdenvCCUnwrappedCCLibRoot = backendStdenv.cc.cc.lib.outPath;
 
         stdenvCCVersion = stdenv.cc.version;
         stdenvCCHostPlatformConfig = stdenv.hostPlatform.config;
@@ -56,8 +56,8 @@ let
       inherit (finalAttrs) substitutions;
       brokenAssertions = [
         {
-          message = "nvccHook (currently) only supports GCC for cudaStdenv host compiler";
-          assertion = cudaStdenv.cc.isGNU;
+          message = "nvccHook (currently) only supports GCC for backendStdenv host compiler";
+          assertion = backendStdenv.cc.isGNU;
         }
         {
           message = "nvccHook (currently) only supports GCC for stdenv host compiler";
@@ -77,7 +77,7 @@ let
         "aarch64-linux"
         "x86_64-linux"
       ];
-      broken = mkMetaBroken (!(config.inHydra or false)) finalAttrs;
+      broken = _mkMetaBroken (!(config.inHydra or false)) finalAttrs;
       maintainers = lib.teams.cuda.members;
     };
   };

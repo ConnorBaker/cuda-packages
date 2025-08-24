@@ -15,7 +15,7 @@
 }:
 let
   inherit (cudaPackages)
-    cudaStdenv
+    backendStdenv
     cuda_cudart
     cuda_nvcc
     cuda_nvrtc
@@ -93,7 +93,7 @@ buildPythonPackage {
 
   disabled = pythonOlder "3.7";
 
-  stdenv = cudaStdenv;
+  stdenv = backendStdenv;
 
   src = fetchFromGitHub {
     owner = "cupy";

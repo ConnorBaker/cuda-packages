@@ -1,9 +1,9 @@
 {
+  _cuda,
   config,
-  cudaLib,
   emptyDirectory,
-  cudaPackagesExtensions,
   lib,
+  path,
   pkgs,
   # Manually provided arguments
   fixups,
@@ -24,10 +24,10 @@ let
   inherit (lib.strings) versionAtLeast versionOlder;
   inherit (lib.trivial) const flip importJSON;
   inherit (lib.versions) major majorMinor;
-  inherit (cudaLib.utils)
+  inherit (_cuda.lib)
     dropDots
     formatCapabilities
-    mkCudaPackagesVersionedName
+    mkVersionedName
     ;
 
   dontRecurseForDerivationsOrEvaluate =
@@ -45,13 +45,13 @@ let
   cudaMajorMinorVersion = majorMinor cudaMajorMinorPatchVersion;
   cudaMajorVersion = major cudaMajorMinorPatchVersion;
 
-  cudaPackagesMajorMinorVersionName = mkCudaPackagesVersionedName cudaMajorMinorVersion;
+  cudaPackagesMajorMinorVersionName = mkVersionedName "cudaPackages" cudaMajorMinorVersion;
 
   mkAlias = if config.allowAliases then warn else flip const throw;
 
   pkgs' = dontRecurseForDerivationsOrEvaluate (
     let
-      cudaPackagesMajorVersionName = mkCudaPackagesVersionedName cudaMajorVersion;
+      cudaPackagesMajorVersionName = mkVersionedName "cudaPackages" cudaMajorVersion;
       cudaPackagesUnversionedName = "cudaPackages";
     in
     pkgs.extend (
@@ -119,7 +119,7 @@ let
         release =
           let
             manifest =
-              if finalCudaPackages.cudaStdenv.hasJetsonCudaCapability then
+              if finalCudaPackages.backendStdenv.hasJetsonCudaCapability then
                 ./manifests/cudnn/redistrib_8.9.5.json
               else
                 ./manifests/cudnn/redistrib_8.9.7.json;
@@ -132,18 +132,22 @@ let
       # NOTE: flags is defined here to prevent a collision with an attribute of the same name from cuda-modules/packages.
       flags =
         dontRecurseForDerivationsOrEvaluate (formatCapabilities {
-          inherit (finalCudaPackages.cudaStdenv) cudaCapabilities cudaForwardCompat;
-          inherit (cudaLib.data) cudaCapabilityToInfo;
+          inherit (finalCudaPackages.backendStdenv) cudaCapabilities cudaForwardCompat;
+          inherit (_cuda.db) cudaCapabilityToInfo;
         })
         // {
+          inherit (_cuda.lib) dropDots;
           cudaComputeCapabilityToName = throw "cudaPackages.flags.cudaComputeCapabilityToName has been removed";
-          dropDot = mkAlias "cudaPackages.flags.dropDot is deprecated, use cudaLibs.utils.dropDots instead" dropDots;
-          isJetsonBuild = mkAlias "cudaPackages.flags.isJetsonBuild is deprecated, use cudaPackages.cudaStdenv.hasJetsonCudaCapability instead" finalCudaPackages.cudaStdenv.hasJetsonCudaCapability;
+          dropDot = mkAlias "cudaPackages.flags.dropDot is deprecated, use _cuda.lib.dropDots instead" dropDots;
+          isJetsonBuild = mkAlias "cudaPackages.flags.isJetsonBuild is deprecated, use cudaPackages.backendStdenv.hasJetsonCudaCapability instead" finalCudaPackages.backendStdenv.hasJetsonCudaCapability;
         };
+
+      backendStdenv = finalCudaPackages.callPackage (
+        path + "/pkgs/development/cuda-modules/packages/backendStdenv.nix"
+      ) { };
 
       ## Aliases for deprecated attributes
       autoAddCudaCompatRunpath = mkAlias "cudaPackages.autoAddCudaCompatRunpath is deprecated and no longer necessary" emptyDirectory;
-      backendStdenv = mkAlias "cudaPackages.backendStdenv has been removed, use cudaPackages.cudaStdenv instead" finalCudaPackages.cudaStdenv;
       cudaFlags = mkAlias "cudaPackages.cudaFlags is deprecated, use cudaPackages.flags instead" finalCudaPackages.flags;
       cudaMajorMinorPatchVersion = mkAlias "cudaPackages.cudaMajorMinorPatchVersion is an implementation detail, please use cudaPackages.cudaMajorMinorVersion instead" cudaMajorMinorPatchVersion;
       cudaVersion = mkAlias "cudaPackages.cudaVersion is deprecated, use cudaPackages.cudaMajorMinorVersion instead" finalCudaPackages.cudaMajorMinorVersion;
@@ -160,6 +164,17 @@ let
 in
 pkgs'.makeScopeWithSplicing' {
   otherSplices = pkgs'.generateSplicesForMkScope [ cudaPackagesMajorMinorVersionName ];
-  # User additions are included through cudaPackagesExtensions
-  f = extends (composeManyExtensions cudaPackagesExtensions) cudaPackagesFixedPoint;
+  f = extends (composeManyExtensions (
+    [
+      (finalCudaPackages: prevCudaPackages: {
+        # Need access to prevCudaPackages to be able to overlay without replacement.
+        tests = prevCudaPackages.tests // {
+          flags = finalCudaPackages.callPackage (
+            path + "/pkgs/development/cuda-modules/packages/tests/flags.nix"
+          ) { };
+        };
+      })
+    ]
+    ++ _cuda.extensions
+  )) cudaPackagesFixedPoint;
 }

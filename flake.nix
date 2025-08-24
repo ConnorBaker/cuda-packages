@@ -33,22 +33,7 @@
           # TODO: This also means that Nixpkgs needs to be imported *with* the correct config attribute set
           # from the start, unless they're willing to re-import Nixpkgs with the correct config.
           config = {
-            allowUnfreePredicate =
-              let
-                ensureList = x: if builtins.isList x then x else [ x ];
-                cudaLicenses = {
-                  "CUDA EULA" = true;
-                  "cuDNN EULA" = true;
-                  "cuSPARSELt EULA" = true;
-                  "cuTENSOR EULA" = true;
-                  "NVIDIA Math Libraries EULA" = true;
-                  "NVidia OptiX EULA" = true;
-                  "NVIDIA SLA" = true;
-                  "TensorRT EULA" = true;
-                };
-                isFreeOrCudaLicense = license: license.free || cudaLicenses.${license.shortName or ""} or false;
-              in
-              p: builtins.all isFreeOrCudaLicense (ensureList p.meta.license);
+            allowUnfree = true;
             cudaSupport = true;
           };
           localSystem = { inherit system; };

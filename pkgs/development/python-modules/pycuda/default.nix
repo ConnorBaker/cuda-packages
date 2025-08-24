@@ -1,7 +1,7 @@
 {
+  _cuda,
   boost,
   buildPythonPackage,
-  cudaLib,
   cudaPackages,
   fetchFromGitHub,
   lib,
@@ -14,7 +14,7 @@
   wheel,
 }:
 let
-  inherit (cudaLib.utils) dropDots;
+  inherit (_cuda.lib) dropDots;
   inherit (cudaPackages)
     cuda_cudart
     cuda_nvcc

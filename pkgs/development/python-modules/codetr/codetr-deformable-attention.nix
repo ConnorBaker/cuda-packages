@@ -10,11 +10,11 @@
 }:
 let
   inherit (cudaPackages)
+    backendStdenv
     cuda_cudart
     cuda_nvcc
     cuda_nvrtc
     cuda_nvtx
-    cudaStdenv
     flags
     libcublas
     libcusolver
@@ -39,7 +39,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   cmakeFlags = [
     (lib.cmakeFeature "CMAKE_CUDA_ARCHITECTURES" flags.cmakeCudaArchitecturesString)
-    (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" (lib.concatStringsSep ";" cudaStdenv.cudaCapabilities))
+    (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" (lib.concatStringsSep ";" backendStdenv.cudaCapabilities))
     (lib.cmakeFeature "TENSORRT_LIB_DIR" "${lib.getLib tensorrt}/lib")
     (lib.cmakeFeature "TENSORRT_INCLUDE_DIR" "${lib.getOutput "include" tensorrt}/include")
   ];

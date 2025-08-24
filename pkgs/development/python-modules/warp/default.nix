@@ -61,7 +61,7 @@ let
             '${concatMapStringsSep ", " (gencodeString: ''"${gencodeString}"'') flags.gencode},' \
           --replace-fail \
             '*clang_arch_flags,' \
-            '${concatMapStringsSep ", " (realArch: ''"--cuda-gpu-arch=${realArch}"'') flags.realArchs},'
+            '${concatMapStringsSep ", " (realArch: ''"--cuda-gpu-arch=${realArch}"'') flags.realArches},'
       ''
       # Patch build_dll.py to use dynamic libraries rather than static ones.
       # NOTE: We do not patch the `nvptxcompiler_static` path because it is not available as a dynamic library.

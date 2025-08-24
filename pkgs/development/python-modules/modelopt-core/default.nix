@@ -87,7 +87,7 @@ let
 
       # TODO: Need to finish meta attribute.
       meta = {
-        broken = cudaPackages.cudaStdenv.hasJetsonCudaCapability;
+        broken = cudaPackages.backendStdenv.hasJetsonCudaCapability;
         platforms = [
           "aarch64-linux"
           "x86_64-linux"

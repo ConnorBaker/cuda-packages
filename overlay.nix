@@ -180,12 +180,12 @@ let
       };
     in
     {
-      openmpi = prev.openmpi.override (prevAttrs: {
-        cudaPackages = prevAttrs.cudaPackages // {
-          # Nothing else should be changed, so we don't override the scope.
-          cuda_cudart = cudartJoined;
-        };
-      });
+      # openmpi = prev.openmpi.override (prevAttrs: {
+      #   cudaPackages = prevAttrs.cudaPackages // {
+      #     # Nothing else should be changed, so we don't override the scope.
+      #     cuda_cudart = cudartJoined;
+      #   };
+      # });
 
       ucx = prev.ucx.override (prevAttrs: {
         cudaPackages = prevAttrs.cudaPackages // {
@@ -229,9 +229,6 @@ let
       onnx-tensorrt = final.callPackage ./pkgs/development/libraries/onnx-tensorrt { };
 
       onnx = final.callPackage ./pkgs/development/libraries/onnx { };
-
-      # Example of disabling cuda_compat for JetPack 6
-      # cudaPackagesExtensions = prev.cudaPackagesExtensions or [ ] ++ [ (_: _: { cuda_compat = null; }) ];
     };
 in
 composeManyExtensions [

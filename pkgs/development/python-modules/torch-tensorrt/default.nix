@@ -1,7 +1,7 @@
 {
+  _cuda,
   buildPythonPackage,
   cffi,
-  cudaLib,
   cudaPackages,
   fetchFromGitHub,
   future,
@@ -62,7 +62,7 @@ buildPythonPackage {
         '__cuda_version__: "${cudaPackages.cudaMajorMinorVersion}"' \
       --replace-fail \
         '__tensorrt_version__: "10.7.0.post1"' \
-        '__tensorrt_version__: "${cudaLib.utils.majorMinorPatch tensorrt.version}"'
+        '__tensorrt_version__: "${_cuda.lib.majorMinorPatch tensorrt.version}"'
 
     nixLog "patching $PWD/pyproject.toml"
     substituteInPlace "$PWD/pyproject.toml" \

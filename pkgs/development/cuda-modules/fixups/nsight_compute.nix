@@ -1,8 +1,8 @@
 {
   autoreconfHook,
+  backendStdenv,
   cuda_cudart,
   cuda_nvml_dev,
-  cudaStdenv,
   dbus,
   e2fsprogs,
   fetchpatch,
@@ -28,7 +28,7 @@
   zlib,
 }:
 let
-  inherit (cudaStdenv) hostRedistSystem;
+  inherit (backendStdenv) hostRedistSystem;
   inherit (lib.attrsets) getLib getOutput;
   inherit (lib.lists) optionals;
   inherit (lib.strings) optionalString;

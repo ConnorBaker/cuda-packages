@@ -40,14 +40,14 @@ nvccHookRegistration() {
   # into the build.
   if ! ((nvccHostCCMatchesStdenvCC)); then
     # NOTE: We must quote the key names otherwise shfmt throws errors such as
-    # not a valid arithmetic operator: cudaStdenvCCUnwrappedCCRoot@
+    # not a valid arithmetic operator: backendStdenvCCUnwrappedCCRoot@
     declare -Agr nvccForbiddenHostCompilerRunpathEntries=(
       # Compiler libraries
-      ["@cudaStdenvCCUnwrappedCCRoot@/lib"]="@stdenvCCUnwrappedCCRoot@/lib"
-      ["@cudaStdenvCCUnwrappedCCRoot@/lib64"]="@stdenvCCUnwrappedCCRoot@/lib64"
-      ["@cudaStdenvCCUnwrappedCCRoot@/gcc/@cudaStdenvCCHostPlatformConfig@/@cudaStdenvCCVersion@"]="@stdenvCCUnwrappedCCRoot@/gcc/@stdenvCCHostPlatformConfig@/@stdenvCCVersion@"
+      ["@backendStdenvCCUnwrappedCCRoot@/lib"]="@stdenvCCUnwrappedCCRoot@/lib"
+      ["@backendStdenvCCUnwrappedCCRoot@/lib64"]="@stdenvCCUnwrappedCCRoot@/lib64"
+      ["@backendStdenvCCUnwrappedCCRoot@/gcc/@backendStdenvCCHostPlatformConfig@/@backendStdenvCCVersion@"]="@stdenvCCUnwrappedCCRoot@/gcc/@stdenvCCHostPlatformConfig@/@stdenvCCVersion@"
       # Compiler library
-      ["@cudaStdenvCCUnwrappedCCLibRoot@/lib"]="@stdenvCCUnwrappedCCLibRoot@/lib"
+      ["@backendStdenvCCUnwrappedCCLibRoot@/lib"]="@stdenvCCUnwrappedCCLibRoot@/lib"
     )
 
     # Tell CMake to ignore libraries provided by NVCC's host compiler when linking.
@@ -75,30 +75,30 @@ nvccHookRegistration() {
 
 nvccSetupEnvironmentVariables() {
   # NOTE: Historically, we would set the following flags:
-  # -DCUDA_HOST_COMPILER=@cudaStdenvCCFullPath@
-  # -DCMAKE_CUDA_HOST_COMPILER=@cudaStdenvCCFullPath@
+  # -DCUDA_HOST_COMPILER=@backendStdenvCCFullPath@
+  # -DCMAKE_CUDA_HOST_COMPILER=@backendStdenvCCFullPath@
   # However, as of CMake 3.13, if CUDAHOSTCXX is set, CMake will automatically use it as the host compiler for CUDA.
   # Since we set CUDAHOSTCXX in cudaSetupEnvironmentVariables, we don't need to set these flags anymore.
 
   # Set CUDAHOSTCXX if unset or null
   # https://cmake.org/cmake/help/latest/envvar/CUDAHOSTCXX.html
   if [[ -z ${CUDAHOSTCXX:-} ]]; then
-    export CUDAHOSTCXX="@cudaStdenvCCFullPath@"
+    export CUDAHOSTCXX="@backendStdenvCCFullPath@"
     nixLog "set CUDAHOSTCXX to $CUDAHOSTCXX"
   fi
 
   # NOTE: CUDA 12.5 and later allow setting NVCC_CCBIN as a lower-precedent way of using -ccbin.
   # https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#compiler-bindir-directory-ccbin
-  export NVCC_CCBIN="@cudaStdenvCCFullPath@"
-  nixLog "set NVCC_CCBIN to @cudaStdenvCCFullPath@"
+  export NVCC_CCBIN="@backendStdenvCCFullPath@"
+  nixLog "set NVCC_CCBIN to @backendStdenvCCFullPath@"
 
   # We append --compiler-bindir because NVCC uses the last --compiler-bindir it gets on the command line.
   # If users are able to be trusted to specify NVCC's host compiler, they can filter out this arg.
   # NOTE: Warnings of the form
   # nvcc warning : incompatible redefinition for option 'compiler-bindir', the last value of this option was used
   # indicate something in the build system is specifying `--compiler-bindir` (or `-ccbin`) and should be patched.
-  appendToVar NVCC_APPEND_FLAGS "--compiler-bindir=@cudaStdenvCCFullPath@"
-  nixLog "appended --compiler-bindir=@cudaStdenvCCFullPath@ to NVCC_APPEND_FLAGS"
+  appendToVar NVCC_APPEND_FLAGS "--compiler-bindir=@backendStdenvCCFullPath@"
+  nixLog "appended --compiler-bindir=@backendStdenvCCFullPath@ to NVCC_APPEND_FLAGS"
 
   # NOTE: We set -Xfatbin=-compress-all, which reduces the size of the compiled
   #   binaries. If binaries grow over 2GB, they will fail to link. This is a problem for us, as

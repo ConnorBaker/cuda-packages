@@ -50,7 +50,7 @@ let
   mkPkgsJobs =
     namePrefix: pkgs:
     let
-      inherit (pkgs.cudaPackages.cudaStdenv) hasJetsonCudaCapability;
+      inherit (pkgs.cudaPackages.backendStdenv) hasJetsonCudaCapability;
       inherit (pkgs.releaseTools) aggregate;
       setup-hooks = [
         pkgs.arrayUtilities
@@ -200,21 +200,21 @@ let
       core = filter (drv: drv.meta.available && !drv.meta.broken) [
         python3Packages.bitsandbytes
         python3Packages.causal-conv1d
-        python3Packages.codetr
+        # python3Packages.codetr
         python3Packages.cuda-bindings
         python3Packages.cuda-python
-        python3Packages.cupy
+        # python3Packages.cupy
         python3Packages.cutlass
         python3Packages.faiss
         python3Packages.flash-attn
         python3Packages.mamba-ssm
-        python3Packages.modelopt
-        python3Packages.modelopt-core
+        # python3Packages.modelopt
+        # python3Packages.modelopt-core
         python3Packages.numba
-        python3Packages.nvcomp
+        # python3Packages.nvcomp
         python3Packages.nvidia-ml-py
         python3Packages.onnx
-        python3Packages.onnx-tensorrt
+        # python3Packages.onnx-tensorrt
         python3Packages.onnxruntime
         python3Packages.pyclibrary
         python3Packages.pycuda
@@ -222,9 +222,9 @@ let
         python3Packages.pytorch-metric-learning
         python3Packages.pytorch3d
         python3Packages.schedulefree
-        python3Packages.tensorrt
+        # python3Packages.tensorrt
         python3Packages.torch
-        python3Packages.torch-tensorrt
+        # python3Packages.torch-tensorrt
         python3Packages.torchaudio
         python3Packages.torchvision
         python3Packages.transformer-engine
@@ -297,11 +297,11 @@ let
   mkCudaPackagesJobs =
     pkgs: cudaCapability: cudaPackageSetName:
     let
-      inherit (cudaPackages.cudaStdenv) hasJetsonCudaCapability;
+      inherit (cudaPackages.backendStdenv) hasJetsonCudaCapability;
       inherit (pkgs.releaseTools) aggregate;
       inherit (pkgs._cuda.lib) mkRealArchitecture;
 
-      cudaPackages = pkgs.pkgsCuda.${realArch}.${cudaPackageSetName};
+      cudaPackages = pkgs.pkgsForCudaArch.${realArch}.${cudaPackageSetName};
       realArch = mkRealArchitecture cudaCapability;
       namePrefix = "${pkgs.system}-${realArch}-${cudaPackageSetName}";
 
@@ -421,7 +421,7 @@ in
     {
       # Ada Lovelace
       ${mkRealArchitecture "8.9"} = {
-        cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_2";
+        # cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_2";
         cudaPackages_12_6 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_6";
         cudaPackages_12_8 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_8";
         cudaPackages_12_9 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_9";
@@ -441,12 +441,12 @@ in
       # Jetson Xavier
       ${mkRealArchitecture "7.2"} = {
         # JetPack 5 only supports up to 12.2.2
-        cudaPackages_12_2 = mkCudaPackagesJobs pkgs "7.2" "cudaPackages_12_2";
+        # cudaPackages_12_2 = mkCudaPackagesJobs pkgs "7.2" "cudaPackages_12_2";
       };
       # Jetson Orin
       ${mkRealArchitecture "8.7"} = {
         # JetPack 5 only supports up to 12.2.2
-        cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.7" "cudaPackages_12_2";
+        # cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.7" "cudaPackages_12_2";
         # JetPack 6 supports 12.4 and beyond
         cudaPackages_12_6 = mkCudaPackagesJobs pkgs "8.7" "cudaPackages_12_6";
         cudaPackages_12_8 = mkCudaPackagesJobs pkgs "8.7" "cudaPackages_12_8";
@@ -454,7 +454,7 @@ in
       };
       # Ada Lovelace
       ${mkRealArchitecture "8.9"} = {
-        cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_2";
+        # cudaPackages_12_2 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_2";
         cudaPackages_12_6 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_6";
         cudaPackages_12_8 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_8";
         cudaPackages_12_9 = mkCudaPackagesJobs pkgs "8.9" "cudaPackages_12_9";

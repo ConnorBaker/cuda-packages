@@ -1,11 +1,11 @@
 {
+  _cuda,
+  backendStdenv,
   config,
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
-  cudaLib,
   cudaNamePrefix,
-  cudaStdenv,
   fetchFromGitHub,
   flags,
   lib,
@@ -16,8 +16,8 @@
   gitUpdater,
 }:
 let
-  inherit (cudaLib.utils) mkMetaBadPlatforms;
-  inherit (cudaStdenv) hasJetsonCudaCapability;
+  inherit (_cuda.lib) _mkMetaBadPlatforms;
+  inherit (backendStdenv) hasJetsonCudaCapability;
   inherit (lib) licenses maintainers teams;
   inherit (lib.attrsets)
     getBin
@@ -114,7 +114,7 @@ stdenv.mkDerivation (finalAttrs: {
       "aarch64-linux"
       "x86_64-linux"
     ];
-    badPlatforms = mkMetaBadPlatforms (!(config.inHydra or false)) finalAttrs;
+    badPlatforms = _mkMetaBadPlatforms (!(config.inHydra or false)) finalAttrs;
     maintainers =
       (with maintainers; [
         mdaiter

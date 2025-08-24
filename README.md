@@ -8,12 +8,6 @@ Out of tree (Nixpkgs) experiments with packaging CUDA in an extensible way.
 
 Most code lives in Nixpkgs and is copied/modified here for ease of development.
 
-Top-level:
-
-- `cudaLib`: data and utility functions used in creation of the CUDA package sets
-- `cudaPackagesExtensions`: extensions (overlays) applied to each CUDA package set
-  - an easy way to add packages to all CUDA package sets
-
 ## Notes
 
 - Python wrappers which invoke CMake _do not always pass their environment_ to the CMake process. That means a number of the environment variables we set so CMake's auto-detection functionality just works is broken.

@@ -1,21 +1,21 @@
 # NOTE: All fixups must be at least binary functions to avoid callPackage adding override attributes.
 {
+  _cuda,
   autoAddDriverRunpath,
   autoPatchelfHook,
+  backendStdenv,
   config,
   cudaHook,
-  cudaLib,
   cudaMajorMinorVersion,
   cudaMajorVersion,
   cudaNamePrefix,
-  cudaStdenv,
   lib,
   markForCudaToolkitRootHook,
   stdenv,
 }:
 let
-  inherit (cudaLib.utils) mkMetaBadPlatforms mkMetaBroken redistSystemIsSupported;
-  inherit (cudaStdenv) hostRedistSystem;
+  inherit (_cuda.lib) _mkMetaBadPlatforms _mkMetaBroken _redistSystemIsSupported;
+  inherit (backendStdenv) hostRedistSystem;
   inherit (lib)
     licenses
     sourceTypes
@@ -305,7 +305,7 @@ in
     # NOTE: Use this when a failed assertion means evaluation can fail!
     platformAssertions =
       let
-        isSupportedRedistSystem = redistSystemIsSupported hostRedistSystem redistBuilderArg.supportedRedistSystems;
+        isSupportedRedistSystem = _redistSystemIsSupported hostRedistSystem redistBuilderArg.supportedRedistSystems;
       in
       prevAttrs.passthru.platformAssertions or [ ]
       ++ [
@@ -324,8 +324,8 @@ in
     description = "${redistBuilderArg.releaseName}. By downloading and using the packages you accept the terms and conditions of the ${finalAttrs.meta.license.shortName}";
     sourceProvenance = [ sourceTypes.binaryNativeCode ];
     platforms = redistBuilderArg.supportedNixSystems;
-    broken = mkMetaBroken (!(config.inHydra or false)) finalAttrs;
-    badPlatforms = mkMetaBadPlatforms (!(config.inHydra or false)) finalAttrs;
+    broken = _mkMetaBroken (!(config.inHydra or false)) finalAttrs;
+    badPlatforms = _mkMetaBadPlatforms (!(config.inHydra or false)) finalAttrs;
     license = licenses.nvidiaCudaRedist // {
       url =
         let

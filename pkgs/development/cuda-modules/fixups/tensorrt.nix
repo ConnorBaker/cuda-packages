@@ -1,8 +1,7 @@
 {
-
+  _cuda,
+  backendStdenv,
   cuda_cudart,
-  cudaLib,
-  cudaStdenv,
   cudnn,
   cuda_nvrtc,
   lib,
@@ -11,8 +10,8 @@
   stdenv,
 }:
 let
-  inherit (cudaStdenv) hasJetsonCudaCapability;
-  inherit (cudaLib.utils) majorMinorPatch;
+  inherit (_cuda.lib) majorMinorPatch;
+  inherit (backendStdenv) hasJetsonCudaCapability;
   inherit (lib.attrsets) getLib;
   inherit (lib.lists) optionals;
   inherit (lib.strings) concatStringsSep;

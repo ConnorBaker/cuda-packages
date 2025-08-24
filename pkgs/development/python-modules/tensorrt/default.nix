@@ -1,9 +1,9 @@
 {
+  _cuda,
   autoPatchelfHook,
   build,
   buildPythonPackage,
   cmake,
-  cudaLib,
   cudaPackages,
   fetchFromGitHub,
   fetchpatch2,
@@ -18,8 +18,8 @@
   stdenv,
 }:
 let
-  inherit (cudaLib.utils) majorMinorPatch;
-  inherit (cudaPackages) cuda_cudart cudaStdenv tensorrt;
+  inherit (_cuda.lib) majorMinorPatch;
+  inherit (cudaPackages) backendStdenv cuda_cudart tensorrt;
   inherit (lib) licenses maintainers teams;
   inherit (lib.attrsets) getLib getOutput;
   inherit (lib.lists) elemAt optionals;
@@ -174,7 +174,7 @@ let
     doCheck = false; # This derivation produces samples that require a GPU to run.
 
     # On Jetson, trying to import the package requires `libnvdla_compiler.so` (from the host driver) be available.
-    pythonImportsCheck = optionals (!cudaStdenv.hasJetsonCudaCapability) [ "tensorrt" ];
+    pythonImportsCheck = optionals (!backendStdenv.hasJetsonCudaCapability) [ "tensorrt" ];
 
     meta = {
       description = "Open Source Software (OSS) components of NVIDIA TensorRT";

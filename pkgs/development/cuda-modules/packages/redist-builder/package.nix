@@ -1,10 +1,10 @@
 # NOTE: redist-builder should never take manifests or fixups as callPackage-provided arguments,
 # since we want to provide the flexibility to call it directly with a different fixup or manifest.
 {
+  _cuda,
+  backendStdenv,
   callPackage,
-  cudaLib,
   cudaMajorVersion,
-  cudaStdenv,
   fetchurl,
   lib,
   srcOnly,
@@ -12,8 +12,8 @@
   stdenvNoCC,
 }:
 let
-  inherit (cudaStdenv) hostRedistSystem;
-  inherit (cudaLib.utils) getNixSystems mkCudaVariant mkRedistUrl;
+  inherit (backendStdenv) hostRedistSystem;
+  inherit (_cuda.lib) getNixSystems _mkCudaVariant mkRedistUrl;
   inherit (lib.attrsets)
     foldlAttrs
     hasAttr
@@ -34,7 +34,7 @@ let
 
   getSupportedReleases =
     let
-      desiredCudaVariant = mkCudaVariant cudaMajorVersion;
+      desiredCudaVariant = _mkCudaVariant cudaMajorVersion;
     in
     release:
     # Always show preference to the "source", then "linux-all" redistSystem if they are available, as they are

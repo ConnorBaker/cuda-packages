@@ -1,11 +1,11 @@
 {
+  _cuda,
   addDriverRunpath,
   cmake,
   config,
   cuda_cudart,
   cuda_nvcc,
   cuda_nvrtc,
-  cudaLib,
   cudaNamePrefix,
   cudnn,
   fetchFromGitHub,
@@ -25,7 +25,7 @@
   gitUpdater,
 }:
 let
-  inherit (cudaLib.utils) mkMetaBadPlatforms;
+  inherit (_cuda.lib) _mkMetaBadPlatforms;
   inherit (lib) licenses maintainers teams;
   inherit (lib.asserts) assertMsg;
   inherit (lib.attrsets) getBin;
@@ -228,7 +228,7 @@ stdenv.mkDerivation (finalAttrs: {
       "aarch64-linux"
       "x86_64-linux"
     ];
-    badPlatforms = mkMetaBadPlatforms (!(config.inHydra or false)) finalAttrs;
+    badPlatforms = _mkMetaBadPlatforms (!(config.inHydra or false)) finalAttrs;
     maintainers = [ maintainers.connorbaker ] ++ teams.cuda.members;
   };
 })

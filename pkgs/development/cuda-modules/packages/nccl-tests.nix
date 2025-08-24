@@ -2,11 +2,11 @@
 # the names of dependencies from that package set directly to avoid evaluation errors
 # in the case redistributable packages are not available.
 {
+  _cuda,
   config,
   cuda_cccl,
   cuda_cudart,
   cuda_nvcc,
-  cudaLib,
   cudaNamePrefix,
   fetchFromGitHub,
   flags,
@@ -19,7 +19,7 @@
   which,
 }:
 let
-  inherit (cudaLib.utils) mkMetaBroken;
+  inherit (_cuda.lib) _mkMetaBroken;
   inherit (lib) licenses maintainers teams;
   inherit (lib.attrsets) getBin;
   inherit (lib.lists) optionals;
@@ -106,7 +106,7 @@ stdenv.mkDerivation (finalAttrs: {
       "x86_64-linux"
     ];
     license = licenses.bsd3;
-    broken = mkMetaBroken (!(config.inHydra or false)) finalAttrs;
+    broken = _mkMetaBroken (!(config.inHydra or false)) finalAttrs;
     maintainers = [ maintainers.jmillerpdt ] ++ teams.cuda.members;
   };
 })

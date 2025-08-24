@@ -149,11 +149,11 @@ As an added benefit of `pkgs` being configured this way, building a package with
 
 NVCC has a supported range of host compilers (GCC and Clang), which it wraps presents itself as when doing C-preprocessing/C++ templating. NVCC implements its own functionality for CUDA source files, but otherwise delegates to the host compiler. Generally, NVCC is very tightly coupled to GCC/Clang, e.g. the NVCC C/C++ pre-processor may not be able to parse or use `libc`/`libcpp` headers from newer host compilers when they use new language functionality.
 
-NVCC is wrapped and includes a setup hook to ensure it has a supported host compiler available and that the host compiler links against the same `glibc`/`glibcxx` the rest of the Nixpkgs does (using those provided by `pkgs.stdenv`). As such, There are two choices of `stdenv` when packaging a CUDA application: `pkgs.stdenv` and `cudaPackages.cudaStdenv`.
+NVCC is wrapped and includes a setup hook to ensure it has a supported host compiler available and that the host compiler links against the same `glibc`/`glibcxx` the rest of the Nixpkgs does (using those provided by `pkgs.stdenv`). As such, There are two choices of `stdenv` when packaging a CUDA application: `pkgs.stdenv` and `cudaPackages.backendStdenv`.
 
 The benefit of using `pkgs.stdenv` is that adding CUDA support to a package is as simple as adding the relevant members of `cudaPackages` to `nativeBuildInputs` and `buildInputs` conditioned on `config.cudaSupport`. However, the largest (known) drawback is that using `pkgs.stdenv` breaks Link Time Optimization (LTO) because the host compiler used by NVCC is not the same as the host compiler used by `pkgs.stdenv` and the linker cannot work across object files produced by different compilers or compiler versions.
 
-The benefit of using `cudaPackages.cudaStdenv` then is that it allows for LTO to work; the drawback is that adding CUDA support is much more invasive given the need for logic in the package expression which selects a `stdenv` based on `config.cudaSupport`. Such conditional logic is usually called the `effectiveStdenv` pattern:
+The benefit of using `cudaPackages.backendStdenv` then is that it allows for LTO to work; the drawback is that adding CUDA support is much more invasive given the need for logic in the package expression which selects a `stdenv` based on `config.cudaSupport`. Such conditional logic is usually called the `effectiveStdenv` pattern:
 
 ```nix
 {
@@ -163,7 +163,7 @@ The benefit of using `cudaPackages.cudaStdenv` then is that it allows for LTO to
   stdenv,
 }@inputs:
 let
-  effectiveStdenv = if cudaSupport then cudaPackages.cudaStdenv else inputs.stdenv;
+  effectiveStdenv = if cudaSupport then cudaPackages.backendStdenv else inputs.stdenv;
   stdenv = builtins.throw "please use effectiveStdenv";
 in
 effectiveStdenv.mkDerivation { ... }

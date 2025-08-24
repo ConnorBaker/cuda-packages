@@ -34,11 +34,11 @@
 }:
 let
   inherit (cudaPackages)
+    backendStdenv
     cuda_cccl # cub/cub.cuh -- Only available from CUDA 12.0.
     cuda_compat
     cuda_cudart
     cuda_nvcc
-    cudaStdenv
     cudnn
     cudnn-frontend
     flags
@@ -346,7 +346,7 @@ stdenv.mkDerivation (finalAttrs: {
       export LD_LIBRARY_PATH="''${LD_LIBRARY_PATH:-}"
     ''
     # NOTE: Ensure cuda_compat has a higher priority than the driver lib when it is in use.
-    + optionalString (cudaStdenv.hasJetsonCudaCapability && cuda_compat != null) ''
+    + optionalString (backendStdenv.hasJetsonCudaCapability && cuda_compat != null) ''
       addToSearchPath LD_LIBRARY_PATH "${cuda_compat}/compat"
     ''
     + ''

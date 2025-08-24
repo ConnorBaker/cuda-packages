@@ -1,7 +1,7 @@
 {
   autoFixElfFiles,
   arrayUtilities,
-  cudaStdenv,
+  backendStdenv,
   lib,
   patchelf,
 }:
@@ -18,7 +18,7 @@ prevAttrs: {
 
   autoPatchelfIgnoreMissingDeps =
     prevAttrs.autoPatchelfIgnoreMissingDeps or [ ]
-    ++ lib.optionals cudaStdenv.hasJetsonCudaCapability [
+    ++ lib.optionals backendStdenv.hasJetsonCudaCapability [
       "libnvrm_gpu.so"
       "libnvrm_mem.so"
       "libnvdla_runtime.so"

@@ -1,9 +1,9 @@
 {
+  backendStdenv,
   cmake,
   cuda_cudart,
   cuda_nvcc,
   cudaNamePrefix,
-  cudaStdenv,
   fetchpatch2,
   flags,
   lib,
@@ -12,7 +12,7 @@
   stdenvNoCC,
 }:
 let
-  inherit (cudaStdenv) cc;
+  inherit (backendStdenv) cc;
   inherit (lib.attrsets) mapAttrs optionalAttrs recurseIntoAttrs;
   inherit (lib.fixedPoints) composeExtensions toExtension;
   inherit (lib.lists) optionals;
