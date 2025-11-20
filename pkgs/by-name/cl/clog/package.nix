@@ -11,16 +11,20 @@ let
   inherit (lib.strings) cmakeBool;
 in
 stdenv.mkDerivation (finalAttrs: {
-  pname = "clog";
-  inherit (cpuinfo) version;
-  src = "${cpuinfo.src}/deps/clog";
+  __structuredAttrs = true;
+  strictDeps = true;
 
-  # gtest requires at least C++14
+  pname = "clog";
+  inherit (cpuinfo) src version;
+  sourceRoot = "${cpuinfo.src.name}/deps/clog";
+
+  # NOTE: Can be removed after cpuinfo includes https://github.com/pytorch/cpuinfo/pull/318.
   postPatch = ''
-    substituteInPlace CMakeLists.txt \
+    nixLog "patching $PWD/CMakeLists.txt to use a newer C++ standard for gtest"
+    substituteInPlace "$PWD/CMakeLists.txt" \
       --replace-fail \
         "CXX_STANDARD 11" \
-        "CXX_STANDARD 14"
+        "CXX_STANDARD 17"
   '';
 
   nativeBuildInputs = [
