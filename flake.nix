@@ -7,6 +7,7 @@
     # TODO: Hooks put on hold for now.
     # nixpkgs.url = "github:ConnorBaker/nixpkgs/feat/arrayUtilities-remaining";
     nixpkgs.url = "github:nixos/nixpkgs";
+    cuda-legacy.url = "github:nixos-cuda/cuda-legacy";
     git-hooks-nix = {
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:cachix/git-hooks.nix";
@@ -39,7 +40,10 @@
             cudaSupport = true;
           };
           localSystem = { inherit system; };
-          overlays = [ inputs.self.overlays.default ];
+          overlays = [
+            inputs.cuda-legacy.overlays.default
+            inputs.self.overlays.default
+          ];
         };
       # Memoization through lambda lifting.
       nixpkgsInstances = lib.genAttrs systems mkNixpkgs;

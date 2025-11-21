@@ -72,6 +72,7 @@ let
       repo = "TensorRT";
       tag = "v${finalAttrs.version}";
       hash = getAttr finalAttrs.version {
+        "10.3.0" = "sha256-odSrsfOa8PlbJiPrkvWFm2hHc+ud0qSpLQanx9/M/90=";
         "10.7.0" = "sha256-sbp61GverIWrHKvJV+oO9TctFTO4WUmH0oInZIwqF/s=";
         "10.9.0" = "sha256-J8K9RjeGIem5ZxXyU+Rne8uBbul54ie6P/Y1In2mQ0g=";
       };
@@ -116,6 +117,7 @@ let
           'HINTS "${python}/include/''${PYTHON}"'
 
       for script in "$PWD"/python/packaging/bindings_wheel/tensorrt/plugin/_{lib,tensor,top_level}.py; do
+        [[ -e $script ]] || continue
         nixLog "patching $script to remove invalid escape sequence '\s'"
         substituteInPlace "$script" --replace-fail '\s' 's'
       done

@@ -44,6 +44,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     repo = "onnx-tensorrt";
     tag = "release/${finalAttrs.version}-GA";
     hash = getAttr finalAttrs.version {
+      "10.3" = "sha256-yHbC9szxpP1NdiOJaQ9Y0yt+kC1YJSTgpr45OCBKb0I=";
       "10.7" = "sha256-1Y5jELqVkRkjeiEbF7GrPqAGZMu7U8JgmM3ZQbsG304=";
       "10.9" = "sha256-4uYMtIsCQcXr9HzeqcHD/ysOFxJeejq43D/lfGj4MG4=";
     };
