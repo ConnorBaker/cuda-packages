@@ -119,8 +119,9 @@ let
           onnx = final.onnx.override { python3Packages = finalPythonPackages; };
         };
 
-        tensorrt = finalPythonPackages.callPackage ./pkgs/development/python-modules/tensorrt {
-        };
+        pycuda = finalPythonPackages.callPackage ./pkgs/development/python-modules/pycuda { };
+
+        tensorrt = finalPythonPackages.callPackage ./pkgs/development/python-modules/tensorrt { };
       }
       # // final.lib.genAttrs [
       #   "bitsandbytes"
@@ -184,9 +185,12 @@ let
       }
     );
 
-    # onnxruntime = final.callPackage ./pkgs/development/libraries/onnxruntime {
-    #   inherit (final.darwin.apple_sdk.frameworks) Foundation;
-    # };
+    # TODO(@connorbaker): Just for testing, to align with the version used by JetPack 6.
+    # cudaPackages_12_6 = prev.cudaPackages_12_6.override (prevArgs: {
+    #   manifests = prevArgs.manifests // {
+    #     tensorrt = final._cuda.manifests.tensorrt."10.3.0";
+    #   };
+    # });
   };
 
   extraCudaPackages = final: prev: {
