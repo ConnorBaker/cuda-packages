@@ -1,6 +1,5 @@
 {
   _cuda,
-  autoPatchelfHook,
   build,
   buildPythonPackage,
   cmake,
@@ -19,11 +18,23 @@
 }:
 let
   inherit (_cuda.lib) majorMinorPatch;
-  inherit (cudaPackages) backendStdenv cuda_cudart tensorrt;
-  inherit (lib) licenses maintainers teams;
-  inherit (lib.attrsets) getLib getOutput;
-  inherit (lib.lists) elemAt optionals;
-  inherit (lib.strings) cmakeFeature;
+  inherit (cudaPackages)
+    backendStdenv
+    cuda_nvcc
+    cuda_cudart
+    tensorrt
+    ;
+  inherit (lib)
+    cmakeFeature
+    elemAt
+    getAttr
+    getInclude
+    getLib
+    licenses
+    maintainers
+    optionals
+    teams
+    ;
   inherit (lib.versions) splitVersion;
 
   pythonVersionComponents = splitVersion python.version;
@@ -54,16 +65,16 @@ let
 
     version = majorMinorPatch tensorrt.version;
 
+    format = "other";
+
     src = fetchFromGitHub {
       owner = "NVIDIA";
       repo = "TensorRT";
       tag = "v${finalAttrs.version}";
-      hash =
-        {
-          "10.7.0" = "sha256-sbp61GverIWrHKvJV+oO9TctFTO4WUmH0oInZIwqF/s=";
-          "10.9.0" = "sha256-J8K9RjeGIem5ZxXyU+Rne8uBbul54ie6P/Y1In2mQ0g=";
-        }
-        .${finalAttrs.version};
+      hash = getAttr finalAttrs.version {
+        "10.7.0" = "sha256-sbp61GverIWrHKvJV+oO9TctFTO4WUmH0oInZIwqF/s=";
+        "10.9.0" = "sha256-J8K9RjeGIem5ZxXyU+Rne8uBbul54ie6P/Y1In2mQ0g=";
+      };
     };
 
     patches = optionals (finalAttrs.version == "10.9.0") [
@@ -82,10 +93,8 @@ let
     ];
 
     nativeBuildInputs = [
-      onnx.passthru.cppProtobuf
       pypaInstallHook
-    ]
-    ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ]; # included to fail on missing dependencies
+    ];
 
     postPatch = ''
       nixLog "patching $PWD/CMakeLists.txt to avoid manually setting CMAKE_CXX_COMPILER"
@@ -144,11 +153,14 @@ let
       (cmakeFeature "PYTHON_MAJOR_VERSION" pythonMajorVersion)
       (cmakeFeature "PYTHON_MINOR_VERSION" pythonMinorVersion)
       (cmakeFeature "TARGET" stdenv.hostPlatform.parsed.cpu.name)
+      # NVIDIA isn't going to update old releases, and we need to be able to build them.
+      (cmakeFeature "CMAKE_POLICY_VERSION_MINIMUM" "3.5")
     ];
 
     # Allow CMake to perform the build.
     dontUseSetuptoolsBuild = true;
 
+    # TODO(@connorbaker): Various cleanups to remove $NIX_BUILD_TOP where possible to unbreak debugging in devshell.
     postBuild = ''
       nixLog "copying build artifacts to $NIX_BUILD_TOP/$sourceRoot/python/packaging/bindings_wheel"
       cp -rv "$PWD/tensorrt" "$NIX_BUILD_TOP/$sourceRoot/python/packaging/bindings_wheel"
@@ -163,8 +175,9 @@ let
     '';
 
     buildInputs = [
+      (getInclude cuda_nvcc)
+      (getInclude tensorrt)
       (getLib tensorrt)
-      (getOutput "include" tensorrt)
       cuda_cudart
       onnx
       onnx-tensorrt-headers
@@ -184,7 +197,8 @@ let
         "aarch64-linux"
         "x86_64-linux"
       ];
-      maintainers = (with maintainers; [ connorbaker ]) ++ teams.cuda.members;
+      maintainers = with maintainers; [ connorbaker ];
+      teams = [ teams.cuda ];
     };
 
     # TODO(@connorbaker): This derivation should contain Python tests for tensorrt.

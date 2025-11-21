@@ -1,65 +1,73 @@
 {
-  autoPatchelfHook,
   buildPythonPackage,
-  google-re2,
-  lib,
-  nbval,
-  numpy,
   onnx, # from pkgs
+
+  # dependencies
+  ml-dtypes,
+  numpy,
+  protobuf,
+  typing-extensions,
+
+  # tests
   parameterized,
   pillow,
   pytestCheckHook,
-  stdenv,
+  writableTmpDirAsHomeHook,
 }:
 buildPythonPackage {
-  __structuredAttrs = true;
-
   inherit (onnx)
     meta
     passthru
     pname
+    src
     version
     ;
 
-  src = onnx.dist;
-
   format = "wheel";
 
-  # included to fail on missing dependencies
-  nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
+  dontUseWheelUnpack = true;
 
-  unpackPhase = ''
-    cp -rv "$src" dist
-    cp -rv "${onnx.src}"/onnx/test test
-    chmod +w dist test
+  postUnpack = ''
+    cp -rv "${onnx.dist}" "$sourceRoot/dist"
+    chmod +w "$sourceRoot/dist"
   '';
 
   buildInputs = [
-    onnx # for libonnx.so
+    # onnx must be included to avoid shrinking during the fixupPhase removing the RUNPATH entry
+    # on onnx_cpp2py_export.cpython-*.so.
+    onnx
   ];
 
-  dependencies = [ onnx.passthru.pyProtobuf ];
-
-  doCheck = true;
-
-  nativeCheckInputs = [ pytestCheckHook ];
-
-  checkInputs = [
-    google-re2
-    nbval
+  dependencies = [
+    ml-dtypes
     numpy
+    protobuf
+    typing-extensions
+  ];
+
+  nativeCheckInputs = [
     parameterized
     pillow
+    pytestCheckHook
+    writableTmpDirAsHomeHook
   ];
 
-  # Fixups for pytest
-  preCheck = ''
-    nixLog "setting HOME to a temporary directory for pytest"
-    export HOME="$(mktemp --directory)"
-    trap "rm -rf -- ''${HOME@Q}" EXIT
+  # The executables are just utility scripts that aren't too important
+  postInstall = ''
+    rm -rv $out/bin
   '';
 
-  pythonImportsCheck = [ "onnx" ];
+  # detecting source dir as a python package confuses pytest
+  preCheck = ''
+    rm onnx/__init__.py
+  '';
 
-  # TODO(@connorbaker): This derivation should contain Python tests for onnx.
+  enabledTestPaths = [
+    "onnx/test"
+    "examples"
+  ];
+
+  __darwinAllowLocalNetworking = true;
+
+  pythonImportsCheck = [ "onnx" ];
 }

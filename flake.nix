@@ -4,7 +4,9 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
       url = "github:hercules-ci/flake-parts";
     };
-    nixpkgs.url = "github:ConnorBaker/nixpkgs/feat/arrayUtilities-remaining";
+    # TODO: Hooks put on hold for now.
+    # nixpkgs.url = "github:ConnorBaker/nixpkgs/feat/arrayUtilities-remaining";
+    nixpkgs.url = "github:nixos/nixpkgs";
     git-hooks-nix = {
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:cachix/git-hooks.nix";
@@ -32,8 +34,8 @@
           # The only way I've found to combat this is to use pkgs.extend, which is not ideal.
           # TODO: This also means that Nixpkgs needs to be imported *with* the correct config attribute set
           # from the start, unless they're willing to re-import Nixpkgs with the correct config.
-          config = {
-            allowUnfree = true;
+          config = {pkgs}: {
+            allowUnfreePredicate = pkgs._cuda.lib.allowUnfreeCudaPredicate;
             cudaSupport = true;
           };
           localSystem = { inherit system; };

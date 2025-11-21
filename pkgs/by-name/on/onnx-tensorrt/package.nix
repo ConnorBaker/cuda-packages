@@ -4,20 +4,35 @@
   fetchFromGitHub,
   lib,
   onnx,
+  protobuf,
   python3Packages,
-  pythonSupport ? true,
-  stdenv,
 }:
 let
-  inherit (cudaPackages) cuda_cudart cuda_nvcc tensorrt;
-  inherit (lib) licenses maintainers teams;
-  inherit (lib.attrsets) getLib getOutput;
-  inherit (lib.lists) optionals;
-  inherit (lib.strings) cmakeBool cmakeFeature;
+  inherit (lib)
+    cmakeBool
+    cmakeFeature
+    getAttr
+    getLib
+    getOutput
+    licenses
+    maintainers
+    teams
+    ;
   inherit (lib.versions) majorMinor;
-  inherit (onnx.passthru) cppProtobuf;
+
+  inherit (cudaPackages)
+    backendStdenv
+    cuda_cudart
+    cuda_nvcc
+    tensorrt
+    ;
+  inherit (python3Packages)
+    build
+    python
+    setuptools
+    ;
 in
-stdenv.mkDerivation (finalAttrs: {
+backendStdenv.mkDerivation (finalAttrs: {
   __structuredAttrs = true;
   strictDeps = true;
 
@@ -28,12 +43,10 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "onnx";
     repo = "onnx-tensorrt";
     tag = "release/${finalAttrs.version}-GA";
-    hash =
-      {
-        "10.7" = "sha256-1Y5jELqVkRkjeiEbF7GrPqAGZMu7U8JgmM3ZQbsG304=";
-        "10.9" = "sha256-4uYMtIsCQcXr9HzeqcHD/ysOFxJeejq43D/lfGj4MG4=";
-      }
-      .${finalAttrs.version};
+    hash = getAttr finalAttrs.version {
+      "10.7" = "sha256-1Y5jELqVkRkjeiEbF7GrPqAGZMu7U8JgmM3ZQbsG304=";
+      "10.9" = "sha256-4uYMtIsCQcXr9HzeqcHD/ysOFxJeejq43D/lfGj4MG4=";
+    };
   };
 
   # TODO: 10.7 should include this patch:
@@ -44,29 +57,23 @@ stdenv.mkDerivation (finalAttrs: {
     "dev"
     "static"
     "test_script"
-  ]
-  ++ optionals pythonSupport [ "dist" ];
+    "dist" # Python wheel output
+  ];
 
   nativeBuildInputs = [
+    build
     cmake
-    cppProtobuf
     cuda_nvcc
-  ]
-  ++ optionals pythonSupport (
-    with python3Packages;
-    [
-      build
-      pythonOutputDistHook
-      setuptools
-    ]
-  );
+    python
+    setuptools
+  ];
 
   postPatch =
     # Ensure Onnx is found by CMake rather than using the vendored version.
     # https://github.com/onnx/onnx-tensorrt/blob/3775e499322eee17c837e27bff6d07af4261767a/CMakeLists.txt#L90
     ''
-      nixLog "patching CMakeLists.txt to use Nixpkgs' Onnx"
-      substituteInPlace CMakeLists.txt \
+      nixLog "patching $PWD/CMakeLists.txt to use Nixpkgs' ONNX"
+      substituteInPlace "$PWD/CMakeLists.txt" \
         --replace-fail \
           "add_subdirectory(third_party/onnx EXCLUDE_FROM_ALL)" \
           "find_package(ONNX REQUIRED)"
@@ -76,8 +83,8 @@ stdenv.mkDerivation (finalAttrs: {
     # Patch `setup.py` to not rely on `onnx_tensorrt`.
     # TODO: Should use actual version given in `__init__.py` instead of hardcoding.
     + ''
-      nixLog "patching setup.py to remove onnx_tensorrt import"
-      substituteInPlace setup.py \
+      nixLog "patching $PWD/setup.py to remove onnx_tensorrt import"
+      substituteInPlace "$PWD/setup.py" \
         --replace-fail \
           "import onnx_tensorrt" \
           "" \
@@ -88,8 +95,8 @@ stdenv.mkDerivation (finalAttrs: {
     # Patch onnx_tensorrt/backend.py to load the path to libcudart.so directly so the end-user doesn't need to manually
     # add it to LD_LIBRARY_PATH.
     + ''
-      nixLog "patching backend.py to load libcudart.so from the correct path"
-      substituteInPlace onnx_tensorrt/backend.py \
+      nixLog "patching $PWD/onnx_tensorrt/backend.py to load libcudart.so from the correct path"
+      substituteInPlace "$PWD/onnx_tensorrt/backend.py" \
         --replace-fail \
           "LoadLibrary('libcudart.so')" \
           "LoadLibrary('${getLib cuda_cudart}/lib/libcudart.so')"
@@ -103,18 +110,20 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildInputs = [
     (getOutput "include" cuda_nvcc) # for crt/host_defines.h
-    cppProtobuf
     cuda_cudart
     onnx
+    protobuf
     tensorrt
   ];
 
-  postBuild = lib.optionalString pythonSupport ''
-    pushd "$NIX_BUILD_TOP/$sourceRoot"
+  # Leave the CMake bulid directory, export the `cmakeFlags` environment variable as CMAKE_ARGS so setup.py will pick
+  # them up, do the python build from the top-level, then resume the C++ build.
+  preBuild = ''
+    pushd ..
     nixLog "building Python wheel"
     pyproject-build \
       --no-isolation \
-      --outdir dist/ \
+      --outdir "$dist/" \
       --wheel
     popd >/dev/null
   '';
@@ -123,13 +132,10 @@ stdenv.mkDerivation (finalAttrs: {
 
   postInstall =
     # Install the header files to the include directory.
-    # NOTE: This moves us to sourceRoot, which is the directory containing dists, so the python hook will see it and
-    # install it.
     ''
-      cd "$NIX_BUILD_TOP/$sourceRoot"
       nixLog "installing header files"
       mkdir -p "$out/include/onnx"
-      install -Dm644 *.h *.hpp "$out/include/onnx"
+      install -Dvm644 ../*.h ../*.hpp "$out/include/onnx/"
     ''
     # Move static libraries to the static directory.
     + ''
@@ -139,7 +145,7 @@ stdenv.mkDerivation (finalAttrs: {
     + ''
       nixLog "installing test script"
       mkdir -p "$test_script"
-      install -Dm755 "$NIX_BUILD_TOP/$sourceRoot/onnx_backend_test.py" "$test_script/onnx_backend_test.py"
+      install -Dvm755 ../onnx_backend_test.py "$test_script/"
     ''
     # Patch our test file to skip tests that are known to fail.
     # These two tests fail with out of memory errors on a 4090.
@@ -164,6 +170,7 @@ stdenv.mkDerivation (finalAttrs: {
       "aarch64-linux"
       "x86_64-linux"
     ];
-    maintainers = (with maintainers; [ connorbaker ]) ++ teams.cuda.members;
+    maintainers = with maintainers; [ connorbaker ];
+    teams = [ teams.cuda ];
   };
 })

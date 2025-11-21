@@ -1,12 +1,10 @@
 {
-  autoPatchelfHook,
   buildPythonPackage,
   cudaPackages,
   lib,
-  onnx,
   onnx-tensorrt, # from pkgs
+  onnx,
   pycuda,
-  stdenv,
   tensorrt,
 }:
 buildPythonPackage {
@@ -18,7 +16,7 @@ buildPythonPackage {
 
   format = "wheel";
 
-  nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ]; # included to fail on missing dependencies
+  dontUseWheelUnpack = true;
 
   unpackPhase = ''
     cp -r "$src" dist
