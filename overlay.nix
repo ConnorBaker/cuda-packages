@@ -207,11 +207,6 @@ let
             #     - nvccHook
             #
             #   These may not interact well with upstream's hooks and should be redesigned.
-
-            # Newer than upstream
-            cudnn-frontend =
-              finalCudaPackages.callPackage ./pkgs/development/cuda-modules/packages/cudnn-frontend.nix
-                { };
           })
         ];
       }
