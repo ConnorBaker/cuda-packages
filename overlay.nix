@@ -207,6 +207,7 @@ let
             #     - nvccHook
             #
             #   These may not interact well with upstream's hooks and should be redesigned.
+            tensorrt-samples = finalCudaPackages.callPackage ./pkgs/development/cuda-modules/packages/tensorrt-samples.nix { };
           })
         ];
       }
