@@ -191,12 +191,23 @@ let
     #     tensorrt = final._cuda.manifests.tensorrt."10.3.0";
     #   };
     # });
+
+    # TODO(@connorbaker): Just for testing, to test all the different versions of TensorRT.
+    # tensorrt-samples = final.lib.mapAttrs' (version: manifest: {
+    #   name = "tensorrt-samples-" + final.lib.replaceStrings [ "." ] [ "_" ] version;
+    #   value =
+    #     (final.cudaPackages.override (prevArgs: {
+    #       manifests = prevArgs.manifests // {
+    #         tensorrt = manifest;
+    #       };
+    #     })).tensorrt-samples.passthru.tests;
+    # }) final._cuda.manifests.tensorrt;
   };
 
   extraCudaPackages = final: prev: {
     _cuda = prev._cuda.extend (
       finalCuda: prevCuda: {
-        extensions = [
+        extensions = prevCuda.extensions ++ [
           (finalCudaPackages: prevCudaPackages: {
             # NOTE:
             #
@@ -207,7 +218,9 @@ let
             #     - nvccHook
             #
             #   These may not interact well with upstream's hooks and should be redesigned.
-            tensorrt-samples = finalCudaPackages.callPackage ./pkgs/development/cuda-modules/packages/tensorrt-samples.nix { };
+            tensorrt-samples =
+              finalCudaPackages.callPackage ./pkgs/development/cuda-modules/packages/tensorrt-samples/package.nix
+                { };
           })
         ];
       }
