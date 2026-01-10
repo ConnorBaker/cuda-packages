@@ -165,8 +165,9 @@ backendStdenv.mkDerivation (finalAttrs: {
     tensorrt
   ];
 
-  passthru = import ./passthru.nix {
+  passthru = import ./passthru {
     inherit
+      backendStdenv
       fetchzip
       finalAttrs
       lib
